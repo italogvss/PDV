@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="PDV.Api/PDV.Api.csproj" />
+  <Project Path="PDV.Application/PDV.Application.csproj" />
+  <Project Path="PDV.Domain/PDV.Domain.csproj" />
+  <Project Path="PDV.Infrastructure/PDV.Infrastructure.csproj" />
+</Solution>

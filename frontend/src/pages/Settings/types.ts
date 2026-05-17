@@ -1,0 +1,11 @@
+export type SettingsTab =
+  | 'negocio'
+  | 'operacao'
+  | 'pagamentos'
+  | 'fiscal'
+  | 'impressao'
+  | 'aparencia'
+  | 'backup'
+  | 'integracoes'
+  | 'equipe'
+  | 'avancado'

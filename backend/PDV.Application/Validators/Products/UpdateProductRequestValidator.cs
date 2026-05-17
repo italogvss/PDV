@@ -1,0 +1,16 @@
+using FluentValidation;
+using PDV.Application.DTOs.Products;
+
+namespace PDV.Application.Validators.Products;
+
+public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequest>
+{
+    public UpdateProductRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Price).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Barcode).MaximumLength(50).When(x => x.Barcode is not null);
+        RuleFor(x => x.Ncm).MaximumLength(10).When(x => x.Ncm is not null);
+        RuleFor(x => x.PurchasePrice).GreaterThanOrEqualTo(0).When(x => x.PurchasePrice is not null);
+    }
+}

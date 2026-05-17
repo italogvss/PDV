@@ -1,0 +1,11 @@
+import type { Expense } from './types'
+
+export const MOCK_EXPENSES: Expense[] = [
+  { id: '1', description: 'Aluguel da loja - Maio', category: 'Aluguel', dueDate: '05/05', status: 'Pago', amount: 3200.0 },
+  { id: '2', description: 'Distribuidora Café Verde', category: 'Fornecedor', dueDate: '12/05', status: 'Pago', amount: 1245.8 },
+  { id: '3', description: 'Conta de luz', category: 'Energia', dueDate: '14/05', status: 'Pendente', amount: 487.3 },
+  { id: '4', description: 'Folha de pagamento', category: 'Salários', dueDate: '15/05', status: 'Pendente', amount: 6800.0 },
+  { id: '5', description: 'Padaria Central', category: 'Fornecedor', dueDate: '18/05', status: 'Pendente', amount: 890.5 },
+  { id: '6', description: 'Anúncios Instagram', category: 'Marketing', dueDate: '20/05', status: 'Pendente', amount: 320.0 },
+  { id: '7', description: 'Vivo Fibra', category: 'Internet', dueDate: '22/05', status: 'Pendente', amount: 159.9 },
+]

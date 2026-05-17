@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node -e \"const g = require\\('./node_modules/geist/dist/sans.js'\\); console.log\\(JSON.stringify\\(g, null, 2\\)\\)\")"
+    ]
+  }
+}

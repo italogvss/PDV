@@ -1,0 +1,10 @@
+export type AccountTab =
+  | 'perfil'
+  | 'assinatura'
+  | 'pagamentos'
+  | 'faturas'
+  | 'negocios'
+  | 'seguranca'
+  | 'notificacoes'
+  | 'sessoes'
+  | 'integracoes'

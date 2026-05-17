@@ -1,0 +1,57 @@
+# =============================================================
+# PDV-Lorena — .gitignore
+# =============================================================
+
+# --------------------------
+# Environment files — NEVER commit these
+# --------------------------
+.env
+.env.local
+.env.*.local
+.env.prod
+
+# --------------------------
+# MCP settings — contains local credentials
+# --------------------------
+.claude/mcp_settings.json
+
+# --------------------------
+# .NET / C#
+# --------------------------
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+*.nupkg
+TestResults/
+coverage/
+
+# --------------------------
+# Frontend — Node
+# --------------------------
+node_modules/
+dist/
+build/
+.vite/
+*.local
+
+# --------------------------
+# Docker
+# --------------------------
+docker-compose.override.yml
+
+# --------------------------
+# OS generated
+# --------------------------
+.DS_Store
+Thumbs.db
+
+# --------------------------
+# IDE
+# --------------------------
+.idea/
+*.swp
+*.swo
+frontend/design/*
