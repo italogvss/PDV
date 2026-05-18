@@ -43,7 +43,7 @@ export default function DashboardLayout() {
           sx={{
             flex: 1,
             minHeight: 0,
-            overflow: { xs: 'visible', md: 'hidden' },
+            overflow: { xs: 'visible', md: 'auto' },
             p: { xs: 4, md: 6 },
           }}
         >

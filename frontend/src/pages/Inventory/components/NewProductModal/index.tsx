@@ -44,7 +44,7 @@ const schema = z.object({
     .optional()
     .or(z.literal('')),
   barcode: z.string().optional(),
-  category: z.string().min(1, 'Selecione uma categoria'),
+  category: z.string().optional(),
 })
 
 type ProductForm = z.infer<typeof schema>
@@ -417,7 +417,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
 
           {/* Categoria */}
           <Box>
-            <FieldLabel label="Categoria" required />
+            <FieldLabel label="Categoria" />
             <Controller
               name="category"
               control={control}
@@ -471,11 +471,6 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                       />
                     )}
                   </Box>
-                  {errors.category && (
-                    <FormHelperText error sx={{ mt: 0.5 }}>
-                      {errors.category.message}
-                    </FormHelperText>
-                  )}
                 </>
               )}
             />

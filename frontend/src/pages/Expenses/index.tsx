@@ -6,13 +6,14 @@ import {
   Card,
   CardContent,
   Chip,
-  Menu,
-  MenuItem,
+  Tab,
+  Tabs,
   useTheme,
 } from '@mui/material'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import SyncRounded from '@mui/icons-material/SyncRounded'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
@@ -20,7 +21,7 @@ import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
-import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
@@ -33,18 +34,8 @@ import DonutChart from './components/DonutChart'
 import NewExpenseModal from './components/NewExpenseModal'
 
 const MONTHS_PT = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
 const CHIP_ICON_SX = {
@@ -56,86 +47,14 @@ const CHIP_ICON_SX = {
   },
 }
 
-// Columns defined outside component to avoid recreation on render
-const columns: GridColDef[] = [
-  {
-    field: 'description',
-    headerName: 'Descrição',
-    flex: 1,
-    minWidth: 180,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-        {row.description}
-      </Typography>
-    ),
-  },
-  {
-    field: 'category',
-    headerName: 'Categoria',
-    width: 130,
-    renderCell: ({ row }) => (
-      <Typography
-        variant="caption"
-        sx={{
-          fontWeight: 500,
-          bgcolor: 'surface.raised',
-          border: '1px solid',
-          borderColor: 'border.subtle',
-          borderRadius: 'pill',
-          px: 1.25,
-          py: 0.5,
-        }}
-      >
-        {row.category}
-      </Typography>
-    ),
-  },
-  {
-    field: 'dueDate',
-    headerName: 'Vencimento',
-    width: 110,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" color="text.secondary">
-        {row.dueDate}
-      </Typography>
-    ),
-  },
-  {
-    field: 'status',
-    headerName: 'Status',
-    width: 120,
-    renderCell: ({ row }) => <ExpenseStatusChip status={row.status} />,
-  },
-  {
-    field: 'amount',
-    headerName: 'Valor',
-    width: 130,
-    align: 'right',
-    headerAlign: 'right',
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {formatBRL(row.amount)}
-      </Typography>
-    ),
-  },
-  {
-    field: 'rowActions',
-    headerName: '',
-    width: 56,
-    sortable: false,
-    filterable: false,
-    disableColumnMenu: true,
-    renderCell: ({ row }) => <ExpenseRowMenu expense={row} />,
-  },
-]
+type RecurringFilter = 'all' | 'recurring' | 'one-time'
 
 export default function ExpensesPage() {
   const theme = useTheme()
   const [modalOpen, setModalOpen] = useState(false)
-  const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | null>(null)
-  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
+  const [recurringFilter, setRecurringFilter] = useState<RecurringFilter>('all')
 
-  const selectedMonth = new Date(2026, 4, 1) // Maio 2026 (mock)
+  const selectedMonth = new Date(2026, 4, 1)
   const monthName = MONTHS_PT[selectedMonth.getMonth()]
   const year = selectedMonth.getFullYear()
 
@@ -145,7 +64,10 @@ export default function ExpensesPage() {
     const pending = MOCK_EXPENSES.filter((e) => e.status === 'Pendente').reduce((sum, e) => sum + e.amount, 0)
     const paidCount = MOCK_EXPENSES.filter((e) => e.status === 'Pago').length
     const pendingCount = MOCK_EXPENSES.filter((e) => e.status === 'Pendente').length
-    return { total, paid, pending, paidCount, pendingCount }
+    const recurringExpenses = MOCK_EXPENSES.filter((e) => e.recurring)
+    const recurringTotal = recurringExpenses.reduce((sum, e) => sum + e.amount, 0)
+    const recurringCount = recurringExpenses.length
+    return { total, paid, pending, paidCount, pendingCount, recurringTotal, recurringCount }
   }, [])
 
   const categoryColorMap: Record<ExpenseCategory, string> = {
@@ -153,8 +75,11 @@ export default function ExpensesPage() {
     Aluguel: theme.palette.success.main,
     Fornecedor: theme.palette.data.blue.main,
     Energia: theme.palette.data.orange.main,
+    Agua: theme.palette.info.main,
     Marketing: theme.palette.error.main,
     Internet: theme.palette.text.disabled,
+    Impostos: theme.palette.warning.main,
+    Manutenção: theme.palette.secondary.main,
     Outros: theme.palette.text.secondary,
   }
 
@@ -166,16 +91,133 @@ export default function ExpensesPage() {
     .filter((seg) => seg.value > 0)
     .sort((a, b) => b.value - a.value)
 
-  const rows = useMemo(
-    () =>
-      categoryFilter
-        ? MOCK_EXPENSES.filter((e) => e.category === categoryFilter)
-        : MOCK_EXPENSES,
-    [categoryFilter],
+  const upcomingRenewals = useMemo(
+    () => MOCK_EXPENSES.filter((e) => e.recurring && e.renewalDate).sort((a, b) => {
+      const [da, ma] = (a.renewalDate ?? '').split('/').map(Number)
+      const [db, mb] = (b.renewalDate ?? '').split('/').map(Number)
+      return ma !== mb ? ma - mb : da - db
+    }),
+    [],
   )
+
+  const rows = useMemo(() => {
+    if (recurringFilter === 'recurring') return MOCK_EXPENSES.filter((e) => e.recurring)
+    if (recurringFilter === 'one-time') return MOCK_EXPENSES.filter((e) => !e.recurring)
+    return MOCK_EXPENSES
+  }, [recurringFilter])
 
   const fmtNumber = (n: number) =>
     n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'description',
+      headerName: 'Descrição',
+      flex: 1,
+      minWidth: 180,
+      renderCell: ({ row }) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {row.recurring && (
+            <Chip
+              label="Mensal"
+              size="small"
+              icon={<SyncRounded />}
+              sx={{
+                height: 20,
+                fontSize: 11,
+                fontWeight: 600,
+                bgcolor: 'success.light',
+                color: 'success.dark',
+                border: '1px solid',
+                borderColor: 'success.main',
+                '& .MuiChip-icon': { fontSize: '11px !important', color: 'inherit', ml: 0.5, mr: '-4px' },
+                '& .MuiChip-label': { px: 1 },
+              }}
+            />
+          )}
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {row.description}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'category',
+      headerName: 'Categoria',
+      width: 130,
+      renderCell: ({ row }) => (
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 500,
+            bgcolor: 'surface.raised',
+            border: '1px solid',
+            borderColor: 'border.subtle',
+            borderRadius: 'pill',
+            px: 1.25,
+            py: 0.5,
+          }}
+        >
+          {row.category}
+        </Typography>
+      ),
+    },
+    {
+      field: 'dueDate',
+      headerName: 'Vencimento',
+      width: 110,
+      renderCell: ({ row }) => (
+        <Typography variant="body2" color="text.secondary">
+          {row.dueDate}
+        </Typography>
+      ),
+    },
+    {
+      field: 'renewalDate',
+      headerName: 'Renovação',
+      width: 110,
+      renderCell: ({ row }) =>
+        row.renewalDate ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <SyncRounded sx={{ fontSize: 13, color: 'text.tertiary' }} />
+            <Typography variant="body2" color="text.secondary">
+              {row.renewalDate}
+            </Typography>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
+      renderCell: ({ row }) => <ExpenseStatusChip status={row.status} />,
+    },
+    {
+      field: 'amount',
+      headerName: 'Valor',
+      width: 130,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: ({ row }) => (
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {formatBRL(row.amount)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'rowActions',
+      headerName: '',
+      width: 56,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: ({ row }) => <ExpenseRowMenu expense={row} />,
+    },
+  ], [])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -227,7 +269,8 @@ export default function ExpensesPage() {
           gap: 2,
           gridTemplateColumns: {
             xs: '1fr',
-            sm: 'repeat(3, 1fr)',
+            sm: 'repeat(2, 1fr)',
+            lg: 'repeat(4, 1fr)',
           },
         }}
       >
@@ -235,25 +278,13 @@ export default function ExpensesPage() {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <ReceiptLongRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Total do mês
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Total do mês</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>
-                R$
-              </Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>
-                {fmtNumber(kpis.total)}
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
+              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.total)}</Typography>
             </Box>
-            <Chip
-              size="small"
-              color="error"
-              icon={<TrendingDownRounded />}
-              label="-4,1% vs. abril"
-              sx={CHIP_ICON_SX}
-            />
+            <Chip size="small" color="error" icon={<TrendingDownRounded />} label="-4,1% vs. abril" sx={CHIP_ICON_SX} />
           </CardContent>
         </Card>
 
@@ -261,25 +292,13 @@ export default function ExpensesPage() {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <CheckCircleOutlineRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Pagas
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Pagas</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>
-                R$
-              </Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>
-                {fmtNumber(kpis.paid)}
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
+              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.paid)}</Typography>
             </Box>
-            <Chip
-              size="small"
-              color="success"
-              icon={<TrendingUpRounded />}
-              label={`${kpis.paidCount} contas`}
-              sx={CHIP_ICON_SX}
-            />
+            <Chip size="small" color="success" icon={<TrendingUpRounded />} label={`${kpis.paidCount} contas`} sx={CHIP_ICON_SX} />
           </CardContent>
         </Card>
 
@@ -287,42 +306,47 @@ export default function ExpensesPage() {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <AccessTimeRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                A pagar
-              </Typography>
+              <Typography variant="caption" color="text.secondary">A pagar</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>
-                R$
-              </Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>
-                {fmtNumber(kpis.pending)}
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
+              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.pending)}</Typography>
+            </Box>
+            <Chip size="small" color="warning" icon={<WarningAmberRounded />} label={`${kpis.pendingCount} vencimentos`} sx={CHIP_ICON_SX} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <SyncRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
+              <Typography variant="caption" color="text.secondary">Recorrentes</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
+              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.recurringTotal)}</Typography>
             </Box>
             <Chip
               size="small"
-              color="warning"
-              icon={<WarningAmberRounded />}
-              label={`${kpis.pendingCount} vencimentos próximos`}
+              color="info"
+              icon={<SyncRounded />}
+              label={`${kpis.recurringCount} contas fixas/mês`}
               sx={CHIP_ICON_SX}
             />
           </CardContent>
         </Card>
       </Box>
 
-      {/* Conteúdo principal: tabela + gráfico */}
+      {/* Conteúdo principal: tabela + painel lateral */}
       <Box
         sx={{
           display: 'grid',
           gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: '3fr 2fr',
-          },
+          gridTemplateColumns: { xs: '1fr', lg: '3fr 2fr' },
           alignItems: 'start',
         }}
       >
-        {/* Tabela de despesas */}
+        {/* Tabela */}
         <Card sx={{ overflow: 'hidden' }}>
           <Box
             sx={{
@@ -330,7 +354,7 @@ export default function ExpensesPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               px: 2,
-              py: 1.5,
+              pt: 1.5,
               borderBottom: '1px solid',
               borderColor: 'divider',
             }}
@@ -338,46 +362,28 @@ export default function ExpensesPage() {
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Histórico de despesas
             </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              endIcon={<FilterListRounded sx={{ fontSize: 16 }} />}
-              onClick={(e) => setFilterAnchor(e.currentTarget)}
-              color={categoryFilter ? 'primary' : 'inherit'}
-            >
-              {categoryFilter ?? 'Categoria'}
-            </Button>
-          </Box>
-
-          <Menu
-            anchorEl={filterAnchor}
-            open={Boolean(filterAnchor)}
-            onClose={() => setFilterAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem
-              onClick={() => {
-                setCategoryFilter(null)
-                setFilterAnchor(null)
+            <Tabs
+              value={recurringFilter}
+              onChange={(_, v: RecurringFilter) => setRecurringFilter(v)}
+              sx={{
+                minHeight: 36,
+                '& .MuiTab-root': {
+                  minHeight: 36,
+                  textTransform: 'none',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  py: 0,
+                },
+                '& .MuiTabs-indicator': {
+                  bottom: 0,
+                },
               }}
-              selected={categoryFilter === null}
             >
-              Todas
-            </MenuItem>
-            {EXPENSE_CATEGORIES.map((cat) => (
-              <MenuItem
-                key={cat}
-                onClick={() => {
-                  setCategoryFilter(cat)
-                  setFilterAnchor(null)
-                }}
-                selected={categoryFilter === cat}
-              >
-                {cat}
-              </MenuItem>
-            ))}
-          </Menu>
+              <Tab value="all" label="Todas" />
+              <Tab value="recurring" label="Recorrentes" />
+              <Tab value="one-time" label="Pontuais" />
+            </Tabs>
+          </Box>
 
           <DataGrid
             rows={rows}
@@ -386,9 +392,7 @@ export default function ExpensesPage() {
             rowHeight={60}
             disableRowSelectionOnClick
             pageSizeOptions={[10, 25]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } },
-            }}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
             sx={(t) => ({
               border: 'none',
               '& .MuiDataGrid-columnHeaders': {
@@ -412,12 +416,8 @@ export default function ExpensesPage() {
                 alignItems: 'center',
                 '&:focus, &:focus-within': { outline: 'none' },
               },
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: t.palette.surface.sunken,
-              },
-              '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': {
-                borderBottom: 'none',
-              },
+              '& .MuiDataGrid-row:hover': { backgroundColor: t.palette.surface.sunken },
+              '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
               '& .MuiDataGrid-footerContainer': {
                 borderTop: `1px solid ${t.palette.border.subtle}`,
                 minHeight: 48,
@@ -427,15 +427,112 @@ export default function ExpensesPage() {
           />
         </Card>
 
-        {/* Gráfico por categoria */}
-        <Card>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
-              Por categoria
-            </Typography>
-            <DonutChart segments={donutSegments} />
-          </CardContent>
-        </Card>
+        {/* Painel lateral */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Gráfico por categoria */}
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
+                Por categoria
+              </Typography>
+              <DonutChart segments={donutSegments} />
+            </CardContent>
+          </Card>
+
+          {/* Próximas renovações */}
+          <Card>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 2.5,
+                py: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <SyncRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Próximas renovações
+                </Typography>
+              </Box>
+              <Chip
+                label={upcomingRenewals.length}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  bgcolor: 'success.main',
+                  color: 'success.contrastText',
+                  '& .MuiChip-label': { px: 1 },
+                }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {upcomingRenewals.map((expense, idx) => (
+                <Box
+                  key={expense.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 2.5,
+                    py: 1.75,
+                    borderBottom: idx < upcomingRenewals.length - 1 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 1.5,
+                      bgcolor: categoryColorMap[expense.category] + '22',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+                      {expense.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                      <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
+                      <Typography variant="caption" color="text.tertiary">
+                        Renova em {expense.renewalDate}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
+                    {formatBRL(expense.amount)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                px: 2.5,
+                py: 2,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Total fixo mensal
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {formatBRL(kpis.recurringTotal)}
+              </Typography>
+            </Box>
+          </Card>
+        </Box>
       </Box>
 
       <NewExpenseModal open={modalOpen} onClose={() => setModalOpen(false)} />

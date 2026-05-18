@@ -27,6 +27,7 @@ export default function CartPanel({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
+        minWidth: 0,
         borderRadius: 3,
         border: 1,
         borderColor: 'border.subtle',

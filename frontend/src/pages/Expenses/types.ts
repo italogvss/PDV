@@ -4,18 +4,24 @@ export type ExpenseCategory =
   | 'Aluguel'
   | 'Fornecedor'
   | 'Energia'
+  | 'Agua'
+  | 'Internet'
   | 'Salários'
   | 'Marketing'
-  | 'Internet'
+  | 'Impostos'
+  | 'Manutenção'
   | 'Outros'
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Aluguel',
   'Fornecedor',
   'Energia',
+  'Agua',
+  'Internet',
   'Salários',
   'Marketing',
-  'Internet',
+  'Impostos',
+  'Manutenção',
   'Outros',
 ]
 
@@ -26,4 +32,6 @@ export interface Expense {
   dueDate: string
   status: ExpenseStatus
   amount: number
+  recurring: boolean
+  renewalDate?: string
 }

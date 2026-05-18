@@ -1,4 +1,5 @@
 import { Box, InputBase, Tab, Tabs } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import { SearchOutlined } from '@mui/icons-material'
 import ProductCard from '../ProductCard'
 import { CATEGORIES } from '../../data'
@@ -18,6 +19,7 @@ export default function ProductCatalog({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
+        minWidth: 0,
         gap: 3,
       }}
     >
@@ -54,6 +56,7 @@ export default function ProductCatalog({
         scrollButtons="auto"
         sx={{
           minHeight: 36,
+          maxWidth: '100%',
           borderRadius: 2,
           border: 1,
           borderColor: 'border.subtle',
@@ -106,22 +109,13 @@ export default function ProductCatalog({
             Nenhum produto encontrado.
           </Box>
         ) : (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(3, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(4, 1fr)',
-              },
-              gap: 3,
-            }}
-          >
+          <Grid container spacing={1}>
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} onAdd={onAddProduct} />
+              <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}>
+                <ProductCard product={p} onAdd={onAddProduct} />
+              </Grid>
             ))}
-          </Box>
+          </Grid>
         )}
       </Box>
     </Box>

@@ -10,8 +10,10 @@ import {
   Tooltip,
   Select,
   MenuItem,
+  Chip,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
+import CloseRounded from '@mui/icons-material/CloseRounded'
 import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
@@ -42,6 +44,26 @@ export default function InventoryPage() {
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [sortBy, setSortBy] = useState('name-asc')
+  const [categories, setCategories] = useState<string[]>([...PRODUCT_CATEGORIES])
+  const [showAddCatInput, setShowAddCatInput] = useState(false)
+  const [newCatInput, setNewCatInput] = useState('')
+
+  const countByCategory = useMemo(() => {
+    const counts: Record<string, number> = {}
+    MOCK_PRODUCTS.forEach((p) => {
+      counts[p.category] = (counts[p.category] ?? 0) + 1
+    })
+    return counts
+  }, [])
+
+  const handleAddCategory = () => {
+    const trimmed = newCatInput.trim()
+    if (trimmed && !categories.includes(trimmed)) {
+      setCategories((prev) => [...prev, trimmed])
+    }
+    setNewCatInput('')
+    setShowAddCatInput(false)
+  }
 
   const kpis = useMemo(() => {
     const totalValue = MOCK_PRODUCTS.reduce((sum, p) => sum + p.price * p.stock, 0)
@@ -205,7 +227,7 @@ export default function InventoryPage() {
   }, [search, selectedCategories, selectedLevels, sortBy])
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
       {/* Cabeçalho */}
       <Box
         sx={{
@@ -296,14 +318,87 @@ export default function InventoryPage() {
         />
       </Box>
 
+      {/* Strip de categorias */}
+      <Box>
+        <Typography
+          variant="caption"
+          sx={{ fontWeight: 600, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}
+        >
+          Categorias
+        </Typography>
+
+        {categories.length === 0 && !showAddCatInput ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, py: 2.5 }}>
+            <Typography variant="body2" color="text.disabled">
+              Nenhuma categoria cadastrada ainda
+            </Typography>
+            <Chip
+              label="+ Adicionar"
+              size="small"
+              variant="outlined"
+              onClick={() => setShowAddCatInput(true)}
+              sx={{ cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
+            />
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              overflowX: 'auto',
+              flexWrap: 'nowrap',
+              pb: 0.5,
+              '&::-webkit-scrollbar': { height: 3 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'border.subtle', borderRadius: '999px' },
+              '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+            }}
+          >
+            {categories.map((cat) => (
+              <CategoryChip
+                key={cat}
+                label={cat}
+                count={countByCategory[cat] ?? 0}
+                onDelete={() => setCategories((prev) => prev.filter((c) => c !== cat))}
+              />
+            ))}
+
+            {showAddCatInput ? (
+              <TextField
+                size="small"
+                value={newCatInput}
+                onChange={(e) => setNewCatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCategory()
+                  if (e.key === 'Escape') { setShowAddCatInput(false); setNewCatInput('') }
+                }}
+                onBlur={handleAddCategory}
+                autoFocus
+                placeholder="Nome da categoria"
+                sx={{ minWidth: 150, flexShrink: 0 }}
+                slotProps={{ htmlInput: { style: { padding: '5px 10px', fontSize: 13 } } }}
+              />
+            ) : (
+              <Chip
+                label="+ Adicionar"
+                size="small"
+                variant="outlined"
+                onClick={() => setShowAddCatInput(true)}
+                sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
+              />
+            )}
+          </Box>
+        )}
+      </Box>
+
       {/* Barra de busca e filtros */}
-      <Card sx={{ overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             p: 1.5,
+            flexShrink: 0,
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
@@ -369,6 +464,7 @@ export default function InventoryPage() {
             pagination: { paginationModel: { pageSize: 10 } },
           }}
           sx={(theme) => ({
+            flex: 1,
             border: 'none',
             '& .MuiDataGrid-columnHeaders': {
               backgroundColor: theme.palette.surface.sunken,
@@ -412,6 +508,71 @@ export default function InventoryPage() {
         product={editProduct ?? undefined}
         onClose={() => setEditProduct(null)}
       />
+    </Box>
+  )
+}
+
+// ─── CategoryChip ─────────────────────────────────────────────────────────────
+
+interface CategoryChipProps {
+  label: string
+  count: number
+  onDelete: () => void
+}
+
+function CategoryChip({ label, count, onDelete }: CategoryChipProps) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <Box
+      sx={{ position: 'relative', flexShrink: 0 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Chip
+        label={
+          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography component="span" variant="body2" sx={{ fontWeight: 500 }}>
+              {label}
+            </Typography>
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ opacity: 0.45, fontWeight: 400 }}
+            >
+              {count}
+            </Typography>
+          </Box>
+        }
+        sx={{
+          height: 36,
+          px: 0.5,
+          pr: hovered ? 4 : undefined,
+          transition: 'padding 0.15s',
+          fontSize: 14,
+        }}
+      />
+      {hovered && (
+        <IconButton
+          size="small"
+          onClick={onDelete}
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            right: 6,
+            transform: 'translateY(-50%)',
+            width: 22,
+            height: 22,
+            p: 0,
+            bgcolor: 'surface.paper',
+            border: '1px solid',
+            borderColor: 'border.subtle',
+            '&:hover': { bgcolor: 'error.soft', borderColor: 'error.main' },
+          }}
+        >
+          <CloseRounded sx={{ fontSize: 14 }} />
+        </IconButton>
+      )}
     </Box>
   )
 }

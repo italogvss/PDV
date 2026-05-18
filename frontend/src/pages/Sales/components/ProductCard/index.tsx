@@ -27,7 +27,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
     >
       <Box
         sx={{
-          aspectRatio: '4 / 3',
+          height: 72,
           borderRadius: 2,
           bgcolor: product.imageColor,
           display: 'flex',
@@ -38,7 +38,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
       >
         <LocalCafeOutlined sx={{ fontSize: 28 }} />
       </Box>
-      <Box>
+      <Box sx={{pl: 1}}>
         <Typography
           variant="body2"
           color="text.primary"
