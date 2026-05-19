@@ -1,4 +1,4 @@
-import type { StockLevel } from './types'
+import type { StockLevel } from '../../types/product.types'
 
 export function getStockLevel(
   stock: number,

@@ -17,7 +17,6 @@ import CloseRounded from '@mui/icons-material/CloseRounded'
 import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
-import GridViewRounded from '@mui/icons-material/GridViewRounded'
 import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
 import SellRounded from '@mui/icons-material/SellRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
@@ -27,9 +26,9 @@ import CategoryRounded from '@mui/icons-material/CategoryRounded'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_PRODUCTS } from './mock'
-import { PRODUCT_CATEGORIES, STOCK_LEVELS } from './types'
-import type { Product } from './types'
+import { MOCK_PRODUCT_CATEGORIES, MOCK_PRODUCTS } from './mock'
+import type { Product, ProductCategory } from '../../types/product.types'
+import { PRODUCT_CATEGORIES, STOCK_LEVELS } from '../../types/product.types'
 import { getStockLevel } from './utils'
 import KpiCard from './components/KpiCard'
 import StockLevelCell from './components/StockLevelCell'
@@ -44,22 +43,23 @@ export default function InventoryPage() {
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [sortBy, setSortBy] = useState('name-asc')
-  const [categories, setCategories] = useState<string[]>([...PRODUCT_CATEGORIES])
+  const [categories, setCategories] = useState<ProductCategory[]>([...MOCK_PRODUCT_CATEGORIES])
   const [showAddCatInput, setShowAddCatInput] = useState(false)
   const [newCatInput, setNewCatInput] = useState('')
 
   const countByCategory = useMemo(() => {
     const counts: Record<string, number> = {}
     MOCK_PRODUCTS.forEach((p) => {
-      counts[p.category] = (counts[p.category] ?? 0) + 1
+      const key = p.category?.name ?? ''
+      counts[key] = (counts[key] ?? 0) + 1
     })
     return counts
   }, [])
 
   const handleAddCategory = () => {
     const trimmed = newCatInput.trim()
-    if (trimmed && !categories.includes(trimmed)) {
-      setCategories((prev) => [...prev, trimmed])
+    if (trimmed && !categories.some((cat) => cat.name === trimmed)) {
+      setCategories((prev) => [...prev, { id: prev.length + 1, name: trimmed, color: "#121212" }])
     }
     setNewCatInput('')
     setShowAddCatInput(false)
@@ -207,7 +207,7 @@ export default function InventoryPage() {
         p.name.toLowerCase().includes(q) ||
         (p.barcode ?? '').toLowerCase().includes(q)
       const matchCategory =
-        selectedCategories.length === 0 || selectedCategories.includes(p.category)
+        selectedCategories.length === 0 || (p.category !== null && selectedCategories.includes(p.category.name))
       const level = getStockLevel(p.stock, p.minStock, p.criticalStock)
       const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(level)
       return matchSearch && matchCategory && matchLevel
@@ -355,10 +355,10 @@ export default function InventoryPage() {
           >
             {categories.map((cat) => (
               <CategoryChip
-                key={cat}
-                label={cat}
-                count={countByCategory[cat] ?? 0}
-                onDelete={() => setCategories((prev) => prev.filter((c) => c !== cat))}
+                key={cat.id}
+                label={cat.name}
+                count={countByCategory[cat.name] ?? 0}
+                onDelete={() => setCategories((prev) => prev.filter((c) => c.id !== cat.id))}
               />
             ))}
 

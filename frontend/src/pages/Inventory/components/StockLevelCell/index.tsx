@@ -1,7 +1,7 @@
 import { Box, LinearProgress, Chip } from '@mui/material'
 import { getStockLevel, getStockPercent } from '../../utils'
 import type { StockLevelCellProps } from './types'
-import type { StockLevel } from '../../types'
+import type { StockLevel } from '../../../../types/product.types'
 
 type ChipColor = 'default' | 'warning' | 'error'
 

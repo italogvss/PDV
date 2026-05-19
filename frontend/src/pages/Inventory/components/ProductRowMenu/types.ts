@@ -1,4 +1,4 @@
-import type { Product } from '../../types'
+import type { Product } from '../../../../types/product.types'
 
 export interface ProductRowMenuProps {
   product: Product

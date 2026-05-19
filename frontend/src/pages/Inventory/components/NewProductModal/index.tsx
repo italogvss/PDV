@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState, useEffect, useRef } from 'react'
 import type { TextFieldProps } from '@mui/material'
-import { PRODUCT_CATEGORIES } from '../../types'
+import { PRODUCT_CATEGORIES } from '../../../../types/product.types'
 import { formatBRL } from '../../../../utils/currency'
 import type { ProductModalProps } from './types'
 
