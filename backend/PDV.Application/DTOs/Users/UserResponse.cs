@@ -3,6 +3,6 @@ namespace PDV.Application.DTOs.Users;
 public record UserResponse(
     Guid Id,
     string Name,
-    string Username,
-    string Role,
+    string Email,
+    string? AvatarUrl,
     DateTime CreatedAt);

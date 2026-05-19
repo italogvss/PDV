@@ -2,6 +2,6 @@ namespace PDV.Domain.Enums;
 
 public enum UserRole
 {
-    Admin,
+    Owner,
     Employee
 }

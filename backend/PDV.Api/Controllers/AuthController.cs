@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Auth;
@@ -8,22 +10,41 @@ namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IConfiguration configuration) : ControllerBase
 {
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [HttpGet("google")]
+    public IActionResult Google()
     {
-        var (user, token) = await authService.LoginAsync(request);
-
-        Response.Cookies.Append("pdv_token", token, new CookieOptions
+        var props = new AuthenticationProperties
         {
-            HttpOnly = true,
-            SameSite = SameSiteMode.Strict,
-            Secure = false,
-            Expires = DateTimeOffset.UtcNow.AddHours(8)
-        });
+            RedirectUri = Url.Action(nameof(GoogleCallback), "Auth", null, Request.Scheme),
+        };
+        return Challenge(props, GoogleDefaults.AuthenticationScheme);
+    }
 
-        return Ok(user);
+    [HttpGet("google/callback")]
+    public async Task<IActionResult> GoogleCallback()
+    {
+        var frontendUrl = configuration["Authentication:FrontendCallbackUrl"]
+            ?? throw new InvalidOperationException("FrontendCallbackUrl não configurado.");
+
+        var result = await HttpContext.AuthenticateAsync("ExternalCookie");
+        if (!result.Succeeded)
+            return Redirect($"{frontendUrl}?error=auth_failed");
+
+        await HttpContext.SignOutAsync("ExternalCookie");
+
+        var googleId = result.Principal!.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+        var name = result.Principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
+        var avatar = result.Principal.FindFirstValue("urn:google:picture")
+                  ?? result.Principal.FindFirstValue("picture");
+
+        if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(email))
+            return Redirect($"{frontendUrl}?error=auth_failed");
+
+        var (token, _) = await authService.HandleGoogleCallbackAsync(googleId, email, name, avatar);
+        return Redirect($"{frontendUrl}?token={token}");
     }
 
     [HttpPost("logout")]
@@ -41,5 +62,32 @@ public class AuthController(IAuthService authService) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var user = await authService.GetMeAsync(userId);
         return Ok(user);
+    }
+
+    [HttpPost("tenant")]
+    [Authorize]
+    public async Task<IActionResult> CreateTenant([FromBody] CreateTenantRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var token = await authService.CreateTenantAsync(userId, request);
+        return Ok(new TokenResponse(token));
+    }
+
+    [HttpPost("switch-tenant/{tenantId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> SwitchTenant(Guid tenantId)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var token = await authService.SwitchTenantAsync(userId, tenantId);
+        return Ok(new TokenResponse(token));
+    }
+
+    [HttpGet("tenants")]
+    [Authorize]
+    public async Task<IActionResult> GetTenants()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var tenants = await authService.GetUserTenantsAsync(userId);
+        return Ok(tenants);
     }
 }
