@@ -25,6 +25,12 @@ public class UserRepository(AppDbContext context) : IUserRepository
                 .ThenInclude(ut => ut.Tenant)
             .FirstOrDefaultAsync(u => u.Email == email);
 
+    public Task<User?> GetByRefreshTokenAsync(string hashedRefreshToken) =>
+        context.Users
+            .Include(u => u.UserTenants)
+                .ThenInclude(ut => ut.Tenant)
+            .FirstOrDefaultAsync(u => u.RefreshToken == hashedRefreshToken);
+
     public async Task AddAsync(User user)
     {
         context.Users.Add(user);

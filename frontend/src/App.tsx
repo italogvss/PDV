@@ -5,6 +5,8 @@ import { ThemeProvider, CssBaseline } from '@mui/material'
 import { zeloTheme, loadGeistFont } from './theme'
 import { router } from './router'
 import { store } from './store'
+import AuthProvider from './components/AuthProvider'
+import { ToastProvider } from './context/ToastContext'
 
 loadGeistFont()
 
@@ -23,7 +25,11 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={zeloTheme}>
           <CssBaseline />
-          <RouterProvider router={router} />
+          <AuthProvider>
+            <ToastProvider>
+            <RouterProvider router={router} />
+            </ToastProvider>
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ReduxProvider>

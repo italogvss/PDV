@@ -1,58 +1,85 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Auth;
 using PDV.Application.Interfaces;
+using PDV.Domain.Exceptions;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService authService, IConfiguration configuration) : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    [HttpGet("google")]
-    public IActionResult Google()
+    private static readonly bool IsProduction =
+        string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Production",
+            StringComparison.OrdinalIgnoreCase);
+
+    [HttpPost("google")]
+    public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request)
     {
-        var props = new AuthenticationProperties
-        {
-            RedirectUri = Url.Action(nameof(GoogleCallback), "Auth", null, Request.Scheme),
-        };
-        return Challenge(props, GoogleDefaults.AuthenticationScheme);
+        var (accessToken, refreshToken, _) =
+            await authService.LoginWithGoogleAsync(request.Credential);
+
+        SetAuthCookies(accessToken, refreshToken);
+        return Ok();
     }
 
-    [HttpGet("google/callback")]
-    public async Task<IActionResult> GoogleCallback()
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
     {
-        var frontendUrl = configuration["Authentication:FrontendCallbackUrl"]
-            ?? throw new InvalidOperationException("FrontendCallbackUrl não configurado.");
+        if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken))
+            return Unauthorized();
 
-        var result = await HttpContext.AuthenticateAsync("ExternalCookie");
-        if (!result.Succeeded)
-            return Redirect($"{frontendUrl}?error=auth_failed");
-
-        await HttpContext.SignOutAsync("ExternalCookie");
-
-        var googleId = result.Principal!.FindFirstValue(ClaimTypes.NameIdentifier);
-        var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-        var name = result.Principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
-        var avatar = result.Principal.FindFirstValue("urn:google:picture")
-                  ?? result.Principal.FindFirstValue("picture");
-
-        if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(email))
-            return Redirect($"{frontendUrl}?error=auth_failed");
-
-        var (token, _) = await authService.HandleGoogleCallbackAsync(googleId, email, name, avatar);
-        return Redirect($"{frontendUrl}?token={token}");
+        try
+        {
+            var (accessToken, newRefreshToken) = await authService.RefreshAsync(refreshToken);
+            SetAuthCookies(accessToken, newRefreshToken);
+            return Ok();
+        }
+        catch (UnauthorizedException)
+        {
+            ExpireAuthCookies();
+            return Unauthorized();
+        }
     }
 
     [HttpPost("logout")]
     [Authorize]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
-        Response.Cookies.Delete("pdv_token");
-        return NoContent();
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await authService.LogoutAsync(userId);
+        ExpireAuthCookies();
+        return Ok();
+    }
+
+    private void SetAuthCookies(string accessToken, string refreshToken)
+    {
+        var accessOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = IsProduction,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromHours(8),
+        };
+        var refreshOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = IsProduction,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromDays(30),
+        };
+
+        Response.Cookies.Append("access_token", accessToken, accessOptions);
+        Response.Cookies.Append("refresh_token", refreshToken, refreshOptions);
+    }
+
+    private void ExpireAuthCookies()
+    {
+        var expired = new CookieOptions { MaxAge = TimeSpan.Zero };
+        Response.Cookies.Append("access_token", "", expired);
+        Response.Cookies.Append("refresh_token", "", expired);
     }
 
     [HttpGet("me")]

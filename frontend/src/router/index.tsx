@@ -39,6 +39,7 @@ export const router = createBrowserRouter([
           { path: 'ajuda', element: <HelpPage /> },
         ],
       },
+      { path: 'onboarding', element: <></> },
     ],
   },
   {

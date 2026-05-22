@@ -11,7 +11,6 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
-  FormHelperText,
 } from '@mui/material'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
@@ -151,7 +150,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
       setNewCatValue('')
       if (product) {
         const isExtra = !PRODUCT_CATEGORIES.includes(product.category as never)
-        setExtraCategories(isExtra ? [product.category] : [])
+        setExtraCategories(isExtra && product.category ? [product.category.name] : [])
         reset({
           name: product.name,
           costPrice: product.costPrice,
@@ -159,7 +158,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           stock: product.stock,
           minStock: product.minStock ?? '',
           barcode: product.barcode ?? '',
-          category: product.category,
+          category: product.category?.name ?? '',
         })
       } else {
         reset(emptyDefaults)

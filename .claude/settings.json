@@ -18,7 +18,21 @@
       "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Application\\\\DTOs\\\\Users\\\\CreateUserRequest.cs\" -Force)",
       "Bash(Write-Host \"DTOs obsoletos removidos.\")",
       "PowerShell(\"DTOs obsoletos removidos.\")",
-      "PowerShell(\"Validators obsoletos removidos.\")"
+      "PowerShell(\"Validators obsoletos removidos.\")",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet build *)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"\\(Program\\\\.cs|appsettings|vite\\\\.config|\\\\.env|AuthController\\)\" } | Select-Object FullName)",
+      "Bash(ls -la \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\\" | grep -i \"nginx\\\\|docker\")",
+      "Read(//c/Users/Italo/Documents/Projetos/**)",
+      "PowerShell(grep -E \"docker-compose|nginx\")",
+      "PowerShell(ls -Force \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\" | Where-Object { $_.Name -match \"docker|nginx\" })",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\" -Name)",
+      "Bash(docker-compose up *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Api\\\\\" -Name -Recurse | Select-String appsettings)",
+      "Bash(docker compose *)",
+      "Read(//c/Users/Italo/Documents/Projetos/PDV-Ultra/**)",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "PowerShell($env:DOTNET_CLI_TELEMETRY_OPTOUT=1; dotnet --version; dotnet build \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Api\\\\PDV.Api.csproj\" -v quiet --nologo)"
     ]
   }
 }

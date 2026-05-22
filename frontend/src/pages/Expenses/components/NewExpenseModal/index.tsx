@@ -14,7 +14,6 @@ import {
   CircularProgress,
   InputAdornment,
   Switch,
-  FormControlLabel,
 } from '@mui/material'
 import SaveOutlined from '@mui/icons-material/SaveOutlined'
 import SyncRounded from '@mui/icons-material/SyncRounded'
@@ -30,10 +29,7 @@ const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória').max(150),
   amount: z.coerce.number({ invalid_type_error: 'Valor inválido' }).positive('Deve ser maior que zero'),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  category: z.enum([
-    'Aluguel', 'Fornecedor', 'Energia', 'Água', 'Internet',
-    'Salários', 'Marketing', 'Impostos', 'Manutenção', 'Outros',
-  ] as [ExpenseCategory, ...ExpenseCategory[]]),
+  category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]]),
   status: z.enum(['Pendente', 'Pago'] as [ExpenseStatus, ExpenseStatus]),
   recurring: z.boolean(),
 })

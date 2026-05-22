@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Auth;
@@ -17,7 +19,37 @@ public class AuthService(
     ITenantRepository tenantRepository,
     IConfiguration configuration) : IAuthService
 {
-    public async Task<(string Token, bool HasTenants)> HandleGoogleCallbackAsync(
+    public async Task<(string AccessToken, string RefreshToken, bool HasTenants)> LoginWithGoogleAsync(
+        string credential)
+    {
+        if (string.IsNullOrWhiteSpace(credential))
+            throw new UnauthorizedException("Credencial do Google ausente.");
+
+        var clientId = configuration["Authentication:Google:ClientId"]
+            ?? throw new InvalidOperationException("Google ClientId não configurado.");
+
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            // Valida assinatura (chaves públicas do Google), issuer, expiração e audience.
+            payload = await GoogleJsonWebSignature.ValidateAsync(
+                credential,
+                new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] });
+        }
+        catch (InvalidJwtException)
+        {
+            throw new UnauthorizedException("Token do Google inválido.");
+        }
+
+        // E-mail não verificado abriria vetor de account-takeover no fallback por e-mail.
+        if (!payload.EmailVerified)
+            throw new UnauthorizedException("E-mail do Google não verificado.");
+
+        return await HandleGoogleCallbackAsync(
+            payload.Subject, payload.Email, payload.Name ?? string.Empty, payload.Picture);
+    }
+
+    private async Task<(string AccessToken, string RefreshToken, bool HasTenants)> HandleGoogleCallbackAsync(
         string googleId, string email, string name, string? avatarUrl)
     {
         var user = await userRepository.GetByGoogleIdAsync(googleId)
@@ -73,7 +105,55 @@ public class AuthService(
             role = active.Role.ToString();
         }
 
-        return (GenerateToken(user.Id, tenantId, user.Name, role), hasTenants);
+        var rawRefreshToken = GenerateRefreshToken();
+        user.RefreshToken = HashRefreshToken(rawRefreshToken);
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
+
+        return (GenerateToken(user.Id, tenantId, user.Name, role), rawRefreshToken, hasTenants);
+    }
+
+    public async Task<(string AccessToken, string RefreshToken)> RefreshAsync(string refreshToken)
+    {
+        var hashed = HashRefreshToken(refreshToken);
+        var user = await userRepository.GetByRefreshTokenAsync(hashed)
+            ?? throw new UnauthorizedException("Refresh token inválido.");
+
+        if (user.RefreshTokenExpiry is null || user.RefreshTokenExpiry < DateTime.UtcNow)
+            throw new UnauthorizedException("Refresh token expirado.");
+
+        var tenants = user.UserTenants.ToList();
+        Guid? tenantId = null;
+        var role = UserRole.Owner.ToString();
+
+        if (tenants.Count > 0)
+        {
+            var active = user.LastTenantId.HasValue
+                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
+                : tenants[0];
+            tenantId = active.TenantId;
+            role = active.Role.ToString();
+        }
+
+        var newRawRefreshToken = GenerateRefreshToken();
+        user.RefreshToken = HashRefreshToken(newRawRefreshToken);
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
+
+        return (GenerateToken(user.Id, tenantId, user.Name, role), newRawRefreshToken);
+    }
+
+    public async Task LogoutAsync(Guid userId)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException("Usuário não encontrado.");
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
     }
 
     public async Task<MeResponse> GetMeAsync(Guid userId)
@@ -150,6 +230,19 @@ public class AuthService(
 
         return user.UserTenants
             .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Name, ut.Role.ToString()));
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var bytes = new byte[64];
+        RandomNumberGenerator.Fill(bytes);
+        return Convert.ToBase64String(bytes);
+    }
+
+    private static string HashRefreshToken(string token)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(hash);
     }
 
     private string GenerateToken(Guid userId, Guid? tenantId, string name, string role)

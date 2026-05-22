@@ -7,7 +7,6 @@ import {
   FormControl,
   ToggleButton,
   ToggleButtonGroup,
-  Divider,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import SettingCard from '../../../../components/SettingCard'

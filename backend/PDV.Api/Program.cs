@@ -20,7 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration["DB_CONNECTION_STRING"],
         ServerVersion.AutoDetect(builder.Configuration["DB_CONNECTION_STRING"])));
 
-// Authentication: JWT Bearer (padrão para API) + ExternalCookie (OAuth handshake) + Google
+// Authentication: JWT Bearer — o access_token chega via cookie HttpOnly
 var jwtSecret = builder.Configuration["JWT_SECRET"]
     ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
 
@@ -40,19 +40,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = ctx =>
             {
-                if (ctx.Request.Cookies.TryGetValue("pdv_token", out var token))
+                if (ctx.Request.Cookies.TryGetValue("access_token", out var token))
                     ctx.Token = token;
                 return Task.CompletedTask;
             },
         };
-    })
-    .AddCookie("ExternalCookie")
-    .AddGoogle(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
-        options.CallbackPath = "/api/auth/google/callback";
-        options.SignInScheme = "ExternalCookie";
     });
 
 builder.Services.AddAuthorization();
@@ -105,6 +97,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+    app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 }
 
 app.UseCors("Frontend");

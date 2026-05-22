@@ -1,6 +1,13 @@
+# =============================================================
+# PDV-Ultra - Stack de PRODUCAO
+# nginx (reverse proxy) -> frontend (build estatico) + api (.NET).
+# Subir: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# =============================================================
 services:
+  # -- Reverse proxy ------------------------------------------
   nginx:
     image: nginx:alpine
+    container_name: pdv-nginx
     ports:
       - "80:80"
     volumes:
@@ -10,8 +17,13 @@ services:
       - frontend
     restart: unless-stopped
 
+  # -- API .NET (estagio final de producao) -------------------
   api:
-    image: pdv-ultra-api:latest
+    build:
+      context: ./backend
+      dockerfile: PDV.Api/Dockerfile
+      target: final
+    container_name: pdv-api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     env_file:
@@ -21,12 +33,23 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # -- Frontend (build estatico servido por nginx) ------------
   frontend:
-    image: pdv-ultra-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: final
+      args:
+        # Embutido no bundle no momento do build.
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+    container_name: pdv-frontend
     restart: unless-stopped
 
+  # -- Banco de dados MySQL -----------------------------------
   db:
     image: mysql:8
+    container_name: pdv-db
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}

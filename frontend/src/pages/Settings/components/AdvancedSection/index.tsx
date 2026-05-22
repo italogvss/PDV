@@ -1,17 +1,13 @@
 import { useState } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Switch,
   TextField,
   Chip,
   IconButton,
-  InputAdornment,
 } from '@mui/material'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'

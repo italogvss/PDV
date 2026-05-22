@@ -1,0 +1,33 @@
+{
+  // Depuracao dos containers. Suba a stack antes: docker compose up
+  // (ou rode a task "docker: subir stack dev").
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Anexa o debugger .NET ao processo dentro do container pdv-api.
+      // Na lista de processos, escolha o "dotnet ... PDV.Api".
+      "name": "Anexar backend (Docker)",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickRemoteProcess}",
+      "pipeTransport": {
+        "pipeProgram": "docker",
+        "pipeArgs": ["exec", "-i", "pdv-api"],
+        "debuggerPath": "/vsdbg/vsdbg",
+        "pipeCwd": "${workspaceFolder}",
+        "quoteArgs": false
+      },
+      "sourceFileMap": {
+        "/src": "${workspaceFolder}/backend"
+      }
+    },
+    {
+      // Abre o navegador apontando para o Vite dev server do container.
+      "name": "Depurar frontend (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ React, TypeScript, MUI v6, React Router DOM v6, Axios, TanStack React Query, Red
 ├── layouts/DashboardLayout
 ├── design/              ← somente leitura, referência visual
 ├── hooks/
+├── context/ ← Context para o toast
 ├── pages/{PageName}/index.tsx + components/
 ├── router/index.tsx
 ├── services/api.ts + {feature}.service.ts

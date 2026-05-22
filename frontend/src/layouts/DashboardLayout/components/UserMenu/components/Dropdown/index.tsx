@@ -16,7 +16,6 @@ import {
   HelpOutlineOutlined,
   AutoAwesomeOutlined,
   ArrowForwardOutlined,
-  CheckOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
