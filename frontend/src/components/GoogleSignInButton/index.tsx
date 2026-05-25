@@ -6,7 +6,6 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    debugger
     let cancelled = false
     let intervalId: number | undefined
 

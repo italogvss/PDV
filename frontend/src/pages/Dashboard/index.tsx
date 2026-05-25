@@ -165,10 +165,10 @@ export default function DashboardPage() {
         />
       </Box>
 
-      {/* Gráfico de faturamento */}
+      {/* Gráfico de faturamento 
       <BillingChart data={MOCK_DAILY_BILLING} />
 
-      {/* Seção com 2 colunas: Formas de pagamento + Últimas vendas */}
+
       <Box
         sx={{
           display: 'grid',
@@ -182,9 +182,8 @@ export default function DashboardPage() {
         <PaymentMethodsChart methods={MOCK_PAYMENT_METHODS} />
         <RecentSalesTable sales={MOCK_SALES} />
       </Box>
-
-      {/* Produtos mais vendidos */}
       <TopProductsTable products={MOCK_TOP_PRODUCTS} />
+      */}
     </Box>
   )
 }

@@ -16,8 +16,15 @@ import SettingsPage from '../pages/Settings'
 import AccountPage from '../pages/Account'
 import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
+import CreateTenantPage from '../pages/CreateTenant'
 
 export const router = createBrowserRouter([
+  {
+    element: <ProtectedRoute />,
+    children: [
+      { path: '/criar-negocio', element: <CreateTenantPage /> },
+    ],
+  },
   {
     element: <ProtectedRoute />,
     children: [
@@ -39,7 +46,6 @@ export const router = createBrowserRouter([
           { path: 'ajuda', element: <HelpPage /> },
         ],
       },
-      { path: 'onboarding', element: <></> },
     ],
   },
   {

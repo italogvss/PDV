@@ -20,7 +20,7 @@ export default function LoginPage() {
         await authService.loginWithGoogle(credential)
         const user = await authService.getMe()
         dispatch(setAuth(user))
-        navigate(user.tenantId ? '/' : '/onboarding', { replace: true })
+        navigate(user.tenantId ? '/' : '/criar-negocio', { replace: true })
       } catch {
         setHasError(true)
         setLoading(false)
