@@ -7,29 +7,25 @@ namespace PDV.Infrastructure.Repositories;
 
 public class UserRepository(AppDbContext context) : IUserRepository
 {
-    public Task<User?> GetByIdAsync(Guid id) =>
+    private IQueryable<User> WithTenants() =>
         context.Users
+        .Include(u => u.Settings)
             .Include(u => u.UserTenants)
                 .ThenInclude(ut => ut.Tenant)
-            .FirstOrDefaultAsync(u => u.Id == id);
+                    .ThenInclude(t => t.Settings);
+                    
+
+    public Task<User?> GetByIdAsync(Guid id) =>
+        WithTenants().FirstOrDefaultAsync(u => u.Id == id);
 
     public Task<User?> GetByGoogleIdAsync(string googleId) =>
-        context.Users
-            .Include(u => u.UserTenants)
-                .ThenInclude(ut => ut.Tenant)
-            .FirstOrDefaultAsync(u => u.GoogleId == googleId);
+        WithTenants().FirstOrDefaultAsync(u => u.GoogleId == googleId);
 
     public Task<User?> GetByEmailAsync(string email) =>
-        context.Users
-            .Include(u => u.UserTenants)
-                .ThenInclude(ut => ut.Tenant)
-            .FirstOrDefaultAsync(u => u.Email == email);
+        WithTenants().FirstOrDefaultAsync(u => u.Email == email);
 
     public Task<User?> GetByRefreshTokenAsync(string hashedRefreshToken) =>
-        context.Users
-            .Include(u => u.UserTenants)
-                .ThenInclude(ut => ut.Tenant)
-            .FirstOrDefaultAsync(u => u.RefreshToken == hashedRefreshToken);
+        WithTenants().FirstOrDefaultAsync(u => u.RefreshToken == hashedRefreshToken);
 
     public async Task AddAsync(User user)
     {

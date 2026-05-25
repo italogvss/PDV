@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(node -e \"const g = require\\('./node_modules/geist/dist/sans.js'\\); console.log\\(JSON.stringify\\(g, null, 2\\)\\)\")"
+      "Bash(node -e \"const g = require\\('./node_modules/geist/dist/sans.js'\\); console.log\\(JSON.stringify\\(g, null, 2\\)\\)\")",
+      "Bash(xargs grep -l \"tenantId\\\\|TenantId\")",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\Persistence\\\\Configurations\")",
+      "Bash(Select-Object Name)",
+      "Bash(Start-Process -WindowStyle Hidden npm -ArgumentList \"run\",\"dev\")",
+      "Bash(Start-Sleep 5)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":5173\")",
+      "mcp__MCP_DOCKER__browser_navigate",
+      "mcp__MCP_DOCKER__browser_console_messages",
+      "mcp__MCP_DOCKER__browser_take_screenshot",
+      "Bash(taskkill /F /PID 22908)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "mcp__MCP_DOCKER__browser_snapshot",
+      "PowerShell(Stop-Process -Id 22908 -Force)",
+      "PowerShell(Stop-Process -Id 8536 -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }

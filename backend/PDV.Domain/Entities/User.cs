@@ -1,3 +1,5 @@
+using PDV.Domain.Enums;
+
 namespace PDV.Domain.Entities;
 
 public class User
@@ -9,6 +11,7 @@ public class User
     public string? AvatarUrl { get; set; }
     public Guid? LastTenantId { get; set; }
     public Tenant? LastTenant { get; set; }
+    public UserRole Role { get; set; }
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
     public DateTime CreatedAt { get; set; }

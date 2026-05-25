@@ -10,6 +10,25 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
     {
         builder.HasKey(ts => ts.Id);
 
+        builder.Property(ts => ts.FantasyName).IsRequired().HasMaxLength(200);
+        builder.Property(ts => ts.CompanyName).HasMaxLength(300);
+        builder.Property(ts => ts.Cnpj).HasMaxLength(14);
+        builder.Property(ts => ts.StateRegistration).HasMaxLength(50);
+        builder.Property(ts => ts.Segment).HasMaxLength(50);
+        builder.Property(ts => ts.Phone).HasMaxLength(20);
+        builder.Property(ts => ts.LogoUrl).HasMaxLength(500);
+
+        builder.Property(ts => ts.AddressCep).HasMaxLength(8);
+        builder.Property(ts => ts.AddressStreet).HasMaxLength(200);
+        builder.Property(ts => ts.AddressNumber).HasMaxLength(20);
+        builder.Property(ts => ts.AddressComplement).HasMaxLength(100);
+        builder.Property(ts => ts.AddressNeighborhood).HasMaxLength(100);
+        builder.Property(ts => ts.AddressCity).HasMaxLength(100);
+        builder.Property(ts => ts.AddressState).HasMaxLength(2);
+
+        builder.Property(ts => ts.BusinessHoursJson).HasColumnType("longtext");
+        builder.Property(ts => ts.TaxRegime).IsRequired().HasMaxLength(20).HasDefaultValue("simples");
+
         builder.Property(ts => ts.CreatedAt).IsRequired();
         builder.Property(ts => ts.UpdatedAt).IsRequired();
 

@@ -18,7 +18,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("google")]
     public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request)
     {
-        var (accessToken, refreshToken, _) =
+        var (accessToken, refreshToken) =
             await authService.LoginWithGoogleAsync(request.Credential);
 
         SetAuthCookies(accessToken, refreshToken);
@@ -91,15 +91,6 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(user);
     }
 
-    [HttpPost("tenant")]
-    [Authorize]
-    public async Task<IActionResult> CreateTenant([FromBody] CreateTenantRequest request)
-    {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var token = await authService.CreateTenantAsync(userId, request);
-        return Ok(new TokenResponse(token));
-    }
-
     [HttpPost("switch-tenant/{tenantId:guid}")]
     [Authorize]
     public async Task<IActionResult> SwitchTenant(Guid tenantId)
@@ -107,14 +98,5 @@ public class AuthController(IAuthService authService) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var token = await authService.SwitchTenantAsync(userId, tenantId);
         return Ok(new TokenResponse(token));
-    }
-
-    [HttpGet("tenants")]
-    [Authorize]
-    public async Task<IActionResult> GetTenants()
-    {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var tenants = await authService.GetUserTenantsAsync(userId);
-        return Ok(tenants);
     }
 }

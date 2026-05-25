@@ -1,3 +1,5 @@
+using PDV.Application.DTOs.Users;
+
 namespace PDV.Application.DTOs.Auth;
 
 public record MeResponse(
@@ -5,4 +7,7 @@ public record MeResponse(
     string Name,
     string Email,
     string? AvatarUrl,
-    Guid? LastTenantId);
+    Guid? LastTenantId,
+    string Role,
+    UserSettingsDTO? Settings = null,
+    IEnumerable<TenantListItem>? Tenants = null);

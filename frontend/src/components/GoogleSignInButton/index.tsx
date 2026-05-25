@@ -19,7 +19,6 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: (response) => onCredential(response.credential),
-        use_fedcm_for_prompt: true,
       })
       window.google.accounts.id.renderButton(container, {
         type: 'standard',
@@ -29,9 +28,6 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
         shape: 'pill',
         width: 320,
       })
-      // One Tap: complemento opcional. Se o navegador suprimir o card,
-      // o botão renderizado acima continua garantindo o login.
-      window.google.accounts.id.prompt()
     }
 
     if (window.google) {

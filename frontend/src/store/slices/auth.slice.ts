@@ -1,7 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { AuthUser } from '../../types/auth.types'
-
-export type UserRole = 'Owner' | 'Employee'
+import type { AuthUser, UserRole } from '../../types/auth.types'
 
 export interface AuthState {
   userId: string | null
@@ -46,8 +44,12 @@ export const authSlice = createSlice({
       ...state,
       isLoading: action.payload,
     }),
+    setTenant: (state, action: PayloadAction<{ tenantId: string }>) => ({
+      ...state,
+      tenantId: action.payload.tenantId,
+    }),
   },
 })
 
-export const { setAuth, clearAuth, setLoading } = authSlice.actions
+export const { setAuth, clearAuth, setLoading, setTenant } = authSlice.actions
 export default authSlice.reducer

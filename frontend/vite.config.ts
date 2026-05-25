@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // escuta em 0.0.0.0 - necessario dentro do container
+    host: true,
+    allowedHosts: ['host.docker.internal'],
     port: 5173,
     proxy: {
       // Vite roda DENTRO do container pdv-frontend; o alvo e o nome do

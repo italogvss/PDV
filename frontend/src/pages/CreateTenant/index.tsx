@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
-import { Box, Typography, Button, Paper, Divider, useTheme } from '@mui/material'
+import { Box, Typography, Button, Paper, Divider, useTheme, CircularProgress } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { useSelector } from 'react-redux'
 import type { RootState } from '../../store'
+import { useCreateTenant } from '../../hooks/useCreateTenant'
 import type { CreateTenantFormData, FormErrors } from './types'
 import { INITIAL_FORM_DATA, STEPS } from './types'
 import StepperBar from './components/StepperBar'
@@ -39,10 +40,12 @@ function validateStep(step: number, data: CreateTenantFormData): FormErrors {
   return errors
 }
 
-export default function CreateTenantPage() {
+export default function OnboardingTenant() {
   const theme = useTheme()
   const authName = useSelector((s: RootState) => s.auth.name)
   const firstName = authName?.split(' ')[0] ?? 'você'
+
+  const createTenant = useCreateTenant()
 
   const [step, setStep] = useState(1)
   const [finished, setFinished] = useState(false)
@@ -58,14 +61,14 @@ export default function CreateTenantPage() {
     })
   }, [])
 
-  function handleNext() {
+  async function handleNext() {
     const stepErrors = validateStep(step, formData)
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors)
       return
     }
     if (step === 4) {
-      setFinished(true)
+      await createTenant.mutateAsync(formData)
     } else {
       setStep((s) => s + 1)
     }
@@ -216,8 +219,9 @@ export default function CreateTenantPage() {
               <Button
                 variant="contained"
                 color="success"
-                endIcon={<ArrowForwardIcon />}
+                endIcon={createTenant.isPending ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
                 onClick={handleNext}
+                disabled={createTenant.isPending}
               >
                 {step === 4 ? 'Finalizar' : 'Continuar'}
               </Button>

@@ -1,9 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
 import { useAppSelector } from '../../store'
-import { PublicRouteProps } from './types'
 
-export default function PublicRoute({ redirectTo = '/' }: PublicRouteProps) {
+export default function OnboardingRoute() {
   const { isAuthenticated, isLoading, tenantId } = useAppSelector((state) => state.auth)
 
   if (isLoading) {
@@ -14,8 +13,12 @@ export default function PublicRoute({ redirectTo = '/' }: PublicRouteProps) {
     )
   }
 
-  if (isAuthenticated) {
-    return <Navigate to={tenantId ? redirectTo : '/criar-negocio'} replace />
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (tenantId) {
+    return <Navigate to="/" replace />
   }
 
   return <Outlet />

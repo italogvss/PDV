@@ -15,9 +15,7 @@ export default function ProtectedRoute({ redirectTo = '/login' }: ProtectedRoute
     )
   }
 
-  const bypassAuth = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === 'true'
-
-  if (!isAuthenticated && !bypassAuth) {
+  if (!isAuthenticated) {
     return <Navigate to={redirectTo} replace state={{ from: location }} />
   }
 

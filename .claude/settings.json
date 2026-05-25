@@ -33,7 +33,10 @@
       "Read(//c/Users/Italo/Documents/Projetos/PDV-Ultra/**)",
       "Bash(grep -E \"\\\\.cs$\")",
       "PowerShell($env:DOTNET_CLI_TELEMETRY_OPTOUT=1; dotnet --version; dotnet build \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Api\\\\PDV.Api.csproj\" -v quiet --nologo)",
-      "Bash(findstr router *)"
+      "Bash(findstr router *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Format-List)"
     ]
   }
 }

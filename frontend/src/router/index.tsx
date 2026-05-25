@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import ProtectedRoute from '../components/ProtectedRoute'
+import OnboardingRoute from '../components/OnboardingRoute'
 import PublicRoute from '../components/PublicRoute'
 import DashboardLayout from '../layouts/DashboardLayout'
 
@@ -16,14 +17,16 @@ import SettingsPage from '../pages/Settings'
 import AccountPage from '../pages/Account'
 import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
-import CreateTenantPage from '../pages/CreateTenant'
+import OnboardingTenant from '../pages/CreateTenant'
 
 export const router = createBrowserRouter([
   {
-    element: <ProtectedRoute />,
-    children: [
-      { path: '/criar-negocio', element: <CreateTenantPage /> },
-    ],
+    element: <PublicRoute />,
+    children: [{ path: '/login', element: <LoginPage /> }],
+  },
+  {
+    element: <OnboardingRoute />,
+    children: [{ path: '/criar-negocio', element: <OnboardingTenant /> }],
   },
   {
     element: <ProtectedRoute />,
@@ -47,10 +50,6 @@ export const router = createBrowserRouter([
         ],
       },
     ],
-  },
-  {
-    element: <PublicRoute />,
-    children: [{ path: '/login', element: <LoginPage /> }],
   },
   { path: '*', element: <Navigate to="/" replace /> },
 ])

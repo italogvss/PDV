@@ -6,6 +6,7 @@ using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Auth;
+using PDV.Application.DTOs.Users;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
@@ -16,10 +17,9 @@ namespace PDV.Infrastructure.Services;
 
 public class AuthService(
     IUserRepository userRepository,
-    ITenantRepository tenantRepository,
     IConfiguration configuration) : IAuthService
 {
-    public async Task<(string AccessToken, string RefreshToken, bool HasTenants)> LoginWithGoogleAsync(
+    public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential)
     {
         if (string.IsNullOrWhiteSpace(credential))
@@ -49,7 +49,7 @@ public class AuthService(
             payload.Subject, payload.Email, payload.Name ?? string.Empty, payload.Picture);
     }
 
-    private async Task<(string AccessToken, string RefreshToken, bool HasTenants)> HandleGoogleCallbackAsync(
+    private async Task<(string AccessToken, string RefreshToken)> HandleGoogleCallbackAsync(
         string googleId, string email, string name, string? avatarUrl)
     {
         var user = await userRepository.GetByGoogleIdAsync(googleId)
@@ -63,6 +63,7 @@ public class AuthService(
                 GoogleId = googleId,
                 Email = email,
                 Name = name,
+                Role = UserRole.Owner,
                 AvatarUrl = avatarUrl,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -94,7 +95,6 @@ public class AuthService(
         var hasTenants = tenants.Count > 0;
 
         Guid? tenantId = null;
-        var role = UserRole.Owner.ToString();
 
         if (hasTenants)
         {
@@ -102,7 +102,6 @@ public class AuthService(
                 ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
                 : tenants[0];
             tenantId = active.TenantId;
-            role = active.Role.ToString();
         }
 
         var rawRefreshToken = GenerateRefreshToken();
@@ -111,7 +110,7 @@ public class AuthService(
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
 
-        return (GenerateToken(user.Id, tenantId, user.Name, role), rawRefreshToken, hasTenants);
+        return (GenerateToken(user.Id, tenantId, user.Name, user.Role.ToString()), rawRefreshToken);
     }
 
     public async Task<(string AccessToken, string RefreshToken)> RefreshAsync(string refreshToken)
@@ -161,51 +160,14 @@ public class AuthService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastTenantId);
-    }
+        var settings = user.Settings is not null
+            ? new UserSettingsDTO(user.Settings.Theme.ToString())
+            : null;
 
-    public async Task<string> CreateTenantAsync(Guid userId, CreateTenantRequest request)
-    {
-        var user = await userRepository.GetByIdAsync(userId)
-            ?? throw new NotFoundException("Usuário não encontrado.");
+        var tenants = user.UserTenants
+            .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
 
-        var tenant = new Tenant
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
-            CNPJ = request.CNPJ,
-            Address = request.Address,
-            Phone = request.Phone,
-            LogoUrl = request.LogoUrl,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
-        tenant.Settings = new TenantSettings
-        {
-            Id = Guid.NewGuid(),
-            TenantId = tenant.Id,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
-        tenant.UserTenants =
-        [
-            new UserTenant
-            {
-                UserId = userId,
-                TenantId = tenant.Id,
-                Role = UserRole.Owner,
-                JoinedAt = DateTime.UtcNow,
-            }
-        ];
-
-        await tenantRepository.AddAsync(tenant);
-
-        user.LastTenantId = tenant.Id;
-        user.UpdatedAt = DateTime.UtcNow;
-        await userRepository.UpdateAsync(user);
-
-        return GenerateToken(userId, tenant.Id, user.Name, UserRole.Owner.ToString());
+        return new MeResponse(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastTenantId, user.Role.ToString(), settings, tenants);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)
@@ -229,7 +191,7 @@ public class AuthService(
             ?? throw new NotFoundException("Usuário não encontrado.");
 
         return user.UserTenants
-            .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Name, ut.Role.ToString()));
+            .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
     }
 
     private static string GenerateRefreshToken()
