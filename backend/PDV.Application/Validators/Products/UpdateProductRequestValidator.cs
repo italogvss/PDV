@@ -12,5 +12,7 @@ public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequ
         RuleFor(x => x.Barcode).MaximumLength(50).When(x => x.Barcode is not null);
         RuleFor(x => x.Ncm).MaximumLength(10).When(x => x.Ncm is not null);
         RuleFor(x => x.PurchasePrice).GreaterThanOrEqualTo(0).When(x => x.PurchasePrice is not null);
+        RuleFor(x => x.MinStock).GreaterThanOrEqualTo(0).When(x => x.MinStock is not null);
+        RuleFor(x => x.MinCriticalStock).GreaterThanOrEqualTo(0).When(x => x.MinCriticalStock is not null);
     }
 }

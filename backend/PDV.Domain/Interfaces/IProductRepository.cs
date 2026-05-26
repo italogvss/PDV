@@ -8,6 +8,7 @@ public interface IProductRepository
     Task<(IEnumerable<Product> Data, int TotalCount)> GetAllAsync(
         int page, int pageSize,
         string? name = null, string? barcode = null,
+        Guid? categoryId = null,
         string? sortBy = null, string? sortOrder = null);
     Task AddAsync(Product product);
     Task UpdateAsync(Product product);

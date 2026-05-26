@@ -1,0 +1,28 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PDV.Domain.Entities;
+
+namespace PDV.Infrastructure.Persistence.Configurations;
+
+public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCategory>
+{
+    public void Configure(EntityTypeBuilder<ProductCategory> builder)
+    {
+        builder.HasKey(c => c.Id);
+
+        builder.Property(c => c.TenantId).IsRequired();
+        builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
+        builder.Property(c => c.Color).IsRequired().HasMaxLength(7);
+        builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(c => c.CreatedAt).IsRequired();
+
+        builder.HasIndex(c => new { c.TenantId, c.Name }).IsUnique();
+
+        builder.HasMany(c => c.Products)
+               .WithOne(p => p.Category)
+               .HasForeignKey(p => p.CategoryId)
+               .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasQueryFilter(c => c.IsActive);
+    }
+}

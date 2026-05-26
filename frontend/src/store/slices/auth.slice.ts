@@ -6,6 +6,8 @@ export interface AuthState {
   tenantId: string | null
   role: UserRole | null
   name: string | null
+  email: string | null
+  avatarUrl: string | null
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -15,6 +17,8 @@ const initialState: AuthState = {
   tenantId: null,
   role: null,
   name: null,
+  email: null,
+  avatarUrl: null,
   isAuthenticated: false,
   isLoading: true,
 }
@@ -29,6 +33,8 @@ export const authSlice = createSlice({
       tenantId: action.payload.tenantId,
       role: action.payload.role,
       name: action.payload.name,
+      email: action.payload.email,
+      avatarUrl: action.payload.avatarUrl,
       isAuthenticated: true,
       isLoading: false,
     }),
@@ -37,6 +43,8 @@ export const authSlice = createSlice({
       tenantId: null,
       role: null,
       name: null,
+      email: null,
+      avatarUrl: null,
       isAuthenticated: false,
       isLoading: false,
     }),

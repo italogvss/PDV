@@ -1,3 +1,5 @@
+using PDV.Application.DTOs.ProductCategories;
+
 namespace PDV.Application.DTOs.Products;
 
 public record ProductResponse(
@@ -8,5 +10,8 @@ public record ProductResponse(
     decimal Price,
     decimal? PurchasePrice,
     int Stock,
+    int? MinStock,
+    int? MinCriticalStock,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    ProductCategoryResponse? Category);

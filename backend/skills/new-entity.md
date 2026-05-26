@@ -12,7 +12,7 @@ Use esta skill sempre que precisar criar uma nova entidade no `PDVUltra.Domain`.
 6. Registrar o repositório no DI em `Program.cs`
 7. Adicionar `DbSet<{Entity}>` no `AppDbContext`
 8. Adicionar `HasQueryFilter` com `TenantId` e `!IsDeleted` no `OnModelCreating`
-9. Gerar migration: `dotnet ef migrations add Add{Entity} --project PDVUltra.Infrastructure --startup-project PDVUltra.Api`
+9. Gerar migration: `dotnet ef migrations add Add{Entity} --project PDV.Infrastructure --startup-project PDV.Api`
 
 ## Template de entidade
 

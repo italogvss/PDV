@@ -5,4 +5,7 @@ public record UpdateProductRequest(
     string? Barcode,
     string? Ncm,
     decimal Price,
-    decimal? PurchasePrice);
+    decimal? PurchasePrice,
+    int? MinStock,
+    int? MinCriticalStock,
+    Guid? CategoryId);

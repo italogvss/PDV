@@ -8,6 +8,7 @@ public interface IProductService
     Task<PaginatedResponse<ProductResponse>> GetAllAsync(
         int page, int pageSize,
         string? name = null, string? barcode = null,
+        Guid? categoryId = null,
         string? sortBy = null, string? sortOrder = null);
     Task<ProductResponse> GetByIdAsync(Guid id);
     Task<ProductResponse> CreateAsync(CreateProductRequest request);

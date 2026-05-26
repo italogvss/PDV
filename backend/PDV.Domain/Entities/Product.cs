@@ -9,6 +9,11 @@ public class Product
     public decimal Price { get; set; }
     public decimal? PurchasePrice { get; set; }
     public int Stock { get; set; }
+    public int? MinStock { get; set; }
+    public int? MinCriticalStock { get; set; }
+    public Guid? CategoryId { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
+
+    public ProductCategory? Category { get; set; }
 }

@@ -5,8 +5,8 @@ import { useAppSelector } from '../../../../store'
 import Dropdown from './components/Dropdown'
 
 export default function UserMenu() {
-  const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
-  const initials = name
+  const auth = useAppSelector((state) => state.auth)
+  const initials = auth.name ?? "Usuário"
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
@@ -50,8 +50,9 @@ export default function UserMenu() {
             bgcolor: 'accent.600',
             color: 'common.white',
           }}
+          src={auth.avatarUrl ?? undefined}
         >
-          {initials}
+          
         </Avatar>
         <Box sx={{ minWidth: 0, display: { xs: 'none', sm: 'block' } }}>
           <Typography
@@ -60,7 +61,7 @@ export default function UserMenu() {
             sx={{ fontWeight: 600, lineHeight: 1.1 }}
             noWrap
           >
-            {name}
+            {auth.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Box

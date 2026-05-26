@@ -16,10 +16,11 @@ public class ProductsController(IProductService service) : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? name = null,
         [FromQuery] string? barcode = null,
+        [FromQuery] Guid? categoryId = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? sortOrder = null)
     {
-        var result = await service.GetAllAsync(page, pageSize, name, barcode, sortBy, sortOrder);
+        var result = await service.GetAllAsync(page, pageSize, name, barcode, categoryId, sortBy, sortOrder);
         return Ok(result);
     }
 

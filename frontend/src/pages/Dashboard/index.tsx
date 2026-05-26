@@ -15,6 +15,7 @@ import BillingChart from './components/BillingChart'
 import PaymentMethodsChart from './components/PaymentMethodsChart'
 import RecentSalesTable from './components/RecentSalesTable'
 import TopProductsTable from './components/TopProductsTable'
+import { useAppSelector } from '../../store'
 
 const DATE_RANGE_OPTIONS: DateRangeOption[] = [
   { label: '7 dias', days: 7 },
@@ -26,6 +27,7 @@ const DATE_RANGE_OPTIONS: DateRangeOption[] = [
 export default function DashboardPage() {
   const [dateAnchor, setDateAnchor] = useState<HTMLElement | null>(null)
   const [selectedDays, setSelectedDays] = useState(14)
+  const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
 
   const selectedDateRange = useMemo(
     () => DATE_RANGE_OPTIONS.find((opt) => opt.days === selectedDays) || DATE_RANGE_OPTIONS[1],
@@ -62,7 +64,7 @@ export default function DashboardPage() {
         }}
       >
         <Box>
-          <Typography variant="h1">Olá, Marcos 👋</Typography>
+          <Typography variant="h1">Olá, {name} 👋</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Atualizações até {formattedDate}
           </Typography>

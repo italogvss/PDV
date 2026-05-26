@@ -8,20 +8,26 @@ namespace PDV.Infrastructure.Repositories;
 public class ProductRepository(AppDbContext context) : IProductRepository
 {
     public async Task<Product?> GetByIdAsync(Guid id) =>
-        await context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        await context.Products
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<(IEnumerable<Product> Data, int TotalCount)> GetAllAsync(
         int page, int pageSize,
         string? name = null, string? barcode = null,
+        Guid? categoryId = null,
         string? sortBy = null, string? sortOrder = null)
     {
-        var query = context.Products.AsQueryable();
+        var query = context.Products.Include(p => p.Category).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
             query = query.Where(p => p.Name.Contains(name));
 
         if (!string.IsNullOrWhiteSpace(barcode))
             query = query.Where(p => p.Barcode == barcode);
+
+        if (categoryId.HasValue)
+            query = query.Where(p => p.CategoryId == categoryId.Value);
 
         query = (sortBy, sortOrder?.ToLower()) switch
         {

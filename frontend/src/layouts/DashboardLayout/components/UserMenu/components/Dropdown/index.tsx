@@ -103,11 +103,11 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
 }
 
 export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
-  const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
+  const auth = useAppSelector((state) => state.auth)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
-  const initials = name
+  const initials = auth.name ?? "Usuário"
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
@@ -157,6 +157,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
           <Box sx={{ position: 'relative', flexShrink: 0 }}>
             <Avatar
               sx={{ width: 44, height: 44, bgcolor: 'data.orange.main', color: 'common.white', fontSize: 14, fontWeight: 600 }}
+              src={auth.avatarUrl ?? undefined}
             >
               {initials}
             </Avatar>
@@ -170,10 +171,10 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }} noWrap>
-              {name}
+              {auth.name}
             </Typography>
             <Typography variant="caption" color="text.tertiary" sx={{ display: 'block', mb: 1 }} noWrap>
-              marcos.almeida@cafedaesquina.com.br
+              {auth.email}
             </Typography>
             <Chip
               icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}

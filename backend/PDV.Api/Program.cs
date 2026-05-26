@@ -65,20 +65,25 @@ builder.Services.AddCors(options =>
 // Validators
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>();
 
+builder.Services.AddHttpContextAccessor();
+
 // Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IOAuthProvider, GoogleOAuthProvider>();
+builder.Services.AddScoped<ITenantContext, TenantContext>();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 
 builder.Services.AddControllers();

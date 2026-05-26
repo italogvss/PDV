@@ -18,7 +18,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
       "mcp__MCP_DOCKER__browser_snapshot",
       "PowerShell(Stop-Process -Id 22908 -Force)",
-      "PowerShell(Stop-Process -Id 8536 -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Id 8536 -Force -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\" -Force)",
+      "Bash(Select-Object Name, FullName)"
     ]
   }
 }

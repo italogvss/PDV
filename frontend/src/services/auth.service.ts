@@ -16,7 +16,7 @@ interface MeApiResponse {
 export const authService = {
   getMe: async (): Promise<AuthUser> => {
     const { data } = await api.get<MeApiResponse>('/auth/me')
-
+    console.log('Me API response:', data) // Log da resposta da API para depuração
     return {
       userId: data.id,
       tenantId: data.lastTenantId,
