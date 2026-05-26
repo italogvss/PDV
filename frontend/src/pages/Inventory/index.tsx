@@ -10,9 +10,11 @@ import {
   Select,
   MenuItem,
   Chip,
+  Skeleton,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
+import EditRounded from '@mui/icons-material/EditRounded'
 import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
@@ -25,56 +27,52 @@ import CategoryRounded from '@mui/icons-material/CategoryRounded'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_PRODUCT_CATEGORIES, MOCK_PRODUCTS } from './mock'
 import type { Product, ProductCategory } from '../../types/product.types'
-import { PRODUCT_CATEGORIES, STOCK_LEVELS } from '../../types/product.types'
+import { STOCK_LEVELS } from '../../types/product.types'
 import { getStockLevel } from './utils'
 import KpiCard from './components/KpiCard'
 import StockLevelCell from './components/StockLevelCell'
 import FilterMenu from './components/FilterMenu'
 import ProductRowMenu from './components/ProductRowMenu'
 import ProductModal from './components/NewProductModal'
+import CategoryFormModal from './components/CategoryFormModal'
+import AdjustStockModal from './components/AdjustStockModal'
+import { useProducts, useDeleteProduct } from '../../hooks/useProducts'
+import { useProductCategories, useDeleteProductCategory } from '../../hooks/useProductCategories'
 
 export default function InventoryPage() {
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts()
+  const { data: categories = [], isLoading: isLoadingCategories } = useProductCategories()
+  const deleteProduct = useDeleteProduct()
+  const deleteCategory = useDeleteProductCategory()
+
   const [search, setSearch] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedLevels, setSelectedLevels] = useState<string[]>([])
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [adjustStockProduct, setAdjustStockProduct] = useState<Product | null>(null)
   const [sortBy, setSortBy] = useState('name-asc')
-  const [categories, setCategories] = useState<ProductCategory[]>([...MOCK_PRODUCT_CATEGORIES])
-  const [showAddCatInput, setShowAddCatInput] = useState(false)
-  const [newCatInput, setNewCatInput] = useState('')
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null)
 
   const countByCategory = useMemo(() => {
     const counts: Record<string, number> = {}
-    MOCK_PRODUCTS.forEach((p) => {
+    products.forEach((p) => {
       const key = p.category?.name ?? ''
       counts[key] = (counts[key] ?? 0) + 1
     })
     return counts
-  }, [])
-
-  const handleAddCategory = () => {
-    const trimmed = newCatInput.trim()
-    if (trimmed && !categories.some((cat) => cat.name === trimmed)) {
-      setCategories((prev) => [...prev, { id: prev.length + 1, name: trimmed, color: "#121212" }])
-    }
-    setNewCatInput('')
-    setShowAddCatInput(false)
-  }
+  }, [products])
 
   const kpis = useMemo(() => {
-    const totalValue = MOCK_PRODUCTS.reduce((sum, p) => sum + p.price * p.stock, 0)
-    const totalUnits = MOCK_PRODUCTS.reduce((sum, p) => sum + p.stock, 0)
-    const levels = MOCK_PRODUCTS.map((p) =>
-      getStockLevel(p.stock, p.minStock, p.criticalStock),
-    )
+    const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0)
+    const totalUnits = products.reduce((sum, p) => sum + p.stock, 0)
+    const levels = products.map((p) => getStockLevel(p.stock, p.minStock, p.criticalStock))
     const lowCount = levels.filter((l) => l === 'Baixo').length
     const criticalCount = levels.filter((l) => l === 'Crítico').length
-    const categoryCount = new Set(MOCK_PRODUCTS.map((p) => p.category)).size
-    return { totalValue, totalUnits, lowCount, criticalCount, categoryCount }
-  }, [])
+    return { totalValue, totalUnits, lowCount, criticalCount }
+  }, [products])
 
   const columns = useMemo<GridColDef[]>(
     () => [
@@ -90,15 +88,17 @@ export default function InventoryPage() {
                 width: 32,
                 height: 32,
                 borderRadius: 1.5,
-                bgcolor: 'surface.raised',
+                bgcolor: row.category ? `${row.category.color}22` : 'surface.raised',
                 border: '1px solid',
-                borderColor: 'border.subtle',
+                borderColor: row.category ? `${row.category.color}66` : 'border.subtle',
                 display: 'grid',
                 placeItems: 'center',
                 flexShrink: 0,
               }}
             >
-              <CategoryRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
+              <CategoryRounded
+                sx={{ fontSize: 15, color: row.category ? row.category.color : 'text.tertiary' }}
+              />
             </Box>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {row.name}
@@ -119,23 +119,40 @@ export default function InventoryPage() {
       {
         field: 'category',
         headerName: 'Categoria',
-        width: 130,
-        renderCell: ({ row }) => (
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 500,
-              bgcolor: 'surface.raised',
-              border: '1px solid',
-              borderColor: 'border.subtle',
-              borderRadius: '999px',
-              px: 1.25,
-              py: 0.5,
-            }}
-          >
-            {row.category}
-          </Typography>
-        ),
+        width: 140,
+        renderCell: ({ row }) =>
+          row.category ? (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                bgcolor: 'surface.raised',
+                border: '1px solid',
+                borderColor: 'border.subtle',
+                borderRadius: '999px',
+                px: 1.25,
+                py: 0.5,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  bgcolor: row.category.color,
+                  flexShrink: 0,
+                }}
+              />
+              <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                {row.category.name}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography variant="caption" color="text.disabled">
+              —
+            </Typography>
+          ),
       },
       {
         field: 'costPrice',
@@ -177,11 +194,7 @@ export default function InventoryPage() {
         width: 220,
         sortable: false,
         renderCell: ({ row }) => (
-          <StockLevelCell
-            stock={row.stock}
-            minStock={row.minStock}
-            criticalStock={row.criticalStock}
-          />
+          <StockLevelCell stock={row.stock} minStock={row.minStock} criticalStock={row.criticalStock} />
         ),
       },
       {
@@ -192,21 +205,26 @@ export default function InventoryPage() {
         filterable: false,
         disableColumnMenu: true,
         renderCell: ({ row }) => (
-          <ProductRowMenu product={row} onEdit={setEditProduct} />
+          <ProductRowMenu
+            product={row}
+            onEdit={setEditProduct}
+            onAdjustStock={setAdjustStockProduct}
+            onDelete={(id) => deleteProduct.mutate(id)}
+          />
         ),
       },
     ],
-    [],
+    [deleteProduct],
   )
 
   const rows = useMemo(() => {
-    const filtered = MOCK_PRODUCTS.filter((p) => {
+    const filtered = products.filter((p) => {
       const q = search.toLowerCase()
       const matchSearch =
-        p.name.toLowerCase().includes(q) ||
-        (p.barcode ?? '').toLowerCase().includes(q)
+        p.name.toLowerCase().includes(q) || (p.barcode ?? '').toLowerCase().includes(q)
       const matchCategory =
-        selectedCategories.length === 0 || (p.category !== null && selectedCategories.includes(p.category.name))
+        selectedCategories.length === 0 ||
+        (p.category !== null && selectedCategories.includes(p.category.name))
       const level = getStockLevel(p.stock, p.minStock, p.criticalStock)
       const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(level)
       return matchSearch && matchCategory && matchLevel
@@ -214,54 +232,39 @@ export default function InventoryPage() {
 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case 'name-asc':  return a.name.localeCompare(b.name, 'pt-BR')
+        case 'name-asc': return a.name.localeCompare(b.name, 'pt-BR')
         case 'name-desc': return b.name.localeCompare(a.name, 'pt-BR')
-        case 'price-asc':  return a.price - b.price
+        case 'price-asc': return a.price - b.price
         case 'price-desc': return b.price - a.price
-        case 'stock-asc':  return a.stock - b.stock
+        case 'stock-asc': return a.stock - b.stock
         case 'stock-desc': return b.stock - a.stock
         default: return 0
       }
     })
-  }, [search, selectedCategories, selectedLevels, sortBy])
+  }, [products, search, selectedCategories, selectedLevels, sortBy])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
       {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
         <Box>
           <Typography variant="h1">Estoque</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {MOCK_PRODUCTS.length} produtos cadastrados
+            {isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
           </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileUploadOutlined />}
-          >
+{/*           
+          <Button variant="outlined" size="small" startIcon={<FileUploadOutlined />}>
             Importar CSV
           </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileDownloadOutlined />}
-          >
+          <Button variant="outlined" size="small" startIcon={<FileDownloadOutlined />}>
             Exportar
-          </Button>
+          </Button> */}
           <Button
             variant="contained"
             color="success"
-            size="small"
             startIcon={<AddRounded />}
             onClick={() => setNewModalOpen(true)}
           >
@@ -275,45 +278,34 @@ export default function InventoryPage() {
         sx={{
           display: 'grid',
           gap: 2,
-          gridTemplateColumns: {
-            xs: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
         }}
       >
         <KpiCard
           label="Total em estoque"
           icon={Inventory2Rounded}
-          value={formatBRL(kpis.totalValue)}
+          value={isLoadingProducts ? '—' : formatBRL(kpis.totalValue)}
           badge={{ label: `${kpis.totalUnits} unidades`, color: 'success' }}
         />
         <KpiCard
           label="Produtos"
           icon={SellRounded}
-          value={MOCK_PRODUCTS.length}
-          badge={{ label: `${kpis.categoryCount} categorias`, color: 'default' }}
+          value={isLoadingProducts ? '—' : products.length}
+          badge={{ label: `${categories.length} categorias`, color: 'default' }}
         />
         <KpiCard
           label="Estoque baixo"
           icon={WarningAmberRounded}
-          value={kpis.lowCount}
-          valueColor="warning"
-          badge={{
-            label: 'Repor em breve',
-            color: 'warning',
-            icon: WarningAmberRounded,
-          }}
+          value={isLoadingProducts ? '—' : kpis.lowCount}
+          valueColor={kpis.lowCount > 0 ? 'warning' : 'default'}
+          badge={{ label: 'Repor em breve', color: 'warning', icon: WarningAmberRounded }}
         />
         <KpiCard
           label="Crítico"
           icon={CancelRounded}
-          value={kpis.criticalCount}
-          valueColor="error"
-          badge={{
-            label: 'Urgente',
-            color: 'error',
-            icon: ArrowDownwardRounded,
-          }}
+          value={isLoadingProducts ? '—' : kpis.criticalCount}
+          valueColor={kpis.criticalCount > 0 ? 'error' : 'default'}
+          badge={{ label: 'Urgente', color: 'error', icon: ArrowDownwardRounded }}
         />
       </Box>
 
@@ -321,12 +313,25 @@ export default function InventoryPage() {
       <Box>
         <Typography
           variant="caption"
-          sx={{ fontWeight: 600, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}
+          sx={{
+            fontWeight: 600,
+            color: 'text.disabled',
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+            display: 'block',
+            mb: 1.5,
+          }}
         >
           Categorias
         </Typography>
 
-        {categories.length === 0 && !showAddCatInput ? (
+        {isLoadingCategories ? (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} variant="rounded" width={100} height={36} sx={{ borderRadius: '999px' }} />
+            ))}
+          </Box>
+        ) : categories.length === 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, py: 2.5 }}>
             <Typography variant="body2" color="text.disabled">
               Nenhuma categoria cadastrada ainda
@@ -335,7 +340,7 @@ export default function InventoryPage() {
               label="+ Adicionar"
               size="small"
               variant="outlined"
-              onClick={() => setShowAddCatInput(true)}
+              onClick={() => setAddCategoryOpen(true)}
               sx={{ cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
             />
           </Box>
@@ -355,36 +360,20 @@ export default function InventoryPage() {
             {categories.map((cat) => (
               <CategoryChip
                 key={cat.id}
-                label={cat.name}
+                category={cat}
                 count={countByCategory[cat.name] ?? 0}
-                onDelete={() => setCategories((prev) => prev.filter((c) => c.id !== cat.id))}
+                onEdit={() => setEditingCategory(cat)}
+                onDelete={() => deleteCategory.mutate(cat.id)}
               />
             ))}
 
-            {showAddCatInput ? (
-              <TextField
-                size="small"
-                value={newCatInput}
-                onChange={(e) => setNewCatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddCategory()
-                  if (e.key === 'Escape') { setShowAddCatInput(false); setNewCatInput('') }
-                }}
-                onBlur={handleAddCategory}
-                autoFocus
-                placeholder="Nome da categoria"
-                sx={{ minWidth: 150, flexShrink: 0 }}
-                slotProps={{ htmlInput: { style: { padding: '5px 10px', fontSize: 13 } } }}
-              />
-            ) : (
-              <Chip
-                label="+ Adicionar"
-                size="small"
-                variant="outlined"
-                onClick={() => setShowAddCatInput(true)}
-                sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
-              />
-            )}
+            <Chip
+              label="+ Adicionar"
+              size="small"
+              variant="outlined"
+              onClick={() => setAddCategoryOpen(true)}
+              sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
+            />
           </Box>
         )}
       </Box>
@@ -421,7 +410,7 @@ export default function InventoryPage() {
 
           <FilterMenu
             label="Categoria"
-            options={PRODUCT_CATEGORIES}
+            options={categories.map((c) => c.name)}
             selected={selectedCategories}
             onChange={setSelectedCategories}
           />
@@ -448,20 +437,17 @@ export default function InventoryPage() {
             <MenuItem value="stock-asc">Estoque (menor → maior)</MenuItem>
             <MenuItem value="stock-desc">Estoque (maior → menor)</MenuItem>
           </Select>
-
         </Box>
 
-        {/* DataGrid */}
         <DataGrid
           rows={rows}
           columns={columns}
           getRowId={(row) => row.id}
           rowHeight={64}
+          loading={isLoadingProducts}
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
+          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           sx={(theme) => ({
             flex: 1,
             border: 'none',
@@ -469,9 +455,7 @@ export default function InventoryPage() {
               backgroundColor: theme.palette.surface.sunken,
               borderBottom: `1px solid ${theme.palette.border.subtle}`,
             },
-            '& .MuiDataGrid-columnHeader': {
-              '&:focus, &:focus-within': { outline: 'none' },
-            },
+            '& .MuiDataGrid-columnHeader': { '&:focus, &:focus-within': { outline: 'none' } },
             '& .MuiDataGrid-columnHeaderTitle': {
               fontSize: 11,
               fontWeight: 500,
@@ -486,12 +470,8 @@ export default function InventoryPage() {
               alignItems: 'center',
               '&:focus, &:focus-within': { outline: 'none' },
             },
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: theme.palette.surface.sunken,
-            },
-            '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': {
-              borderBottom: 'none',
-            },
+            '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
+            '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
             '& .MuiDataGrid-footerContainer': {
               borderTop: `1px solid ${theme.palette.border.subtle}`,
               minHeight: 48,
@@ -501,11 +481,28 @@ export default function InventoryPage() {
         />
       </Card>
 
+      {/* Modais */}
       <ProductModal open={newModalOpen} onClose={() => setNewModalOpen(false)} />
       <ProductModal
         open={!!editProduct}
         product={editProduct ?? undefined}
         onClose={() => setEditProduct(null)}
+      />
+      {adjustStockProduct && (
+        <AdjustStockModal
+          open={!!adjustStockProduct}
+          product={adjustStockProduct}
+          onClose={() => setAdjustStockProduct(null)}
+        />
+      )}
+      <CategoryFormModal
+        open={addCategoryOpen}
+        onClose={() => setAddCategoryOpen(false)}
+      />
+      <CategoryFormModal
+        open={!!editingCategory}
+        category={editingCategory ?? undefined}
+        onClose={() => setEditingCategory(null)}
       />
     </Box>
   )
@@ -514,12 +511,13 @@ export default function InventoryPage() {
 // ─── CategoryChip ─────────────────────────────────────────────────────────────
 
 interface CategoryChipProps {
-  label: string
+  category: ProductCategory
   count: number
+  onEdit: () => void
   onDelete: () => void
 }
 
-function CategoryChip({ label, count, onDelete }: CategoryChipProps) {
+function CategoryChip({ category, count, onEdit, onDelete }: CategoryChipProps) {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -530,15 +528,14 @@ function CategoryChip({ label, count, onDelete }: CategoryChipProps) {
     >
       <Chip
         label={
-          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box
+              sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: category.color, flexShrink: 0 }}
+            />
             <Typography component="span" variant="body2" sx={{ fontWeight: 500 }}>
-              {label}
+              {category.name}
             </Typography>
-            <Typography
-              component="span"
-              variant="body2"
-              sx={{ opacity: 0.45, fontWeight: 400 }}
-            >
+            <Typography component="span" variant="body2" sx={{ opacity: 0.45, fontWeight: 400 }}>
               {count}
             </Typography>
           </Box>
@@ -546,31 +543,53 @@ function CategoryChip({ label, count, onDelete }: CategoryChipProps) {
         sx={{
           height: 36,
           px: 0.5,
-          pr: hovered ? 4 : undefined,
+          pr: hovered ? 5.5 : undefined,
           transition: 'padding 0.15s',
           fontSize: 14,
         }}
       />
       {hovered && (
-        <IconButton
-          size="small"
-          onClick={onDelete}
+        <Box
           sx={{
             position: 'absolute',
             top: '50%',
-            right: 6,
+            right: 4,
             transform: 'translateY(-50%)',
-            width: 22,
-            height: 22,
-            p: 0,
-            bgcolor: 'surface.paper',
-            border: '1px solid',
-            borderColor: 'border.subtle',
-            '&:hover': { bgcolor: 'error.soft', borderColor: 'error.main' },
+            display: 'flex',
+            gap: 0.25,
           }}
         >
-          <CloseRounded sx={{ fontSize: 14 }} />
-        </IconButton>
+          <IconButton
+            size="small"
+            onClick={onEdit}
+            sx={{
+              width: 20,
+              height: 20,
+              p: 0,
+              bgcolor: 'surface.paper',
+              border: '1px solid',
+              borderColor: 'border.subtle',
+              '&:hover': { bgcolor: 'surface.raised' },
+            }}
+          >
+            <EditRounded sx={{ fontSize: 11 }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={onDelete}
+            sx={{
+              width: 20,
+              height: 20,
+              p: 0,
+              bgcolor: 'surface.paper',
+              border: '1px solid',
+              borderColor: 'border.subtle',
+              '&:hover': { bgcolor: 'error.soft', borderColor: 'error.main' },
+            }}
+          >
+            <CloseRounded sx={{ fontSize: 11 }} />
+          </IconButton>
+        </Box>
       )}
     </Box>
   )

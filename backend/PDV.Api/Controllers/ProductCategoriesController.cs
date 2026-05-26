@@ -25,7 +25,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Create([FromBody] CreateProductCategoryRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -33,7 +33,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductCategoryRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -41,7 +41,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

@@ -11,6 +11,7 @@ namespace PDV.Infrastructure.Services;
 
 public class ProductService(
     IProductRepository repository,
+    ITenantContext tenantContext,
     IValidator<CreateProductRequest> createValidator,
     IValidator<UpdateProductRequest> updateValidator) : IProductService
 {
@@ -42,6 +43,7 @@ public class ProductService(
         var product = new Product
         {
             Id = Guid.NewGuid(),
+            TenantId = tenantContext.TenantId,
             Name = request.Name,
             Barcode = request.Barcode,
             NCM = request.Ncm,

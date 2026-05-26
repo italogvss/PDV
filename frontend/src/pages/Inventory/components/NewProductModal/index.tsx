@@ -11,6 +11,7 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
+  Skeleton,
 } from '@mui/material'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
@@ -18,14 +19,14 @@ import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
 import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
-import AddRounded from '@mui/icons-material/AddRounded'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import type { TextFieldProps } from '@mui/material'
-import { PRODUCT_CATEGORIES } from '../../../../types/product.types'
 import { formatBRL } from '../../../../utils/currency'
+import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
+import { useProductCategories } from '../../../../hooks/useProductCategories'
 import type { ProductModalProps } from './types'
 
 const schema = z.object({
@@ -43,19 +44,13 @@ const schema = z.object({
     .optional()
     .or(z.literal('')),
   barcode: z.string().optional(),
-  category: z.string().optional(),
+  categoryId: z.string().optional().nullable(),
 })
 
 type ProductForm = z.infer<typeof schema>
 
-const emptyDefaults: ProductForm = {
-  name: '',
-  costPrice: 0,
-  price: 0,
-  stock: 0,
-  minStock: '',
-  barcode: '',
-  category: '',
+function buildDefaults(): ProductForm {
+  return { name: '', costPrice: 0, price: 0, stock: 0, minStock: '', barcode: '', categoryId: null }
 }
 
 function generateEAN13(): string {
@@ -65,7 +60,7 @@ function generateEAN13(): string {
   return [...digits, check].join('')
 }
 
-// ─── Máscara de moeda BRL ─────────────────────────────────────────────────────
+// ─── CurrencyTextField ────────────────────────────────────────────────────────
 
 function fmtCents(n: number): string {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -114,10 +109,10 @@ function CurrencyTextField({ value, onChange, onBlur, ...rest }: CurrencyTextFie
 
 export default function ProductModal({ open, onClose, product }: ProductModalProps) {
   const isEditing = !!product
-  const [extraCategories, setExtraCategories] = useState<string[]>([])
-  const [showNewCatInput, setShowNewCatInput] = useState(false)
-  const [newCatValue, setNewCatValue] = useState('')
-  const newCatInputRef = useRef<HTMLInputElement>(null)
+  const createProduct = useCreateProduct()
+  const updateProduct = useUpdateProduct()
+  const { data: categories = [], isLoading: isLoadingCategories } = useProductCategories()
+  const isPending = createProduct.isPending || updateProduct.isPending
 
   const {
     register,
@@ -129,7 +124,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
     formState: { errors, isSubmitting },
   } = useForm<ProductForm>({
     resolver: zodResolver(schema),
-    defaultValues: emptyDefaults,
+    defaultValues: buildDefaults(),
   })
 
   const watchCostPrice = watch('costPrice')
@@ -145,12 +140,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
 
   useEffect(() => {
     if (open) {
-      setExtraCategories([])
-      setShowNewCatInput(false)
-      setNewCatValue('')
       if (product) {
-        const isExtra = !PRODUCT_CATEGORIES.includes(product.category as never)
-        setExtraCategories(isExtra && product.category ? [product.category.name] : [])
         reset({
           name: product.name,
           costPrice: product.costPrice,
@@ -158,43 +148,44 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           stock: product.stock,
           minStock: product.minStock ?? '',
           barcode: product.barcode ?? '',
-          category: product.category?.name ?? '',
+          categoryId: product.category?.id ?? null,
         })
       } else {
-        reset(emptyDefaults)
+        reset(buildDefaults())
       }
     }
   }, [open, product, reset])
 
-  const allCategories = [...PRODUCT_CATEGORIES, ...extraCategories]
-
-  const handleAddCategory = (fieldOnChange: (v: string) => void) => {
-    const trimmed = newCatValue.trim()
-    if (!trimmed) {
-      setShowNewCatInput(false)
-      return
-    }
-    if (!allCategories.includes(trimmed)) {
-      setExtraCategories((prev) => [...prev, trimmed])
-    }
-    fieldOnChange(trimmed)
-    setShowNewCatInput(false)
-    setNewCatValue('')
-  }
-
-  const handleGenerateBarcode = () => {
-    setValue('barcode', generateEAN13())
-  }
-
   const onSubmit = async (data: ProductForm) => {
-    // TODO: integrar com productsService.create / productsService.update
-    await new Promise<void>((resolve) => setTimeout(resolve, 800))
-    console.log(isEditing ? 'Produto atualizado:' : 'Novo produto:', data)
+    const minStockVal = typeof data.minStock === 'number' ? data.minStock : undefined
+    const categoryId = data.categoryId || null
+
+    if (isEditing) {
+      await updateProduct.mutateAsync({
+        id: product.id,
+        name: data.name,
+        barcode: data.barcode || undefined,
+        price: data.price,
+        purchasePrice: data.costPrice,
+        minStock: minStockVal,
+        categoryId,
+      })
+    } else {
+      await createProduct.mutateAsync({
+        name: data.name,
+        barcode: data.barcode || undefined,
+        price: data.price,
+        purchasePrice: data.costPrice,
+        stock: data.stock,
+        minStock: minStockVal,
+        categoryId,
+      })
+    }
     onClose()
   }
 
   const handleClose = () => {
-    if (isSubmitting) return
+    if (isPending) return
     onClose()
   }
 
@@ -212,12 +203,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 : 'Cadastre um item para começar a vender no PDV'}
             </Typography>
           </Box>
-          <IconButton
-            size="small"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            sx={{ mt: -0.5, mr: -0.5 }}
-          >
+          <IconButton size="small" onClick={handleClose} disabled={isPending} sx={{ mt: -0.5, mr: -0.5 }}>
             <CloseRounded sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
@@ -246,13 +232,10 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           {/* Preços + margem */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              {/* Valor de compra */}
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                   <FieldLabel label="Valor de compra" required inline />
-                  <Typography variant="caption" color="text.disabled">
-                    custo unitário
-                  </Typography>
+                  <Typography variant="caption" color="text.disabled">custo unitário</Typography>
                 </Box>
                 <Controller
                   name="costPrice"
@@ -271,13 +254,10 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 />
               </Box>
 
-              {/* Preço de venda */}
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                   <FieldLabel label="Preço de venda" required inline />
-                  <Typography variant="caption" color="text.disabled">
-                    no PDV
-                  </Typography>
+                  <Typography variant="caption" color="text.disabled">no PDV</Typography>
                 </Box>
                 <Controller
                   name="price"
@@ -297,7 +277,6 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
               </Box>
             </Box>
 
-            {/* Margem de lucro */}
             {showProfit && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Box
@@ -318,18 +297,13 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                   )}
                   <Typography
                     variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      color: isPositiveMargin ? 'success.ink' : 'error.ink',
-                    }}
+                    sx={{ fontWeight: 600, color: isPositiveMargin ? 'success.ink' : 'error.ink' }}
                   >
-                    Margem de lucro {isPositiveMargin ? '+' : ''}
-                    {marginPercent.toFixed(1)}%
+                    Margem {isPositiveMargin ? '+' : ''}{marginPercent.toFixed(1)}%
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  Lucro por unidade:{' '}
-                  <strong>{formatBRL(profitPerUnit)}</strong>
+                  Lucro por unidade: <strong>{formatBRL(profitPerUnit)}</strong>
                 </Typography>
               </Box>
             )}
@@ -339,10 +313,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <FieldLabel label="Estoque atual" required inline />
-                <Typography variant="caption" color="text.disabled">
-                  unidades
-                </Typography>
+                <FieldLabel label="Estoque atual" required={!isEditing} inline />
+                <Typography variant="caption" color="text.disabled">unidades</Typography>
               </Box>
               <TextField
                 {...register('stock')}
@@ -350,8 +322,13 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 size="small"
                 type="number"
                 placeholder="0"
+                disabled={isEditing}
                 error={!!errors.stock}
-                helperText={errors.stock?.message}
+                helperText={
+                  isEditing
+                    ? 'Use "Ajustar estoque" para alterar'
+                    : errors.stock?.message
+                }
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
               />
             </Box>
@@ -359,9 +336,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                 <FieldLabel label="Estoque mínimo" inline />
-                <Typography variant="caption" color="text.disabled">
-                  alerta de reposição
-                </Typography>
+                <Typography variant="caption" color="text.disabled">alerta de reposição</Typography>
               </Box>
               <TextField
                 {...register('minStock')}
@@ -370,7 +345,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 type="number"
                 placeholder="Ex: 10"
                 error={!!errors.minStock}
-                helperText={errors.minStock?.message}
+                helperText={errors.minStock?.message as string}
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
               />
             </Box>
@@ -380,9 +355,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
               <FieldLabel label="Código de barras" inline />
-              <Typography variant="caption" color="text.disabled">
-                EAN-13 ou SKU
-              </Typography>
+              <Typography variant="caption" color="text.disabled">EAN-13 ou SKU</Typography>
             </Box>
             <TextField
               {...register('barcode')}
@@ -401,7 +374,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                       <Button
                         size="small"
                         variant="ghost"
-                        onClick={handleGenerateBarcode}
+                        onClick={() => setValue('barcode', generateEAN13())}
                         startIcon={<AutoFixHighRounded sx={{ fontSize: 13 }} />}
                         sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: 12 }}
                       >
@@ -417,62 +390,43 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           {/* Categoria */}
           <Box>
             <FieldLabel label="Categoria" />
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <>
+            {isLoadingCategories ? (
+              <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} variant="rounded" width={80} height={28} />
+                ))}
+              </Box>
+            ) : (
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                    {allCategories.map((cat) => (
+                    {categories.length === 0 && (
+                      <Typography variant="caption" color="text.disabled">
+                        Nenhuma categoria cadastrada. Adicione na tela de estoque.
+                      </Typography>
+                    )}
+                    {categories.map((cat) => (
                       <Chip
-                        key={cat}
-                        label={cat}
+                        key={cat.id}
+                        label={
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cat.color }} />
+                            {cat.name}
+                          </Box>
+                        }
                         size="small"
-                        onClick={() => field.onChange(cat)}
-                        color={field.value === cat ? 'success' : 'default'}
-                        variant={field.value === cat ? 'filled' : 'outlined'}
+                        onClick={() => field.onChange(field.value === cat.id ? null : cat.id)}
+                        color={field.value === cat.id ? 'success' : 'default'}
+                        variant={field.value === cat.id ? 'filled' : 'outlined'}
                         sx={{ cursor: 'pointer' }}
                       />
                     ))}
-
-                    {showNewCatInput ? (
-                      <TextField
-                        inputRef={newCatInputRef}
-                        size="small"
-                        value={newCatValue}
-                        onChange={(e) => setNewCatValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleAddCategory(field.onChange)
-                          }
-                          if (e.key === 'Escape') {
-                            setShowNewCatInput(false)
-                            setNewCatValue('')
-                          }
-                        }}
-                        onBlur={() => handleAddCategory(field.onChange)}
-                        autoFocus
-                        placeholder="Nova categoria"
-                        sx={{ width: 140 }}
-                        slotProps={{
-                          htmlInput: { style: { padding: '4px 8px', fontSize: 13 } },
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        label="+ Nova"
-                        size="small"
-                        variant="outlined"
-                        onClick={() => setShowNewCatInput(true)}
-                        sx={{ cursor: 'pointer', borderStyle: 'dashed' }}
-                        icon={<AddRounded sx={{ fontSize: '14px !important' }} />}
-                      />
-                    )}
                   </Box>
-                </>
-              )}
-            />
+                )}
+              />
+            )}
           </Box>
         </Box>
       </DialogContent>
@@ -481,7 +435,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         <Typography variant="caption" color="text.disabled" sx={{ flex: 1 }}>
           ✓ Os campos com * são obrigatórios
         </Typography>
-        <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+        <Button variant="ghost" onClick={handleClose} disabled={isPending}>
           Cancelar
         </Button>
         <Button
@@ -489,16 +443,16 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           form="product-form"
           variant="contained"
           color="success"
-          disabled={isSubmitting}
+          disabled={isPending || isSubmitting}
           startIcon={
-            isSubmitting ? (
+            isPending ? (
               <CircularProgress size={14} color="inherit" />
             ) : (
               <CheckRounded />
             )
           }
         >
-          {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar produto'}
+          {isPending ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar produto'}
         </Button>
       </DialogActions>
     </Dialog>

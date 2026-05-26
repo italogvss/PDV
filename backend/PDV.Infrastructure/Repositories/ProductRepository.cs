@@ -1,16 +1,19 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class ProductRepository(AppDbContext context) : IProductRepository
+public class ProductRepository(AppDbContext context, ITenantContext tenantContext) : IProductRepository
 {
+    private Guid TenantId => tenantContext.TenantId;
+
     public async Task<Product?> GetByIdAsync(Guid id) =>
         await context.Products
             .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == TenantId);
 
     public async Task<(IEnumerable<Product> Data, int TotalCount)> GetAllAsync(
         int page, int pageSize,
@@ -18,7 +21,10 @@ public class ProductRepository(AppDbContext context) : IProductRepository
         Guid? categoryId = null,
         string? sortBy = null, string? sortOrder = null)
     {
-        var query = context.Products.Include(p => p.Category).AsQueryable();
+        var query = context.Products
+            .Include(p => p.Category)
+            .Where(p => p.TenantId == TenantId)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
             query = query.Where(p => p.Name.Contains(name));
@@ -62,7 +68,7 @@ public class ProductRepository(AppDbContext context) : IProductRepository
 
     public async Task<bool> BarcodeExistsAsync(string barcode, Guid? excludeId = null)
     {
-        var query = context.Products.Where(p => p.Barcode == barcode);
+        var query = context.Products.Where(p => p.Barcode == barcode && p.TenantId == TenantId);
         if (excludeId.HasValue)
             query = query.Where(p => p.Id != excludeId.Value);
         return await query.AnyAsync();

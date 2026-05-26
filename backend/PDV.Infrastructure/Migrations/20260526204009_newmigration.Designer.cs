@@ -12,8 +12,8 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260526200537_AddProductCategoryAndUpdateProduct")]
-    partial class AddProductCategoryAndUpdateProduct
+    [Migration("20260526204009_newmigration")]
+    partial class newmigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -104,12 +104,15 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Barcode")
-                        .IsUnique();
-
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("TenantId", "Barcode")
+                        .IsUnique();
 
                     b.ToTable("Products");
                 });

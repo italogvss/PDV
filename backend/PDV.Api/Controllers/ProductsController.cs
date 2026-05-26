@@ -32,7 +32,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -40,7 +40,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -48,7 +48,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);
@@ -56,7 +56,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/stock")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> AdjustStock(Guid id, [FromBody] AdjustStockRequest request)
     {
         var result = await service.AdjustStockAsync(id, request);

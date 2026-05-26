@@ -101,12 +101,15 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Barcode")
-                        .IsUnique();
-
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("TenantId", "Barcode")
+                        .IsUnique();
 
                     b.ToTable("Products");
                 });

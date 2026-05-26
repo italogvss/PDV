@@ -1,0 +1,65 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  productService,
+  type CreateCategoryPayload,
+  type UpdateCategoryPayload,
+} from '../services/product.service'
+import { useToast } from './useToast'
+
+const CATEGORIES_KEY = ['product-categories'] as const
+const PRODUCTS_KEY = ['products'] as const
+
+export function useProductCategories() {
+  return useQuery({
+    queryKey: CATEGORIES_KEY,
+    queryFn: () => productService.getAllCategories(),
+  })
+}
+
+export function useCreateProductCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  return useMutation({
+    mutationFn: (payload: CreateCategoryPayload) => productService.createCategory(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      showToast('Categoria criada com sucesso!', 'success')
+    },
+    onError: () => {
+      showToast('Erro ao criar categoria.', 'error')
+    },
+  })
+}
+
+export function useUpdateProductCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & UpdateCategoryPayload) =>
+      productService.updateCategory(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      showToast('Categoria atualizada com sucesso!', 'success')
+    },
+    onError: () => {
+      showToast('Erro ao atualizar categoria.', 'error')
+    },
+  })
+}
+
+export function useDeleteProductCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  return useMutation({
+    mutationFn: (id: string) => productService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      showToast('Categoria excluída.', 'info')
+    },
+    onError: () => {
+      showToast('Erro ao excluir categoria.', 'error')
+    },
+  })
+}

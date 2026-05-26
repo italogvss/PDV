@@ -34,7 +34,6 @@ export default function FilterMenu({
     <>
       <Button
         variant="outlined"
-        size="small"
         startIcon={<FilterListRounded />}
         onClick={(e) => setAnchor(e.currentTarget)}
         color={selected.length > 0 ? 'primary' : 'primary'}
@@ -66,8 +65,7 @@ export default function FilterMenu({
               sx={{ p: 0, mr: 0.5 }}
             />
             <ListItemText
-              primary={option}
-              primaryTypographyProps={{ fontSize: 13 }}
+              primary={option}            
             />
           </MenuItem>
         ))}
