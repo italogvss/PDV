@@ -1,16 +1,27 @@
 import { useState, useMemo } from 'react'
-import { Box, Typography, Button, Card } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+} from '@mui/material'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_SALES } from './mock'
-import type { FilterState } from './types'
+import { useSales, useCancelSale } from '../../hooks/useSales'
+import type { SaleListItem } from '../../services/sale.service'
+import type { FilterState, SaleRecord, SaleStatus, SalePaymentMethod } from './types'
 import StatusChip from './components/StatusChip'
 import PaymentChip from './components/PaymentChip'
 import FiltersPopover from './components/FiltersPopover'
 import RowActionsMenu from './components/RowActionsMenu'
+import SaleDetailModal from './components/SaleDetailModal'
 
 const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
@@ -18,101 +29,58 @@ const INITIAL_FILTERS: FilterState = {
   operator: 'Todos',
 }
 
-// Definido fora para evitar recriação em cada render
-const columns: GridColDef[] = [
-  {
-    field: 'id',
-    headerName: 'Pedido',
-    width: 110,
-    renderCell: ({ row }) => (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          height: '100%',
-        }}
-      >
-        <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
-          {row.id}
-        </Typography>
-        <Typography variant="caption" color="text.tertiary">
-          {row.time}
-        </Typography>
-      </Box>
-    ),
-  },
-  {
-    field: 'customer',
-    headerName: 'Cliente',
-    flex: 1,
-    minWidth: 150,
-    renderCell: ({ row }) => (
-      <Typography variant="body2">{row.customer}</Typography>
-    ),
-  },
-  {
-    field: 'operator',
-    headerName: 'Operador',
-    width: 130,
-    renderCell: ({ row }) => (
-      <Typography variant="body2">{row.operator}</Typography>
-    ),
-  },
-  {
-    field: 'items',
-    headerName: 'Itens',
-    width: 80,
-    align: 'center',
-    headerAlign: 'center',
-    renderCell: ({ row }) => (
-      <Typography variant="body2">{row.items}</Typography>
-    ),
-  },
-  {
-    field: 'payment',
-    headerName: 'Pagamento',
-    width: 160,
-    sortable: false,
-    renderCell: ({ row }) => <PaymentChip method={row.payment} />,
-  },
-  {
-    field: 'total',
-    headerName: 'Total',
-    width: 130,
-    align: 'right',
-    headerAlign: 'right',
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {formatBRL(row.total)}
-      </Typography>
-    ),
-  },
-  {
-    field: 'status',
-    headerName: 'Status',
-    width: 140,
-    sortable: false,
-    renderCell: ({ row }) => <StatusChip status={row.status} />,
-  },
-  {
-    field: 'rowActions',
-    headerName: '',
-    width: 56,
-    sortable: false,
-    filterable: false,
-    disableColumnMenu: true,
-    renderCell: ({ row }) => <RowActionsMenu sale={row} />,
-  },
-]
+const STATUS_MAP: Record<string, SaleStatus> = {
+  Active: 'Ativo',
+  Cancelled: 'Cancelado',
+}
+
+const PAYMENT_MAP: Record<string, SalePaymentMethod> = {
+  Cash: 'Dinheiro',
+  PIX: 'Pix',
+  'Credit Card': 'Crédito',
+  'Debit Card': 'Débito',
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function mapToRecord(s: SaleListItem): SaleRecord {
+  return {
+    id: s.id,
+    time: formatTime(s.createdAt),
+    customer: s.customerName ?? '—',
+    operator: s.operatorName,
+    payment: PAYMENT_MAP[s.paymentMethod] ?? (s.paymentMethod as SalePaymentMethod),
+    total: s.total,
+    status: STATUS_MAP[s.status] ?? 'Ativo',
+    amountPaid: s.total,
+    change: 0,
+    isInstallment: s.isInstallment,
+    installmentCount: s.installmentCount,
+  }
+}
 
 export default function SalesHistoryPage() {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
+  const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null)
+  const [cancelId, setCancelId] = useState<string | null>(null)
+
+  const { data: salesRaw = [], isLoading } = useSales()
+  const cancelSale = useCancelSale()
+
+  const sales: SaleRecord[] = useMemo(() => salesRaw.map(mapToRecord), [salesRaw])
 
   const operators = useMemo(
-    () => [...new Set(MOCK_SALES.map((s) => s.operator))],
-    [],
+    () => [...new Set(sales.map((s) => s.operator))],
+    [sales],
   )
 
   const activeFiltersCount = useMemo(
@@ -125,18 +93,96 @@ export default function SalesHistoryPage() {
 
   const rows = useMemo(
     () =>
-      MOCK_SALES.filter(
+      sales.filter(
         (row) =>
           (filters.status === 'Todos' || row.status === filters.status) &&
           (filters.payment === 'Todos' || row.payment === filters.payment) &&
           (filters.operator === 'Todos' || row.operator === filters.operator),
       ),
-    [filters],
+    [sales, filters],
+  )
+
+  const columns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: 'id',
+        headerName: 'Pedido',
+        width: 110,
+        renderCell: ({ row }) => (
+          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+              #{row.id.slice(0, 6).toUpperCase()}
+            </Typography>
+            <Typography variant="caption" color="text.tertiary">
+              {row.time}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        field: 'customer',
+        headerName: 'Cliente',
+        flex: 1,
+        minWidth: 130,
+        renderCell: ({ row }) => (
+          <Typography variant="body2">{row.customer}</Typography>
+        ),
+      },
+      {
+        field: 'operator',
+        headerName: 'Operador',
+        width: 130,
+        renderCell: ({ row }) => (
+          <Typography variant="body2">{row.operator}</Typography>
+        ),
+      },
+      {
+        field: 'payment',
+        headerName: 'Pagamento',
+        width: 160,
+        sortable: false,
+        renderCell: ({ row }) => <PaymentChip method={row.payment} />,
+      },
+      {
+        field: 'total',
+        headerName: 'Total',
+        width: 130,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: ({ row }) => (
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {formatBRL(row.total)}
+          </Typography>
+        ),
+      },
+      {
+        field: 'status',
+        headerName: 'Status',
+        width: 140,
+        sortable: false,
+        renderCell: ({ row }) => <StatusChip status={row.status} />,
+      },
+      {
+        field: 'rowActions',
+        headerName: '',
+        width: 56,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => (
+          <RowActionsMenu
+            sale={row}
+            onViewDetails={setSelectedSaleId}
+            onCancel={setCancelId}
+          />
+        ),
+      },
+    ],
+    [],
   )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho da página */}
       <Box
         sx={{
           display: 'flex',
@@ -159,26 +205,16 @@ export default function SalesHistoryPage() {
             startIcon={<FilterListRounded />}
             onClick={(e) => setFilterAnchor(e.currentTarget)}
           >
-            {activeFiltersCount > 0
-              ? `Filtros (${activeFiltersCount})`
-              : 'Filtros'}
-          </Button>
-
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileDownloadOutlined />}
-          >
-            Exportar
+            {activeFiltersCount > 0 ? `Filtros (${activeFiltersCount})` : 'Filtros'}
           </Button>
         </Box>
       </Box>
 
-      {/* Tabela */}
       <Card sx={{ overflow: 'hidden' }}>
         <DataGrid
           rows={rows}
           columns={columns}
+          loading={isLoading}
           getRowId={(row) => row.id}
           rowHeight={60}
           disableRowSelectionOnClick
@@ -188,7 +224,6 @@ export default function SalesHistoryPage() {
           }}
           sx={(theme) => ({
             border: 'none',
-            // Cabeçalho
             '& .MuiDataGrid-columnHeaders': {
               backgroundColor: theme.palette.surface.sunken,
               borderBottom: `1px solid ${theme.palette.border.subtle}`,
@@ -204,21 +239,18 @@ export default function SalesHistoryPage() {
               textTransform: 'uppercase',
             },
             '& .MuiDataGrid-columnSeparator': { display: 'none' },
-            // Células
             '& .MuiDataGrid-cell': {
               borderBottom: `1px solid ${theme.palette.border.subtle}`,
               display: 'flex',
               alignItems: 'center',
               '&:focus, &:focus-within': { outline: 'none' },
             },
-            // Linhas
             '& .MuiDataGrid-row:hover': {
               backgroundColor: theme.palette.surface.sunken,
             },
             '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': {
               borderBottom: 'none',
             },
-            // Rodapé / paginação
             '& .MuiDataGrid-footerContainer': {
               borderTop: `1px solid ${theme.palette.border.subtle}`,
               minHeight: 48,
@@ -236,6 +268,41 @@ export default function SalesHistoryPage() {
         onChange={setFilters}
         onClear={() => setFilters(INITIAL_FILTERS)}
       />
+
+      <SaleDetailModal
+        saleId={selectedSaleId}
+        onClose={() => setSelectedSaleId(null)}
+        onCancel={setCancelId}
+      />
+
+      <Dialog open={cancelId !== null} onClose={() => setCancelId(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cancelar venda</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Esta ação irá cancelar a venda e devolver os itens ao estoque. Não pode ser desfeita.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button variant="outlined" size="small" onClick={() => setCancelId(null)}>
+            Voltar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            disabled={cancelSale.isPending}
+            startIcon={cancelSale.isPending ? <CircularProgress size={14} color="inherit" /> : undefined}
+            onClick={async () => {
+              if (!cancelId) return
+              await cancelSale.mutateAsync(cancelId)
+              setCancelId(null)
+              setSelectedSaleId(null)
+            }}
+          >
+            {cancelSale.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

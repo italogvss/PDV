@@ -5,6 +5,7 @@ import {
   type UpdateCategoryPayload,
 } from '../services/product.service'
 import { useToast } from './useToast'
+import { useApiError } from './useApiError'
 
 const CATEGORIES_KEY = ['product-categories'] as const
 const PRODUCTS_KEY = ['products'] as const
@@ -19,21 +20,21 @@ export function useProductCategories() {
 export function useCreateProductCategory() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: (payload: CreateCategoryPayload) => productService.createCategory(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
       showToast('Categoria criada com sucesso!', 'success')
     },
-    onError: () => {
-      showToast('Erro ao criar categoria.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao criar categoria.'),
   })
 }
 
 export function useUpdateProductCategory() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & UpdateCategoryPayload) =>
       productService.updateCategory(id, payload),
@@ -42,15 +43,14 @@ export function useUpdateProductCategory() {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
       showToast('Categoria atualizada com sucesso!', 'success')
     },
-    onError: () => {
-      showToast('Erro ao atualizar categoria.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao atualizar categoria.'),
   })
 }
 
 export function useDeleteProductCategory() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: (id: string) => productService.deleteCategory(id),
     onSuccess: () => {
@@ -58,8 +58,6 @@ export function useDeleteProductCategory() {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
       showToast('Categoria excluída.', 'info')
     },
-    onError: () => {
-      showToast('Erro ao excluir categoria.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao excluir categoria.'),
   })
 }

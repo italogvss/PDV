@@ -1,11 +1,19 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using PDV.Domain.Exceptions;
 
 namespace PDV.Api.Middleware;
 
-public class ExceptionMiddleware(RequestDelegate next, IHostEnvironment env)
+public class ExceptionMiddleware(
+    RequestDelegate next,
+    IHostEnvironment env,
+    ILogger<ExceptionMiddleware> logger)
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -14,31 +22,53 @@ public class ExceptionMiddleware(RequestDelegate next, IHostEnvironment env)
         }
         catch (Exception ex)
         {
-            await HandleAsync(context, ex, env);
+            await HandleAsync(context, ex);
         }
     }
 
-    private static Task HandleAsync(HttpContext context, Exception ex, IHostEnvironment env)
+    private Task HandleAsync(HttpContext context, Exception ex)
     {
-        var (status, title, detail) = ex switch
+        int status;
+        string title;
+        string? detail;
+
+        switch (ex)
         {
-            ValidationException ve => (400, "Dados inválidos.", FormatValidationErrors(ve)),
-            UnauthorizedException ue => (401, ue.Message, (string?)null),
-            NotFoundException nfe => (404, nfe.Message, (string?)null),
-            BusinessException be => (422, be.Message, (string?)null),
-            _ => (500, "Ocorreu um erro interno.", env.IsDevelopment() ? ex.ToString() : (string?)null)
-        };
+            case ValidationException ve:
+                status = 400;
+                title = "Dados inválidos.";
+                detail = FormatValidationErrors(ve);
+                logger.LogWarning("[{Status}] {Title} | {Detail}", status, title, detail);
+                break;
+
+            case AppException appEx:
+                status = appEx.HttpStatus;
+                title = appEx.Title;
+                detail = appEx.Detail;
+                logger.LogWarning(
+                    "[{Status}] {Title}{Detail}",
+                    status, title,
+                    detail is not null ? $" | {detail}" : string.Empty);
+                break;
+
+            default:
+                status = 500;
+                title = "Ocorreu um erro interno.";
+                detail = env.IsDevelopment() ? ex.ToString() : null;
+                logger.LogError(
+                    ex,
+                    "Unhandled exception on {Method} {Path}",
+                    context.Request.Method,
+                    context.Request.Path);
+                break;
+        }
 
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/problem+json";
 
-        var body = JsonSerializer.Serialize(new
-        {
-            type = "https://tools.ietf.org/html/rfc7807",
-            title,
-            status,
-            detail
-        }, new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+        var body = JsonSerializer.Serialize(
+            new { type = "https://tools.ietf.org/html/rfc7807", title, status, detail },
+            JsonOptions);
 
         return context.Response.WriteAsync(body);
     }

@@ -11,6 +11,7 @@ export default function CartItem({
   onRemove,
 }: CartItemProps) {
   const lineTotal = product.price * quantity
+  const atMaxStock = quantity >= product.stock
 
   return (
     <Box
@@ -36,6 +37,7 @@ export default function CartItem({
           <CloseRounded sx={{ fontSize: 16 }} />
         </IconButton>
       </Box>
+
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box
           sx={{
@@ -43,7 +45,7 @@ export default function CartItem({
             alignItems: 'center',
             gap: 0.5,
             border: 1,
-            borderColor: 'border.subtle',
+            borderColor: atMaxStock ? 'warning.main' : 'border.subtle',
             borderRadius: 2,
             bgcolor: 'background.paper',
           }}
@@ -63,15 +65,24 @@ export default function CartItem({
           </Typography>
           <IconButton
             size="small"
+            disabled={atMaxStock}
             onClick={() => onIncrement(product.id)}
             sx={{ p: 0.5, color: 'text.secondary' }}
           >
             <AddRounded sx={{ fontSize: 14 }} />
           </IconButton>
         </Box>
-        <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
-          {formatBRL(lineTotal)}
-        </Typography>
+
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
+            {formatBRL(lineTotal)}
+          </Typography>
+          {atMaxStock && (
+            <Typography variant="caption" color="warning.main">
+              Limite do estoque
+            </Typography>
+          )}
+        </Box>
       </Box>
     </Box>
   )

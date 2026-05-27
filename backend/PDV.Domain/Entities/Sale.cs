@@ -5,6 +5,7 @@ namespace PDV.Domain.Entities;
 public class Sale
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public Guid OperatorId { get; set; }
     public User Operator { get; set; } = null!;
     public string? CustomerName { get; set; }

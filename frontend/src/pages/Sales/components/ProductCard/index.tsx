@@ -1,9 +1,11 @@
 import { Box, Typography } from '@mui/material'
-import { LocalCafeOutlined } from '@mui/icons-material'
+import { Inventory2Outlined } from '@mui/icons-material'
 import { formatBRL } from '../../../../utils/currency'
 import { ProductCardProps } from './types'
 
 export default function ProductCard({ product, onAdd }: ProductCardProps) {
+  const color = product.category?.color ?? '#9e9e9e'
+
   return (
     <Box
       onClick={() => onAdd(product.id)}
@@ -29,16 +31,16 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         sx={{
           height: 72,
           borderRadius: 2,
-          bgcolor: product.imageColor,
+          bgcolor: color,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: 'rgba(255,255,255,0.7)',
         }}
       >
-        <LocalCafeOutlined sx={{ fontSize: 28 }} />
+        <Inventory2Outlined sx={{ fontSize: 28 }} />
       </Box>
-      <Box sx={{pl: 1}}>
+      <Box sx={{ pl: 1 }}>
         <Typography
           variant="body2"
           color="text.primary"

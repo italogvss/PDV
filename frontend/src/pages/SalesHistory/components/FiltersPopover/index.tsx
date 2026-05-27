@@ -11,7 +11,7 @@ import FilterListOffRounded from '@mui/icons-material/FilterListOffRounded'
 import type { FiltersPopoverProps } from './types'
 import type { SaleStatus, SalePaymentMethod } from '../../types'
 
-const STATUSES: Array<SaleStatus | 'Todos'> = ['Todos', 'Pago', 'Pendente', 'Cancelado']
+const STATUSES: Array<SaleStatus | 'Todos'> = ['Todos', 'Ativo', 'Cancelado']
 const PAYMENTS: Array<SalePaymentMethod | 'Todos'> = ['Todos', 'Pix', 'Dinheiro', 'Crédito', 'Débito']
 
 const toggleSx = {

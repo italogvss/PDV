@@ -33,6 +33,7 @@ function mapProduct(p: BackendProduct): Product {
     costPrice: p.purchasePrice ?? 0,
     price: p.price,
     stock: p.stock,
+    isActive: p.isActive,
     minStock: p.minStock ?? undefined,
     criticalStock: p.minCriticalStock ?? undefined,
   }

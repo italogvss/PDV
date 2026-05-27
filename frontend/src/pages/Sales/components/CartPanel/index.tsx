@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Divider, Typography } from '@mui/material'
 import { CheckRounded, ShoppingCartOutlined } from '@mui/icons-material'
 import CartItem from '../CartItem'
 import PaymentSection from './components/PaymentSection'
@@ -8,16 +8,20 @@ import { CartPanelProps } from './types'
 export default function CartPanel({
   lines,
   subtotal,
-  discount,
   total,
   method,
   onMethodChange,
+  cardType,
+  onCardTypeChange,
+  installments,
+  onInstallmentsChange,
   cashReceived,
   onCashReceivedChange,
   onIncrement,
   onDecrement,
   onRemove,
   onFinalize,
+  isSubmitting,
 }: CartPanelProps) {
   const isEmpty = lines.length === 0
 
@@ -71,14 +75,23 @@ export default function CartPanel({
         )}
       </Box>
 
-      <Box sx={{ p: 3, borderTop: 1, borderColor: 'border.subtle', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box
+        sx={{
+          p: 3,
+          borderTop: 1,
+          borderColor: 'border.subtle',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2" color="text.tertiary">Subtotal</Typography>
-          <Typography variant="body2" color="text.primary">{formatBRL(subtotal)}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2" color="text.tertiary">Desconto</Typography>
-          <Typography variant="body2" color="error.main">- {formatBRL(discount)}</Typography>
+          <Typography variant="body2" color="text.tertiary">
+            {lines.length} {lines.length === 1 ? 'item' : 'itens'}
+          </Typography>
+          <Typography variant="body2" color="text.tertiary">
+            {formatBRL(subtotal)}
+          </Typography>
         </Box>
         <Divider sx={{ borderColor: 'border.subtle' }} />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -93,6 +106,10 @@ export default function CartPanel({
         <PaymentSection
           method={method}
           onMethodChange={onMethodChange}
+          cardType={cardType}
+          onCardTypeChange={onCardTypeChange}
+          installments={installments}
+          onInstallmentsChange={onInstallmentsChange}
           total={total}
           cashReceived={cashReceived}
           onCashReceivedChange={onCashReceivedChange}
@@ -103,12 +120,12 @@ export default function CartPanel({
           color="success"
           size="large"
           fullWidth
-          disabled={isEmpty}
-          startIcon={<CheckRounded />}
+          disabled={isEmpty || isSubmitting}
+          startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <CheckRounded />}
           onClick={onFinalize}
           sx={{ mt: 1 }}
         >
-          Finalizar venda
+          {isSubmitting ? 'Registrando...' : 'Finalizar venda'}
         </Button>
       </Box>
     </Box>

@@ -12,8 +12,11 @@ namespace PDV.Infrastructure.Services;
 
 public class SaleService(
     AppDbContext context,
+    ITenantContext tenantContext,
     IValidator<CreateSaleRequest> createValidator) : ISaleService
 {
+    private Guid TenantId => tenantContext.TenantId;
+
     public async Task<PaginatedResponse<SaleResponse>> GetAllAsync(
         int page, int pageSize,
         DateTime? startDate, DateTime? endDate,
@@ -21,6 +24,7 @@ public class SaleService(
     {
         var query = context.Sales
             .Include(s => s.Operator)
+            .Where(s => s.TenantId == TenantId)
             .AsQueryable();
 
         if (startDate.HasValue)
@@ -50,7 +54,7 @@ public class SaleService(
         var sale = await context.Sales
             .Include(s => s.Operator)
             .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == id)
+            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == TenantId)
             ?? throw new NotFoundException("Venda não encontrada.");
 
         return MapToDetail(sale);
@@ -60,12 +64,13 @@ public class SaleService(
     {
         await createValidator.ValidateAndThrowAsync(request);
 
+        var tenantId = TenantId;
+
         await using var transaction = await context.Database.BeginTransactionAsync();
 
         var productIds = request.Items.Select(i => i.ProductId).ToList();
         var products = await context.Products
-            .IgnoreQueryFilters()
-            .Where(p => productIds.Contains(p.Id))
+            .Where(p => productIds.Contains(p.Id) && p.TenantId == tenantId)
             .ToDictionaryAsync(p => p.Id);
 
         foreach (var item in request.Items)
@@ -105,6 +110,7 @@ public class SaleService(
         var sale = new Sale
         {
             Id = Guid.NewGuid(),
+            TenantId = tenantId,
             OperatorId = operatorId,
             CustomerName = request.CustomerName,
             PaymentMethod = request.PaymentMethod,
@@ -132,7 +138,7 @@ public class SaleService(
     {
         var sale = await context.Sales
             .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == id)
+            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == TenantId)
             ?? throw new NotFoundException("Venda não encontrada.");
 
         if (sale.Status == SaleStatus.Cancelled)
@@ -147,8 +153,7 @@ public class SaleService(
         foreach (var item in sale.Items.Where(i => i.ProductId.HasValue))
         {
             var product = await context.Products
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.Id == item.ProductId!.Value);
+                .FirstOrDefaultAsync(p => p.Id == item.ProductId!.Value && p.TenantId == TenantId);
 
             if (product is { IsActive: true })
                 product.Stock += item.Quantity;

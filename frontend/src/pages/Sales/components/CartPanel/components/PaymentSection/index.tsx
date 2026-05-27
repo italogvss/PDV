@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Box, FormControl, InputLabel, MenuItem, Select, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import {
   CreditCardOutlined,
@@ -8,8 +7,6 @@ import {
 import { PaymentMethod } from '../../../../types'
 import { formatBRL } from '../../../../../../utils/currency'
 import { PaymentSectionProps } from './types'
-
-type CardType = 'credit' | 'debit'
 
 const METHODS: { value: PaymentMethod; label: string; Icon: typeof CreditCardOutlined }[] = [
   { value: 'card', label: 'Cartão', Icon: CreditCardOutlined },
@@ -26,20 +23,21 @@ const METHOD_COLORS: Record<PaymentMethod, { bg: string; text: string; hover: st
 export default function PaymentSection({
   method,
   onMethodChange,
+  cardType,
+  onCardTypeChange,
+  installments,
+  onInstallmentsChange,
   total,
   cashReceived,
   onCashReceivedChange,
 }: PaymentSectionProps) {
-  const [cardType, setCardType] = useState<CardType>('credit')
-  const [installments, setInstallments] = useState(1)
-
   const receivedNumber = Number(cashReceived.replace(',', '.'))
   const validReceived = !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
   const change = validReceived ? receivedNumber - total : 0
 
-  function handleCardTypeChange(value: CardType) {
-    setCardType(value)
-    if (value === 'debit') setInstallments(1)
+  function handleCardTypeChange(value: 'credit' | 'debit') {
+    onCardTypeChange(value)
+    if (value === 'debit') onInstallmentsChange(1)
   }
 
   return (
@@ -87,7 +85,7 @@ export default function PaymentSection({
             exclusive
             fullWidth
             value={cardType}
-            onChange={(_, value: CardType | null) => value && handleCardTypeChange(value)}
+            onChange={(_, value: 'credit' | 'debit' | null) => value && handleCardTypeChange(value)}
             size="small"
             sx={{
               '& .MuiToggleButton-root': {
@@ -116,7 +114,7 @@ export default function PaymentSection({
               <Select
                 value={installments}
                 label="Parcelas"
-                onChange={(e) => setInstallments(Number(e.target.value))}
+                onChange={(e) => onInstallmentsChange(Number(e.target.value))}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                   <MenuItem key={n} value={n}>
@@ -137,7 +135,15 @@ export default function PaymentSection({
             onChange={(e) => onCashReceivedChange(e.target.value.replace(/[^\d,.]/g, ''))}
             placeholder="0,00"
             size="small"
-            slotProps={{ input: { startAdornment: <Typography variant="body2" color="text.tertiary" sx={{ mr: 1 }}>R$</Typography> } }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <Typography variant="body2" color="text.tertiary" sx={{ mr: 1 }}>
+                    R$
+                  </Typography>
+                ),
+              },
+            }}
           />
           {validReceived && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 0.5 }}>

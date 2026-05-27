@@ -1,48 +1,82 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 import SalesHeader from './components/SalesHeader'
 import ProductCatalog from './components/ProductCatalog'
 import CartPanel from './components/CartPanel'
 import { CartLineWithProduct } from './components/CartPanel/types'
 import { CategoryValue } from './components/ProductCatalog/types'
-import { CartLine, PaymentMethod } from './types'
-import { DISCOUNT_RATE, PRODUCTS } from './data'
+import { CartLine, CardType, PaymentMethod } from './types'
+import { useProducts } from '../../hooks/useProducts'
+import { useProductCategories } from '../../hooks/useProductCategories'
+import { useCreateSale } from '../../hooks/useSales'
+import type { Product } from '../../types/product.types'
+
+function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
+  if (method === 'cash') return 'Cash'
+  if (method === 'pix') return 'PIX'
+  if (cardType === 'credit') return 'Credit Card'
+  return 'Debit Card'
+}
 
 export default function SalesPage() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [category, setCategory] = useState<CategoryValue>('all')
   const [cart, setCart] = useState<CartLine[]>([])
   const [method, setMethod] = useState<PaymentMethod>('card')
+  const [cardType, setCardType] = useState<CardType>('credit')
+  const [installments, setInstallments] = useState(1)
   const [cashReceived, setCashReceived] = useState('')
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { data: products = [], isLoading: loadingProducts } = useProducts()
+  const { data: categories = [] } = useProductCategories()
+  const createSale = useCreateSale()
+
+  // Atualiza a busca com delay de 3 segundos
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 3000)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [search])
+
   const filteredProducts = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    return PRODUCTS.filter((p) => {
-      const matchesCategory = category === 'all' || p.category === category
+    const term = debouncedSearch.trim().toLowerCase()
+    return products.filter((p: Product) => {
+      const matchesCategory = category === 'all' || p.category?.id === category
       const matchesSearch = term === '' || p.name.toLowerCase().includes(term)
-      return matchesCategory && matchesSearch
+      return matchesCategory && matchesSearch && p.isActive && p.stock > 0
     })
-  }, [search, category])
+  }, [debouncedSearch, category, products])
 
   const cartLines: CartLineWithProduct[] = useMemo(
     () =>
       cart.flatMap((line) => {
-        const product = PRODUCTS.find((p) => p.id === line.productId)
+        const product = products.find((p: Product) => p.id === line.productId)
         return product ? [{ ...line, product }] : []
       }),
-    [cart],
+    [cart, products],
   )
 
   const subtotal = useMemo(
     () => cartLines.reduce((sum, l) => sum + l.product.price * l.quantity, 0),
     [cartLines],
   )
-  const discount = subtotal * DISCOUNT_RATE
-  const total = subtotal - discount
 
   const handleAdd = (productId: string) => {
+    const product = products.find((p: Product) => p.id === productId)
+    if (!product) return
+
     setCart((prev) => {
       const existing = prev.find((l) => l.productId === productId)
+      const currentQty = existing?.quantity ?? 0
+      if (currentQty >= product.stock) return prev
+
       if (existing) {
         return prev.map((l) =>
           l.productId === productId ? { ...l, quantity: l.quantity + 1 } : l,
@@ -51,8 +85,6 @@ export default function SalesPage() {
       return [...prev, { productId, quantity: 1 }]
     })
   }
-
-  const handleIncrement = (productId: string) => handleAdd(productId)
 
   const handleDecrement = (productId: string) => {
     setCart((prev) =>
@@ -68,10 +100,29 @@ export default function SalesPage() {
     setCart((prev) => prev.filter((l) => l.productId !== productId))
   }
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
+    if (cart.length === 0) return
+
+    const paymentMethod = buildPaymentMethod(method, cardType)
+    const isInstallment = method === 'card' && cardType === 'credit' && installments > 1
+    const receivedNumber = Number(cashReceived.replace(',', '.'))
+    const amountPaid = method === 'cash' && !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
+      ? receivedNumber
+      : subtotal
+
+    await createSale.mutateAsync({
+      paymentMethod,
+      isInstallment,
+      installmentCount: isInstallment ? installments : undefined,
+      amountPaid,
+      items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    })
+
     setCart([])
     setCashReceived('')
     setMethod('card')
+    setCardType('credit')
+    setInstallments(1)
   }
 
   return (
@@ -95,25 +146,31 @@ export default function SalesPage() {
       >
         <ProductCatalog
           products={filteredProducts}
+          categories={categories}
           search={search}
           onSearchChange={setSearch}
           category={category}
           onCategoryChange={setCategory}
           onAddProduct={handleAdd}
+          isLoading={loadingProducts}
         />
         <CartPanel
           lines={cartLines}
           subtotal={subtotal}
-          discount={discount}
-          total={total}
+          total={subtotal}
           method={method}
           onMethodChange={setMethod}
+          cardType={cardType}
+          onCardTypeChange={setCardType}
+          installments={installments}
+          onInstallmentsChange={setInstallments}
           cashReceived={cashReceived}
           onCashReceivedChange={setCashReceived}
-          onIncrement={handleIncrement}
+          onIncrement={handleAdd}
           onDecrement={handleDecrement}
           onRemove={handleRemove}
           onFinalize={handleFinalize}
+          isSubmitting={createSale.isPending}
         />
       </Box>
     </Box>

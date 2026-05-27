@@ -5,8 +5,7 @@ import type { SaleStatus } from '../../types'
 type ChipColor = 'success' | 'warning' | 'error'
 
 const colorMap: Record<SaleStatus, ChipColor> = {
-  Pago: 'success',
-  Pendente: 'warning',
+  Ativo: 'success',
   Cancelado: 'error',
 }
 

@@ -1,12 +1,4 @@
-export type ProductCategory = 'bebidas' | 'padaria' | 'lanches' | 'sobremesa' | 'outros'
-
-export interface Product {
-  id: string
-  name: string
-  price: number
-  category: ProductCategory
-  imageColor: string
-}
+export type { Product } from '../../types/product.types'
 
 export interface CartLine {
   productId: string
@@ -14,3 +6,4 @@ export interface CartLine {
 }
 
 export type PaymentMethod = 'card' | 'pix' | 'cash'
+export type CardType = 'credit' | 'debit'

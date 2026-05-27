@@ -10,6 +10,7 @@ using PDV.Infrastructure.Persistence;
 using PDV.Infrastructure.Repositories;
 using PDV.Infrastructure.Services;
 using Scalar.AspNetCore;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            // JsonWebTokenHandler (padrão no .NET 8+) não mapeia "role" para ClaimTypes.Role
+            // automaticamente — precisamos indicar qual claim no JWT representa o role.
+            RoleClaimType = ClaimTypes.Role,
         };
 
         options.Events = new JwtBearerEvents
@@ -43,6 +47,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 if (ctx.Request.Cookies.TryGetValue("access_token", out var token))
                     ctx.Token = token;
                 return Task.CompletedTask;
+            },
+            OnChallenge = ctx =>
+            {
+                ctx.HandleResponse();
+                ctx.Response.StatusCode = 401;
+                ctx.Response.ContentType = "application/problem+json";
+                return ctx.Response.WriteAsync(
+                    """{"type":"https://tools.ietf.org/html/rfc7807","title":"Não autenticado.","status":401}""");
+            },
+            OnForbidden = ctx =>
+            {
+                ctx.Response.ContentType = "application/problem+json";
+                return ctx.Response.WriteAsync(
+                    """{"type":"https://tools.ietf.org/html/rfc7807","title":"Acesso negado.","status":403}""");
             },
         };
     });

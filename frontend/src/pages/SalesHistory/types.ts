@@ -1,4 +1,4 @@
-export type SaleStatus = 'Pago' | 'Pendente' | 'Cancelado'
+export type SaleStatus = 'Ativo' | 'Cancelado'
 
 export type SalePaymentMethod = 'Pix' | 'Dinheiro' | 'Crédito' | 'Débito'
 
@@ -7,10 +7,13 @@ export interface SaleRecord {
   time: string
   customer: string
   operator: string
-  items: number
   payment: SalePaymentMethod
   total: number
   status: SaleStatus
+  amountPaid: number
+  change: number
+  isInstallment: boolean
+  installmentCount: number | null
 }
 
 export interface FilterState {

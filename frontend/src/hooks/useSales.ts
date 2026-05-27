@@ -1,0 +1,51 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { saleService, type CreateSalePayload } from '../services/sale.service'
+import { useToast } from './useToast'
+import { useApiError } from './useApiError'
+
+const SALES_KEY = ['sales'] as const
+const PRODUCTS_KEY = ['products'] as const
+
+export function useSales() {
+  return useQuery({
+    queryKey: SALES_KEY,
+    queryFn: () => saleService.getAll(),
+  })
+}
+
+export function useSaleDetail(id: string | null) {
+  return useQuery({
+    queryKey: [...SALES_KEY, id],
+    queryFn: () => saleService.getById(id!),
+    enabled: id !== null,
+  })
+}
+
+export function useCreateSale() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (payload: CreateSalePayload) => saleService.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      showToast('Venda registrada com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao registrar venda.'),
+  })
+}
+
+export function useCancelSale() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => saleService.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SALES_KEY })
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      showToast('Venda cancelada com sucesso.', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao cancelar venda.'),
+  })
+}

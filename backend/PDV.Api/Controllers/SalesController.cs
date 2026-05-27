@@ -45,7 +45,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public async Task<IActionResult> Cancel(Guid id)
     {
         var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

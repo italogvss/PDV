@@ -1,18 +1,24 @@
-import { Box, InputBase, Tab, Tabs } from '@mui/material'
+import { Box, CircularProgress, InputBase, Tab, Tabs } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { SearchOutlined } from '@mui/icons-material'
 import ProductCard from '../ProductCard'
-import { CATEGORIES } from '../../data'
 import { ProductCatalogProps, CategoryValue } from './types'
 
 export default function ProductCatalog({
   products,
+  categories,
   search,
   onSearchChange,
   category,
   onCategoryChange,
   onAddProduct,
+  isLoading,
 }: ProductCatalogProps) {
+  const tabs = [
+    { value: 'all' as CategoryValue, label: 'Tudo' },
+    ...categories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
+  ]
+
   return (
     <Box
       sx={{
@@ -43,9 +49,10 @@ export default function ProductCatalog({
           <InputBase
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por nome ou SKU..."
+            placeholder="Buscar produto..."
             sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
           />
+          {isLoading && <CircularProgress size={14} color="inherit" />}
         </Box>
       </Box>
 
@@ -60,9 +67,6 @@ export default function ProductCatalog({
           borderRadius: 2,
           border: 1,
           borderColor: 'border.subtle',
-          '&.MuiTabs-list': {
-            border: "none",
-          },
           '& .MuiTab-root': {
             minHeight: 36,
             textTransform: 'none',
@@ -70,7 +74,7 @@ export default function ProductCatalog({
             fontWeight: 500,
             color: 'text.secondary',
             px: 3,
-            border: "none",
+            border: 'none',
             borderRadius: 2,
             mr: 1,
             '&.Mui-selected': {
@@ -83,8 +87,8 @@ export default function ProductCatalog({
           '& .MuiTabs-indicator': { display: 'none' },
         }}
       >
-        {CATEGORIES.map((c) => (
-          <Tab key={c.value} value={c.value} label={c.label} />
+        {tabs.map((t) => (
+          <Tab key={t.value} value={t.value} label={t.label} />
         ))}
       </Tabs>
 
@@ -97,7 +101,11 @@ export default function ProductCatalog({
           mr: -1,
         }}
       >
-        {products.length === 0 ? (
+        {isLoading && products.length === 0 ? (
+          <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress size={32} />
+          </Box>
+        ) : products.length === 0 ? (
           <Box
             sx={{
               py: 8,

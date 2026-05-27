@@ -10,6 +10,9 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
     {
         builder.HasKey(s => s.Id);
 
+        builder.Property(s => s.TenantId).IsRequired();
+        builder.HasIndex(s => s.TenantId);
+
         builder.Property(s => s.PaymentMethod).IsRequired().HasMaxLength(50);
         builder.Property(s => s.CustomerName).HasMaxLength(200);
         builder.Property(s => s.Total).HasColumnType("decimal(10,2)");

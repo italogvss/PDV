@@ -5,6 +5,7 @@ import {
   type UpdateProductPayload,
 } from '../services/product.service'
 import { useToast } from './useToast'
+import { useApiError } from './useApiError'
 
 const QUERY_KEY = ['products'] as const
 
@@ -18,21 +19,21 @@ export function useProducts() {
 export function useCreateProduct() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: (payload: CreateProductPayload) => productService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       showToast('Produto cadastrado com sucesso!', 'success')
     },
-    onError: () => {
-      showToast('Erro ao cadastrar produto.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao cadastrar produto.'),
   })
 }
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & UpdateProductPayload) =>
       productService.update(id, payload),
@@ -40,30 +41,28 @@ export function useUpdateProduct() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       showToast('Produto atualizado com sucesso!', 'success')
     },
-    onError: () => {
-      showToast('Erro ao atualizar produto.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao atualizar produto.'),
   })
 }
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: (id: string) => productService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       showToast('Produto excluído.', 'info')
     },
-    onError: () => {
-      showToast('Erro ao excluir produto.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao excluir produto.'),
   })
 }
 
 export function useAdjustStock() {
   const queryClient = useQueryClient()
   const showToast = useToast()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: ({ id, quantity }: { id: string; quantity: number }) =>
       productService.adjustStock(id, quantity),
@@ -71,8 +70,6 @@ export function useAdjustStock() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       showToast('Estoque ajustado com sucesso!', 'success')
     },
-    onError: () => {
-      showToast('Erro ao ajustar estoque.', 'error')
-    },
+    onError: (error) => handleError(error, 'Erro ao ajustar estoque.'),
   })
 }

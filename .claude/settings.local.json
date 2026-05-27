@@ -21,7 +21,14 @@
       "PowerShell(Stop-Process -Id 8536 -Force -ErrorAction SilentlyContinue)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\" -Force)",
       "Bash(Select-Object Name, FullName)",
-      "Bash(del \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\\\\src\\\\pages\\\\Inventory\\\\mock.ts\")"
+      "Bash(del \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\\\\src\\\\pages\\\\Inventory\\\\mock.ts\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\" -Directory)",
+      "PowerShell(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\\\\src\\\\pages\\\\SalesHistory\" -ErrorAction SilentlyContinue | Select-Object FullName | ForEach-Object { $_.FullName })",
+      "PowerShell(head -50)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\frontend\\\\src\" -Directory)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\" -Recurse -Directory)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\Services\" -Recurse -File -Filter \"*.cs\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\" -Directory)"
     ]
   }
 }

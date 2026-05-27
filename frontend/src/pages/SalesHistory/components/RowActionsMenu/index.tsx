@@ -5,7 +5,7 @@ import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import BlockRounded from '@mui/icons-material/BlockRounded'
 import type { RowActionsMenuProps } from './types'
 
-export default function RowActionsMenu({ sale }: RowActionsMenuProps) {
+export default function RowActionsMenu({ sale, onViewDetails, onCancel }: RowActionsMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 
   const handleClose = () => setAnchor(null)
@@ -27,7 +27,7 @@ export default function RowActionsMenu({ sale }: RowActionsMenuProps) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={() => { handleClose(); onViewDetails(sale.id) }}>
           <ReceiptLongOutlined />
           Ver detalhes
         </MenuItem>
@@ -36,7 +36,7 @@ export default function RowActionsMenu({ sale }: RowActionsMenuProps) {
           <Divider key="div" sx={{ my: 0.5 }} />,
           <MenuItem
             key="cancel"
-            onClick={handleClose}
+            onClick={() => { handleClose(); onCancel(sale.id) }}
             sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
           >
             <BlockRounded />
