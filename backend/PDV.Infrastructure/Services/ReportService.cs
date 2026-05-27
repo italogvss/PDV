@@ -8,20 +8,16 @@ using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
-public class ReportService(AppDbContext context, ITenantContext tenantContext) : IReportService
+public class ReportService(AppDbContext context) : IReportService
 {
-    private Guid TenantId => tenantContext.TenantId;
-
     public async Task<List<SalesChartPoint>> GetSalesChartAsync(
         DateTime startDate, DateTime endDate, string groupBy)
     {
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
-        var tenantId = TenantId;
 
         var sales = await context.Sales
-            .Where(s => s.TenantId == tenantId
-                     && s.Status == SaleStatus.Active
+            .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
             .Select(s => new
@@ -67,12 +63,9 @@ public class ReportService(AppDbContext context, ITenantContext tenantContext) :
     {
         var (start, end) = ResolveDateRange(period, startDate, endDate);
         var label = ResolvePeriodLabel(period, start, end);
-        var tenantId = TenantId;
 
         var rows = await context.Sales
-            .Where(s => s.TenantId == tenantId
-                     && s.CreatedAt >= start
-                     && s.CreatedAt <= end)
+            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
             .Select(s => new { s.Total, s.Status })
             .ToListAsync();
 
@@ -89,11 +82,9 @@ public class ReportService(AppDbContext context, ITenantContext tenantContext) :
         string? period, DateTime? startDate, DateTime? endDate)
     {
         var (start, end) = ResolveDateRange(period, startDate, endDate);
-        var tenantId = TenantId;
 
         var rows = await context.Sales
-            .Where(s => s.TenantId == tenantId
-                     && s.Status == SaleStatus.Active
+            .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
             .Select(s => new { s.OperatorId, s.Operator.Name, s.Total })
@@ -112,10 +103,7 @@ public class ReportService(AppDbContext context, ITenantContext tenantContext) :
 
     public async Task<List<StockSnapshotResponse>> GetStockSnapshotAsync()
     {
-        var tenantId = TenantId;
-
         return await context.Products
-            .Where(p => p.TenantId == tenantId)
             .OrderBy(p => p.Name)
             .Select(p => new StockSnapshotResponse(
                 p.Id,
@@ -131,12 +119,9 @@ public class ReportService(AppDbContext context, ITenantContext tenantContext) :
         string? period, DateTime? startDate, DateTime? endDate)
     {
         var (start, end) = ResolveDateRange(period, startDate, endDate);
-        var tenantId = TenantId;
 
         var sales = await context.Sales
-            .Where(s => s.TenantId == tenantId
-                     && s.CreatedAt >= start
-                     && s.CreatedAt <= end)
+            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
             .OrderByDescending(s => s.CreatedAt)
             .Select(s => new
             {
@@ -171,10 +156,7 @@ public class ReportService(AppDbContext context, ITenantContext tenantContext) :
 
     public async Task<byte[]> ExportStockCsvAsync()
     {
-        var tenantId = TenantId;
-
         var products = await context.Products
-            .Where(p => p.TenantId == tenantId)
             .OrderBy(p => p.Name)
             .Select(p => new { p.Name, p.Barcode, p.NCM, p.Stock, p.Price, p.IsActive })
             .ToListAsync();

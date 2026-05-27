@@ -9,6 +9,7 @@ import {
   Tab,
   Tabs,
   useTheme,
+  CircularProgress,
 } from '@mui/material'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
@@ -25,13 +26,18 @@ import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_EXPENSES } from './mock'
 import { EXPENSE_CATEGORIES } from './types'
-import type { ExpenseCategory } from './types'
+import type { Expense, ExpenseCategory } from './types'
 import ExpenseStatusChip from './components/ExpenseStatusChip'
 import ExpenseRowMenu from './components/ExpenseRowMenu'
 import DonutChart from './components/DonutChart'
 import NewExpenseModal from './components/NewExpenseModal'
+import {
+  useExpenses,
+  useRecurringExpenses,
+  useMarkExpensePaid,
+  useDeleteExpense,
+} from '../../hooks/useExpenses'
 
 const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -49,26 +55,39 @@ const CHIP_ICON_SX = {
 
 type RecurringFilter = 'all' | 'recurring' | 'one-time'
 
+function fmtDueDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+}
+
 export default function ExpensesPage() {
   const theme = useTheme()
+
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [recurringFilter, setRecurringFilter] = useState<RecurringFilter>('all')
 
-  const selectedMonth = new Date(2026, 4, 1)
-  const monthName = MONTHS_PT[selectedMonth.getMonth()]
-  const year = selectedMonth.getFullYear()
+  const { data: expenses = [], isLoading } = useExpenses(selectedMonth, selectedYear)
+  const { data: recurringExpenses = [] } = useRecurringExpenses()
+  const markAsPaid = useMarkExpensePaid()
+  const deleteExpense = useDeleteExpense()
+
+  const monthName = MONTHS_PT[selectedMonth - 1]
+  const year = selectedYear
 
   const kpis = useMemo(() => {
-    const total = MOCK_EXPENSES.reduce((sum, e) => sum + e.amount, 0)
-    const paid = MOCK_EXPENSES.filter((e) => e.status === 'Pago').reduce((sum, e) => sum + e.amount, 0)
-    const pending = MOCK_EXPENSES.filter((e) => e.status === 'Pendente').reduce((sum, e) => sum + e.amount, 0)
-    const paidCount = MOCK_EXPENSES.filter((e) => e.status === 'Pago').length
-    const pendingCount = MOCK_EXPENSES.filter((e) => e.status === 'Pendente').length
-    const recurringExpenses = MOCK_EXPENSES.filter((e) => e.recurring)
-    const recurringTotal = recurringExpenses.reduce((sum, e) => sum + e.amount, 0)
-    const recurringCount = recurringExpenses.length
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const paid = expenses.filter((e) => e.isPaid).reduce((sum, e) => sum + e.amount, 0)
+    const pending = expenses.filter((e) => !e.isPaid).reduce((sum, e) => sum + e.amount, 0)
+    const paidCount = expenses.filter((e) => e.isPaid).length
+    const pendingCount = expenses.filter((e) => !e.isPaid).length
+    const recurringList = expenses.filter((e) => e.isRecurring)
+    const recurringTotal = recurringList.reduce((sum, e) => sum + e.amount, 0)
+    const recurringCount = recurringList.length
     return { total, paid, pending, paidCount, pendingCount, recurringTotal, recurringCount }
-  }, [])
+  }, [expenses])
 
   const categoryColorMap: Record<ExpenseCategory, string> = {
     Salários: theme.palette.data.purple.main,
@@ -85,29 +104,35 @@ export default function ExpensesPage() {
 
   const donutSegments = EXPENSE_CATEGORIES.map((cat) => ({
     label: cat,
-    value: MOCK_EXPENSES.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
+    value: expenses.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
     color: categoryColorMap[cat],
   }))
     .filter((seg) => seg.value > 0)
     .sort((a, b) => b.value - a.value)
 
   const upcomingRenewals = useMemo(
-    () => MOCK_EXPENSES.filter((e) => e.recurring && e.renewalDate).sort((a, b) => {
-      const [da, ma] = (a.renewalDate ?? '').split('/').map(Number)
-      const [db, mb] = (b.renewalDate ?? '').split('/').map(Number)
-      return ma !== mb ? ma - mb : da - db
-    }),
-    [],
+    () => [...recurringExpenses].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+    [recurringExpenses],
   )
 
   const rows = useMemo(() => {
-    if (recurringFilter === 'recurring') return MOCK_EXPENSES.filter((e) => e.recurring)
-    if (recurringFilter === 'one-time') return MOCK_EXPENSES.filter((e) => !e.recurring)
-    return MOCK_EXPENSES
-  }, [recurringFilter])
+    if (recurringFilter === 'recurring') return expenses.filter((e) => e.isRecurring)
+    if (recurringFilter === 'one-time') return expenses.filter((e) => !e.isRecurring)
+    return expenses
+  }, [expenses, recurringFilter])
 
   const fmtNumber = (n: number) =>
     n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const handleOpenEdit = (expense: Expense) => {
+    setEditingExpense(expense)
+    setModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setModalOpen(false)
+    setEditingExpense(null)
+  }
 
   const columns: GridColDef[] = useMemo(() => [
     {
@@ -115,9 +140,9 @@ export default function ExpensesPage() {
       headerName: 'Descrição',
       flex: 1,
       minWidth: 180,
-      renderCell: ({ row }) => (
+      renderCell: ({ row }: { row: Expense }) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {row.recurring && (
+          {row.isRecurring && (
             <Chip
               label="Mensal"
               size="small"
@@ -145,7 +170,7 @@ export default function ExpensesPage() {
       field: 'category',
       headerName: 'Categoria',
       width: 130,
-      renderCell: ({ row }) => (
+      renderCell: ({ row }: { row: Expense }) => (
         <Typography
           variant="caption"
           sx={{
@@ -166,22 +191,22 @@ export default function ExpensesPage() {
       field: 'dueDate',
       headerName: 'Vencimento',
       width: 110,
-      renderCell: ({ row }) => (
+      renderCell: ({ row }: { row: Expense }) => (
         <Typography variant="body2" color="text.secondary">
-          {row.dueDate}
+          {fmtDueDate(row.dueDate)}
         </Typography>
       ),
     },
     {
-      field: 'renewalDate',
+      field: 'isRecurring',
       headerName: 'Renovação',
       width: 110,
-      renderCell: ({ row }) =>
-        row.renewalDate ? (
+      renderCell: ({ row }: { row: Expense }) =>
+        row.isRecurring ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <SyncRounded sx={{ fontSize: 13, color: 'text.tertiary' }} />
             <Typography variant="body2" color="text.secondary">
-              {row.renewalDate}
+              mensal
             </Typography>
           </Box>
         ) : (
@@ -191,10 +216,10 @@ export default function ExpensesPage() {
         ),
     },
     {
-      field: 'status',
+      field: 'isPaid',
       headerName: 'Status',
       width: 120,
-      renderCell: ({ row }) => <ExpenseStatusChip status={row.status} />,
+      renderCell: ({ row }: { row: Expense }) => <ExpenseStatusChip isPaid={row.isPaid} />,
     },
     {
       field: 'amount',
@@ -202,7 +227,7 @@ export default function ExpensesPage() {
       width: 130,
       align: 'right',
       headerAlign: 'right',
-      renderCell: ({ row }) => (
+      renderCell: ({ row }: { row: Expense }) => (
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
           {formatBRL(row.amount)}
         </Typography>
@@ -215,9 +240,16 @@ export default function ExpensesPage() {
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
-      renderCell: ({ row }) => <ExpenseRowMenu expense={row} />,
+      renderCell: ({ row }: { row: Expense }) => (
+        <ExpenseRowMenu
+          expense={row}
+          onEdit={handleOpenEdit}
+          onMarkPaid={(id) => markAsPaid.mutate(id)}
+          onDelete={(id) => deleteExpense.mutate(id)}
+        />
+      ),
     },
-  ], [])
+  ], [markAsPaid, deleteExpense])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -284,7 +316,7 @@ export default function ExpensesPage() {
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
               <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.total)}</Typography>
             </Box>
-            <Chip size="small" color="error" icon={<TrendingDownRounded />} label="-4,1% vs. abril" sx={CHIP_ICON_SX} />
+            <Chip size="small" color="error" icon={<TrendingDownRounded />} label="Total de despesas" sx={CHIP_ICON_SX} />
           </CardContent>
         </Card>
 
@@ -385,46 +417,52 @@ export default function ExpensesPage() {
             </Tabs>
           </Box>
 
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            rowHeight={60}
-            disableRowSelectionOnClick
-            pageSizeOptions={[10, 25]}
-            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            sx={(t) => ({
-              border: 'none',
-              '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: t.palette.surface.sunken,
-                borderBottom: `1px solid ${t.palette.border.subtle}`,
-              },
-              '& .MuiDataGrid-columnHeader': {
-                '&:focus, &:focus-within': { outline: 'none' },
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-                color: t.palette.text.tertiary,
-                textTransform: 'uppercase',
-              },
-              '& .MuiDataGrid-columnSeparator': { display: 'none' },
-              '& .MuiDataGrid-cell': {
-                borderBottom: `1px solid ${t.palette.border.subtle}`,
-                display: 'flex',
-                alignItems: 'center',
-                '&:focus, &:focus-within': { outline: 'none' },
-              },
-              '& .MuiDataGrid-row:hover': { backgroundColor: t.palette.surface.sunken },
-              '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
-              '& .MuiDataGrid-footerContainer': {
-                borderTop: `1px solid ${t.palette.border.subtle}`,
-                minHeight: 48,
-              },
-              '& .MuiDataGrid-selectedRowCount': { display: 'none' },
-            })}
-          />
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : (
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              rowHeight={60}
+              disableRowSelectionOnClick
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              sx={(t) => ({
+                border: 'none',
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: t.palette.surface.sunken,
+                  borderBottom: `1px solid ${t.palette.border.subtle}`,
+                },
+                '& .MuiDataGrid-columnHeader': {
+                  '&:focus, &:focus-within': { outline: 'none' },
+                },
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: '0.05em',
+                  color: t.palette.text.tertiary,
+                  textTransform: 'uppercase',
+                },
+                '& .MuiDataGrid-columnSeparator': { display: 'none' },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: `1px solid ${t.palette.border.subtle}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&:focus, &:focus-within': { outline: 'none' },
+                },
+                '& .MuiDataGrid-row:hover': { backgroundColor: t.palette.surface.sunken },
+                '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: `1px solid ${t.palette.border.subtle}`,
+                  minHeight: 48,
+                },
+                '& .MuiDataGrid-selectedRowCount': { display: 'none' },
+              })}
+            />
+          )}
         </Card>
 
         {/* Painel lateral */}
@@ -502,7 +540,7 @@ export default function ExpensesPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
                       <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
                       <Typography variant="caption" color="text.tertiary">
-                        Renova em {expense.renewalDate}
+                        Vence em {fmtDueDate(expense.dueDate)}
                       </Typography>
                     </Box>
                   </Box>
@@ -511,6 +549,14 @@ export default function ExpensesPage() {
                   </Typography>
                 </Box>
               ))}
+
+              {upcomingRenewals.length === 0 && (
+                <Box sx={{ px: 2.5, py: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.disabled">
+                    Nenhuma renovação pendente
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             <Box
@@ -535,7 +581,11 @@ export default function ExpensesPage() {
         </Box>
       </Box>
 
-      <NewExpenseModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <NewExpenseModal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        expense={editingExpense ?? undefined}
+      />
     </Box>
   )
 }

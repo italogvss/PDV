@@ -1,31 +1,23 @@
 import { Box, Chip } from '@mui/material'
 import type { ExpenseStatusChipProps } from './types'
 
-const colorMap = {
-  Pago: 'success',
-  Pendente: 'warning',
-} as const
-
-const dotColorMap = {
-  success: 'success.main',
-  warning: 'warning.main',
-} as const
-
-export default function ExpenseStatusChip({ status }: ExpenseStatusChipProps) {
-  const color = colorMap[status]
+export default function ExpenseStatusChip({ isPaid }: ExpenseStatusChipProps) {
+  const color = isPaid ? 'success' : 'warning'
+  const label = isPaid ? 'Pago' : 'Pendente'
+  const dotColor = isPaid ? 'success.main' : 'warning.main'
 
   return (
     <Chip
       size="small"
       color={color}
-      label={status}
+      label={label}
       icon={
         <Box
           sx={{
             width: 6,
             height: 6,
             borderRadius: '50%',
-            bgcolor: dotColorMap[color],
+            bgcolor: dotColor,
             ml: 0.75,
             mr: '-3px',
             flexShrink: 0,

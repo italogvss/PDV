@@ -1,5 +1,3 @@
-export type ExpenseStatus = 'Pago' | 'Pendente'
-
 export type ExpenseCategory =
   | 'Aluguel'
   | 'Fornecedor'
@@ -30,8 +28,8 @@ export interface Expense {
   description: string
   category: ExpenseCategory
   dueDate: string
-  status: ExpenseStatus
+  isPaid: boolean
   amount: number
-  recurring: boolean
-  renewalDate?: string
+  isRecurring: boolean
+  paidAt?: string | null
 }

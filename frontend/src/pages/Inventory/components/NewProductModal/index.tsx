@@ -19,10 +19,11 @@ import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
 import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
+import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { TextFieldProps } from '@mui/material'
 import { formatBRL } from '../../../../utils/currency'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
@@ -43,6 +44,12 @@ const schema = z.object({
     .min(0)
     .optional()
     .or(z.literal('')),
+  criticalStock: z.coerce
+    .number({ invalid_type_error: 'Informe um número' })
+    .int()
+    .min(0)
+    .optional()
+    .or(z.literal('')),
   barcode: z.string().optional(),
   categoryId: z.string().optional().nullable(),
 })
@@ -50,7 +57,16 @@ const schema = z.object({
 type ProductForm = z.infer<typeof schema>
 
 function buildDefaults(): ProductForm {
-  return { name: '', costPrice: 0, price: 0, stock: 0, minStock: '', barcode: '', categoryId: null }
+  return {
+    name: '',
+    costPrice: 0,
+    price: 0,
+    stock: 0,
+    minStock: '',
+    criticalStock: '',
+    barcode: '',
+    categoryId: null,
+  }
 }
 
 function generateEAN13(): string {
@@ -114,6 +130,9 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const { data: categories = [], isLoading: isLoadingCategories } = useProductCategories()
   const isPending = createProduct.isPending || updateProduct.isPending
 
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const {
     register,
     control,
@@ -147,17 +166,33 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           price: product.price,
           stock: product.stock,
           minStock: product.minStock ?? '',
+          criticalStock: product.criticalStock ?? '',
           barcode: product.barcode ?? '',
           categoryId: product.category?.id ?? null,
         })
       } else {
         reset(buildDefaults())
       }
+      setImagePreview(null)
     }
   }, [open, product, reset])
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setImagePreview(url)
+  }
+
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const onSubmit = async (data: ProductForm) => {
     const minStockVal = typeof data.minStock === 'number' ? data.minStock : undefined
+    const criticalStockVal = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
     const categoryId = data.categoryId || null
 
     if (isEditing) {
@@ -168,6 +203,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         price: data.price,
         purchasePrice: data.costPrice,
         minStock: minStockVal,
+        minCriticalStock: criticalStockVal,
         categoryId,
       })
     } else {
@@ -178,6 +214,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         purchasePrice: data.costPrice,
         stock: data.stock,
         minStock: minStockVal,
+        minCriticalStock: criticalStockVal,
         categoryId,
       })
     }
@@ -216,6 +253,70 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}
         >
+          {/* Imagem do produto */}
+          <Box>
+            <FieldLabel label="Foto do produto" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleImageSelect}
+            />
+            <Box
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                position: 'relative',
+                height: 96,
+                borderRadius: 2,
+                border: '2px dashed',
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                overflow: 'hidden',
+                transition: 'border-color 0.2s',
+                '&:hover': { borderColor: 'primary.main' },
+              }}
+            >
+              {imagePreview ? (
+                <>
+                  <Box
+                    component="img"
+                    src={imagePreview}
+                    alt="Preview"
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={handleRemoveImage}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      bgcolor: 'rgba(0,0,0,0.5)',
+                      color: 'white',
+                      p: 0.25,
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+                    }}
+                  >
+                    <CloseRounded sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </>
+              ) : (
+                <>
+                  <AddPhotoAlternateRounded sx={{ fontSize: 28, color: 'text.disabled' }} />
+                  <Typography variant="caption" color="text.disabled">
+                    Clique para adicionar foto
+                  </Typography>
+                </>
+              )}
+            </Box>
+          </Box>
+
           {/* Nome */}
           <Box>
             <FieldLabel label="Nome do produto" required />
@@ -234,8 +335,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <FieldLabel label="Valor de compra" required inline />
-                  <Typography variant="caption" color="text.disabled">custo unitário</Typography>
+                  <FieldLabel label="Preço de custo" required inline />
+                  <Typography variant="caption" color="text.disabled">unitário</Typography>
                 </Box>
                 <Controller
                   name="costPrice"
@@ -257,7 +358,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                   <FieldLabel label="Preço de venda" required inline />
-                  <Typography variant="caption" color="text.disabled">no PDV</Typography>
+                  <Typography variant="caption" color="text.disabled">no negócio</Typography>
                 </Box>
                 <Controller
                   name="price"
@@ -310,11 +411,10 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           </Box>
 
           {/* Estoque */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                 <FieldLabel label="Estoque atual" required={!isEditing} inline />
-                <Typography variant="caption" color="text.disabled">unidades</Typography>
               </Box>
               <TextField
                 {...register('stock')}
@@ -336,7 +436,6 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                 <FieldLabel label="Estoque mínimo" inline />
-                <Typography variant="caption" color="text.disabled">alerta de reposição</Typography>
               </Box>
               <TextField
                 {...register('minStock')}
@@ -346,6 +445,22 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 placeholder="Ex: 10"
                 error={!!errors.minStock}
                 helperText={errors.minStock?.message as string}
+                slotProps={{ htmlInput: { min: 0, step: 1 } }}
+              />
+            </Box>
+
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <FieldLabel label="Estoque crítico" inline />
+              </Box>
+              <TextField
+                {...register('criticalStock')}
+                fullWidth
+                size="small"
+                type="number"
+                placeholder="Ex: 3"
+                error={!!errors.criticalStock}
+                helperText={errors.criticalStock?.message as string}
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
               />
             </Box>
@@ -412,11 +527,11 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                         key={cat.id}
                         label={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cat.color }} />
+                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: cat.color }} />
                             {cat.name}
                           </Box>
                         }
-                        size="small"
+                        size="medium"
                         onClick={() => field.onChange(field.value === cat.id ? null : cat.id)}
                         color={field.value === cat.id ? 'success' : 'default'}
                         variant={field.value === cat.id ? 'filled' : 'outlined'}

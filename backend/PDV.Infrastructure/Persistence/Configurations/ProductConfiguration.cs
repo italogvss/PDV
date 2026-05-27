@@ -22,6 +22,5 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         // Código de barras único por tenant
         builder.HasIndex(p => new { p.TenantId, p.Barcode }).IsUnique();
 
-        builder.HasQueryFilter(p => p.IsActive);
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using PDV.Application.Interfaces;
 
 namespace PDV.Infrastructure.Persistence;
 
@@ -14,6 +15,11 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             .UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
             .Options;
 
-        return new AppDbContext(options);
+        return new AppDbContext(options, new DesignTimeTenantContext());
+    }
+
+    private sealed class DesignTimeTenantContext : ITenantContext
+    {
+        public Guid TenantId => Guid.Empty;
     }
 }

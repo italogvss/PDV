@@ -10,12 +10,16 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
     {
         builder.HasKey(e => e.Id);
 
+        builder.Property(e => e.TenantId).IsRequired();
         builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
+        builder.Property(e => e.Category).IsRequired().HasMaxLength(50);
         builder.Property(e => e.Amount).HasColumnType("decimal(10,2)").IsRequired();
         builder.Property(e => e.IsRecurring).IsRequired();
         builder.Property(e => e.DueDate).IsRequired();
         builder.Property(e => e.IsPaid).IsRequired();
         builder.Property(e => e.PaidAt);
         builder.Property(e => e.CreatedAt).IsRequired();
+
+        builder.HasIndex(e => e.TenantId);
     }
 }

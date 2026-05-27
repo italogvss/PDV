@@ -6,7 +6,7 @@ import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRou
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import type { ExpenseRowMenuProps } from './types'
 
-export default function ExpenseRowMenu({ expense }: ExpenseRowMenuProps) {
+export default function ExpenseRowMenu({ expense, onEdit, onMarkPaid, onDelete }: ExpenseRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const handleClose = () => setAnchor(null)
 
@@ -27,19 +27,19 @@ export default function ExpenseRowMenu({ expense }: ExpenseRowMenuProps) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={() => { handleClose(); onEdit(expense) }}>
           <EditRounded />
           Editar
         </MenuItem>
-        {expense.status === 'Pendente' && (
-          <MenuItem onClick={handleClose}>
+        {!expense.isPaid && (
+          <MenuItem onClick={() => { handleClose(); onMarkPaid(expense.id) }}>
             <CheckCircleOutlineRounded />
             Marcar como pago
           </MenuItem>
         )}
         <Divider sx={{ my: 0.5 }} />
         <MenuItem
-          onClick={handleClose}
+          onClick={() => { handleClose(); onDelete(expense.id) }}
           sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
         >
           <DeleteOutlineRounded />

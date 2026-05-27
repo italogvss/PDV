@@ -10,6 +10,7 @@ namespace PDV.Infrastructure.Services;
 
 public class ExpenseService(
     IExpenseRepository repository,
+    ITenantContext tenantContext,
     IValidator<CreateExpenseRequest> createValidator,
     IValidator<UpdateExpenseRequest> updateValidator) : IExpenseService
 {
@@ -75,7 +76,9 @@ public class ExpenseService(
         var expense = new Expense
         {
             Id = Guid.NewGuid(),
+            TenantId = tenantContext.TenantId,
             Description = request.Description,
+            Category = request.Category,
             Amount = request.Amount,
             IsRecurring = request.IsRecurring,
             DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc),
@@ -96,6 +99,7 @@ public class ExpenseService(
             ?? throw new NotFoundException("Despesa não encontrada.");
 
         expense.Description = request.Description;
+        expense.Category = request.Category;
         expense.Amount = request.Amount;
         expense.IsRecurring = request.IsRecurring;
         expense.DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc);
@@ -129,7 +133,9 @@ public class ExpenseService(
             var next = new Expense
             {
                 Id = Guid.NewGuid(),
+                TenantId = expense.TenantId,
                 Description = expense.Description,
+                Category = expense.Category,
                 Amount = expense.Amount,
                 IsRecurring = true,
                 DueDate = expense.DueDate.AddMonths(1),
@@ -151,7 +157,7 @@ public class ExpenseService(
     }
 
     private static ExpenseResponse Map(Expense e) =>
-        new(e.Id, e.Description, e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
+        new(e.Id, e.Description, e.Category, e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
 
     // ─── Chart helpers ────────────────────────────────────────────────────────
 

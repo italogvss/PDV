@@ -23,6 +23,5 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
                .HasForeignKey(p => p.CategoryId)
                .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasQueryFilter(c => c.IsActive);
     }
 }

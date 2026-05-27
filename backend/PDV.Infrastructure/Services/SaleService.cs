@@ -24,7 +24,6 @@ public class SaleService(
     {
         var query = context.Sales
             .Include(s => s.Operator)
-            .Where(s => s.TenantId == TenantId)
             .AsQueryable();
 
         if (startDate.HasValue)
@@ -54,7 +53,7 @@ public class SaleService(
         var sale = await context.Sales
             .Include(s => s.Operator)
             .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == TenantId)
+            .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException("Venda não encontrada.");
 
         return MapToDetail(sale);
@@ -70,7 +69,7 @@ public class SaleService(
 
         var productIds = request.Items.Select(i => i.ProductId).ToList();
         var products = await context.Products
-            .Where(p => productIds.Contains(p.Id) && p.TenantId == tenantId)
+            .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
         foreach (var item in request.Items)
@@ -138,7 +137,7 @@ public class SaleService(
     {
         var sale = await context.Sales
             .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == TenantId)
+            .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException("Venda não encontrada.");
 
         if (sale.Status == SaleStatus.Cancelled)
@@ -153,7 +152,7 @@ public class SaleService(
         foreach (var item in sale.Items.Where(i => i.ProductId.HasValue))
         {
             var product = await context.Products
-                .FirstOrDefaultAsync(p => p.Id == item.ProductId!.Value && p.TenantId == TenantId);
+                .FirstOrDefaultAsync(p => p.Id == item.ProductId!.Value);
 
             if (product is { IsActive: true })
                 product.Stock += item.Quantity;

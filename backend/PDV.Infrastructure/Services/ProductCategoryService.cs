@@ -15,13 +15,13 @@ public class ProductCategoryService(
 {
     public async Task<IEnumerable<ProductCategoryResponse>> GetAllAsync()
     {
-        var categories = await repository.GetAllAsync(tenantContext.TenantId);
+        var categories = await repository.GetAllAsync();
         return categories.Select(Map);
     }
 
     public async Task<ProductCategoryResponse> GetByIdAsync(Guid id)
     {
-        var category = await repository.GetByIdAsync(id, tenantContext.TenantId)
+        var category = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Categoria não encontrada.");
         return Map(category);
     }
@@ -30,7 +30,7 @@ public class ProductCategoryService(
     {
         await createValidator.ValidateAndThrowAsync(request);
 
-        if (await repository.NameExistsAsync(request.Name, tenantContext.TenantId))
+        if (await repository.NameExistsAsync(request.Name))
             throw new BusinessException($"Já existe uma categoria com o nome '{request.Name}'.");
 
         var category = new ProductCategory
@@ -51,10 +51,10 @@ public class ProductCategoryService(
     {
         await updateValidator.ValidateAndThrowAsync(request);
 
-        var category = await repository.GetByIdAsync(id, tenantContext.TenantId)
+        var category = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Categoria não encontrada.");
 
-        if (await repository.NameExistsAsync(request.Name, tenantContext.TenantId, excludeId: id))
+        if (await repository.NameExistsAsync(request.Name, excludeId: id))
             throw new BusinessException($"Já existe uma categoria com o nome '{request.Name}'.");
 
         category.Name = request.Name;
@@ -66,7 +66,7 @@ public class ProductCategoryService(
 
     public async Task DeleteAsync(Guid id)
     {
-        var category = await repository.GetByIdAsync(id, tenantContext.TenantId)
+        var category = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Categoria não encontrada.");
 
         category.IsActive = false;

@@ -7,7 +7,7 @@ namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/expenses")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Owner")]
 public class ExpensesController(IExpenseService service) : ControllerBase
 {
     [HttpGet]

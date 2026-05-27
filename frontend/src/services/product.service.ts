@@ -46,6 +46,7 @@ export interface CreateProductPayload {
   purchasePrice?: number
   stock: number
   minStock?: number
+  minCriticalStock?: number
   categoryId?: string | null
 }
 
@@ -55,6 +56,7 @@ export interface UpdateProductPayload {
   price: number
   purchasePrice?: number
   minStock?: number
+  minCriticalStock?: number
   categoryId?: string | null
 }
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -22,67 +23,104 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { EXPENSE_CATEGORIES } from '../../types'
-import type { ExpenseCategory, ExpenseStatus } from '../../types'
+import type { ExpenseCategory } from '../../types'
 import type { NewExpenseModalProps } from './types'
+import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
 
 const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória').max(150),
   amount: z.coerce.number({ invalid_type_error: 'Valor inválido' }).positive('Deve ser maior que zero'),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]]),
-  status: z.enum(['Pendente', 'Pago'] as [ExpenseStatus, ExpenseStatus]),
-  recurring: z.boolean(),
+  category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]], {
+    errorMap: () => ({ message: 'Selecione uma categoria' }),
+  }),
+  isPaid: z.boolean(),
+  isRecurring: z.boolean(),
 })
 
-type NewExpenseForm = z.infer<typeof schema>
+type ExpenseForm = z.infer<typeof schema>
 
-const defaultValues: NewExpenseForm = {
+const emptyDefaults: ExpenseForm = {
   description: '',
   amount: 0,
-  dueDate: '',
+  dueDate: new Date().toISOString().split('T')[0],
   category: 'Outros',
-  status: 'Pendente',
-  recurring: false,
+  isPaid: false,
+  isRecurring: false,
 }
 
-export default function NewExpenseModal({ open, onClose }: NewExpenseModalProps) {
+export default function NewExpenseModal({ open, onClose, expense }: NewExpenseModalProps) {
+  const isEditing = !!expense
+  const createExpense = useCreateExpense()
+  const updateExpense = useUpdateExpense()
+
   const {
     register,
     control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<NewExpenseForm>({
+  } = useForm<ExpenseForm>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: emptyDefaults,
   })
 
-  const onSubmit = async (data: NewExpenseForm) => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 800))
-    console.log('Nova despesa:', data)
-    reset(defaultValues)
+  useEffect(() => {
+    if (open) {
+      if (expense) {
+        reset({
+          description: expense.description,
+          amount: expense.amount,
+          dueDate: expense.dueDate.split('T')[0],
+          category: expense.category,
+          isPaid: expense.isPaid,
+          isRecurring: expense.isRecurring,
+        })
+      } else {
+        reset(emptyDefaults)
+      }
+    }
+  }, [open, expense, reset])
+
+  const onSubmit = async (data: ExpenseForm) => {
+    const payload = {
+      description: data.description,
+      category: data.category,
+      amount: data.amount,
+      dueDate: new Date(data.dueDate).toISOString(),
+      isPaid: data.isPaid,
+      isRecurring: data.isRecurring,
+    }
+
+    if (isEditing) {
+      await updateExpense.mutateAsync({ id: expense.id, ...payload })
+    } else {
+      await createExpense.mutateAsync(payload)
+    }
+
     onClose()
   }
 
   const handleClose = () => {
     if (isSubmitting) return
-    reset(defaultValues)
     onClose()
   }
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pb: 0.5 }}>
-        Nova despesa
+        {isEditing ? 'Editar despesa' : 'Nova despesa'}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 400 }}>
-          Registre uma conta a pagar — recorrente ou pontual
+          {isEditing
+            ? 'Atualize os dados da despesa'
+            : 'Registre uma conta a pagar — recorrente ou pontual'}
         </Typography>
       </DialogTitle>
 
       <DialogContent>
         <Box
           component="form"
-          id="new-expense-form"
+          id="expense-form"
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1.5 }}
         >
@@ -186,13 +224,13 @@ export default function NewExpenseModal({ open, onClose }: NewExpenseModalProps)
               Status do pagamento
             </Typography>
             <Controller
-              name="status"
+              name="isPaid"
               control={control}
               render={({ field }) => (
                 <ToggleButtonGroup
                   exclusive
-                  value={field.value}
-                  onChange={(_, val: ExpenseStatus | null) => val && field.onChange(val)}
+                  value={field.value ? 'paid' : 'pending'}
+                  onChange={(_, val: 'paid' | 'pending' | null) => val && field.onChange(val === 'paid')}
                   size="small"
                   sx={{
                     '& .MuiToggleButton-root': {
@@ -211,8 +249,8 @@ export default function NewExpenseModal({ open, onClose }: NewExpenseModalProps)
                     },
                   }}
                 >
-                  <ToggleButton value="Pendente">A pagar</ToggleButton>
-                  <ToggleButton value="Pago">Já paga</ToggleButton>
+                  <ToggleButton value="pending">A pagar</ToggleButton>
+                  <ToggleButton value="paid">Já paga</ToggleButton>
                 </ToggleButtonGroup>
               )}
             />
@@ -220,7 +258,7 @@ export default function NewExpenseModal({ open, onClose }: NewExpenseModalProps)
 
           {/* Recorrente */}
           <Controller
-            name="recurring"
+            name="isRecurring"
             control={control}
             render={({ field }) => (
               <Box
@@ -268,13 +306,13 @@ export default function NewExpenseModal({ open, onClose }: NewExpenseModalProps)
           </Button>
           <Button
             type="submit"
-            form="new-expense-form"
+            form="expense-form"
             variant="contained"
             color="success"
             disabled={isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <SaveOutlined />}
           >
-            {isSubmitting ? 'Salvando...' : 'Salvar despesa'}
+            {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar despesa'}
           </Button>
         </Box>
       </DialogActions>
