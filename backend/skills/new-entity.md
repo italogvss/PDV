@@ -1,86 +1,74 @@
-# Skill — Nova entidade de domínio
+# Skill: Nova Entidade
 
-Use esta skill sempre que precisar criar uma nova entidade no `PDVUltra.Domain`.
+Use esta skill ao criar uma entidade nova no domínio.
 
-## Checklist obrigatório
+## Checklist
 
-1. A entidade herda de `BaseEntity` (Id, TenantId, CreatedAt, UpdatedAt, IsDeleted, DeletedAt)
-2. Propriedades com `private set` — alterações via métodos de domínio, não direto na propriedade
-3. Construtor privado sem parâmetros para o EF Core + construtor público com parâmetros obrigatórios
-4. Criar interface do repositório em `PDVUltra.Application/Interfaces/I{Entity}Repository.cs`
-5. Criar implementação do repositório em `PDVUltra.Infrastructure/Repositories/{Entity}Repository.cs`
-6. Registrar o repositório no DI em `Program.cs`
-7. Adicionar `DbSet<{Entity}>` no `AppDbContext`
-8. Adicionar `HasQueryFilter` com `TenantId` e `!IsDeleted` no `OnModelCreating`
-9. Gerar migration: `dotnet ef migrations add Add{Entity} --project PDV.Infrastructure --startup-project PDV.Api`
+1. Criar entidade em `PDV.Domain/Entities/`
+2. Criar configuração EF Core em `PDV.Infrastructure/Persistence/Configurations/`
+3. Adicionar `DbSet` no `AppDbContext`
+4. Adicionar `HasQueryFilter` no `AppDbContext.OnModelCreating` (se tiver TenantId)
+5. Gerar migration: `dotnet ef migrations add <Nome> --project PDV.Infrastructure --startup-project PDV.Api`
 
-## Template de entidade
+---
+
+## Estrutura da entidade
 
 ```csharp
-// PDVUltra.Domain/Entities/{Entity}.cs
-public class {Entity} : BaseEntity
+// PDV.Domain/Entities/Expense.cs
+public class Expense
 {
-    public string Name { get; private set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid TenantId { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public bool IsPaid { get; set; } = false;
+    public bool IsActive { get; set; } = true;      // soft delete
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+```
 
-    private {Entity}() { } // para o EF Core
+Campos obrigatórios em entidades com tenant: `Id`, `TenantId`, `IsActive`, `CreatedAt`, `UpdatedAt`.
+Entidades sem tenant (ex: `User`, `Tenant`) não precisam de `TenantId` nem `IsActive` por padrão.
 
-    public {Entity}(Guid tenantId, string name)
+---
+
+## Configuração EF Core
+
+```csharp
+// PDV.Infrastructure/Persistence/Configurations/ExpenseConfiguration.cs
+public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
+{
+    public void Configure(EntityTypeBuilder<Expense> builder)
     {
-        TenantId = tenantId;
-        Name = name;
-    }
-
-    public void Update(string name)
-    {
-        Name = name;
-        UpdatedAt = DateTime.UtcNow;
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Description).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Amount).HasPrecision(10, 2);
     }
 }
 ```
 
-## Template de repositório
+---
+
+## AppDbContext
 
 ```csharp
-// PDVUltra.Application/Interfaces/I{Entity}Repository.cs
-public interface I{Entity}Repository
-{
-    Task<{Entity}?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IEnumerable<{Entity}>> GetAllAsync(CancellationToken ct = default);
-    Task AddAsync({Entity} entity, CancellationToken ct = default);
-    Task UpdateAsync({Entity} entity, CancellationToken ct = default);
-    Task DeleteAsync(Guid id, CancellationToken ct = default); // soft delete
-}
+// Adicionar DbSet
+public DbSet<Expense> Expenses => Set<Expense>();
 
-// PDVUltra.Infrastructure/Repositories/{Entity}Repository.cs
-public class {Entity}Repository : I{Entity}Repository
-{
-    private readonly AppDbContext _db;
-    public {Entity}Repository(AppDbContext db) => _db = db;
+// Adicionar HasQueryFilter em OnModelCreating (entidades com TenantId)
+modelBuilder.Entity<Expense>()
+    .HasQueryFilter(e => e.TenantId == tenantContext.TenantId && e.IsActive);
+```
 
-    public async Task<{Entity}?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await _db.{Entities}.FirstOrDefaultAsync(e => e.Id == id, ct);
+---
 
-    public async Task<IEnumerable<{Entity}>> GetAllAsync(CancellationToken ct = default)
-        => await _db.{Entities}.ToListAsync(ct);
+## Soft delete
 
-    public async Task AddAsync({Entity} entity, CancellationToken ct = default)
-    {
-        await _db.{Entities}.AddAsync(entity, ct);
-        await _db.SaveChangesAsync(ct);
-    }
-
-    public async Task UpdateAsync({Entity} entity, CancellationToken ct = default)
-    {
-        _db.{Entities}.Update(entity);
-        await _db.SaveChangesAsync(ct);
-    }
-
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
-    {
-        var entity = await GetByIdAsync(id, ct);
-        if (entity is null) return;
-        entity.Delete(); // método na BaseEntity que seta IsDeleted e DeletedAt
-        await _db.SaveChangesAsync(ct);
-    }
-}
+Nunca deletar fisicamente. Sempre:
+```csharp
+entity.IsActive = false;
+entity.UpdatedAt = DateTime.UtcNow;
+await repository.UpdateAsync(entity);
 ```

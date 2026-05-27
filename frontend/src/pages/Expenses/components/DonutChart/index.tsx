@@ -2,42 +2,35 @@ import { Box, Typography } from '@mui/material'
 import { formatBRL } from '../../../../utils/currency'
 import type { DonutChartProps } from './types'
 
-export default function DonutChart({ segments, size = 180, thickness = 28 }: DonutChartProps) {
-  const r = (size - thickness) / 2
-  const cx = size / 2
-  const cy = size / 2
-  const circumference = 2 * Math.PI * r
+export default function DonutChart({ segments, size = 180 }: DonutChartProps) {
   const total = segments.reduce((sum, s) => sum + s.value, 0)
 
-  const GAP = 2
-  let cumulativeLength = circumference / 4 // start at top
-
-  const arcs = segments.map((seg) => {
-    const rawLength = (seg.value / total) * circumference
-    const dashLength = Math.max(0, rawLength - GAP)
-    const dashOffset = -(cumulativeLength + GAP / 2)
-    cumulativeLength += rawLength
-    return { ...seg, dashLength, dashOffset }
-  })
+  const data = segments.map((seg) => ({
+    id: seg.label,
+    label: seg.label,
+    value: seg.value,
+    color: seg.color,
+  }))
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {arcs.map((arc) => (
-            <circle
-              key={arc.label}
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill="none"
-              stroke={arc.color}
-              strokeWidth={thickness}
-              strokeDasharray={`${arc.dashLength} ${circumference}`}
-              strokeDashoffset={arc.dashOffset}
-            />
-          ))}
-        </svg>
+        <PieChart
+          width={size}
+          height={size}
+          series={[
+            {
+              data,
+              innerRadius: size * 0.28,
+              outerRadius: size * 0.48,
+              paddingAngle: 2,
+              cornerRadius: 3,
+              startAngle: -90,
+            },
+          ]}
+          slotProps={{ legend: { hidden: true } }}
+          margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
+        />
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
