@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Box, Typography, Button } from '@mui/material'
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
@@ -12,8 +11,7 @@ import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined'
 import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
 import FiberManualRecordOutlinedIcon from '@mui/icons-material/FiberManualRecordOutlined'
-import type { SvgIconComponent } from '@mui/icons-material'
-
+import { HelpOutlined, type SvgIconComponent } from '@mui/icons-material'
 import { type SettingsTab } from './types'
 import BusinessSection from './components/BusinessSection'
 import OperationSection from './components/OperationSection'
@@ -70,15 +68,15 @@ export default function SettingsPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="h4" fontWeight={700} color="text.primary" lineHeight={1.15}>
+          <Typography variant="h4" color="text.primary" sx={{lineHeight: 1.15, fontWeight: 700}}>
             Configurações
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
             {current.subtitle}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Button variant="outlined" startIcon={<HelpOutlineIcon />} size="small">
+          <Button variant="outlined" startIcon={<HelpOutlined />} size="small">
             Documentação
           </Button>
           <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />} size="small">

@@ -11,10 +11,10 @@ import {
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import { DeleteOutlined } from '@mui/icons-material'
 
 export default function BusinessSection() {
   const [fantasyName, setFantasyName] = useState('Café da Esquina')
@@ -80,7 +80,7 @@ export default function BusinessSection() {
             <Button variant="outlined" size="small" startIcon={<FileUploadOutlinedIcon />}>
               Alterar
             </Button>
-            <Button variant="outlined" size="small" startIcon={<DeleteOutlineIcon />} color="inherit">
+            <Button variant="outlined" size="small" startIcon={<DeleteOutlined />} color="inherit">
               Remover
             </Button>
           </Box>
@@ -228,7 +228,7 @@ export default function BusinessSection() {
               value={state}
               onChange={handleChange(setState)}
               sx={{ width: 72 }}
-              inputProps={{ maxLength: 2 }}
+              slotProps={{htmlInput: { maxLength: 2 }}}
             />
           </Box>
         </SettingRow>

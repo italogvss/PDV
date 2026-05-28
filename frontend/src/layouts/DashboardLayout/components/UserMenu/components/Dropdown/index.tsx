@@ -8,7 +8,6 @@ import {
   Typography,
 } from '@mui/material'
 import {
-  PersonOutline,
   WorkspacePremiumOutlined,
   DescriptionOutlined,
   SecurityOutlined,
@@ -16,6 +15,7 @@ import {
   HelpOutlineOutlined,
   AutoAwesomeOutlined,
   ArrowForwardOutlined,
+  PersonOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -32,7 +32,7 @@ interface AccountItem {
 }
 
 const ACCOUNT_ITEMS: AccountItem[] = [
-  { label: 'Meu perfil', icon: PersonOutline, tab: 'perfil', shortcut: 'G P' },
+  { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil', shortcut: 'G P' },
   { label: 'Assinatura', icon: WorkspacePremiumOutlined, tab: 'assinatura', badge: { label: 'Premium', tone: 'premium' } },
   { label: 'Faturas e recibos', icon: DescriptionOutlined, tab: 'faturas' },
 ]
@@ -145,8 +145,8 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
             overflow: 'auto',
           },
         },
+        list:{ disablePadding: true}
       }}
-      MenuListProps={{ disablePadding: true }}
     >
       {/* Profile header — clica e vai para Meu perfil */}
       <Box

@@ -1,7 +1,5 @@
 import { Box, Typography, Button } from '@mui/material'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
 import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
@@ -11,7 +9,7 @@ import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNone
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
-import type { SvgIconComponent } from '@mui/icons-material'
+import { HelpOutlineOutlined, PersonOutlineOutlined, type SvgIconComponent } from '@mui/icons-material'
 import { useAppDispatch } from '../../store'
 import { clearAuth } from '../../store/slices/auth.slice'
 import type { AccountTab } from './types'
@@ -32,7 +30,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineIcon },
+  { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineOutlined },
   { id: 'assinatura', label: 'Assinatura', icon: WorkspacePremiumOutlinedIcon },
   { id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
   { id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
@@ -79,14 +77,14 @@ export default function AccountPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="h4" fontWeight={700} color="text.primary" lineHeight={1.15}>
+          <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.15 }} color="text.primary">
             Conta
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
             Gerencie seu perfil, plano e preferências
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<HelpOutlineIcon />} size="small">
+        <Button variant="outlined" startIcon={<HelpOutlineOutlined />} size="small">
           Central de ajuda
         </Button>
       </Box>

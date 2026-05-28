@@ -63,6 +63,9 @@ services:
       dockerfile: Dockerfile
       target: dev
     container_name: pdv-frontend
+    # npm install sincroniza pacotes novos do host no volume anonimo antes de subir o Vite.
+    # Para adicionar pacotes: npm install <pkg> no host + docker compose restart frontend.
+    command: sh -c "npm install --prefer-offline && npm run dev -- --host 0.0.0.0"
     # Apenas variaveis VITE_* - secrets do backend nao entram aqui.
     environment:
       VITE_API_URL: ${VITE_API_URL}

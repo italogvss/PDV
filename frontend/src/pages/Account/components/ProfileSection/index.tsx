@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import { DeleteOutlined } from '@mui/icons-material'
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
@@ -92,7 +92,7 @@ export default function ProfileSection() {
             <Button variant="outlined" size="small" startIcon={<FileUploadOutlinedIcon />}>
               Alterar
             </Button>
-            <Button variant="outlined" size="small" startIcon={<DeleteOutlineIcon />} color="inherit">
+            <Button variant="outlined" size="small" startIcon={<DeleteOutlined />} color="inherit">
               Remover
             </Button>
           </Box>
@@ -112,7 +112,7 @@ export default function ProfileSection() {
             <TextField
               size="small"
               value={email}
-              inputProps={{ readOnly: true }}
+              slotProps={{htmlInput: { readOnly: true }}}
               sx={{ width: 300 }}
             />
             <Chip
