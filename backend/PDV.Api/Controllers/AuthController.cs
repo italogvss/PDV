@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Auth;
@@ -98,5 +99,22 @@ public class AuthController(IAuthService authService) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var token = await authService.SwitchTenantAsync(userId, tenantId);
         return Ok(new TokenResponse(token));
+    }
+
+    [HttpPost("local")]
+    public async Task<IActionResult> Local([FromBody] LocalLoginRequest request)
+    {
+        var (accessToken, refreshToken) = await authService.LoginWithLocalAsync(request.Email, request.Password);
+        SetAuthCookies(accessToken, refreshToken);
+        return Ok();
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+        return NoContent();
     }
 }

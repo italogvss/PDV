@@ -12,6 +12,7 @@ using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
+using BCryptNet = BCrypt.Net.BCrypt;
 
 namespace PDV.Infrastructure.Services;
 
@@ -202,6 +203,66 @@ public class AuthService(
             .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
     }
 
+    public async Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string email, string password)
+    {
+        var user = await userRepository.GetByEmailAsync(email);
+
+        // Mesma mensagem em todos os casos — não revelar se o e-mail existe
+        if (user is null || !user.IsActive)
+            throw new UnauthorizedException("Credenciais inválidas.");
+
+        var localAuth = user.LocalAuth;
+        if (localAuth is null)
+            throw new UnauthorizedException("Credenciais inválidas.");
+
+        if (!BCryptNet.Verify(password, localAuth.PasswordHash))
+            throw new UnauthorizedException("Credenciais inválidas.");
+
+        var tenants = user.UserTenants.ToList();
+        Guid? tenantId = null;
+        var role = user.Role.ToString();
+
+        if (tenants.Count > 0)
+        {
+            var active = user.LastTenantId.HasValue
+                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
+                : tenants[0];
+            tenantId = active.TenantId;
+            role = active.Role.ToString();
+        }
+
+        var rawRefreshToken = GenerateRefreshToken();
+        user.RefreshToken = HashRefreshToken(rawRefreshToken);
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
+
+        var accessToken = localAuth.MustChangePassword
+            ? GenerateToken(user.Id, tenantId, user.Name, role, mustChangePassword: true)
+            : GenerateToken(user.Id, tenantId, user.Name, role);
+
+        return (accessToken, rawRefreshToken);
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException("Usuário não encontrado.");
+
+        var localAuth = user.LocalAuth
+            ?? throw new BusinessException("Usuário não possui login por senha.");
+
+        if (!BCryptNet.Verify(currentPassword, localAuth.PasswordHash))
+            throw new UnauthorizedException("Senha atual incorreta.");
+
+        localAuth.PasswordHash = BCryptNet.HashPassword(newPassword);
+        localAuth.MustChangePassword = false;
+        localAuth.UpdatedAt = DateTime.UtcNow;
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
+    }
+
     private static string GenerateRefreshToken()
     {
         var bytes = new byte[64];
@@ -215,7 +276,8 @@ public class AuthService(
         return Convert.ToBase64String(hash);
     }
 
-    private string GenerateToken(Guid userId, Guid? tenantId, string name, string role)
+    private string GenerateToken(Guid userId, Guid? tenantId, string name, string role,
+        bool mustChangePassword = false)
     {
         var secret = configuration["JWT_SECRET"]
             ?? throw new InvalidOperationException("JWT_SECRET não configurado.");
@@ -224,14 +286,17 @@ public class AuthService(
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresHours = int.TryParse(configuration["JWT_EXPIRES_HOURS"], out var h) ? h : 8;
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim("tenantId", tenantId?.ToString() ?? ""),
-            new Claim(JwtRegisteredClaimNames.Name, name),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new("tenantId", tenantId?.ToString() ?? ""),
+            new(JwtRegisteredClaimNames.Name, name),
+            new(ClaimTypes.Role, role),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
+
+        if (mustChangePassword)
+            claims.Add(new Claim("mustChangePassword", "true"));
 
         var token = new JwtSecurityToken(
             claims: claims,

@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ExternalAuth> ExternalAuths => Set<ExternalAuth>();
     public DbSet<LocalAuth> LocalAuths => Set<LocalAuth>();
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<EmployeeTypePermission> EmployeeTypePermissions => Set<EmployeeTypePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,5 +39,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<Employee>()
             .HasQueryFilter(e => e.TenantId == tenantContext.TenantId && e.IsActive);
+
+        modelBuilder.Entity<EmployeeTypePermission>()
+            .HasQueryFilter(p => p.TenantId == tenantContext.TenantId && p.IsActive);
     }
 }
