@@ -52,38 +52,48 @@ public class AuthService(
     private async Task<(string AccessToken, string RefreshToken)> HandleGoogleCallbackAsync(
         string googleId, string email, string name, string? avatarUrl)
     {
-        var user = await userRepository.GetByGoogleIdAsync(googleId)
+        var user = await userRepository.GetByExternalAuthAsync("Google", googleId)
                 ?? await userRepository.GetByEmailAsync(email);
 
         if (user is null)
         {
             user = new User
             {
-                Id = Guid.NewGuid(),
-                GoogleId = googleId,
                 Email = email,
                 Name = name,
                 Role = UserRole.Owner,
                 AvatarUrl = avatarUrl,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
             };
+            user.ExternalLogins.Add(new ExternalAuth
+            {
+                Provider = "Google",
+                ProviderId = googleId,
+            });
             user.Settings = new UserSettings
             {
-                Id = Guid.NewGuid(),
                 UserId = user.Id,
                 Theme = Theme.Light,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
             };
             await userRepository.AddAsync(user);
         }
         else
         {
             var changed = false;
+
+            // Vincular Google se ainda não tiver (ex: usuário criado por outro meio)
+            if (!user.ExternalLogins.Any(e => e.Provider == "Google" && e.ProviderId == googleId))
+            {
+                user.ExternalLogins.Add(new ExternalAuth
+                {
+                    Provider = "Google",
+                    ProviderId = googleId,
+                });
+                changed = true;
+            }
+
             if (user.Name != name) { user.Name = name; changed = true; }
             if (user.AvatarUrl != avatarUrl) { user.AvatarUrl = avatarUrl; changed = true; }
-            if (user.GoogleId != googleId) { user.GoogleId = googleId; changed = true; }
+
             if (changed)
             {
                 user.UpdatedAt = DateTime.UtcNow;
@@ -92,11 +102,9 @@ public class AuthService(
         }
 
         var tenants = user.UserTenants.ToList();
-        var hasTenants = tenants.Count > 0;
-
         Guid? tenantId = null;
 
-        if (hasTenants)
+        if (tenants.Count > 0)
         {
             var active = user.LastTenantId.HasValue
                 ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]

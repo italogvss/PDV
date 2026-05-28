@@ -8,8 +8,6 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 {
     public void Configure(EntityTypeBuilder<Expense> builder)
     {
-        builder.HasKey(e => e.Id);
-
         builder.Property(e => e.TenantId).IsRequired();
         builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
         builder.Property(e => e.Category).IsRequired().HasMaxLength(50);
@@ -18,7 +16,6 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         builder.Property(e => e.DueDate).IsRequired();
         builder.Property(e => e.IsPaid).IsRequired();
         builder.Property(e => e.PaidAt);
-        builder.Property(e => e.CreatedAt).IsRequired();
 
         builder.HasIndex(e => e.TenantId);
     }

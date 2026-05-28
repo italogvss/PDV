@@ -8,8 +8,6 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
 {
     public void Configure(EntityTypeBuilder<Sale> builder)
     {
-        builder.HasKey(s => s.Id);
-
         builder.Property(s => s.TenantId).IsRequired();
         builder.HasIndex(s => s.TenantId);
 
@@ -19,7 +17,6 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.AmountPaid).HasColumnType("decimal(10,2)");
         builder.Property(s => s.InstallmentValue).HasColumnType("decimal(10,2)");
         builder.Property(s => s.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
-        builder.Property(s => s.CreatedAt).IsRequired();
 
         builder.HasOne(s => s.Operator)
             .WithMany()

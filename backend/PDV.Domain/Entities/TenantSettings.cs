@@ -1,8 +1,7 @@
 namespace PDV.Domain.Entities;
 
-public class TenantSettings
+public class TenantSettings : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid TenantId { get; set; }
     public Tenant Tenant { get; set; } = null!;
 
@@ -29,7 +28,4 @@ public class TenantSettings
 
     // Fiscal
     public string TaxRegime { get; set; } = "simples";
-
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 }

@@ -8,8 +8,6 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
 {
     public void Configure(EntityTypeBuilder<TenantSettings> builder)
     {
-        builder.HasKey(ts => ts.Id);
-
         builder.Property(ts => ts.FantasyName).IsRequired().HasMaxLength(200);
         builder.Property(ts => ts.CompanyName).HasMaxLength(300);
         builder.Property(ts => ts.Cnpj).HasMaxLength(14);
@@ -28,9 +26,6 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
 
         builder.Property(ts => ts.BusinessHoursJson).HasColumnType("longtext");
         builder.Property(ts => ts.TaxRegime).IsRequired().HasMaxLength(20).HasDefaultValue("simples");
-
-        builder.Property(ts => ts.CreatedAt).IsRequired();
-        builder.Property(ts => ts.UpdatedAt).IsRequired();
 
         builder.HasOne(ts => ts.Tenant)
             .WithOne(t => t.Settings)

@@ -29,17 +29,10 @@ public class TenantService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
 
-        var tenant = new Tenant
-        {
-            Id = Guid.NewGuid(),
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
+        var tenant = new Tenant();
 
         tenant.Settings = new TenantSettings
         {
-            Id = Guid.NewGuid(),
             TenantId = tenant.Id,
 
             FantasyName        = request.FantasyName.Trim(),
@@ -63,9 +56,6 @@ public class TenantService(
             BusinessHoursJson  = request.SkipHours || request.BusinessHours is null
                                     ? null
                                     : JsonSerializer.Serialize(request.BusinessHours, JsonOptions),
-
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
         };
 
         tenant.UserTenants =

@@ -8,13 +8,9 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
 {
     public void Configure(EntityTypeBuilder<ProductCategory> builder)
     {
-        builder.HasKey(c => c.Id);
-
         builder.Property(c => c.TenantId).IsRequired();
         builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
         builder.Property(c => c.Color).IsRequired().HasMaxLength(7);
-        builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
-        builder.Property(c => c.CreatedAt).IsRequired();
 
         builder.HasIndex(c => new { c.TenantId, c.Name }).IsUnique();
 
@@ -22,6 +18,5 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
                .WithOne(p => p.Category)
                .HasForeignKey(p => p.CategoryId)
                .OnDelete(DeleteBehavior.SetNull);
-
     }
 }

@@ -2,9 +2,8 @@ using PDV.Domain.Enums;
 
 namespace PDV.Domain.Entities;
 
-public class Sale
+public class Sale : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid TenantId { get; set; }
     public Guid OperatorId { get; set; }
     public User Operator { get; set; } = null!;
@@ -19,6 +18,6 @@ public class Sale
     public Guid? CancelledById { get; set; }
     public User? CancelledBy { get; set; }
     public DateTime? CancelledAt { get; set; }
-    public DateTime CreatedAt { get; set; }
+
     public ICollection<SaleItem> Items { get; set; } = [];
 }

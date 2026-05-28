@@ -1,8 +1,7 @@
 namespace PDV.Domain.Entities;
 
-public class Expense
+public class Expense : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid TenantId { get; set; }
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
@@ -11,5 +10,4 @@ public class Expense
     public DateTime DueDate { get; set; }
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }
-    public DateTime CreatedAt { get; set; }
 }

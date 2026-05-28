@@ -16,6 +16,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<SaleItem> SaleItems => Set<SaleItem>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<ExternalAuth> ExternalAuths => Set<ExternalAuth>();
+    public DbSet<LocalAuth> LocalAuths => Set<LocalAuth>();
+    public DbSet<Employee> Employees => Set<Employee>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,5 +35,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<Expense>()
             .HasQueryFilter(e => e.TenantId == tenantContext.TenantId);
+
+        modelBuilder.Entity<Employee>()
+            .HasQueryFilter(e => e.TenantId == tenantContext.TenantId && e.IsActive);
     }
 }

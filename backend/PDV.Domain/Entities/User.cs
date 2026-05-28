@@ -2,10 +2,8 @@ using PDV.Domain.Enums;
 
 namespace PDV.Domain.Entities;
 
-public class User
+public class User : BaseEntity
 {
-    public Guid Id { get; set; }
-    public string GoogleId { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
@@ -14,9 +12,9 @@ public class User
     public UserRole Role { get; set; }
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 
+    public LocalAuth? LocalAuth { get; set; }
+    public ICollection<ExternalAuth> ExternalLogins { get; set; } = [];
     public ICollection<UserTenant> UserTenants { get; set; } = [];
     public UserSettings? Settings { get; set; }
 }
