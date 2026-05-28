@@ -306,6 +306,39 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiSelect: {
     styleOverrides: { select: { padding: '8px 12px' } },
   },
+  MuiDatePicker: {
+    defaultProps: {
+      slotProps: { textField: { size: 'small' } },
+    },
+  },
+  MuiPickersTextField: {
+    defaultProps: { variant: 'outlined', size: 'small' },
+  },
+  MuiPickersOutlinedInput: {
+    styleOverrides: {
+      root: {
+        borderRadius: radius.md - 3,
+        backgroundColor: theme.palette.surface.paper,
+        fontSize: 15,
+        '& .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.subtle },
+        '&:hover .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.strong },
+        '&.Mui-focused .MuiPickersOutlinedInput-notchedOutline': {
+          borderColor: theme.palette.primary.main,
+          borderWidth: 1,
+        },
+        '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.accent[100]}` },
+      },
+    },
+  },
+  MuiPickersInputLabel: {
+    styleOverrides: {
+      root: {
+        fontSize: 15,
+        color: theme.palette.text.secondary,
+        '&.Mui-focused': { color: theme.palette.accent[700] },
+      },
+    },
+  },
 
   // ------------------------------------------------------------------
   // Chips (tags)

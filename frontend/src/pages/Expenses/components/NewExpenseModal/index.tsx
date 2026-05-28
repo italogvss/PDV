@@ -18,7 +18,8 @@ import {
 } from '@mui/material'
 import SaveOutlined from '@mui/icons-material/SaveOutlined'
 import SyncRounded from '@mui/icons-material/SyncRounded'
-import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
+import { DatePicker } from '@mui/x-date-pickers'
+import dayjs from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -161,16 +162,23 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block' }}>
                 Vencimento <Typography component="span" variant="caption" color="error.main">*</Typography>
               </Typography>
-              <TextField
-                {...register('dueDate')}
-                fullWidth
-                type="date"
-                error={!!errors.dueDate}
-                helperText={errors.dueDate?.message}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  input: { endAdornment: <CalendarTodayOutlined sx={{ fontSize: 16, color: 'text.tertiary' }} /> },
-                }}
+              <Controller
+                name="dueDate"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ? dayjs(field.value) : null}
+                    onChange={(newValue) => field.onChange(newValue ? newValue.format('YYYY-MM-DD') : '')}
+                    format="DD/MM/YYYY"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        error: !!errors.dueDate,
+                        helperText: errors.dueDate?.message,
+                      },
+                    }}
+                  />
+                )}
               />
             </Box>
           </Box>

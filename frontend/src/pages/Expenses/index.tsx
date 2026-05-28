@@ -17,14 +17,14 @@ import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
-import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
+import { DatePicker } from '@mui/x-date-pickers'
+import dayjs from 'dayjs'
 import { formatBRL } from '../../utils/currency'
 import { EXPENSE_CATEGORIES } from './types'
 import type { Expense, ExpenseCategory } from './types'
@@ -271,21 +271,22 @@ export default function ExpensesPage() {
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<CalendarMonthOutlined />}
-            endIcon={<ArrowDropDownRounded />}
-          >
-            {monthName} {year}
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<FileDownloadOutlined />}>
-            Exportar
-          </Button>
+          <DatePicker
+            label="Mês e Ano"
+            views={['month', 'year']}
+            value={dayjs().year(selectedYear).month(selectedMonth - 1)}
+            onChange={(newValue) => {
+              if (newValue) {
+                setSelectedMonth(newValue.month() + 1)
+                setSelectedYear(newValue.year())
+              }
+            }}
+            format="MMMM YYYY"
+            slotProps={{ textField: { size: 'small' } }}
+          />
           <Button
             variant="contained"
             color="success"
-            size="small"
             startIcon={<AddRounded />}
             onClick={() => setModalOpen(true)}
           >

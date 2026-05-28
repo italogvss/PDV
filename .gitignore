@@ -58,3 +58,4 @@ Thumbs.db
 frontend/design/*
 nginx.prod.conf
 backend/PDV.Api/appsettings.json
+.claude/refatorar_entidades.md
