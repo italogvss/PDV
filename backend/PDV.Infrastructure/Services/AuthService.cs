@@ -176,7 +176,10 @@ public class AuthService(
         var tenants = user.UserTenants
             .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastTenantId, user.Role.ToString(), settings, tenants);
+        var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
+
+        return new MeResponse(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastTenantId,
+            user.Role.ToString(), settings, tenants, mustChangePassword);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)

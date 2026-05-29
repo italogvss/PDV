@@ -1,6 +1,7 @@
 import type { Employee } from '../../../../types/employee.types'
 
-export interface EmployeeRowMenuProps {
+export interface EditEmployeeModalProps {
   employee: Employee
-  onEdit: () => void
+  open: boolean
+  onClose: () => void
 }

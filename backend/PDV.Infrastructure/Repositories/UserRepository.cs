@@ -9,6 +9,7 @@ public class UserRepository(AppDbContext context) : IUserRepository
 {
     private IQueryable<User> WithIncludes() =>
         context.Users
+            .AsSplitQuery()
             .Include(u => u.ExternalLogins)
             .Include(u => u.LocalAuth)
             .Include(u => u.Settings)
@@ -37,7 +38,7 @@ public class UserRepository(AppDbContext context) : IUserRepository
 
     public async Task UpdateAsync(User user)
     {
-        context.Users.Update(user);
+         context.Entry(user).State = EntityState.Modified;
         await context.SaveChangesAsync();
     }
 }

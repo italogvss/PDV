@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Api.Middleware;
 using PDV.Application.Interfaces;
@@ -19,7 +20,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration["DB_CONNECTION_STRING"],
-        ServerVersion.AutoDetect(builder.Configuration["DB_CONNECTION_STRING"])));
+        ServerVersion.AutoDetect(builder.Configuration["DB_CONNECTION_STRING"]))
+         .ConfigureWarnings(w => 
+               w.Throw(RelationalEventId.MultipleCollectionIncludeWarning)));
 
 // Authentication: JWT Bearer — o access_token chega via cookie HttpOnly
 var jwtSecret = builder.Configuration["JWT_SECRET"]

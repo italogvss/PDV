@@ -14,107 +14,64 @@ import {
   CircularProgress,
   InputAdornment,
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
+import SaveRounded from '@mui/icons-material/SaveRounded'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useCreateEmployee } from '../../../../hooks/useEmployees'
-import type { AddEmployeeModalProps } from './types'
+import { useUpdateEmployee } from '../../../../hooks/useEmployees'
+import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(200),
-  email: z.string().email('E-mail inválido'),
-  temporaryPassword: z.string().min(6, 'A senha temporária deve ter no mínimo 6 caracteres'),
   employeeType: z.enum(['Manager', 'Employee']),
   position: z.string().min(1, 'Cargo é obrigatório').max(100),
   salary: z.coerce.number().positive('Salário deve ser positivo').optional().or(z.literal('')),
   phone: z.string().max(20).optional().or(z.literal('')),
 })
 
-type AddEmployeeForm = z.infer<typeof schema>
+type EditEmployeeForm = z.infer<typeof schema>
 
-const defaultValues: AddEmployeeForm = {
-  name: '',
-  email: '',
-  temporaryPassword: '',
-  employeeType: 'Employee',
-  position: '',
-  salary: '',
-  phone: '',
-}
-
-export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
-  const createEmployee = useCreateEmployee()
+export default function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
+  const updateEmployee = useUpdateEmployee()
 
   const {
     register,
     control,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
-  } = useForm<AddEmployeeForm>({
+  } = useForm<EditEmployeeForm>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: {
+      employeeType: employee.employeeType,
+      position: employee.position,
+      salary: employee.salary ?? '',
+      phone: employee.phone ?? '',
+    },
   })
 
-  const onSubmit = async (data: AddEmployeeForm) => {
-    await createEmployee.mutateAsync({
-      name: data.name,
-      email: data.email,
-      temporaryPassword: data.temporaryPassword,
-      employeeType: data.employeeType,
-      position: data.position,
-      salary: data.salary ? Number(data.salary) : undefined,
-      phone: data.phone || undefined,
+  const onSubmit = async (data: EditEmployeeForm) => {
+    await updateEmployee.mutateAsync({
+      id: employee.id,
+      payload: {
+        employeeType: data.employeeType,
+        position: data.position,
+        salary: data.salary ? Number(data.salary) : undefined,
+        phone: data.phone || undefined,
+      },
     })
-    reset(defaultValues)
-    onClose()
-  }
-
-  const handleClose = () => {
-    if (isSubmitting) return
-    reset(defaultValues)
     onClose()
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Adicionar funcionário</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Editar funcionário</DialogTitle>
 
       <DialogContent>
         <Box
           component="form"
-          id="add-employee-form"
+          id="edit-employee-form"
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}
         >
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              {...register('name')}
-              label="Nome completo"
-              fullWidth
-              error={!!errors.name}
-              helperText={errors.name?.message}
-            />
-            <TextField
-              {...register('email')}
-              label="E-mail"
-              type="email"
-              fullWidth
-              error={!!errors.email}
-              helperText={errors.email?.message}
-            />
-          </Box>
-
-          <TextField
-            {...register('temporaryPassword')}
-            label="Senha temporária"
-            type="password"
-            fullWidth
-            error={!!errors.temporaryPassword}
-            helperText={errors.temporaryPassword?.message ?? 'O funcionário precisará trocar no primeiro acesso'}
-          />
-
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Controller
               name="employeeType"
@@ -168,18 +125,18 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
       </DialogContent>
 
       <DialogActions>
-        <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+        <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
         <Button
           type="submit"
-          form="add-employee-form"
+          form="edit-employee-form"
           variant="contained"
           color="success"
           disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <AddRounded />}
+          startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <SaveRounded />}
         >
-          {isSubmitting ? 'Salvando...' : 'Adicionar'}
+          {isSubmitting ? 'Salvando...' : 'Salvar'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -10,6 +10,7 @@ export interface AuthState {
   avatarUrl: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  mustChangePassword: boolean
 }
 
 const initialState: AuthState = {
@@ -21,6 +22,7 @@ const initialState: AuthState = {
   avatarUrl: null,
   isAuthenticated: false,
   isLoading: true,
+  mustChangePassword: false,
 }
 
 export const authSlice = createSlice({
@@ -37,6 +39,7 @@ export const authSlice = createSlice({
       avatarUrl: action.payload.avatarUrl,
       isAuthenticated: true,
       isLoading: false,
+      mustChangePassword: action.payload.mustChangePassword ?? false,
     }),
     clearAuth: () => ({
       userId: null,
@@ -47,6 +50,7 @@ export const authSlice = createSlice({
       avatarUrl: null,
       isAuthenticated: false,
       isLoading: false,
+      mustChangePassword: false,
     }),
     setLoading: (state, action: PayloadAction<boolean>) => ({
       ...state,
@@ -56,8 +60,12 @@ export const authSlice = createSlice({
       ...state,
       tenantId: action.payload.tenantId,
     }),
+    setMustChangePassword: (state, action: PayloadAction<boolean>) => ({
+      ...state,
+      mustChangePassword: action.payload,
+    }),
   },
 })
 
-export const { setAuth, clearAuth, setLoading, setTenant } = authSlice.actions
+export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword } = authSlice.actions
 export default authSlice.reducer

@@ -8,356 +8,318 @@ import {
   Chip,
   TextField,
   InputAdornment,
+  Tab,
+  Tabs,
+  CircularProgress,
 } from '@mui/material'
 import GroupRounded from '@mui/icons-material/GroupRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
-import DateRangeRounded from '@mui/icons-material/DateRangeRounded'
-import AccessTimeOutlined from '@mui/icons-material/AccessTimeOutlined'
+import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined'
+import BadgeOutlined from '@mui/icons-material/BadgeOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
-import { formatBRL } from '../../utils/currency'
-import { MOCK_EMPLOYEES } from './mock'
+import { useEmployees } from '../../hooks/useEmployees'
 import EmployeeAvatar from './components/EmployeeAvatar'
-import EmployeeStatusChip from './components/EmployeeStatusChip'
-import EmployeeRowMenu from './components/EmployeeRowMenu'
 import AddEmployeeModal from './components/AddEmployeeModal'
+import EditEmployeeModal from './components/EditEmployeeModal'
+import EmployeeRowMenu from './components/EmployeeRowMenu'
+import PermissionsTab from './components/PermissionsTab'
+import type { Employee } from '../../types/employee.types'
+import { EMPLOYEE_TYPE_LABELS } from '../../types/employee.types'
+import type { AvatarColorKey } from './types'
+import { formatBRL } from '../../utils/currency'
 
-const CHIP_ICON_SX = {
-  '& .MuiChip-icon': {
-    fontSize: '12px !important',
-    color: 'inherit',
-    ml: 0.75,
-    mr: '-3px',
-  },
+const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
+
+function getColorKey(name: string): AvatarColorKey {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
+  return COLOR_KEYS[hash % COLOR_KEYS.length]
 }
 
-// Columns defined outside component to avoid recreation on render
-const columns: GridColDef[] = [
-  {
-    field: 'name',
-    headerName: 'Funcionário',
-    flex: 1,
-    minWidth: 220,
-    renderCell: ({ row }) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-        <EmployeeAvatar initials={row.initials} colorKey={row.colorKey} size={34} />
-        <Box sx={{ minWidth: 0, flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 500,
-              lineHeight: 1.2,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {row.name}
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.tertiary"
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {row.role}
-          </Typography>
-        </Box>
-      </Box>
-    ),
-  },
-  {
-    field: 'shift',
-    headerName: 'Turno',
-    width: 150,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" color="text.secondary">
-        {row.shift}
-      </Typography>
-    ),
-  },
-  {
-    field: 'status',
-    headerName: 'Status',
-    width: 150,
-    renderCell: ({ row }) => <EmployeeStatusChip status={row.status} />,
-  },
-  {
-    field: 'salesToday',
-    headerName: 'Vendas hoje',
-    width: 120,
-    align: 'right',
-    headerAlign: 'right',
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {row.salesToday}
-      </Typography>
-    ),
-  },
-  {
-    field: 'commission',
-    headerName: 'Comissão',
-    width: 130,
-    align: 'right',
-    headerAlign: 'right',
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {formatBRL(row.commission)}
-      </Typography>
-    ),
-  },
-  {
-    field: 'rowActions',
-    headerName: '',
-    width: 56,
-    sortable: false,
-    filterable: false,
-    disableColumnMenu: true,
-    renderCell: ({ row }) => <EmployeeRowMenu employee={row} />,
-  },
-]
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ')
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
+  const [tab, setTab] = useState(0)
+  const [addOpen, setAddOpen] = useState(false)
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
+
+  const { data, isLoading } = useEmployees(1, 200)
+  const employees = data?.data ?? []
 
   const kpis = useMemo(() => {
-    const total = MOCK_EMPLOYEES.length
-    const onlineCount = MOCK_EMPLOYEES.filter((e) => e.status === 'Em turno').length
-    const totalSales = MOCK_EMPLOYEES.reduce((sum, e) => sum + e.salesToday, 0)
-    const topSeller = [...MOCK_EMPLOYEES].sort((a, b) => b.salesToday - a.salesToday)[0]
-    return { total, onlineCount, totalSales, topSeller }
-  }, [])
+    const total = employees.length
+    const active = employees.filter((e) => e.isActive).length
+    const inactive = total - active
+    const managers = employees.filter((e) => e.employeeType === 'Manager').length
+    return { total, active, inactive, managers }
+  }, [employees])
 
-  const rows = useMemo(
+  const filteredRows = useMemo(
     () =>
-      MOCK_EMPLOYEES.filter((e) =>
-        e.name.toLowerCase().includes(search.toLowerCase()),
+      employees.filter(
+        (e) =>
+          e.name.toLowerCase().includes(search.toLowerCase()) ||
+          e.email.toLowerCase().includes(search.toLowerCase()) ||
+          e.position.toLowerCase().includes(search.toLowerCase()),
       ),
-    [search],
+    [employees, search],
+  )
+
+  const columns: GridColDef<Employee>[] = useMemo(
+    () => [
+      {
+        field: 'name',
+        headerName: 'Funcionário',
+        flex: 1,
+        minWidth: 240,
+        renderCell: ({ row }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <EmployeeAvatar
+              initials={getInitials(row.name)}
+              colorKey={getColorKey(row.name)}
+              size={34}
+            />
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >
+                {row.name}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.tertiary"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >
+                {row.email}
+              </Typography>
+            </Box>
+          </Box>
+        ),
+      },
+      {
+        field: 'employeeType',
+        headerName: 'Tipo',
+        width: 130,
+        renderCell: ({ row }) => (
+          <Typography variant="body2" color="text.secondary">
+            {EMPLOYEE_TYPE_LABELS[row.employeeType]}
+          </Typography>
+        ),
+      },
+      {
+        field: 'position',
+        headerName: 'Cargo',
+        width: 160,
+        renderCell: ({ row }) => (
+          <Typography variant="body2">{row.position}</Typography>
+        ),
+      },
+      {
+        field: 'salary',
+        headerName: 'Salário',
+        width: 130,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: ({ row }) => (
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {row.salary != null ? formatBRL(row.salary) : '—'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'isActive',
+        headerName: 'Status',
+        width: 120,
+        renderCell: ({ row }) => (
+          <Chip
+            size="small"
+            color={row.isActive ? 'success' : 'default'}
+            label={row.isActive ? 'Ativo' : 'Inativo'}
+          />
+        ),
+      },
+      {
+        field: 'rowActions',
+        headerName: '',
+        width: 56,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => (
+          <EmployeeRowMenu employee={row} onEdit={() => setEditEmployee(row)} />
+        ),
+      },
+    ],
+    [],
   )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
         <Box>
           <Typography variant="h1">Funcionários</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {MOCK_EMPLOYEES.length} membros na equipe
+            {kpis.total} membros na equipe
           </Typography>
         </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
-          <Button variant="outlined" size="small" startIcon={<DateRangeRounded />}>
-            Escalas
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<AccessTimeOutlined />}>
-            Ponto eletrônico
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<AddRounded />}
-            onClick={() => setModalOpen(true)}
-          >
-            Adicionar
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          color="success"
+          size="small"
+          startIcon={<AddRounded />}
+          onClick={() => setAddOpen(true)}
+          sx={{ mt: 0.5 }}
+        >
+          Adicionar
+        </Button>
       </Box>
 
       {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' } }}>
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <GroupRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Total
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Total</Typography>
             </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1, mb: 1.5 }}>
-              {kpis.total}
-            </Typography>
-            <Chip
-              size="small"
-              color="warning"
-              icon={<WarningAmberRounded />}
-              label="2 em férias"
-              sx={CHIP_ICON_SX}
-            />
+            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.total}</Typography>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <CheckCircleOutlineRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Online agora
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Ativos</Typography>
             </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1, mb: 1.5 }}>
-              {kpis.onlineCount}
-            </Typography>
-            <Chip
-              size="small"
-              color="success"
-              icon={<TrendingUpRounded />}
-              label="Em turno"
-              sx={CHIP_ICON_SX}
-            />
+            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.active}</Typography>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <ShoppingCartOutlined sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Vendas hoje
-              </Typography>
+              <BadgeOutlined sx={{ fontSize: 15, color: 'text.tertiary' }} />
+              <Typography variant="caption" color="text.secondary">Gerentes</Typography>
             </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1, mb: 1.5 }}>
-              {kpis.totalSales}
-            </Typography>
-            <Chip
-              size="small"
-              color="success"
-              icon={<TrendingUpRounded />}
-              label="+12 vs. ontem"
-              sx={CHIP_ICON_SX}
-            />
+            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.managers}</Typography>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <TrendingUpRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Top vendedor
-              </Typography>
+              <PersonOffOutlined sx={{ fontSize: 15, color: 'text.tertiary' }} />
+              <Typography variant="caption" color="text.secondary">Inativos</Typography>
             </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1, mb: 1.5 }}>
-              {kpis.topSeller.name.split(' ')[0]}
-            </Typography>
-            <Chip
-              size="small"
-              color="success"
-              icon={<TrendingUpRounded />}
-              label={`${kpis.topSeller.salesToday} vendas hoje`}
-              sx={CHIP_ICON_SX}
-            />
+            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.inactive}</Typography>
           </CardContent>
         </Card>
       </Box>
 
-      {/* Tabela de funcionários */}
-      <Card sx={{ overflow: 'hidden' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 1.5,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <TextField
-            size="small"
-            placeholder="Buscar funcionário..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 260 }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchRounded sx={{ fontSize: 17, color: 'text.disabled' }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-        </Box>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+          <Tab label="Equipe" />
+          <Tab label="Permissões" />
+        </Tabs>
+      </Box>
 
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          rowHeight={64}
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          sx={(theme) => ({
-            border: 'none',
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: theme.palette.surface.sunken,
-              borderBottom: `1px solid ${theme.palette.border.subtle}`,
-            },
-            '& .MuiDataGrid-columnHeader': {
-              '&:focus, &:focus-within': { outline: 'none' },
-            },
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              color: theme.palette.text.tertiary,
-              textTransform: 'uppercase',
-            },
-            '& .MuiDataGrid-columnSeparator': { display: 'none' },
-            '& .MuiDataGrid-cell': {
-              borderBottom: `1px solid ${theme.palette.border.subtle}`,
+      {tab === 0 && (
+        <Card sx={{ overflow: 'hidden' }}>
+          <Box
+            sx={{
               display: 'flex',
               alignItems: 'center',
-              '&:focus, &:focus-within': { outline: 'none' },
-            },
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: theme.palette.surface.sunken,
-            },
-            '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': {
-              borderBottom: 'none',
-            },
-            '& .MuiDataGrid-footerContainer': {
-              borderTop: `1px solid ${theme.palette.border.subtle}`,
-              minHeight: 48,
-            },
-            '& .MuiDataGrid-selectedRowCount': { display: 'none' },
-          })}
-        />
-      </Card>
+              gap: 1,
+              p: 1.5,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <TextField
+              size="small"
+              placeholder="Buscar funcionário..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{ width: 280 }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRounded sx={{ fontSize: 17, color: 'text.disabled' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Box>
 
-      <AddEmployeeModal open={modalOpen} onClose={() => setModalOpen(false)} />
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataGrid
+              rows={filteredRows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              rowHeight={64}
+              disableRowSelectionOnClick
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              sx={(theme) => ({
+                border: 'none',
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: theme.palette.surface.sunken,
+                  borderBottom: `1px solid ${theme.palette.border.subtle}`,
+                },
+                '& .MuiDataGrid-columnHeader': { '&:focus, &:focus-within': { outline: 'none' } },
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: '0.05em',
+                  color: theme.palette.text.tertiary,
+                  textTransform: 'uppercase',
+                },
+                '& .MuiDataGrid-columnSeparator': { display: 'none' },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: `1px solid ${theme.palette.border.subtle}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&:focus, &:focus-within': { outline: 'none' },
+                },
+                '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
+                '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: `1px solid ${theme.palette.border.subtle}`,
+                  minHeight: 48,
+                },
+                '& .MuiDataGrid-selectedRowCount': { display: 'none' },
+              })}
+            />
+          )}
+        </Card>
+      )}
+
+      {tab === 1 && <PermissionsTab />}
+
+      <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} />
+
+      {editEmployee && (
+        <EditEmployeeModal
+          employee={editEmployee}
+          open={true}
+          onClose={() => setEditEmployee(null)}
+        />
+      )}
     </Box>
   )
 }

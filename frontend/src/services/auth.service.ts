@@ -11,12 +11,12 @@ interface MeApiResponse {
   role: UserRole
   settings: { theme: Theme } | null
   tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee' }>
+  mustChangePassword?: boolean
 }
 
 export const authService = {
   getMe: async (): Promise<AuthUser> => {
     const { data } = await api.get<MeApiResponse>('/auth/me')
-    console.log('Me API response:', data) // Log da resposta da API para depuração
     return {
       userId: data.id,
       tenantId: data.lastTenantId,
@@ -26,11 +26,20 @@ export const authService = {
       role: data.role ?? 'Owner',
       settings: data.settings ? { theme: data.settings.theme } : null,
       tenants: data.tenants ?? [],
+      mustChangePassword: data.mustChangePassword ?? false,
     }
   },
 
   loginWithGoogle: async (credential: string): Promise<void> => {
     await api.post('/auth/google', { credential })
+  },
+
+  loginWithLocal: async (email: string, password: string): Promise<void> => {
+    await api.post('/auth/local', { email, password })
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.post('/auth/change-password', { currentPassword, newPassword })
   },
 
   logout: async (): Promise<void> => {

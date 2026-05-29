@@ -10,4 +10,5 @@ public record MeResponse(
     Guid? LastTenantId,
     string Role,
     UserSettingsDTO? Settings = null,
-    IEnumerable<TenantListItem>? Tenants = null);
+    IEnumerable<TenantListItem>? Tenants = null,
+    bool MustChangePassword = false);

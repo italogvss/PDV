@@ -1,7 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import ProtectedRoute from '../components/ProtectedRoute'
-import OnboardingRoute from '../components/OnboardingRoute'
-import PublicRoute from '../components/PublicRoute'
+import RouterGuard from '../components/RouterGuard'
 import DashboardLayout from '../layouts/DashboardLayout'
 
 import DashboardPage from '../pages/Dashboard'
@@ -18,18 +16,23 @@ import AccountPage from '../pages/Account'
 import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
 import OnboardingTenant from '../pages/CreateTenant'
+import ChangePasswordPage from '../pages/ChangePassword'
 
 export const router = createBrowserRouter([
   {
-    element: <PublicRoute />,
+    element: <RouterGuard type="public" />,
     children: [{ path: '/login', element: <LoginPage /> }],
   },
   {
-    element: <OnboardingRoute />,
+    element: <RouterGuard type="onboarding" />,
     children: [{ path: '/criar-negocio', element: <OnboardingTenant /> }],
   },
   {
-    element: <ProtectedRoute />,
+    element: <RouterGuard type="change-password" />,
+    children: [{ path: '/trocar-senha', element: <ChangePasswordPage /> }],
+  },
+  {
+    element: <RouterGuard type="protected" />,
     children: [
       {
         path: '/',

@@ -12,4 +12,5 @@ export interface AuthUser {
   role: UserRole
   settings: UserSettingsDTO | null
   tenants: TenantListItem[]
+  mustChangePassword: boolean
 }

@@ -1,14 +1,40 @@
 import { useState } from 'react'
-import { IconButton, Menu, MenuItem, Divider } from '@mui/material'
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
-import PersonOutlineRounded from '@mui/icons-material/PersonOutlineRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
+import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined'
+import PersonAddAltOutlined from '@mui/icons-material/PersonAddAltOutlined'
+import { useDeactivateEmployee, useReactivateEmployee } from '../../../../hooks/useEmployees'
 import type { EmployeeRowMenuProps } from './types'
 
-export default function EmployeeRowMenu({ employee: _ }: EmployeeRowMenuProps) {
+export default function EmployeeRowMenu({ employee, onEdit }: EmployeeRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const deactivate = useDeactivateEmployee()
+  const reactivate = useReactivateEmployee()
+
   const handleClose = () => setAnchor(null)
+
+  const handleDeactivate = async () => {
+    setConfirmOpen(false)
+    await deactivate.mutateAsync(employee.id)
+  }
+
+  const handleReactivate = async () => {
+    handleClose()
+    await reactivate.mutateAsync(employee.id)
+  }
 
   return (
     <>
@@ -27,23 +53,62 @@ export default function EmployeeRowMenu({ employee: _ }: EmployeeRowMenuProps) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem onClick={handleClose}>
-          <PersonOutlineRounded />
-          Ver perfil
-        </MenuItem>
-        <MenuItem onClick={handleClose}>
-          <EditRounded />
-          Editar funcionário
-        </MenuItem>
-        <Divider sx={{ my: 0.5 }} />
         <MenuItem
-          onClick={handleClose}
-          sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+          onClick={() => {
+            handleClose()
+            onEdit()
+          }}
         >
-          <DeleteOutlineRounded />
-          Remover da equipe
+          <EditRounded />
+          Editar
         </MenuItem>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        {employee.isActive ? (
+          <MenuItem
+            onClick={() => {
+              handleClose()
+              setConfirmOpen(true)
+            }}
+            sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+          >
+            <PersonOffOutlined />
+            Desativar
+          </MenuItem>
+        ) : (
+          <MenuItem
+            onClick={handleReactivate}
+            sx={{ color: 'success.main', '& svg': { color: 'success.main' } }}
+          >
+            <PersonAddAltOutlined />
+            Reativar
+          </MenuItem>
+        )}
       </Menu>
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Desativar funcionário?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {employee.name} perderá o acesso ao sistema imediatamente. Você pode reativá-lo a
+            qualquer momento.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeactivate}
+            disabled={deactivate.isPending}
+          >
+            Desativar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
