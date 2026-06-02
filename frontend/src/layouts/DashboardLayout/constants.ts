@@ -10,6 +10,7 @@ import {
   LocalShippingOutlined,
   SettingsOutlined,
   HelpOutlineOutlined,
+  MiscellaneousServicesOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 
@@ -43,6 +44,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Inventory2Outlined,
         badge: { label: '3', tone: 'count' },
       },
+      { label: 'Serviços', path: '/servicos', icon: MiscellaneousServicesOutlined },
       { label: 'Despesas', path: '/despesas', icon: PaidOutlined },
       { label: 'Funcionários', path: '/funcionarios', icon: GroupOutlined },
       { label: 'Lucros & relatórios', path: '/relatorios', icon: InsightsOutlined },

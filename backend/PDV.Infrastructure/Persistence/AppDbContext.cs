@@ -22,6 +22,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<EmployeeTypePermission> EmployeeTypePermissions => Set<EmployeeTypePermission>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Service> Services => Set<Service>();
+    public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,5 +52,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<Supplier>()
             .HasQueryFilter(s => s.TenantId == tenantContext.TenantId && s.IsActive);
+
+        modelBuilder.Entity<Service>()
+            .HasQueryFilter(s => s.TenantId == tenantContext.TenantId && s.IsActive);
+
+        modelBuilder.Entity<ServiceCategory>()
+            .HasQueryFilter(c => c.TenantId == tenantContext.TenantId && c.IsActive);
     }
 }
