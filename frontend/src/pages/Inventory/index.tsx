@@ -15,8 +15,6 @@ import {
 import AddRounded from '@mui/icons-material/AddRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
-import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
 import SellRounded from '@mui/icons-material/SellRounded'

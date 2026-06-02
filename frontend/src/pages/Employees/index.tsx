@@ -87,7 +87,7 @@ export default function EmployeesPage() {
               colorKey={getColorKey(row.name)}
               size={34}
             />
-            <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%'}}>
               <Typography
                 variant="body2"
                 sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}

@@ -1,56 +1,74 @@
 import { useState, useMemo } from 'react'
-import { Box, Typography, Button, InputBase, Chip, Stack } from '@mui/material'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
-import SendOutlined from '@mui/icons-material/SendOutlined'
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  InputBase,
+  CircularProgress,
+} from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
-import PersonOutlined from '@mui/icons-material/PersonOutlined'
-import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined'
-import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
-import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
-import { formatBRL } from '../../utils/currency'
-import { MOCK_CUSTOMER_METRICS, MOCK_CUSTOMERS } from './mock'
-import { CustomerSegment } from '../../types/customers.types'
+import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded'
+import PhoneAndroidOutlined from '@mui/icons-material/PhoneAndroidOutlined'
+import EmailOutlined from '@mui/icons-material/EmailOutlined'
+import BadgeOutlined from '@mui/icons-material/BadgeOutlined'
+import { useCustomers, useDeleteCustomer } from '../../hooks/useCustomers'
+import type { Customer } from '../../types/customers.types'
 import CustomerMetricCard from './components/CustomerMetricCard'
 import CustomerTable from './components/CustomerTable'
 import CustomerDetailPanel from './components/CustomerDetailPanel'
+import AddCustomerModal from './components/AddCustomerModal'
+import EditCustomerModal from './components/EditCustomerModal'
 
 export default function CustomersPage() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedSegment, setSelectedSegment] = useState<CustomerSegment | 'all'>('all')
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>(MOCK_CUSTOMERS[1]?.id)
+  const [search, setSearch] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>()
+  const [addOpen, setAddOpen] = useState(false)
+  const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
+
+  const { data, isLoading } = useCustomers(1, 200)
+  const deleteCustomer = useDeleteCustomer()
+
+  const customers = data?.data ?? []
+
+  const kpis = useMemo(
+    () => ({
+      total: customers.length,
+      withPhone: customers.filter((c) => c.phone).length,
+      withEmail: customers.filter((c) => c.email).length,
+      withDocument: customers.filter((c) => c.document).length,
+    }),
+    [customers],
+  )
 
   const filteredCustomers = useMemo(() => {
-    return MOCK_CUSTOMERS.filter((customer) => {
-      const matchesSearch =
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.includes(searchTerm)
+    if (!search.trim()) return customers
+    const q = search.toLowerCase()
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.email?.toLowerCase().includes(q) ?? false) ||
+        (c.phone?.includes(search) ?? false) ||
+        (c.document?.includes(search) ?? false),
+    )
+  }, [customers, search])
 
-      const matchesSegment = selectedSegment === 'all' || customer.segment === selectedSegment
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
 
-      return matchesSearch && matchesSegment
-    })
-  }, [searchTerm, selectedSegment])
-
-  const selectedCustomer = MOCK_CUSTOMERS.find((c) => c.id === selectedCustomerId)
-
-  const segmentCounts = {
-    all: MOCK_CUSTOMERS.length,
-    VIP: MOCK_CUSTOMERS.filter((c) => c.segment === 'VIP').length,
-    Regular: MOCK_CUSTOMERS.filter((c) => c.segment === 'Regular').length,
-    Novo: MOCK_CUSTOMERS.filter((c) => c.segment === 'Novo').length,
-    Inativo: MOCK_CUSTOMERS.filter((c) => c.segment === 'Inativo').length,
+  const handleDelete = async (customerId: string) => {
+    await deleteCustomer.mutateAsync(customerId)
+    if (selectedCustomerId === customerId) setSelectedCustomerId(undefined)
   }
 
-  const segmentFilters = [
-    { label: 'Todos', value: 'all' as const, count: segmentCounts.all },
-    { label: 'VIP', value: 'VIP' as const, count: segmentCounts.VIP },
-    { label: 'Regulares', value: 'Regular' as const, count: segmentCounts.Regular },
-    { label: 'Novos', value: 'Novo' as const, count: segmentCounts.Novo },
-    { label: 'Inativos', value: 'Inativo' as const, count: segmentCounts.Inativo },
-  ]
+  const handleEditOpen = (customer: Customer) => {
+    setEditCustomer(customer)
+  }
+
+  const handleEditClose = () => {
+    setEditCustomer(null)
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -67,184 +85,118 @@ export default function CustomersPage() {
         <Box>
           <Typography variant="h1">Clientes</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {MOCK_CUSTOMER_METRICS.totalCustomers} cadastrados • CRM e fidelidade
+            {kpis.total} cadastrados • CRM e fidelidade
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileUploadOutlined />}
-          >
-            Importar CSV
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileDownloadOutlined />}
-          >
-            Exportar
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<SendOutlined />}
-          >
-            Campanha
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<AddRounded />}
-          >
-            Novo cliente
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          color="success"
+          size="small"
+          startIcon={<AddRounded />}
+          onClick={() => setAddOpen(true)}
+          sx={{ mt: 0.5 }}
+        >
+          Novo cliente
+        </Button>
       </Box>
 
-      {/* KPIs - Métricas principais */}
+      {/* KPIs */}
       <Box
         sx={{
           display: 'grid',
           gap: 2,
           gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
+            xs: 'repeat(2, 1fr)',
             lg: 'repeat(4, 1fr)',
           },
         }}
       >
         <CustomerMetricCard
-          icon={PersonOutlined}
+          icon={PeopleOutlineRounded}
           label="Total de clientes"
-          value={MOCK_CUSTOMER_METRICS.totalCustomers}
-          trend={`+${MOCK_CUSTOMER_METRICS.newCustomersThisMonth} no mês`}
+          value={kpis.total}
+          trend={`${kpis.total} cadastrados`}
+        />
+{/*         
+        <CustomerMetricCard
+          icon={PhoneAndroidOutlined}
+          label="Com telefone"
+          value={kpis.withPhone}
+          trend="disponíveis para WhatsApp"
         />
         <CustomerMetricCard
-          icon={CheckCircleOutlined}
-          label="Ativos"
-          value={MOCK_CUSTOMER_METRICS.activeCustomers}
-          trend={`${MOCK_CUSTOMER_METRICS.activePercentage}% da base`}
+          icon={EmailOutlined}
+          label="Com e-mail"
+          value={kpis.withEmail}
+          trend="para contato"
         />
         <CustomerMetricCard
-          icon={TrendingUpOutlined}
-          label="Novos no mês"
-          value={MOCK_CUSTOMER_METRICS.newCustomersThisMonth}
-          trend="Maio/2026"
-        />
-        <CustomerMetricCard
-          icon={LocalFireDepartmentRounded}
-          label="LTV médio"
-          value={formatBRL(MOCK_CUSTOMER_METRICS.averageLTV)}
-          trend={`${MOCK_CUSTOMER_METRICS.vipCount} clientes VIP`}
-        />
+          icon={BadgeOutlined}
+          label="Com documento"
+          value={kpis.withDocument}
+          trend="CPF / CNPJ"
+        /> */}
       </Box>
 
-      {/* Filtros e Busca */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        {/* Busca */}
+      {/* Busca */}
+      <Card>
+        <CardContent sx={{ py: '10px !important', px: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <SearchOutlined sx={{ fontSize: 18, color: 'text.tertiary', flexShrink: 0 }} />
+            <InputBase
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar nome, e-mail, telefone ou documento..."
+              sx={{ flex: 1, fontSize: 14 }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Tabela + Painel de detalhe */}
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            px: 2,
-            py: 1,
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'border.subtle',
-            bgcolor: 'background.paper',
-            '&:focus-within': { borderColor: 'border.strong' },
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              xl: selectedCustomer ? '2fr 1fr' : '1fr',
+            },
+            alignItems: 'start',
           }}
         >
-          <SearchOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
-          <InputBase
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar nome, e-mail ou telefone..."
-            sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
+          <CustomerTable
+            customers={filteredCustomers}
+            selectedCustomerId={selectedCustomerId}
+            onSelectCustomer={setSelectedCustomerId}
+            onEdit={handleEditOpen}
+            onDelete={handleDelete}
           />
+          {selectedCustomer && (
+            <CustomerDetailPanel
+              customer={selectedCustomer}
+              onEdit={handleEditOpen}
+              onDelete={handleDelete}
+            />
+          )}
         </Box>
+      )}
 
-        {/* Filtros por segmento */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Stack direction="row" spacing={1}>
-            {segmentFilters.map((filter) => (
-              <Chip
-                key={filter.value}
-                label={`${filter.label} ${filter.count}`}
-                onClick={() => setSelectedSegment(filter.value)}
-                variant={selectedSegment === filter.value ? 'filled' : 'outlined'}
-                color={selectedSegment === filter.value ? 'primary' : 'default'}
-                sx={{
-                  ...(selectedSegment === filter.value && {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    fontWeight: 600,
-                  }),
-                  ...(selectedSegment !== filter.value &&
-                    filter.value === 'all' && {
-                      backgroundColor: 'common.black',
-                      color: 'white',
-                      borderColor: 'common.black',
-                      fontWeight: 600,
-                    }),
-                }}
-              />
-            ))}
-          </Stack>
+      <AddCustomerModal open={addOpen} onClose={() => setAddOpen(false)} />
 
-          {/* Divider and other options */}
-          <Box sx={{ flex: 1 }} />
-          <Stack direction="row" spacing={1}>
-            {['Ordenar', 'Maior gasto', 'Mais visitas', 'Recentes', 'A-Z'].map((option) => (
-              <Typography
-                key={option}
-                variant="caption"
-                sx={{
-                  cursor: 'pointer',
-                  color: 'text.secondary',
-                  fontWeight: 500,
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: 1,
-                  '&:hover': { bgcolor: 'surface.raised' },
-                }}
-              >
-                {option}
-              </Typography>
-            ))}
-          </Stack>
-        </Box>
-      </Box>
-
-      {/* Tabela e Detalhe lado a lado */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            xl: '2fr 1fr',
-          },
-          alignItems: 'start',
-        }}
-      >
-        <CustomerTable
-          customers={filteredCustomers}
-          selectedCustomerId={selectedCustomerId}
-          onSelectCustomer={setSelectedCustomerId}
+      {editCustomer && (
+        <EditCustomerModal
+          open
+          customer={editCustomer}
+          onClose={handleEditClose}
         />
-        <CustomerDetailPanel customer={selectedCustomer} />
-      </Box>
+      )}
     </Box>
   )
 }

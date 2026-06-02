@@ -20,7 +20,17 @@ export interface AccumulatedProfitData {
   profit: number
 }
 
+export type DateRangeKey = '7d' | '14d' | '30d' | '3m' | '1y'
+
 export interface DateRangeOption {
   label: string
-  days: number
+  key: DateRangeKey
+}
+
+export interface SalesMetrics {
+  totalSales: number
+  totalRevenue: number
+  averageTicket: number
+  cancelledCount: number
+  period: string
 }

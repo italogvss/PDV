@@ -5,44 +5,50 @@ import {
   Button,
   Menu,
   MenuItem,
+  Skeleton,
 } from '@mui/material'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
+import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_METRICS, MOCK_DAILY_REVENUE, MOCK_ACCUMULATED_PROFIT } from './mock'
-import { DateRangeOption } from '../../types/report.types'
+import { useSalesMetrics } from '../../hooks/useReports'
+import type { DateRangeKey, DateRangeOption } from '../../types/report.types'
 import MetricCard from './components/MetricCard'
-import RevenueVsExpenseChart from './components/RevenueVsExpenseChart'
-import AccumulatedProfitChart from './components/AccumulatedProfitChart'
 
 const DATE_RANGE_OPTIONS: DateRangeOption[] = [
-  { label: 'Últimos 7 dias', days: 7 },
-  { label: 'Últimos 14 dias', days: 14 },
-  { label: 'Últimos 30 dias', days: 30 },
-  { label: 'Este mês', days: 30 },
+  { label: 'Últimos 7 dias', key: '7d' },
+  { label: 'Últimos 14 dias', key: '14d' },
+  { label: 'Últimos 30 dias', key: '30d' },
+  { label: 'Últimos 3 meses', key: '3m' },
+  { label: 'Último ano', key: '1y' },
 ]
 
 export default function ReportsPage() {
   const [dateAnchor, setDateAnchor] = useState<HTMLElement | null>(null)
-  const [selectedDays, setSelectedDays] = useState(14)
+  const [selectedKey, setSelectedKey] = useState<DateRangeKey>('30d')
 
-  const selectedDateRange = useMemo(
-    () => DATE_RANGE_OPTIONS.find((opt) => opt.days === selectedDays) || DATE_RANGE_OPTIONS[1],
-    [selectedDays],
+  const selectedOption = useMemo(
+    () => DATE_RANGE_OPTIONS.find((opt) => opt.key === selectedKey) ?? DATE_RANGE_OPTIONS[2],
+    [selectedKey],
   )
+
+  const { data: metrics, isLoading } = useSalesMetrics(selectedKey)
+
+  const cancellationRate = useMemo(() => {
+    if (!metrics) return null
+    const total = metrics.totalSales + metrics.cancelledCount
+    if (total === 0) return null
+    return ((metrics.cancelledCount / total) * 100).toFixed(1)
+  }, [metrics])
 
   const handleExportPDF = () => {
     // TODO: Implementar exportação em PDF
     console.log('Exportar relatório em PDF')
   }
-
-  const fmtCurrency = (value: number) =>
-    value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -71,7 +77,7 @@ export default function ReportsPage() {
             endIcon={<ArrowDropDownRounded />}
             onClick={(e) => setDateAnchor(e.currentTarget)}
           >
-            {selectedDateRange.label}
+            {selectedOption.label}
           </Button>
           <Button
             variant="contained"
@@ -94,19 +100,19 @@ export default function ReportsPage() {
       >
         {DATE_RANGE_OPTIONS.map((option) => (
           <MenuItem
-            key={option.days}
+            key={option.key}
             onClick={() => {
-              setSelectedDays(option.days)
+              setSelectedKey(option.key)
               setDateAnchor(null)
             }}
-            selected={selectedDays === option.days}
+            selected={selectedKey === option.key}
           >
             {option.label}
           </MenuItem>
         ))}
       </Menu>
 
-      {/* KPIs - Métricas principais */}
+      {/* KPIs */}
       <Box
         sx={{
           display: 'grid',
@@ -118,68 +124,42 @@ export default function ReportsPage() {
           },
         }}
       >
-        <MetricCard
-          icon={AttachMoneyRounded}
-          label="Receita total"
-          value={formatBRL(MOCK_METRICS.totalRevenue)}
-          trend={MOCK_METRICS.revenueChangePercent}
-          trendLabel={`+${MOCK_METRICS.revenueChangePercent}% no período`}
-          isPositive={true}
-        />
-        <MetricCard
-          icon={TrendingUpRounded}
-          label="Lucro líquido"
-          value={formatBRL(MOCK_METRICS.netProfit)}
-          trend={MOCK_METRICS.profitMarginPercent}
-          trendLabel={`Margem ${MOCK_METRICS.profitMarginPercent}%`}
-          isPositive={true}
-        />
-        <MetricCard
-          icon={ShoppingCartRounded}
-          label="Custos"
-          value={formatBRL(MOCK_METRICS.costs)}
-          trend={Math.abs(MOCK_METRICS.costsChangePercent)}
-          trendLabel={`${MOCK_METRICS.costsChangePercent}%`}
-          isPositive={false}
-        />
-        <MetricCard
-          icon={LocalFireDepartmentRounded}
-          label="Ticket médio"
-          value={`R$ ${fmtCurrency(MOCK_METRICS.averageTicket)}`}
-          trend={MOCK_METRICS.averageTicketChange}
-          trendLabel={`+R$ ${fmtCurrency(MOCK_METRICS.averageTicketChange)}`}
-          isPositive={true}
-        />
-      </Box>
-
-      {/* Gráficos */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: '1fr',
-          },
-        }}
-      >
-        <RevenueVsExpenseChart data={MOCK_DAILY_REVENUE} />
-      </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: '1fr',
-          },
-        }}
-      >
-        <AccumulatedProfitChart
-          data={MOCK_ACCUMULATED_PROFIT}
-          trend={MOCK_METRICS.revenueChangePercent}
-        />
+        {isLoading ? (
+          <>
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} variant="rounded" height={120} />
+            ))}
+          </>
+        ) : (
+          <>
+            <MetricCard
+              icon={AttachMoneyRounded}
+              label="Receita total"
+              value={formatBRL(metrics?.totalRevenue ?? 0)}
+            />
+            <MetricCard
+              icon={ShoppingCartRounded}
+              label="Total de vendas"
+              value={String(metrics?.totalSales ?? 0)}
+              trendLabel={`${selectedOption.label.toLowerCase()}`}
+              isPositive={true}
+            />
+            <MetricCard
+              icon={LocalFireDepartmentRounded}
+              label="Ticket médio"
+              value={formatBRL(metrics?.averageTicket ?? 0)}
+            />
+            <MetricCard
+              icon={ReceiptLongRounded}
+              label="Cancelamentos"
+              value={String(metrics?.cancelledCount ?? 0)}
+              trendLabel={
+                cancellationRate !== null ? `${cancellationRate}% do total` : undefined
+              }
+              isPositive={false}
+            />
+          </>
+        )}
       </Box>
     </Box>
   )

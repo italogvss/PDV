@@ -6,8 +6,8 @@ export interface MetricCardProps {
   icon: React.ComponentType<any>
   label: string
   value: string
-  trend: number
-  trendLabel: string
+  trend?: number
+  trendLabel?: string
   isPositive?: boolean
 }
 
@@ -44,13 +44,15 @@ export default function MetricCard({
           {value}
         </Typography>
 
-        <Chip
-          size="small"
-          color={trendColor}
-          icon={<TrendIcon />}
-          label={trendLabel}
-          sx={CHIP_ICON_SX}
-        />
+        {trendLabel && (
+          <Chip
+            size="small"
+            color={trendColor}
+            icon={<TrendIcon />}
+            label={trendLabel}
+            sx={CHIP_ICON_SX}
+          />
+        )}
       </CardContent>
     </Card>
   )

@@ -1,110 +1,121 @@
-import { Card, CardContent, Box, Typography, Avatar, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material'
-import MoreVertRounded from '@mui/icons-material/MoreVertRounded'
-import { Customer } from '../../../types/customers.types'
-import { formatBRL } from '../../../utils/currency'
+import {
+  Card,
+  Box,
+  Typography,
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material'
+import type { Customer } from '../../../types/customers.types'
+import CustomerRowMenu from './CustomerRowMenu'
 
 interface CustomerTableProps {
   customers: Customer[]
   selectedCustomerId?: string
   onSelectCustomer?: (customerId: string) => void
+  onEdit: (customer: Customer) => void
+  onDelete: (customerId: string) => void
 }
 
-const getSegmentColor = (segment: string) => {
-  switch (segment) {
-    case 'VIP':
-      return 'primary'
-    case 'Regular':
-      return 'default'
-    case 'Novo':
-      return 'info'
-    case 'Inativo':
-      return 'default'
-    default:
-      return 'default'
-  }
-}
-
-const getInitials = (name: string) => {
-  return name
+const getInitials = (name: string) =>
+  name
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()
+
+const AVATAR_COLORS = [
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#06B6D4',
+  '#EC4899',
+  '#6366F1',
+]
+
+function getAvatarColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
 
-const getAvatarColor = (index: number) => {
-  const colors = [
-    '#3B82F6', // blue
-    '#10B981', // green
-    '#F59E0B', // amber
-    '#EF4444', // red
-    '#8B5CF6', // purple
-    '#06B6D4', // cyan
-    '#EC4899', // pink
-    '#6366F1', // indigo
-  ]
-  return colors[index % colors.length]
+const HEADER_CELL_SX = {
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'text.tertiary',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
+  py: 1.5,
 }
 
 export default function CustomerTable({
   customers,
   selectedCustomerId,
   onSelectCustomer,
+  onEdit,
+  onDelete,
 }: CustomerTableProps) {
+  if (customers.length === 0) {
+    return (
+      <Card>
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Typography color="text.tertiary">Nenhum cliente encontrado</Typography>
+        </Box>
+      </Card>
+    )
+  }
+
   return (
-    <Card>
-      <CardContent sx={{ p: 0 }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'surface.sunken' }}>
-                <TableCell sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Cliente
-                </TableCell>
-                <TableCell sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Segmento
-                </TableCell>
-                <TableCell align="right" sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Visitas
-                </TableCell>
-                <TableCell sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Última Compra
-                </TableCell>
-                <TableCell align="right" sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Total Gasto
-                </TableCell>
-                <TableCell align="right" sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Ticket Médio
-                </TableCell>
-                <TableCell align="center" sx={{ fontSize: 11, fontWeight: 500, color: 'text.tertiary', textTransform: 'uppercase' }}>
-                  Ações
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {customers.map((customer, idx) => (
+    <Card sx={{ overflow: 'hidden' }}>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'surface.sunken' }}>
+              <TableCell sx={HEADER_CELL_SX}>Cliente</TableCell>
+              <TableCell sx={HEADER_CELL_SX}>E-mail</TableCell>
+              <TableCell sx={HEADER_CELL_SX}>Documento</TableCell>
+              <TableCell sx={HEADER_CELL_SX}>Localização</TableCell>
+              <TableCell align="center" sx={{ ...HEADER_CELL_SX, width: 56 }}>
+                Ações
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {customers.map((customer) => {
+              const isSelected = selectedCustomerId === customer.id
+              return (
                 <TableRow
                   key={customer.id}
                   onClick={() => onSelectCustomer?.(customer.id)}
                   sx={{
                     cursor: 'pointer',
-                    backgroundColor: selectedCustomerId === customer.id ? 'success.soft' : 'inherit',
+                    backgroundColor: isSelected ? 'success.soft' : 'inherit',
                     borderBottom: '1px solid',
                     borderColor: 'border.subtle',
-                    '&:hover': { backgroundColor: 'surface.sunken' },
+                    '&:last-child td': { borderBottom: 'none' },
+                    '&:hover': {
+                      backgroundColor: isSelected ? 'success.soft' : 'surface.sunken',
+                    },
                   }}
                 >
-                  <TableCell>
+                  <TableCell sx={{ py: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar
                         sx={{
-                          width: 32,
-                          height: 32,
+                          width: 34,
+                          height: 34,
                           fontSize: 12,
                           fontWeight: 600,
-                          backgroundColor: getAvatarColor(idx),
+                          backgroundColor: getAvatarColor(customer.name),
                           color: 'white',
+                          flexShrink: 0,
                         }}
                       >
                         {getInitials(customer.name)}
@@ -113,68 +124,52 @@ export default function CustomerTable({
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {customer.name}
                         </Typography>
-                        <Typography variant="caption" color="text.tertiary">
-                          {customer.phone}
-                        </Typography>
+                        {customer.phone && (
+                          <Typography variant="caption" color="text.tertiary">
+                            {customer.phone}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={customer.segment}
-                      size="small"
-                      variant={customer.segment === 'VIP' ? 'filled' : 'outlined'}
-                      color={getSegmentColor(customer.segment)}
-                      sx={{
-                        ...(customer.segment === 'Regular' && {
-                          backgroundColor: 'success.soft',
-                          color: 'success.ink',
-                          borderColor: 'success.main',
-                        }),
-                        ...(customer.segment === 'Novo' && {
-                          backgroundColor: 'info.soft',
-                          color: 'info.ink',
-                          borderColor: 'info.main',
-                        }),
-                        ...(customer.segment === 'Inativo' && {
-                          backgroundColor: 'surface.raised',
-                          color: 'text.tertiary',
-                          borderColor: 'border.subtle',
-                        }),
-                      }}
+
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {customer.email ?? '—'}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {customer.document ?? '—'}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {customer.address?.city && customer.address?.state
+                        ? `${customer.address.city}, ${customer.address.state}`
+                        : '—'}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell
+                    align="center"
+                    sx={{ py: 1.5 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CustomerRowMenu
+                      customer={customer}
+                      onEdit={() => onEdit(customer)}
+                      onDelete={() => onDelete(customer.id)}
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" color="text.secondary">
-                      {customer.visits}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {customer.lastPurchase}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatBRL(customer.totalSpent)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" color="text.secondary">
-                      {formatBRL(customer.averageTicket)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton size="small">
-                      <MoreVertRounded sx={{ fontSize: 18, color: 'text.tertiary' }} />
-                    </IconButton>
-                  </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Card>
   )
 }

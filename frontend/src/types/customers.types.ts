@@ -1,38 +1,22 @@
-export type CustomerSegment = 'VIP' | 'Regular' | 'Novo' | 'Inativo'
-
 export interface CustomerMetrics {
-  totalCustomers: number
-  newCustomersThisMonth: number
-  activeCustomers: number
-  activePercentage: number
-  averageLTV: number
-  vipCount: number
+  total: number
+  withPhone: number
+  withEmail: number
+  withDocument: number
 }
 
 export interface Customer {
   id: string
   name: string
-  phone: string
-  email: string
-  city: string
-  segment: CustomerSegment
-  totalSpent: number
-  visits: number
-  averageTicket: number
-  lastPurchase: string
-  joinedDate: string
-  isVIP: boolean
-  favoriteItem?: string
-  notes?: string
-}
-
-export interface CustomerFilterOption {
-  label: string
-  value: CustomerSegment | 'all'
-  count: number
-}
-
-export interface SortOption {
-  label: string
-  value: 'default' | 'spending' | 'visits' | 'recent' | 'name'
+  phone: string | null
+  email: string | null
+  document: string | null
+  note: string
+  address: {
+    street: string | null
+    number: string | null
+    city: string | null
+    state: string | null
+    zipCode: string | null
+  } | null
 }
