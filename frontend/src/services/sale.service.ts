@@ -6,7 +6,8 @@ export interface CreateSaleItemPayload {
 }
 
 export interface CreateSalePayload {
-  customerName?: string
+  customerId?: string
+  customerDocument?: string
   paymentMethod: string
   isInstallment: boolean
   installmentCount?: number
@@ -19,6 +20,7 @@ export interface SaleListItem {
   operatorId: string
   operatorName: string
   customerName: string | null
+  customerDocument: string | null
   paymentMethod: string
   isInstallment: boolean
   installmentCount: number | null

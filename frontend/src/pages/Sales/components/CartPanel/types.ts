@@ -1,4 +1,4 @@
-import type { CartLine, CardType, PaymentMethod } from '../../types'
+import type { CartLine, CardType, PaymentMethod, CustomerSelection } from '../../types'
 import type { Product } from '../../../../types/product.types'
 
 export interface CartLineWithProduct extends CartLine {
@@ -22,4 +22,7 @@ export interface CartPanelProps {
   onRemove: (productId: string) => void
   onFinalize: () => void
   isSubmitting?: boolean
+  customer: CustomerSelection
+  onCustomerChange: (c: CustomerSelection) => void
+  onOpenCustomerModal: () => void
 }

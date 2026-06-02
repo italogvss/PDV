@@ -3,9 +3,10 @@ import { Box } from '@mui/material'
 import SalesHeader from './components/SalesHeader'
 import ProductCatalog from './components/ProductCatalog'
 import CartPanel from './components/CartPanel'
+import SelectCustomerModal from './components/SelectCustomerModal'
 import { CartLineWithProduct } from './components/CartPanel/types'
 import { CategoryValue } from './components/ProductCatalog/types'
-import { CartLine, CardType, PaymentMethod } from './types'
+import { CartLine, CardType, CustomerSelection, PaymentMethod } from './types'
 import { useProducts } from '../../hooks/useProducts'
 import { useProductCategories } from '../../hooks/useProductCategories'
 import { useCreateSale } from '../../hooks/useSales'
@@ -23,6 +24,8 @@ export default function SalesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [category, setCategory] = useState<CategoryValue>('all')
   const [cart, setCart] = useState<CartLine[]>([])
+  const [customer, setCustomer] = useState<CustomerSelection>({ type: 'none' })
+  const [customerModalOpen, setCustomerModalOpen] = useState(false)
   const [method, setMethod] = useState<PaymentMethod>('card')
   const [cardType, setCardType] = useState<CardType>('credit')
   const [installments, setInstallments] = useState(1)
@@ -111,6 +114,8 @@ export default function SalesPage() {
       : subtotal
 
     await createSale.mutateAsync({
+      customerId: customer.type === 'entity' ? customer.id : undefined,
+      customerDocument: customer.type === 'cpf' ? customer.document : undefined,
       paymentMethod,
       isInstallment,
       installmentCount: isInstallment ? installments : undefined,
@@ -119,6 +124,7 @@ export default function SalesPage() {
     })
 
     setCart([])
+    setCustomer({ type: 'none' })
     setCashReceived('')
     setMethod('card')
     setCardType('credit')
@@ -171,8 +177,16 @@ export default function SalesPage() {
           onRemove={handleRemove}
           onFinalize={handleFinalize}
           isSubmitting={createSale.isPending}
+          customer={customer}
+          onCustomerChange={setCustomer}
+          onOpenCustomerModal={() => setCustomerModalOpen(true)}
         />
       </Box>
+      <SelectCustomerModal
+        open={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        onSelect={(c) => setCustomer({ type: 'entity', ...c })}
+      />
     </Box>
   )
 }

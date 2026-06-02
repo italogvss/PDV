@@ -7,3 +7,8 @@ export interface CartLine {
 
 export type PaymentMethod = 'card' | 'pix' | 'cash'
 export type CardType = 'credit' | 'debit'
+
+export type CustomerSelection =
+  | { type: 'none' }
+  | { type: 'cpf'; document: string }
+  | { type: 'entity'; id: string; name: string; document: string | null }

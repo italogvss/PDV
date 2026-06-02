@@ -101,6 +101,22 @@ public class SaleService(
             };
         }).ToList();
 
+        string? customerName = null;
+        string? customerDocument = null;
+
+        if (request.CustomerId.HasValue)
+        {
+            var customer = await context.Customers
+                .FirstOrDefaultAsync(c => c.Id == request.CustomerId.Value)
+                ?? throw new NotFoundException("Cliente não encontrado.");
+            customerName = customer.Name;
+            customerDocument = customer.Document;
+        }
+        else if (request.CustomerDocument is { Length: > 0 })
+        {
+            customerDocument = request.CustomerDocument;
+        }
+
         var total = saleItems.Sum(i => i.Subtotal);
         decimal? installmentValue = null;
         if (request.IsInstallment && request.InstallmentCount.HasValue)
@@ -111,7 +127,8 @@ public class SaleService(
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             OperatorId = operatorId,
-            CustomerName = request.CustomerName,
+            CustomerName = customerName,
+            CustomerDocument = customerDocument,
             PaymentMethod = request.PaymentMethod,
             IsInstallment = request.IsInstallment,
             InstallmentCount = request.InstallmentCount,
@@ -164,13 +181,13 @@ public class SaleService(
 
     private static SaleResponse MapToResponse(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
-            s.CustomerName, s.PaymentMethod, s.IsInstallment,
+            s.CustomerName, s.CustomerDocument, s.PaymentMethod, s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
             s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt);
 
     private static SaleDetailResponse MapToDetail(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
-            s.CustomerName, s.PaymentMethod, s.IsInstallment,
+            s.CustomerName, s.CustomerDocument, s.PaymentMethod, s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
             s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
             s.Items.Select(i => new SaleItemResponse(

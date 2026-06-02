@@ -9,6 +9,10 @@ public class CreateSaleRequestValidator : AbstractValidator<CreateSaleRequest>
 
     public CreateSaleRequestValidator()
     {
+        RuleFor(x => x)
+            .Must(x => x.CustomerId == null || x.CustomerDocument == null)
+            .WithMessage("Informe um cliente ou um CPF, não ambos.");
+
         RuleFor(x => x.PaymentMethod)
             .NotEmpty()
             .Must(m => ValidPaymentMethods.Contains(m))

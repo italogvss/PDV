@@ -34,7 +34,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\" -Directory)",
       "Bash(npm show *)",
       "Bash(npm uninstall *)",
-      "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\Persistence\\\\Configurations\\\\TenantConfiguration.cs\" -Force)"
+      "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\Persistence\\\\Configurations\\\\TenantConfiguration.cs\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\obj\\\\Debug\\\\net10.0\\\\PDV.Infrastructure.csproj.CoreCompileInputs.cache\" -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }

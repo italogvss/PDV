@@ -1,9 +1,18 @@
-import { Box, Button, CircularProgress, Divider, Typography } from '@mui/material'
-import { CheckRounded, ShoppingCartOutlined } from '@mui/icons-material'
+import { Box, Button, CircularProgress, Divider, IconButton, TextField, Typography } from '@mui/material'
+import { CheckRounded, CloseRounded, PersonAddAlt1Rounded, ShoppingCartOutlined } from '@mui/icons-material'
 import CartItem from '../CartItem'
 import PaymentSection from './components/PaymentSection'
 import { formatBRL } from '../../../../utils/currency'
 import { CartPanelProps } from './types'
+
+function maskCPF(value: string): string {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
+}
 
 export default function CartPanel({
   lines,
@@ -22,6 +31,9 @@ export default function CartPanel({
   onRemove,
   onFinalize,
   isSubmitting,
+  customer,
+  onCustomerChange,
+  onOpenCustomerModal,
 }: CartPanelProps) {
   const isEmpty = lines.length === 0
 
@@ -102,6 +114,62 @@ export default function CartPanel({
             {formatBRL(total)}
           </Typography>
         </Box>
+
+        {customer.type === 'entity' ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              borderRadius: 1,
+              border: 1,
+              borderColor: 'border.subtle',
+              bgcolor: 'background.default',
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0, ml: 1 }}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }} noWrap>
+                {customer.name}
+              </Typography>
+              {customer.document && (
+                <Typography variant="caption" color="text.secondary">
+                  {customer.document}
+                </Typography>
+              )}
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => onCustomerChange({ type: 'none' })}
+              sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
+            >
+              <CloseRounded fontSize="small" />
+            </IconButton>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              label="CPF (opcional)"
+              value={customer.type === 'cpf' ? customer.document : ''}
+              onChange={(e) => {
+                const val = maskCPF(e.target.value)
+                onCustomerChange(val ? { type: 'cpf', document: val } : { type: 'none' })
+              }}
+              size="small"
+              sx={{ flex: 1 }}
+            />
+            <Button
+              variant="outlined"
+              size="small"              
+              startIcon={<PersonAddAlt1Rounded />}
+              onClick={onOpenCustomerModal}
+              sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              Adicionar cliente
+            </Button>
+          </Box>
+        )}
 
         <PaymentSection
           method={method}

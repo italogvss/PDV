@@ -1,7 +1,8 @@
 namespace PDV.Application.DTOs.Sales;
 
 public record CreateSaleRequest(
-    string? CustomerName,
+    Guid? CustomerId,
+    string? CustomerDocument,
     string PaymentMethod,
     bool IsInstallment,
     int? InstallmentCount,

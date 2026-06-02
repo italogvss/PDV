@@ -5,6 +5,7 @@ public record SaleDetailResponse(
     Guid OperatorId,
     string OperatorName,
     string? CustomerName,
+    string? CustomerDocument,
     string PaymentMethod,
     bool IsInstallment,
     int? InstallmentCount,
