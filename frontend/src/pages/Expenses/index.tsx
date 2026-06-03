@@ -26,7 +26,7 @@ import type { GridColDef } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { formatBRL } from '../../utils/currency'
-import { EXPENSE_CATEGORIES } from './types'
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from './types'
 import type { Expense, ExpenseCategory } from './types'
 import ExpenseStatusChip from './components/ExpenseStatusChip'
 import ExpenseRowMenu from './components/ExpenseRowMenu'
@@ -90,7 +90,7 @@ export default function ExpensesPage() {
   }, [expenses])
 
   const categoryColorMap: Record<ExpenseCategory, string> = {
-    Salários: theme.palette.data.purple.main,
+    Salarios: theme.palette.data.purple.main,
     Aluguel: theme.palette.success.main,
     Fornecedor: theme.palette.data.blue.main,
     Energia: theme.palette.data.orange.main,
@@ -98,12 +98,12 @@ export default function ExpensesPage() {
     Marketing: theme.palette.error.main,
     Internet: theme.palette.text.disabled,
     Impostos: theme.palette.warning.main,
-    Manutenção: theme.palette.secondary.main,
+    Manutencao: theme.palette.secondary.main,
     Outros: theme.palette.text.secondary,
   }
 
   const donutSegments = EXPENSE_CATEGORIES.map((cat) => ({
-    label: cat,
+    label: EXPENSE_CATEGORY_LABELS[cat],
     value: expenses.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
     color: categoryColorMap[cat],
   }))
@@ -183,7 +183,7 @@ export default function ExpensesPage() {
             py: 0.5,
           }}
         >
-          {row.category}
+          {EXPENSE_CATEGORY_LABELS[row.category]}
         </Typography>
       ),
     },

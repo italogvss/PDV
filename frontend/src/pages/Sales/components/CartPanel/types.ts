@@ -1,12 +1,13 @@
-import type { CartLine, CardType, PaymentMethod, CustomerSelection } from '../../types'
+import type { CardType, PaymentMethod, CustomerSelection } from '../../types'
 import type { Product } from '../../../../types/product.types'
+import type { Service } from '../../../../types/service.types'
 
-export interface CartLineWithProduct extends CartLine {
-  product: Product
-}
+export type EnrichedCartLine =
+  | { type: 'product'; productId: string; quantity: number; product: Product }
+  | { type: 'service'; lineId: string; serviceId: string; quantity: number; service: Service }
 
 export interface CartPanelProps {
-  lines: CartLineWithProduct[]
+  lines: EnrichedCartLine[]
   subtotal: number
   total: number
   method: PaymentMethod
@@ -19,7 +20,7 @@ export interface CartPanelProps {
   onCashReceivedChange: (value: string) => void
   onIncrement: (productId: string) => void
   onDecrement: (productId: string) => void
-  onRemove: (productId: string) => void
+  onRemove: (id: string) => void
   onFinalize: () => void
   isSubmitting?: boolean
   customer: CustomerSelection

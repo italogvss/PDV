@@ -23,7 +23,7 @@ import dayjs from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { EXPENSE_CATEGORIES } from '../../types'
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
 import type { ExpenseCategory } from '../../types'
 import type { NewExpenseModalProps } from './types'
 import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
@@ -199,7 +199,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                       return (
                         <Chip
                           key={cat}
-                          label={cat}
+                          label={EXPENSE_CATEGORY_LABELS[cat]}
                           clickable
                           onClick={() => field.onChange(cat)}
                           variant={selected ? 'filled' : 'outlined'}

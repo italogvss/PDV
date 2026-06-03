@@ -67,14 +67,22 @@ public class SaleService(
 
         await using var transaction = await context.Database.BeginTransactionAsync();
 
-        var productIds = request.Items.Select(i => i.ProductId).ToList();
-        var products = await context.Products
-            .Where(p => productIds.Contains(p.Id))
-            .ToDictionaryAsync(p => p.Id);
+        var productItems = request.Items.Where(i => i.ProductId.HasValue).ToList();
+        var serviceItems = request.Items.Where(i => i.ServiceId.HasValue).ToList();
 
-        foreach (var item in request.Items)
+        var productIds = productItems.Select(i => i.ProductId!.Value).ToList();
+        var products = productIds.Count > 0
+            ? await context.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id)
+            : [];
+
+        var serviceIds = serviceItems.Select(i => i.ServiceId!.Value).ToList();
+        var services = serviceIds.Count > 0
+            ? await context.Services.Where(s => serviceIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id)
+            : [];
+
+        foreach (var item in productItems)
         {
-            if (!products.TryGetValue(item.ProductId, out var product))
+            if (!products.TryGetValue(item.ProductId!.Value, out var product))
                 throw new NotFoundException($"Produto com ID '{item.ProductId}' não encontrado.");
             if (!product.IsActive)
                 throw new BusinessException($"O produto '{product.Name}' não está mais disponível.");
@@ -83,13 +91,23 @@ public class SaleService(
                     $"Estoque insuficiente para '{product.Name}'. Disponível: {product.Stock} unidade(s).");
         }
 
-        foreach (var item in request.Items)
-            products[item.ProductId].Stock -= item.Quantity;
-
-        var saleItems = request.Items.Select(item =>
+        foreach (var item in serviceItems)
         {
-            var product = products[item.ProductId];
-            return new SaleItem
+            if (!services.TryGetValue(item.ServiceId!.Value, out var service))
+                throw new NotFoundException($"Serviço com ID '{item.ServiceId}' não encontrado.");
+            if (!service.IsActive)
+                throw new BusinessException($"O serviço '{service.Name}' não está mais disponível.");
+        }
+
+        foreach (var item in productItems)
+            products[item.ProductId!.Value].Stock -= item.Quantity;
+
+        var saleItems = new List<SaleItem>();
+
+        foreach (var item in productItems)
+        {
+            var product = products[item.ProductId!.Value];
+            saleItems.Add(new SaleItem
             {
                 Id = Guid.NewGuid(),
                 ProductId = item.ProductId,
@@ -98,8 +116,22 @@ public class SaleService(
                 PurchasePriceSnapshot = product.PurchasePrice,
                 Quantity = item.Quantity,
                 Subtotal = product.Price * item.Quantity
-            };
-        }).ToList();
+            });
+        }
+
+        foreach (var item in serviceItems)
+        {
+            var service = services[item.ServiceId!.Value];
+            saleItems.Add(new SaleItem
+            {
+                Id = Guid.NewGuid(),
+                ServiceId = item.ServiceId,
+                ProductName = service.Name,
+                UnitPrice = service.Price,
+                Quantity = item.Quantity,
+                Subtotal = service.Price * item.Quantity
+            });
+        }
 
         string? customerName = null;
         string? customerDocument = null;
@@ -129,7 +161,7 @@ public class SaleService(
             OperatorId = operatorId,
             CustomerName = customerName,
             CustomerDocument = customerDocument,
-            PaymentMethod = request.PaymentMethod,
+            PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),
             IsInstallment = request.IsInstallment,
             InstallmentCount = request.InstallmentCount,
             InstallmentValue = installmentValue,
@@ -181,17 +213,17 @@ public class SaleService(
 
     private static SaleResponse MapToResponse(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
-            s.CustomerName, s.CustomerDocument, s.PaymentMethod, s.IsInstallment,
+            s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
             s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt);
 
     private static SaleDetailResponse MapToDetail(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
-            s.CustomerName, s.CustomerDocument, s.PaymentMethod, s.IsInstallment,
+            s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
             s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
             s.Items.Select(i => new SaleItemResponse(
-                i.Id, i.SaleId, i.ProductId,
+                i.Id, i.SaleId, i.ProductId, i.ServiceId,
                 i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),
             s.AmountPaid,
             s.AmountPaid - s.Total);

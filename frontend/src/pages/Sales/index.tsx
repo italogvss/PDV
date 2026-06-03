@@ -4,24 +4,28 @@ import SalesHeader from './components/SalesHeader'
 import ProductCatalog from './components/ProductCatalog'
 import CartPanel from './components/CartPanel'
 import SelectCustomerModal from './components/SelectCustomerModal'
-import { CartLineWithProduct } from './components/CartPanel/types'
-import { CategoryValue } from './components/ProductCatalog/types'
+import { EnrichedCartLine } from './components/CartPanel/types'
+import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
 import { CartLine, CardType, CustomerSelection, PaymentMethod } from './types'
 import { useProducts } from '../../hooks/useProducts'
 import { useProductCategories } from '../../hooks/useProductCategories'
+import { useServices } from '../../hooks/useServices'
+import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useCreateSale } from '../../hooks/useSales'
 import type { Product } from '../../types/product.types'
+import type { Service } from '../../types/service.types'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
   if (method === 'pix') return 'PIX'
-  if (cardType === 'credit') return 'Credit Card'
-  return 'Debit Card'
+  if (cardType === 'credit') return 'CreditCard'
+  return 'DebitCard'
 }
 
 export default function SalesPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [catalogMode, setCatalogMode] = useState<CatalogMode>('products')
   const [category, setCategory] = useState<CategoryValue>('all')
   const [cart, setCart] = useState<CartLine[]>([])
   const [customer, setCustomer] = useState<CustomerSelection>({ type: 'none' })
@@ -35,9 +39,10 @@ export default function SalesPage() {
 
   const { data: products = [], isLoading: loadingProducts } = useProducts()
   const { data: categories = [] } = useProductCategories()
+  const { data: services = [], isLoading: loadingServices } = useServices()
+  const { data: serviceCategories = [] } = useServiceCategories()
   const createSale = useCreateSale()
 
-  // Atualiza a busca com delay de 3 segundos
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -57,17 +62,35 @@ export default function SalesPage() {
     })
   }, [debouncedSearch, category, products])
 
-  const cartLines: CartLineWithProduct[] = useMemo(
+  const filteredServices = useMemo(() => {
+    const term = debouncedSearch.trim().toLowerCase()
+    return services.filter((s: Service) => {
+      const matchesCategory = category === 'all' || s.category?.id === category
+      const matchesSearch = term === '' || s.name.toLowerCase().includes(term)
+      return matchesCategory && matchesSearch && s.isActive
+    })
+  }, [debouncedSearch, category, services])
+
+  const cartLines: EnrichedCartLine[] = useMemo(
     () =>
-      cart.flatMap((line) => {
-        const product = products.find((p: Product) => p.id === line.productId)
-        return product ? [{ ...line, product }] : []
+      cart.flatMap((line): EnrichedCartLine[] => {
+        if (line.type === 'product') {
+          const product = products.find((p: Product) => p.id === line.productId)
+          return product ? [{ ...line, product }] : []
+        } else {
+          const service = services.find((s: Service) => s.id === line.serviceId)
+          return service ? [{ ...line, service }] : []
+        }
       }),
-    [cart, products],
+    [cart, products, services],
   )
 
   const subtotal = useMemo(
-    () => cartLines.reduce((sum, l) => sum + l.product.price * l.quantity, 0),
+    () =>
+      cartLines.reduce((sum, l) => {
+        const price = l.type === 'product' ? l.product.price : l.service.price
+        return sum + price * l.quantity
+      }, 0),
     [cartLines],
   )
 
@@ -76,31 +99,50 @@ export default function SalesPage() {
     if (!product) return
 
     setCart((prev) => {
-      const existing = prev.find((l) => l.productId === productId)
+      const existing = prev.find((l) => l.type === 'product' && l.productId === productId)
       const currentQty = existing?.quantity ?? 0
       if (currentQty >= product.stock) return prev
 
       if (existing) {
         return prev.map((l) =>
-          l.productId === productId ? { ...l, quantity: l.quantity + 1 } : l,
+          l.type === 'product' && l.productId === productId
+            ? { ...l, quantity: l.quantity + 1 }
+            : l,
         )
       }
-      return [...prev, { productId, quantity: 1 }]
+      return [...prev, { type: 'product', productId, quantity: 1 }]
     })
+  }
+
+  const handleAddService = (serviceId: string) => {
+    setCart((prev) => [
+      ...prev,
+      { type: 'service', lineId: crypto.randomUUID(), serviceId, quantity: 1 },
+    ])
+  }
+
+  const handleModeChange = (mode: CatalogMode) => {
+    setCatalogMode(mode)
+    setCategory('all')
   }
 
   const handleDecrement = (productId: string) => {
     setCart((prev) =>
       prev.flatMap((l) => {
-        if (l.productId !== productId) return [l]
+        if (l.type !== 'product' || l.productId !== productId) return [l]
         if (l.quantity <= 1) return []
         return [{ ...l, quantity: l.quantity - 1 }]
       }),
     )
   }
 
-  const handleRemove = (productId: string) => {
-    setCart((prev) => prev.filter((l) => l.productId !== productId))
+  const handleRemoveFromCart = (id: string) => {
+    setCart((prev) =>
+      prev.filter((l) => {
+        if (l.type === 'product') return l.productId !== id
+        return l.lineId !== id
+      }),
+    )
   }
 
   const handleFinalize = async () => {
@@ -109,9 +151,10 @@ export default function SalesPage() {
     const paymentMethod = buildPaymentMethod(method, cardType)
     const isInstallment = method === 'card' && cardType === 'credit' && installments > 1
     const receivedNumber = Number(cashReceived.replace(',', '.'))
-    const amountPaid = method === 'cash' && !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
-      ? receivedNumber
-      : subtotal
+    const amountPaid =
+      method === 'cash' && !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
+        ? receivedNumber
+        : subtotal
 
     await createSale.mutateAsync({
       customerId: customer.type === 'entity' ? customer.id : undefined,
@@ -120,7 +163,11 @@ export default function SalesPage() {
       isInstallment,
       installmentCount: isInstallment ? installments : undefined,
       amountPaid,
-      items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      items: cart.map((l) => ({
+        productId: l.type === 'product' ? l.productId : undefined,
+        serviceId: l.type === 'service' ? l.serviceId : undefined,
+        quantity: l.quantity,
+      })),
     })
 
     setCart([])
@@ -151,14 +198,19 @@ export default function SalesPage() {
         }}
       >
         <ProductCatalog
+          mode={catalogMode}
+          onModeChange={handleModeChange}
           products={filteredProducts}
-          categories={categories}
+          productCategories={categories}
+          services={filteredServices}
+          serviceCategories={serviceCategories}
           search={search}
           onSearchChange={setSearch}
           category={category}
           onCategoryChange={setCategory}
           onAddProduct={handleAdd}
-          isLoading={loadingProducts}
+          onAddService={handleAddService}
+          isLoading={catalogMode === 'products' ? loadingProducts : loadingServices}
         />
         <CartPanel
           lines={cartLines}
@@ -174,7 +226,7 @@ export default function SalesPage() {
           onCashReceivedChange={setCashReceived}
           onIncrement={handleAdd}
           onDecrement={handleDecrement}
-          onRemove={handleRemove}
+          onRemove={handleRemoveFromCart}
           onFinalize={handleFinalize}
           isSubmitting={createSale.isPending}
           customer={customer}

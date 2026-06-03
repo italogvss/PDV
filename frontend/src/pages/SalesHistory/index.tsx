@@ -37,8 +37,8 @@ const STATUS_MAP: Record<string, SaleStatus> = {
 const PAYMENT_MAP: Record<string, SalePaymentMethod> = {
   Cash: 'Dinheiro',
   PIX: 'Pix',
-  'Credit Card': 'Crédito',
-  'Debit Card': 'Débito',
+  CreditCard: 'Crédito',
+  DebitCard: 'Débito',
 }
 
 function formatTime(iso: string): string {

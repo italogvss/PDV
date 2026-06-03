@@ -3,6 +3,7 @@ using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Expenses;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
 
@@ -78,7 +79,7 @@ public class ExpenseService(
             Id = Guid.NewGuid(),
             TenantId = tenantContext.TenantId,
             Description = request.Description,
-            Category = request.Category,
+            Category = Enum.Parse<ExpenseCategory>(request.Category),
             Amount = request.Amount,
             IsRecurring = request.IsRecurring,
             DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc),
@@ -99,7 +100,7 @@ public class ExpenseService(
             ?? throw new NotFoundException("Despesa não encontrada.");
 
         expense.Description = request.Description;
-        expense.Category = request.Category;
+        expense.Category = Enum.Parse<ExpenseCategory>(request.Category);
         expense.Amount = request.Amount;
         expense.IsRecurring = request.IsRecurring;
         expense.DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc);
@@ -157,7 +158,7 @@ public class ExpenseService(
     }
 
     private static ExpenseResponse Map(Expense e) =>
-        new(e.Id, e.Description, e.Category, e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
+        new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
 
     // ─── Chart helpers ────────────────────────────────────────────────────────
 

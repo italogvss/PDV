@@ -1,23 +1,38 @@
-import { Box, CircularProgress, InputBase, Tab, Tabs } from '@mui/material'
+import { Box, CircularProgress, InputBase, Tab, Tabs, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { Grid } from '@mui/material'
 import { SearchOutlined } from '@mui/icons-material'
 import ProductCard from '../ProductCard'
-import { ProductCatalogProps, CategoryValue } from './types'
+import ServiceCard from '../ServiceCard'
+import { ProductCatalogProps, CategoryValue, CatalogMode } from './types'
 
 export default function ProductCatalog({
+  mode,
+  onModeChange,
   products,
-  categories,
+  productCategories,
+  services,
+  serviceCategories,
   search,
   onSearchChange,
   category,
   onCategoryChange,
   onAddProduct,
+  onAddService,
   isLoading,
 }: ProductCatalogProps) {
-  const tabs = [
-    { value: 'all' as CategoryValue, label: 'Tudo' },
-    ...categories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
-  ]
+  const tabs =
+    mode === 'products'
+      ? [
+          { value: 'all' as CategoryValue, label: 'Tudo' },
+          ...productCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
+        ]
+      : [
+          { value: 'all' as CategoryValue, label: 'Tudo' },
+          ...serviceCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
+        ]
+
+  const items = mode === 'products' ? products : services
+  const isEmpty = items.length === 0
 
   return (
     <Box
@@ -49,11 +64,26 @@ export default function ProductCatalog({
           <InputBase
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar produto..."
+            placeholder={mode === 'products' ? 'Buscar produto...' : 'Buscar serviço...'}
             sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
           />
           {isLoading && <CircularProgress size={14} color="inherit" />}
         </Box>
+
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, v: CatalogMode | null) => v && onModeChange(v)}
+          size="small"
+          sx={{ flexShrink: 0 }}
+        >
+          <ToggleButton value="products" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
+            Produtos
+          </ToggleButton>
+          <ToggleButton value="services" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
+            Serviços
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       <Tabs
@@ -101,11 +131,11 @@ export default function ProductCatalog({
           mr: -1,
         }}
       >
-        {isLoading && products.length === 0 ? (
+        {isLoading && isEmpty ? (
           <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
             <CircularProgress size={32} />
           </Box>
-        ) : products.length === 0 ? (
+        ) : isEmpty ? (
           <Box
             sx={{
               py: 8,
@@ -114,13 +144,21 @@ export default function ProductCatalog({
               fontSize: 14,
             }}
           >
-            Nenhum produto encontrado.
+            {mode === 'products' ? 'Nenhum produto encontrado.' : 'Nenhum serviço encontrado.'}
           </Box>
-        ) : (
+        ) : mode === 'products' ? (
           <Grid container spacing={1}>
             {products.map((p) => (
               <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}>
                 <ProductCard product={p} onAdd={onAddProduct} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Grid container spacing={1}>
+            {services.map((s) => (
+              <Grid key={s.id} size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}>
+                <ServiceCard service={s} onAdd={onAddService} />
               </Grid>
             ))}
           </Grid>

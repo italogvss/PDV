@@ -7,6 +7,8 @@ public class SaleItem
     public Sale Sale { get; set; } = null!;
     public Guid? ProductId { get; set; }
     public Product? Product { get; set; }
+    public Guid? ServiceId { get; set; }
+    public Service? Service { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public decimal UnitPrice { get; set; }
     public decimal? PurchasePriceSnapshot { get; set; }

@@ -25,5 +25,10 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
             .WithMany()
             .HasForeignKey(i => i.ProductId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(i => i.Service)
+            .WithMany()
+            .HasForeignKey(i => i.ServiceId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

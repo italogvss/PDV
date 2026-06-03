@@ -4,10 +4,10 @@ export type ExpenseCategory =
   | 'Energia'
   | 'Agua'
   | 'Internet'
-  | 'Salários'
+  | 'Salarios'
   | 'Marketing'
   | 'Impostos'
-  | 'Manutenção'
+  | 'Manutencao'
   | 'Outros'
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
@@ -16,12 +16,25 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Energia',
   'Agua',
   'Internet',
-  'Salários',
+  'Salarios',
   'Marketing',
   'Impostos',
-  'Manutenção',
+  'Manutencao',
   'Outros',
 ]
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  Aluguel: 'Aluguel',
+  Fornecedor: 'Fornecedor',
+  Energia: 'Energia',
+  Agua: 'Água',
+  Internet: 'Internet',
+  Salarios: 'Salários',
+  Marketing: 'Marketing',
+  Impostos: 'Impostos',
+  Manutencao: 'Manutenção',
+  Outros: 'Outros',
+}
 
 export interface Expense {
   id: string

@@ -4,6 +4,7 @@ public record SaleItemResponse(
     Guid Id,
     Guid SaleId,
     Guid? ProductId,
+    Guid? ServiceId,
     string ProductName,
     decimal UnitPrice,
     decimal? PurchasePriceSnapshot,

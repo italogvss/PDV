@@ -1,7 +1,8 @@
 import { api } from './api'
 
 export interface CreateSaleItemPayload {
-  productId: string
+  productId?: string
+  serviceId?: string
   quantity: number
 }
 
@@ -36,6 +37,7 @@ export interface SaleItemDetail {
   id: string
   saleId: string
   productId: string | null
+  serviceId: string | null
   productName: string
   unitPrice: number
   purchasePriceSnapshot: number | null

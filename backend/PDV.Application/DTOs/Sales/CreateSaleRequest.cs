@@ -9,4 +9,4 @@ public record CreateSaleRequest(
     decimal AmountPaid,
     List<CreateSaleItemRequest> Items);
 
-public record CreateSaleItemRequest(Guid ProductId, int Quantity);
+public record CreateSaleItemRequest(Guid? ProductId, Guid? ServiceId, int Quantity);

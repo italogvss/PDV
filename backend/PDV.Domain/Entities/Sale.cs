@@ -9,7 +9,7 @@ public class Sale : BaseEntity
     public User Operator { get; set; } = null!;
     public string? CustomerName { get; set; }
     public string? CustomerDocument { get; set; }
-    public string PaymentMethod { get; set; } = string.Empty;
+    public PaymentMethod PaymentMethod { get; set; }
     public bool IsInstallment { get; set; }
     public int? InstallmentCount { get; set; }
     public decimal? InstallmentValue { get; set; }

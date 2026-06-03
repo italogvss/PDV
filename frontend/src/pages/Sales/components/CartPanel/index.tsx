@@ -1,6 +1,7 @@
 import { Box, Button, CircularProgress, Divider, IconButton, TextField, Typography } from '@mui/material'
 import { CheckRounded, CloseRounded, PersonAddAlt1Rounded, ShoppingCartOutlined } from '@mui/icons-material'
 import CartItem from '../CartItem'
+import ServiceCartItem from '../ServiceCartItem'
 import PaymentSection from './components/PaymentSection'
 import { formatBRL } from '../../../../utils/currency'
 import { CartPanelProps } from './types'
@@ -71,19 +72,28 @@ export default function CartPanel({
             }}
           >
             <ShoppingCartOutlined sx={{ fontSize: 32 }} />
-            <Typography variant="body2">Adicione produtos para iniciar a venda</Typography>
+            <Typography variant="body2">Adicione produtos ou serviços para iniciar a venda</Typography>
           </Box>
         ) : (
-          lines.map((line) => (
-            <CartItem
-              key={line.productId}
-              product={line.product}
-              quantity={line.quantity}
-              onIncrement={onIncrement}
-              onDecrement={onDecrement}
-              onRemove={onRemove}
-            />
-          ))
+          lines.map((line) =>
+            line.type === 'product' ? (
+              <CartItem
+                key={line.productId}
+                product={line.product}
+                quantity={line.quantity}
+                onIncrement={onIncrement}
+                onDecrement={onDecrement}
+                onRemove={onRemove}
+              />
+            ) : (
+              <ServiceCartItem
+                key={line.lineId}
+                service={line.service}
+                lineId={line.lineId}
+                onRemove={onRemove}
+              />
+            ),
+          )
         )}
       </Box>
 
