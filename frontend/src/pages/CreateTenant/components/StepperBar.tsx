@@ -68,9 +68,8 @@ export default function StepperBar({ steps, currentStep }: StepperBarProps) {
             <Box sx={{ display: { xs: 'none', sm: 'flex', flexDirection: 'column' }, minWidth: 0 }}>
               <Typography
                 variant="body2"
-                fontWeight={600}
                 noWrap
-                sx={{ lineHeight: 1.1 }}
+                sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
                 {step.label}
               </Typography>
@@ -83,7 +82,7 @@ export default function StepperBar({ steps, currentStep }: StepperBarProps) {
               </Typography>
             </Box>
             <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-              <Typography variant="caption" fontWeight={600}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
                 {step.label}
               </Typography>
             </Box>

@@ -1,25 +1,23 @@
-import { useState, useMemo } from 'react'
+import AddRounded from '@mui/icons-material/AddRounded'
+import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded'
+import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import {
   Box,
-  Typography,
   Button,
   Card,
   CardContent,
-  InputBase,
   CircularProgress,
+  InputBase,
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
-import SearchOutlined from '@mui/icons-material/SearchOutlined'
-import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded'
-import PhoneAndroidOutlined from '@mui/icons-material/PhoneAndroidOutlined'
-import EmailOutlined from '@mui/icons-material/EmailOutlined'
-import BadgeOutlined from '@mui/icons-material/BadgeOutlined'
+import { useMemo, useState } from 'react'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useCustomers, useDeleteCustomer } from '../../hooks/useCustomers'
 import type { Customer } from '../../types/customers.types'
-import CustomerMetricCard from './components/CustomerMetricCard'
-import CustomerTable from './components/CustomerTable'
-import CustomerDetailPanel from './components/CustomerDetailPanel'
 import AddCustomerModal from './components/AddCustomerModal'
+import CustomerDetailPanel from './components/CustomerDetailPanel'
+import CustomerTable from './components/CustomerTable'
 import EditCustomerModal from './components/EditCustomerModal'
 
 export default function CustomersPage() {
@@ -72,72 +70,25 @@ export default function CustomersPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Clientes</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {kpis.total} cadastrados • CRM e fidelidade
-          </Typography>
-        </Box>
-
-        <Button
-          variant="contained"
-          color="success"
-          size="small"
-          startIcon={<AddRounded />}
-          onClick={() => setAddOpen(true)}
-          sx={{ mt: 0.5 }}
-        >
+      <PageHeader title="Clientes" description={`${kpis.total} cadastrados • CRM e fidelidade`}>
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Novo cliente
         </Button>
-      </Box>
+      </PageHeader>
 
-      {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
-        <CustomerMetricCard
+      <PageKpiGrid>
+        <PageKpiCard
           icon={PeopleOutlineRounded}
           label="Total de clientes"
           value={kpis.total}
-          trend={`${kpis.total} cadastrados`}
+          badge={{ label: `${kpis.total} cadastrados`, color: 'success', icon: TrendingUpRounded }}
         />
-{/*         
-        <CustomerMetricCard
-          icon={PhoneAndroidOutlined}
-          label="Com telefone"
-          value={kpis.withPhone}
-          trend="disponíveis para WhatsApp"
-        />
-        <CustomerMetricCard
-          icon={EmailOutlined}
-          label="Com e-mail"
-          value={kpis.withEmail}
-          trend="para contato"
-        />
-        <CustomerMetricCard
-          icon={BadgeOutlined}
-          label="Com documento"
-          value={kpis.withDocument}
-          trend="CPF / CNPJ"
-        /> */}
-      </Box>
+{/*
+        <PageKpiCard icon={PhoneAndroidOutlined} label="Com telefone" value={kpis.withPhone} badge={{ label: 'disponíveis para WhatsApp', color: 'success', icon: TrendingUpRounded }} />
+        <PageKpiCard icon={EmailOutlined} label="Com e-mail" value={kpis.withEmail} badge={{ label: 'para contato', color: 'success', icon: TrendingUpRounded }} />
+        <PageKpiCard icon={BadgeOutlined} label="Com documento" value={kpis.withDocument} badge={{ label: 'CPF / CNPJ', color: 'default' }} />
+*/}
+      </PageKpiGrid>
 
       {/* Busca */}
       <Card>

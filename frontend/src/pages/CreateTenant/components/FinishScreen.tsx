@@ -83,19 +83,16 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
         {/* Title */}
         <Typography
           variant="h4"
-          fontWeight={700}
-          textAlign="center"
-          mb={1}
+          sx={{ fontWeight: 700, textAlign: 'center', mb: 1 }}
         >
           Tudo pronto, {firstName}!
         </Typography>
         <Typography
           variant="body1"
+          sx={{ textAlign: 'center', mb: 4 }}
           color="text.secondary"
-          textAlign="center"
-          mb={4}
         >
-          <Typography component="strong" fontWeight={600} color="text.primary">
+          <Typography component="strong" color="text.primary" sx={{ fontWeight: 600 }}>
             {businessName}
           </Typography>{' '}
           está configurado e pronto para receber a primeira venda.
@@ -120,7 +117,8 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
                 </ListItemIcon>
                 <ListItemText
                   primary={label}
-                  slotProps={{ primary: { variant: 'body2', fontWeight: 500 } }}
+                  sx={{fontWeight: 500}}
+                  slotProps={{ primary: { variant: 'body2' } }}
                 />
               </ListItem>
             ))}
@@ -131,8 +129,7 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
         <Typography
           variant="overline"
           color="text.secondary"
-          letterSpacing={1.5}
-          sx={{ fontSize: '0.65rem', display: 'block', mb: 1.5 }}
+          sx={{ fontSize: '0.65rem', display: 'block', mb: 1.5, letterSpacing: 1.5 }}
         >
           Próximos passos sugeridos
         </Typography>
@@ -158,7 +155,7 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
             >
               <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" fontWeight={600}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {label}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

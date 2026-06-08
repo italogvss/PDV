@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Card,
   Dialog,
@@ -9,12 +8,14 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Typography,
 } from '@mui/material'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
+import PageHeader from '../../components/PageHeader'
 import type { SaleListItem } from '../../services/sale.service'
 import type { FilterState, SaleRecord, SaleStatus, SalePaymentMethod } from './types'
 import StatusChip from './components/StatusChip'
@@ -183,32 +184,15 @@ export default function SalesHistoryPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Vendas</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Histórico completo de pedidos
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FilterListRounded />}
-            onClick={(e) => setFilterAnchor(e.currentTarget)}
-          >
-            {activeFiltersCount > 0 ? `Filtros (${activeFiltersCount})` : 'Filtros'}
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader title="Vendas" description="Histórico completo de pedidos">
+        <Button
+          variant="outlined"
+          startIcon={<FilterListRounded />}
+          onClick={(e) => setFilterAnchor(e.currentTarget)}
+        >
+          {activeFiltersCount > 0 ? `Filtros (${activeFiltersCount})` : 'Filtros'}
+        </Button>
+      </PageHeader>
 
       <Card sx={{ overflow: 'hidden' }}>
         <DataGrid

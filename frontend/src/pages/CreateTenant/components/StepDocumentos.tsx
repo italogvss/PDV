@@ -40,10 +40,10 @@ function maskCNPJ(value: string): string {
 export default function StepDocumentos({ data, onChange, errors }: StepDocumentosProps) {
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} mb={0.5}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
         Documentos fiscais
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Necessário para emitir notas. Você pode preencher depois.
       </Typography>
 
@@ -62,7 +62,7 @@ export default function StepDocumentos({ data, onChange, errors }: StepDocumento
         }}
       >
         <Box>
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Preencher depois
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -92,7 +92,7 @@ export default function StepDocumentos({ data, onChange, errors }: StepDocumento
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Typography variant="body2" fontWeight={600} color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
                       BR
                     </Typography>
                   </InputAdornment>

@@ -74,10 +74,10 @@ export default function StepEndereco({ data, onChange, errors }: StepEnderecoPro
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} mb={0.5}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
         Onde fica o estabelecimento?
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         O endereço aparece nos recibos e na conta fiscal.
       </Typography>
 

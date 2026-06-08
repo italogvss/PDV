@@ -29,10 +29,10 @@ export default function SessionsSection() {
     <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
       <Box sx={{ px: 4, py: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
             Sessões ativas
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Dispositivos conectados à sua conta
           </Typography>
         </Box>
@@ -71,7 +71,7 @@ export default function SessionsSection() {
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Typography variant="body2" fontWeight={500} color="text.primary">
+                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                       {session.device}
                     </Typography>
                     {session.current && (

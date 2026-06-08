@@ -19,10 +19,10 @@ export default function IntegrationsSection() {
   return (
     <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
       <Box sx={{ px: 4, py: 3 }}>
-        <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+        <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
           Integrações da conta
         </Typography>
-        <Typography variant="body2" color="text.secondary" mt={0.5}>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Conecte serviços externos à sua conta de usuário
         </Typography>
       </Box>
@@ -54,7 +54,7 @@ export default function IntegrationsSection() {
                 <SyncAltOutlinedIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {item.label}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

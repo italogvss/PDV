@@ -63,7 +63,7 @@ function StatusCard({
           {label}
         </Typography>
       </Box>
-      <Typography variant="h5" fontWeight={700} color="text.primary" mb={0.5}>
+      <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700, mb: 0.5 }}>
         {value}
       </Typography>
       <Typography variant="caption" color="text.secondary">
@@ -72,7 +72,7 @@ function StatusCard({
       {warning && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
           <WarningAmberOutlinedIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-          <Typography variant="caption" color="warning.main" fontWeight={500}>
+          <Typography variant="caption" color="warning.main" sx={{ fontWeight: 500 }}>
             {warning}
           </Typography>
         </Box>

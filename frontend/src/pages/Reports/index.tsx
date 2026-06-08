@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Menu,
   MenuItem,
   Skeleton,
   ToggleButton,
   ToggleButtonGroup,
+  Typography,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
@@ -19,7 +19,11 @@ import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import { formatBRL } from '../../utils/currency'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import {
   useSalesMetrics,
   useFinancialSummary,
@@ -29,7 +33,6 @@ import {
   useExpensesByCategory,
 } from '../../hooks/useReports'
 import type { MonthPreset, GroupBy } from '../../types/report.types'
-import MetricCard from './components/MetricCard'
 import FinancialBarChart from './components/FinancialBarChart'
 import AccumulatedProfitChart from './components/AccumulatedProfitChart'
 import RevenueLineChart from './components/RevenueLineChart'
@@ -110,76 +113,48 @@ export default function ReportsPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Lucros & relatórios</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Análise financeira detalhada
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<CalendarMonthOutlined />}
-            endIcon={<ArrowDropDownRounded />}
-            onClick={(e) => setDateAnchor(e.currentTarget)}
-          >
-            {presetLabel}
-          </Button>
-
-          <DatePicker
-            label="De"
-            views={['month', 'year']}
-            openTo="month"
-            format="MM/YYYY"
-            value={startMonth}
-            onChange={(val) => {
-              if (val) {
-                setStartMonth(val)
-                setSelectedPreset(null)
-              }
-            }}
-            slotProps={{ textField: { size: 'small', sx: { width: 140 } } }}
-          />
-
-          <DatePicker
-            label="Até"
-            views={['month', 'year']}
-            openTo="month"
-            format="MM/YYYY"
-            value={endMonth}
-            minDate={startMonth}
-            onChange={(val) => {
-              if (val) {
-                setEndMonth(val)
-                setSelectedPreset(null)
-              }
-            }}
-            slotProps={{ textField: { size: 'small', sx: { width: 140 } } }}
-          />
-
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<FileDownloadOutlined />}
-            onClick={handleExportPDF}
-          >
-            Exportar PDF
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader title="Lucros & relatórios" description="Análise financeira detalhada">
+        <Button
+          variant="outlined"
+          startIcon={<CalendarMonthOutlined />}
+          endIcon={<ArrowDropDownRounded />}
+          onClick={(e) => setDateAnchor(e.currentTarget)}
+        >
+          {presetLabel}
+        </Button>
+        <DatePicker
+          label="De"
+          views={['month', 'year']}
+          openTo="month"
+          format="MM/YYYY"
+          value={startMonth}
+          onChange={(val) => {
+            if (val) {
+              setStartMonth(val)
+              setSelectedPreset(null)
+            }
+          }}
+          slotProps={{ textField: { sx: { width: 140 } } }}
+        />
+        <DatePicker
+          label="Até"
+          views={['month', 'year']}
+          openTo="month"
+          format="MM/YYYY"
+          value={endMonth}
+          minDate={startMonth}
+          onChange={(val) => {
+            if (val) {
+              setEndMonth(val)
+              setSelectedPreset(null)
+            }
+          }}
+          slotProps={{ textField: { sx: { width: 140 } } }}
+        />
+        <Button variant="contained" color="success" startIcon={<FileDownloadOutlined />} onClick={handleExportPDF}>
+          Exportar PDF
+        </Button>
+      </PageHeader>
 
       <Menu
         anchorEl={dateAnchor}
@@ -199,55 +174,42 @@ export default function ReportsPage() {
         ))}
       </Menu>
 
-      {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
-        {metricsLoading ? (
-          <>
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={120} />
-            ))}
-          </>
-        ) : (
-          <>
-            <MetricCard
-              icon={AttachMoneyRounded}
-              label="Receita total"
-              value={formatBRL(metrics?.totalRevenue ?? 0)}
-            />
-            <MetricCard
-              icon={ShoppingCartRounded}
-              label="Total de vendas"
-              value={String(metrics?.totalSales ?? 0)}
-              trendLabel={presetLabel.toLowerCase()}
-              isPositive={true}
-            />
-            <MetricCard
-              icon={LocalFireDepartmentRounded}
-              label="Ticket médio"
-              value={formatBRL(metrics?.averageTicket ?? 0)}
-            />
-            <MetricCard
-              icon={ReceiptLongRounded}
-              label="Cancelamentos"
-              value={String(metrics?.cancelledCount ?? 0)}
-              trendLabel={
-                cancellationRate !== null ? `${cancellationRate}% do total` : undefined
-              }
-              isPositive={false}
-            />
-          </>
-        )}
-      </Box>
+      {metricsLoading ? (
+        <PageKpiGrid>
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} variant="rounded" height={120} />
+          ))}
+        </PageKpiGrid>
+      ) : (
+        <PageKpiGrid>
+          <PageKpiCard
+            icon={AttachMoneyRounded}
+            label="Receita total"
+            value={formatBRL(metrics?.totalRevenue ?? 0)}
+          />
+          <PageKpiCard
+            icon={ShoppingCartRounded}
+            label="Total de vendas"
+            value={String(metrics?.totalSales ?? 0)}
+            badge={{ label: presetLabel.toLowerCase(), color: 'success', icon: TrendingUpRounded }}
+          />
+          <PageKpiCard
+            icon={LocalFireDepartmentRounded}
+            label="Ticket médio"
+            value={formatBRL(metrics?.averageTicket ?? 0)}
+          />
+          <PageKpiCard
+            icon={ReceiptLongRounded}
+            label="Cancelamentos"
+            value={String(metrics?.cancelledCount ?? 0)}
+            badge={
+              cancellationRate !== null
+                ? { label: `${cancellationRate}% do total`, color: 'error', icon: TrendingDownRounded }
+                : undefined
+            }
+          />
+        </PageKpiGrid>
+      )}
 
       {/* Granularidade das séries temporais */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

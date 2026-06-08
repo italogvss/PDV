@@ -83,7 +83,7 @@ export default function LoginPage() {
         px: 2,
       }}
     >
-      <Typography variant="h4" fontWeight={700} color="text.primary">
+      <Typography variant="h4" color="text.primary" sx={{ fontWeight: 700 }}>
         PDV Ultra
       </Typography>
 

@@ -5,25 +5,32 @@ import {
   Chip,
   ToggleButton,
   ToggleButtonGroup,
-  Typography,
   useTheme,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import TodayOutlined from '@mui/icons-material/TodayOutlined'
+import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
+import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
+import PaidOutlined from '@mui/icons-material/PaidOutlined'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import { DatePicker } from '@mui/x-date-pickers'
 import type { SchedulerEvent } from '@mui/x-scheduler/models'
 import dayjs from 'dayjs'
-import { useToast } from '../../hooks/useToast'
-import type { AppointmentStatus } from '../../types/appointment.types'
-import { MOCK_CUSTOMERS, MOCK_PROFESSIONALS, MOCK_SERVICES, SEED_APPOINTMENTS } from './mock'
+import type { Appointment, AppointmentStatus } from '../../types/appointment.types'
+import type { Professional } from '../../types/appointment.types'
+import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useDeleteAppointment, useUpdateAppointment } from '../../hooks/useAppointments'
+import { useEmployees } from '../../hooks/useEmployees'
+import { useServices } from '../../hooks/useServices'
+import { useCustomers } from '../../hooks/useCustomers'
 import { computeKpis, proColorKey, type ProColorKey } from './components/appointmentHelpers'
-import KpiCards from './components/KpiCards'
+import { formatBRL } from '../../utils/currency'
 import WeekStrip from './components/WeekStrip'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import SidePanel from './components/SidePanel'
 import AppointmentScheduler from './components/AppointmentScheduler'
 import NewAppointmentModal from './components/NewAppointmentModal'
 import AppointmentDetailModal from './components/AppointmentDetailModal'
-import type { Appointment } from '../../types/appointment.types'
 import type { AgendaView, NewAppointmentPrefill } from './types'
 
 const DOW_FULL = [
@@ -50,29 +57,49 @@ const MONTHS = [
   'dezembro',
 ]
 
-const STATUS_TOAST: Record<AppointmentStatus, string> = {
-  pendente: 'Agendamento marcado como pendente.',
-  confirmado: 'Agendamento confirmado!',
-  em_atendimento: 'Atendimento iniciado.',
-  concluido: 'Atendimento concluído!',
-  cancelado: 'Agendamento cancelado.',
-}
-
 export default function AppointmentsPage() {
   const theme = useTheme()
-  const showToast = useToast()
+  // ─── Data da API ────────────────────────────────────────────────────────────
 
-  const professionals = MOCK_PROFESSIONALS
-  const services = MOCK_SERVICES
-  const customers = MOCK_CUSTOMERS
+  const { data: employeesPage } = useEmployees(1, 100)
+  const professionals = useMemo<Professional[]>(
+    () =>
+      (employeesPage?.data ?? []).map((e) => ({
+        id: e.id,
+        name: e.name,
+        specialty: e.position,
+      })),
+    [employeesPage],
+  )
 
-  const [appointments, setAppointments] = useState<Appointment[]>(SEED_APPOINTMENTS)
+  const { data: services = [] } = useServices()
+  const { data: customersPage } = useCustomers(1, 500)
+  const customers = useMemo(() => customersPage?.data ?? [], [customersPage])
+
+  // ─── Navegação ──────────────────────────────────────────────────────────────
+
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [view, setView] = useState<AgendaView>('day')
   const [proFilter, setProFilter] = useState<string>('todos')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [newOpen, setNewOpen] = useState(false)
   const [prefill, setPrefill] = useState<NewAppointmentPrefill | null>(null)
+
+  // Busca agendamentos da semana completa (segunda–domingo) que contém a data selecionada.
+  // Mesma lógica do WeekStrip para calcular a segunda-feira.
+  const monday = selectedDate.subtract((selectedDate.day() + 6) % 7, 'day')
+  const weekStart = monday.format('YYYY-MM-DD')
+  const weekEnd = monday.add(6, 'day').format('YYYY-MM-DD')
+  const { data: appointments = [] } = useAppointments(weekStart, weekEnd)
+
+  // ─── Mutations ──────────────────────────────────────────────────────────────
+
+  const createAppt = useCreateAppointment()
+  const updateAppt = useUpdateAppointment()
+  const changeStatus = useChangeAppointmentStatus()
+  const deleteAppt = useDeleteAppointment()
+
+  // ─── KPIs e filtros ─────────────────────────────────────────────────────────
 
   const isToday = selectedDate.isSame(dayjs(), 'day')
   const kpis = useMemo(
@@ -95,31 +122,62 @@ export default function AppointmentsPage() {
     : null
   const detailPro = professionals.find((p) => p.id === detailAppointment?.employeeId)
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
+  // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const handleCreate = (appointment: Appointment) => {
-    setAppointments((prev) => [...prev, appointment])
-    showToast('Agendamento criado com sucesso!', 'success')
+    createAppt.mutate({
+      customerId: appointment.customerId,
+      customerName: appointment.customerName,
+      customerPhone: appointment.customerPhone,
+      employeeId: appointment.employeeId,
+      serviceIds: appointment.services.map((s) => s.id),
+      start: appointment.start,
+      durationMinutes: appointment.durationMinutes,
+      price: appointment.price,
+      status: appointment.status,
+      note: appointment.note,
+    })
+    setNewOpen(false)
   }
 
   const handleChangeStatus = (id: string, status: AppointmentStatus) => {
-    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)))
-    showToast(STATUS_TOAST[status], status === 'cancelado' ? 'info' : 'success')
+    changeStatus.mutate({ id, status })
   }
 
   // Reconcilia mover/redimensionar/excluir feitos na grade nativa do scheduler.
   const handleEventsChange = (next: SchedulerEvent[]) => {
     const byId = new Map(next.map((e) => [String(e.id), e]))
-    setAppointments((prev) =>
-      prev
-        .filter((a) => byId.has(a.id))
-        .map((a) => {
-          const e = byId.get(a.id)!
-          const durationMinutes = Math.max(5, dayjs(e.end).diff(dayjs(e.start), 'minute'))
-          const employeeId = typeof e.resource === 'string' ? e.resource : a.employeeId
-          return { ...a, start: e.start, durationMinutes, employeeId }
-        }),
-    )
+
+    for (const a of appointments) {
+      const event = byId.get(a.id)
+
+      if (!event) {
+        deleteAppt.mutate(a.id)
+        continue
+      }
+
+      const newStart = event.start as string
+      const newDuration = Math.max(5, dayjs(event.end as string).diff(dayjs(event.start as string), 'minute'))
+      const newEmployeeId = typeof event.resource === 'string' ? event.resource : a.employeeId
+
+      if (newStart !== a.start || newDuration !== a.durationMinutes || newEmployeeId !== a.employeeId) {
+        updateAppt.mutate({
+          id: a.id,
+          payload: {
+            customerId: a.customerId,
+            customerName: a.customerName,
+            customerPhone: a.customerPhone,
+            employeeId: newEmployeeId,
+            serviceIds: a.services.map((s) => s.id),
+            start: newStart,
+            durationMinutes: newDuration,
+            price: a.price,
+            status: a.status,
+            note: a.note,
+          },
+        })
+      }
+    }
   }
 
   const openNew = () => {
@@ -128,76 +186,72 @@ export default function AppointmentsPage() {
   }
 
   const headerTitle = `${DOW_FULL[selectedDate.day()]}, ${selectedDate.date()} de ${MONTHS[selectedDate.month()]}`
+  const hours = (min: number) => (min / 60).toFixed(min % 60 === 0 ? 0 : 1)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Agendamentos</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {headerTitle}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <DatePicker
-            value={selectedDate}
-            onChange={(value) => value && setSelectedDate(value)}
-            format="DD/MM/YYYY"
-            slotProps={{ textField: { size: 'small', sx: { width: 160 } } }}
-          />
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={view}
-            onChange={(_, next: AgendaView | null) => next && setView(next)}
-            sx={{
-              '& .MuiToggleButton-root': {
-                textTransform: 'none',
-                px: 2,
-                borderColor: 'border.subtle',
-                color: 'text.secondary',
-                '&.Mui-selected': {
-                  bgcolor: 'text.primary',
-                  color: 'background.paper',
-                  '&:hover': { bgcolor: 'text.primary' },
-                },
+      <PageHeader title="Agendamentos" description={headerTitle}>
+        <DatePicker
+          value={selectedDate}
+          onChange={(value) => value && setSelectedDate(value)}
+          format="DD/MM/YYYY"
+          slotProps={{ textField: { sx: { width: 160 } } }}
+        />
+        <ToggleButtonGroup
+          exclusive
+          value={view}
+          onChange={(_, next: AgendaView | null) => next && setView(next)}
+          sx={{
+            '& .MuiToggleButton-root': {
+              textTransform: 'none',
+              px: 2,
+              borderColor: 'border.subtle',
+              color: 'text.secondary',
+              '&.Mui-selected': {
+                bgcolor: 'text.primary',
+                color: 'background.paper',
+                '&:hover': { bgcolor: 'text.primary' },
               },
-            }}
-          >
-            <ToggleButton value="day">Dia</ToggleButton>
-            <ToggleButton value="week">Semana</ToggleButton>
-          </ToggleButtonGroup>
-          <Button
-            variant="ghost"
-            size="small"
-            startIcon={<TodayOutlined />}
-            onClick={() => setSelectedDate(dayjs())}
-          >
-            Hoje
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<AddRounded />}
-            onClick={openNew}
-          >
-            Novo agendamento
-          </Button>
-        </Box>
-      </Box>
+            },
+          }}
+        >
+          <ToggleButton value="day">Dia</ToggleButton>
+          <ToggleButton value="week">Semana</ToggleButton>
+        </ToggleButtonGroup>
+        <Button variant="ghost" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
+          Hoje
+        </Button>
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={openNew}>
+          Novo agendamento
+        </Button>
+      </PageHeader>
 
-      {/* KPIs */}
-      <KpiCards kpis={kpis} />
+      <PageKpiGrid>
+        <PageKpiCard
+          icon={EventNoteOutlined}
+          label="Agendamentos"
+          value={kpis.count}
+          badge={{ label: `${kpis.pendentes} a confirmar`, color: kpis.pendentes > 0 ? 'warning' : 'success' }}
+        />
+        <PageKpiCard
+          icon={CheckCircleOutlineRounded}
+          label="Confirmados"
+          value={kpis.confirmados}
+          badge={{ label: `${kpis.confirmedPct}% da agenda`, color: 'success' }}
+        />
+        <PageKpiCard
+          icon={PaidOutlined}
+          label="Receita prevista"
+          value={formatBRL(kpis.revenue)}
+          badge={{ label: 'serviços do dia', color: 'default' }}
+        />
+        <PageKpiCard
+          icon={DonutLargeOutlined}
+          label="Taxa de ocupação"
+          value={`${kpis.occupancy}%`}
+          badge={{ label: `${hours(kpis.bookedMin)}h de ${hours(kpis.availMin)}h`, color: kpis.occupancy > 70 ? 'success' : 'warning' }}
+        />
+      </PageKpiGrid>
 
       {/* Faixa da semana */}
       <WeekStrip

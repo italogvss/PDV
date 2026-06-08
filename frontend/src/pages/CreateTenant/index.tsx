@@ -135,9 +135,7 @@ export default function OnboardingTenant() {
             </Box>
             <Typography
               variant="h3"
-              fontWeight={700}
-              mb={1}
-              sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' } }}
+              sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '1.75rem', md: '2.25rem' } }}
             >
               Vamos criar o seu estabelecimento
             </Typography>

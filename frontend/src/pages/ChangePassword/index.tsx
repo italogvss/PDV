@@ -86,10 +86,10 @@ export default function ChangePasswordPage() {
             >
               <LockResetRounded sx={{ color: 'warning.main', fontSize: 24 }} />
             </Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center">
+            <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'center' }}>
               Criar nova senha
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center">
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
               Este é seu primeiro acesso. Defina uma senha pessoal para continuar.
             </Typography>
           </Box>

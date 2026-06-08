@@ -131,7 +131,7 @@ export default function SubscriptionSection() {
         </Box>
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h6" fontWeight={700} color="text.primary">
+            <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>
               Plano Premium
             </Typography>
             <Chip
@@ -163,10 +163,10 @@ export default function SubscriptionSection() {
       {/* Usage */}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ px: 4, py: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
             Uso este mês
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Período de 01/05 a 31/05
           </Typography>
         </Box>
@@ -197,7 +197,7 @@ export default function SubscriptionSection() {
                 {metric.label}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, mb: 1.5 }}>
-                <Typography variant="h5" fontWeight={700} color="text.primary">
+                <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
                   {metric.value}
                 </Typography>
                 {metric.limit && (
@@ -226,10 +226,10 @@ export default function SubscriptionSection() {
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ px: 4, py: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
-            <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+            <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
               Recursos inclusos
             </Typography>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Tudo que faz parte do seu plano
             </Typography>
           </Box>
@@ -266,10 +266,10 @@ export default function SubscriptionSection() {
       {/* Other plans */}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ px: 4, py: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
             Outros planos
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Faça upgrade ou downgrade a qualquer momento
           </Typography>
         </Box>
@@ -297,13 +297,13 @@ export default function SubscriptionSection() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="subtitle2" fontWeight={700} color="text.primary">
+                <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 700 }}>
                   {plan.name}
                 </Typography>
                 {plan.current && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'secondary.main' }} />
-                    <Typography variant="caption" color="secondary.main" fontWeight={600}>
+                    <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 600 }}>
                       Atual
                     </Typography>
                   </Box>
@@ -315,7 +315,7 @@ export default function SubscriptionSection() {
                   <Typography variant="caption" color="text.secondary">
                     R$
                   </Typography>
-                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                  <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
                     {plan.price}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -323,7 +323,7 @@ export default function SubscriptionSection() {
                   </Typography>
                 </Box>
               ) : (
-                <Typography variant="h6" fontWeight={700} color="text.primary">
+                <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>
                   Sob consulta
                 </Typography>
               )}

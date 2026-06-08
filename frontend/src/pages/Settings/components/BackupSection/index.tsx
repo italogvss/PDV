@@ -130,7 +130,7 @@ export default function BackupSection() {
                 <DatasetOutlinedIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {backup.date}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

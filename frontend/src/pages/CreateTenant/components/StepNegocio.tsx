@@ -67,10 +67,10 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} mb={0.5}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
         Como se chama o seu negócio?
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         É o nome que vai aparecer no PDV Ultra e nos recibos.
       </Typography>
 
@@ -130,7 +130,7 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
           />
         </Box>
         <Box>
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Logo do estabelecimento
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -193,10 +193,10 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
       </Box>
 
       {/* Segmento */}
-      <Typography variant="body2" fontWeight={600} mb={1}>
+      <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
         Segmento *
         {errors.segment && (
-          <Typography component="span" variant="caption" color="error" ml={1}>
+          <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
             {errors.segment}
           </Typography>
         )}
@@ -246,9 +246,8 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
               <Icon sx={{ fontSize: 22, color: selected ? 'success.ink' : 'text.secondary' }} />
               <Typography
                 variant="body2"
-                fontWeight={selected ? 500 : 400}
                 color={selected ? 'success.ink' : 'text.primary'}
-                sx={{ lineHeight: 1.3 }}
+                sx={{ fontWeight: selected ? 500 : 400, lineHeight: 1.3 }}
               >
                 {label}
               </Typography>

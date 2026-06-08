@@ -44,7 +44,7 @@ function PermissionSection({ employeeType }: { employeeType: EmployeeType }) {
     <Card>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight={600}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             {EMPLOYEE_TYPE_LABELS[employeeType]}
           </Typography>
           <Button

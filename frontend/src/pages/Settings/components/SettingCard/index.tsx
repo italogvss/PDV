@@ -32,11 +32,11 @@ export default function SettingCard({ title, subtitle, action, children, danger 
         }}
       >
         <Box>
-          <Typography variant="subtitle1" fontWeight={600} color={danger ? 'error.main' : 'text.primary'}>
+          <Typography variant="subtitle1" color={danger ? 'error.main' : 'text.primary'} sx={{ fontWeight: 600 }}>
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {subtitle}
             </Typography>
           )}

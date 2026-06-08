@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Card,
   TextField,
@@ -11,6 +10,7 @@ import {
   MenuItem,
   Chip,
   Skeleton,
+  Typography,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
@@ -28,8 +28,9 @@ import { formatBRL } from '../../utils/currency'
 import type { Product, ProductCategory } from '../../types/product.types'
 import { STOCK_LEVELS } from '../../types/product.types'
 import { getStockLevel } from './utils'
-import KpiCard from './components/KpiCard'
 import StockLevelCell from './components/StockLevelCell'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import FilterMenu from './components/FilterMenu'
 import ProductRowMenu from './components/ProductRowMenu'
 import ProductModal from './components/NewProductModal'
@@ -243,69 +244,43 @@ export default function InventoryPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
-      {/* Cabeçalho */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
-        <Box>
-          <Typography variant="h1">Estoque</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
-{/*           
-          <Button variant="outlined" size="small" startIcon={<FileUploadOutlined />}>
-            Importar CSV
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<FileDownloadOutlined />}>
-            Exportar
-          </Button> */}
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<AddRounded />}
-            onClick={() => setNewModalOpen(true)}
-          >
-            Novo produto
-          </Button>
-        </Box>
-      </Box>
-
-      {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
-        }}
+      <PageHeader
+        title="Estoque"
+        description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
       >
-        <KpiCard
-          label="Total em estoque"
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+          Novo produto
+        </Button>
+      </PageHeader>
+
+      <PageKpiGrid>
+        <PageKpiCard
           icon={Inventory2Rounded}
+          label="Total em estoque"
           value={isLoadingProducts ? '—' : formatBRL(kpis.totalValue)}
           badge={{ label: `${kpis.totalUnits} unidades`, color: 'success' }}
         />
-        <KpiCard
-          label="Produtos"
+        <PageKpiCard
           icon={SellRounded}
+          label="Produtos"
           value={isLoadingProducts ? '—' : products.length}
           badge={{ label: `${categories.length} categorias`, color: 'default' }}
         />
-        <KpiCard
-          label="Estoque baixo"
+        <PageKpiCard
           icon={WarningAmberRounded}
+          label="Estoque baixo"
           value={isLoadingProducts ? '—' : kpis.lowCount}
-          valueColor={kpis.lowCount > 0 ? 'warning' : 'default'}
+          valueColor={kpis.lowCount > 0 ? 'warning' : undefined}
           badge={{ label: 'Repor em breve', color: 'warning', icon: WarningAmberRounded }}
         />
-        <KpiCard
-          label="Crítico"
+        <PageKpiCard
           icon={CancelRounded}
+          label="Crítico"
           value={isLoadingProducts ? '—' : kpis.criticalCount}
-          valueColor={kpis.criticalCount > 0 ? 'error' : 'default'}
+          valueColor={kpis.criticalCount > 0 ? 'error' : undefined}
           badge={{ label: 'Urgente', color: 'error', icon: ArrowDownwardRounded }}
         />
-      </Box>
+      </PageKpiGrid>
 
       {/* Strip de categorias */}
       <Box>

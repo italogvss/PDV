@@ -40,7 +40,7 @@ export default function IntegrationsSection() {
                 <SyncAltOutlinedIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {integration.label}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Card,
   TextField,
@@ -11,6 +10,7 @@ import {
   MenuItem,
   Chip,
   Skeleton,
+  Typography,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
@@ -25,8 +25,9 @@ import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import type { Service, ServiceCategory } from '../../types/service.types'
-import KpiCard from './components/KpiCard'
 import FilterMenu from './components/FilterMenu'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import ServiceRowMenu from './components/ServiceRowMenu'
 import ServiceModal from './components/ServiceModal'
 import CategoryFormModal from './components/CategoryFormModal'
@@ -251,60 +252,41 @@ export default function ServicesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
-      {/* Cabeçalho */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
-        <Box>
-          <Typography variant="h1">Serviços</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<AddRounded />}
-            onClick={() => setNewModalOpen(true)}
-          >
-            Novo serviço
-          </Button>
-        </Box>
-      </Box>
-
-      {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
-        }}
+      <PageHeader
+        title="Serviços"
+        description={isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
       >
-        <KpiCard
-          label="Total de serviços"
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+          Novo serviço
+        </Button>
+      </PageHeader>
+
+      <PageKpiGrid>
+        <PageKpiCard
           icon={MiscellaneousServicesRounded}
+          label="Total de serviços"
           value={isLoadingServices ? '—' : services.length}
           badge={{ label: `${categories.length} categorias`, color: 'default' }}
         />
-        <KpiCard
-          label="Serviços ativos"
+        <PageKpiCard
           icon={CheckCircleOutlineRounded}
+          label="Serviços ativos"
           value={isLoadingServices ? '—' : kpis.activeCount}
           badge={{ label: 'disponíveis', color: 'success' }}
         />
-        <KpiCard
-          label="Preço médio"
+        <PageKpiCard
           icon={SellRounded}
+          label="Preço médio"
           value={isLoadingServices ? '—' : formatBRL(kpis.avgPrice)}
           badge={{ label: 'por serviço', color: 'default' }}
         />
-        <KpiCard
-          label="Com duração definida"
+        <PageKpiCard
           icon={AccessTimeRounded}
+          label="Com duração definida"
           value={isLoadingServices ? '—' : kpis.withDuration}
           badge={{ label: 'com tempo estimado', color: 'default' }}
         />
-      </Box>
+      </PageKpiGrid>
 
       {/* Strip de categorias */}
       <Box>

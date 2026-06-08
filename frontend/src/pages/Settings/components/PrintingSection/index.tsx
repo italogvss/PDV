@@ -76,7 +76,7 @@ export default function PrintingSection() {
               </Box>
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2" fontWeight={500} color="text.primary">
+                  <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                     {printer.name}
                   </Typography>
                   {printer.isDefault && (

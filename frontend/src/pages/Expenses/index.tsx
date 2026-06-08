@@ -15,7 +15,6 @@ import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import SyncRounded from '@mui/icons-material/SyncRounded'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
@@ -26,6 +25,8 @@ import type { GridColDef } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { formatBRL } from '../../utils/currency'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from './types'
 import type { Expense, ExpenseCategory } from './types'
 import ExpenseStatusChip from './components/ExpenseStatusChip'
@@ -43,15 +44,6 @@ const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
-
-const CHIP_ICON_SX = {
-  '& .MuiChip-icon': {
-    fontSize: '12px !important',
-    color: 'inherit',
-    ml: 0.75,
-    mr: '-3px',
-  },
-}
 
 type RecurringFilter = 'all' | 'recurring' | 'one-time'
 
@@ -120,9 +112,6 @@ export default function ExpensesPage() {
     if (recurringFilter === 'one-time') return expenses.filter((e) => !e.isRecurring)
     return expenses
   }, [expenses, recurringFilter])
-
-  const fmtNumber = (n: number) =>
-    n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const handleOpenEdit = (expense: Expense) => {
     setEditingExpense(expense)
@@ -253,122 +242,51 @@ export default function ExpensesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Despesas</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {monthName} de {year} • Controle financeiro
-          </Typography>
-        </Box>
+      <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle financeiro`}>
+        <DatePicker
+          label="Mês e Ano"
+          views={['month', 'year']}
+          value={dayjs().year(selectedYear).month(selectedMonth - 1)}
+          onChange={(newValue) => {
+            if (newValue) {
+              setSelectedMonth(newValue.month() + 1)
+              setSelectedYear(newValue.year())
+            }
+          }}
+          format="MMMM YYYY"
+          slotProps={{ textField: { sx: { width: 200 } } }}
+        />
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
+          Nova despesa
+        </Button>
+      </PageHeader>
 
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
-          <DatePicker
-            label="Mês e Ano"
-            views={['month', 'year']}
-            value={dayjs().year(selectedYear).month(selectedMonth - 1)}
-            onChange={(newValue) => {
-              if (newValue) {
-                setSelectedMonth(newValue.month() + 1)
-                setSelectedYear(newValue.year())
-              }
-            }}
-            format="MMMM YYYY"
-            slotProps={{ textField: { size: 'small' } }}
-          />
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<AddRounded />}
-            onClick={() => setModalOpen(true)}
-          >
-            Nova despesa
-          </Button>
-        </Box>
-      </Box>
-
-      {/* KPIs */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <ReceiptLongRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Total do mês</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.total)}</Typography>
-            </Box>
-            <Chip size="small" color="error" icon={<TrendingDownRounded />} label="Total de despesas" sx={CHIP_ICON_SX} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <CheckCircleOutlineRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Pagas</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.paid)}</Typography>
-            </Box>
-            <Chip size="small" color="success" icon={<TrendingUpRounded />} label={`${kpis.paidCount} contas`} sx={CHIP_ICON_SX} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <AccessTimeRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">A pagar</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.pending)}</Typography>
-            </Box>
-            <Chip size="small" color="warning" icon={<WarningAmberRounded />} label={`${kpis.pendingCount} vencimentos`} sx={CHIP_ICON_SX} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <SyncRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Recorrentes</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>R$</Typography>
-              <Typography variant="h1" sx={{ lineHeight: 1 }}>{fmtNumber(kpis.recurringTotal)}</Typography>
-            </Box>
-            <Chip
-              size="small"
-              color="info"
-              icon={<SyncRounded />}
-              label={`${kpis.recurringCount} contas fixas/mês`}
-              sx={CHIP_ICON_SX}
-            />
-          </CardContent>
-        </Card>
-      </Box>
+      <PageKpiGrid>
+        <PageKpiCard
+          icon={ReceiptLongRounded}
+          label="Total do mês"
+          value={formatBRL(kpis.total)}
+          badge={{ label: 'Total de despesas', color: 'error', icon: TrendingDownRounded }}
+        />
+        <PageKpiCard
+          icon={CheckCircleOutlineRounded}
+          label="Pagas"
+          value={formatBRL(kpis.paid)}
+          badge={{ label: `${kpis.paidCount} contas`, color: 'success', icon: TrendingUpRounded }}
+        />
+        <PageKpiCard
+          icon={AccessTimeRounded}
+          label="A pagar"
+          value={formatBRL(kpis.pending)}
+          badge={{ label: `${kpis.pendingCount} vencimentos`, color: 'warning', icon: WarningAmberRounded }}
+        />
+        <PageKpiCard
+          icon={SyncRounded}
+          label="Recorrentes"
+          value={formatBRL(kpis.recurringTotal)}
+          badge={{ label: `${kpis.recurringCount} contas fixas/mês`, color: 'info', icon: SyncRounded }}
+        />
+      </PageKpiGrid>
 
       {/* Conteúdo principal: tabela + painel lateral */}
       <Box

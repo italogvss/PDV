@@ -101,7 +101,7 @@ function ThemeCard({
           bgcolor: 'background.paper',
         }}
       >
-        <Typography variant="body2" fontWeight={500} color="text.primary">
+        <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
           {label}
         </Typography>
         {selected && <CheckIcon sx={{ fontSize: 16, color: 'secondary.main' }} />}
@@ -177,7 +177,7 @@ export default function AppearanceSection() {
                 >
                   {selected && <CheckIcon sx={{ fontSize: 12, color: '#fff' }} />}
                 </Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {color.label}
                 </Typography>
               </Box>

@@ -117,7 +117,7 @@ export default function TeamSection() {
                 <PeopleAltOutlinedIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {role.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -141,10 +141,10 @@ export default function TeamSection() {
 
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ px: 4, py: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
             Matriz de permissões
           </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Marque o que cada papel pode fazer
           </Typography>
         </Box>

@@ -104,7 +104,7 @@ export default function PaymentsSection() {
                     }}
                   />
                   <Box>
-                    <Typography variant="body2" fontWeight={600} color="text.primary">
+                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
                       {method.label}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -160,7 +160,7 @@ export default function PaymentsSection() {
                 <CreditCardIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={500} color="text.primary">
+                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
                   {machine.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

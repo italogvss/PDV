@@ -16,11 +16,6 @@ interface PreviewPanelProps {
 
 const STEP_LABELS = ['Seu negócio', 'Documentos', 'Endereço', 'Horário']
 
-const DAY_SHORT: Record<DayOfWeek, string> = {
-  monday: 'Seg', tuesday: 'Ter', wednesday: 'Qua',
-  thursday: 'Qui', friday: 'Sex', saturday: 'Sáb', sunday: 'Dom',
-}
-
 function formatHours(data: CreateTenantFormData): string {
   const { businessHours } = data
   const openDays = (Object.entries(businessHours) as [DayOfWeek, typeof businessHours[DayOfWeek]][])
@@ -66,8 +61,7 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
       <Typography
         variant="overline"
         color="text.secondary"
-        letterSpacing={1.5}
-        sx={{ fontSize: '0.65rem' }}
+        sx={{ fontSize: '0.65rem', letterSpacing: 1.5 }}
       >
         Como vai aparecer
       </Typography>
@@ -110,7 +104,7 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
           >
             P
           </Box>
-          <Typography variant="body2" fontWeight={700}>
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>
             PDV Ultra
           </Typography>
         </Box>
@@ -131,7 +125,7 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
             {!data.logoPreview && initial}
           </Avatar>
           <Box>
-            <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 150 }}>
+            <Typography variant="body2" noWrap sx={{ fontWeight: 600, maxWidth: 150 }}>
               {displayName}
             </Typography>
             <Chip
@@ -200,7 +194,7 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
             {!data.logoPreview && initial}
           </Avatar>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="body2" fontWeight={600} noWrap>
+            <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
               {displayName}
             </Typography>
             <Typography variant="caption" color="text.disabled" noWrap>
@@ -279,8 +273,8 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
               </Box>
               <Typography
                 variant="caption"
-                fontWeight={isCurrent || isCompleted ? 600 : 400}
                 color={isCurrent ? 'success.ink' : isCompleted ? 'text.secondary' : 'text.disabled'}
+                sx={{ fontWeight: isCurrent || isCompleted ? 600 : 400 }}
               >
                 {label}
               </Typography>

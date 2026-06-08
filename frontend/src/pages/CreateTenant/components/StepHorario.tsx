@@ -51,10 +51,10 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} mb={0.5}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
         Quando vocês atendem?
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Pode ajustar tudo depois nas configurações.
       </Typography>
 
@@ -73,7 +73,7 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
         }}
       >
         <Box>
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Preencher depois
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -130,9 +130,8 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
               )}
               <Typography
                 variant="body2"
-                fontWeight={700}
                 color={selected ? 'success.ink' : 'text.primary'}
-                mb={0.25}
+                sx={{ fontWeight: 700, mb: 0.25 }}
               >
                 {label}
               </Typography>
@@ -196,9 +195,8 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
               />
               <Typography
                 variant="body2"
-                fontWeight={500}
                 color={day.open ? 'text.primary' : 'text.disabled'}
-                sx={{ width: 64, flexShrink: 0 }}
+                sx={{ fontWeight: 500, width: 64, flexShrink: 0 }}
               >
                 {label}
               </Typography>
@@ -225,9 +223,8 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
               />
               <Typography
                 variant="caption"
-                fontWeight={500}
                 color={day.open ? 'success.main' : 'text.disabled'}
-                sx={{ ml: 'auto', flexShrink: 0 }}
+                sx={{ fontWeight: 500, ml: 'auto', flexShrink: 0 }}
               >
                 {day.open ? 'Aberto' : 'Fechado'}
               </Typography>

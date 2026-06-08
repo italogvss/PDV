@@ -1,20 +1,19 @@
-import { useState, useMemo } from 'react'
-import { Box, Typography, Button, Menu, MenuItem } from '@mui/material'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
-import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
-import WarningRounded from '@mui/icons-material/WarningRounded'
-import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
-import { formatBRL } from '../../utils/currency'
-import { MOCK_METRICS, MOCK_DAILY_BILLING, MOCK_PAYMENT_METHODS, MOCK_SALES, MOCK_TOP_PRODUCTS } from './mock'
-import DashboardMetricCard from './components/DashboardMetricCard'
-import BillingChart from './components/BillingChart'
-import PaymentMethodsChart from './components/PaymentMethodsChart'
-import RecentSalesTable from './components/RecentSalesTable'
-import TopProductsTable from './components/TopProductsTable'
+import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
+import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
+import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import WarningRounded from '@mui/icons-material/WarningRounded'
+import { Box, Button, Menu, MenuItem } from '@mui/material'
+import { useMemo, useState } from 'react'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useAppSelector } from '../../store'
+import { formatBRL } from '../../utils/currency'
+import { MOCK_METRICS } from './mock'
 
 interface DateRangeOption {
   label: string
@@ -57,52 +56,22 @@ export default function DashboardPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Olá, {name} 👋</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Atualizações até {formattedDate}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<CalendarMonthOutlined />}
-            endIcon={<ArrowDropDownRounded />}
-            onClick={(e) => setDateAnchor(e.currentTarget)}
-          >
-            {selectedDateRange.label}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FileDownloadOutlined />}
-            onClick={handleExport}
-          >
-            Exportar
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<AddRounded />}
-            onClick={handleNewSale}
-          >
-            Nova venda
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader title={`Olá, ${name} 👋`} description={`Atualizações até ${formattedDate}`}>
+        <Button
+          variant="outlined"
+          startIcon={<CalendarMonthOutlined />}
+          endIcon={<ArrowDropDownRounded />}
+          onClick={(e) => setDateAnchor(e.currentTarget)}
+        >
+          {selectedDateRange.label}
+        </Button>
+        <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={handleExport}>
+          Exportar
+        </Button>
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={handleNewSale}>
+          Nova venda
+        </Button>
+      </PageHeader>
 
       <Menu
         anchorEl={dateAnchor}
@@ -125,51 +94,32 @@ export default function DashboardPage() {
         ))}
       </Menu>
 
-      {/* KPIs - Métricas principais */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-        }}
-      >
-        <DashboardMetricCard
+      <PageKpiGrid>
+        <PageKpiCard
           icon={ShoppingCartRounded}
           label="Faturamento de hoje"
           value={formatBRL(MOCK_METRICS.billingToday)}
-          change={MOCK_METRICS.billingTodayChange}
-          changeLabel={`+${MOCK_METRICS.billingTodayChange}% ontem`}
-          isPositive={true}
+          badge={{ label: `+${MOCK_METRICS.billingTodayChange}% ontem`, color: 'success', icon: TrendingUpRounded }}
         />
-        <DashboardMetricCard
+        <PageKpiCard
           icon={WarningRounded}
           label="Estoque baixo"
           value={MOCK_METRICS.lowStockCount.toString()}
-          change={MOCK_METRICS.criticalStockCount}
-          changeLabel={`${MOCK_METRICS.criticalStockCount} críticos`}
-          isPositive={false}
+          badge={{ label: `${MOCK_METRICS.criticalStockCount} críticos`, color: 'error', icon: TrendingDownRounded }}
         />
-        <DashboardMetricCard
+        <PageKpiCard
           icon={ShoppingCartRounded}
-          label="Despesas de mês"
+          label="Despesas do mês"
           value={formatBRL(MOCK_METRICS.monthlyExpenses)}
-          change={Math.abs(MOCK_METRICS.monthlyExpensesChange)}
-          changeLabel={`${MOCK_METRICS.monthlyExpensesChange}% vs. abril`}
-          isPositive={false}
+          badge={{ label: `${MOCK_METRICS.monthlyExpensesChange}% vs. abril`, color: 'error', icon: TrendingDownRounded }}
         />
-        <DashboardMetricCard
+        <PageKpiCard
           icon={LocalFireDepartmentRounded}
           label="Lucros estimados"
           value={formatBRL(MOCK_METRICS.estimatedProfit)}
-          change={MOCK_METRICS.estimatedProfitChange}
-          changeLabel={`+${MOCK_METRICS.estimatedProfitChange}% vs. mês ant.`}
-          isPositive={true}
+          badge={{ label: `+${MOCK_METRICS.estimatedProfitChange}% vs. mês ant.`, color: 'success', icon: TrendingUpRounded }}
         />
-      </Box>
+      </PageKpiGrid>
 
       {/* Gráfico de faturamento 
       <BillingChart data={MOCK_DAILY_BILLING} />

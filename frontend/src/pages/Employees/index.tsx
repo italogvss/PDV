@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react'
 import {
   Box,
-  Typography,
   Button,
   Card,
-  CardContent,
   Chip,
   TextField,
   InputAdornment,
   Tab,
   Tabs,
   CircularProgress,
+  Typography,
 } from '@mui/material'
 import GroupRounded from '@mui/icons-material/GroupRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
@@ -22,6 +21,8 @@ import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useEmployees } from '../../hooks/useEmployees'
 import EmployeeAvatar from './components/EmployeeAvatar'
+import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import AddEmployeeModal from './components/AddEmployeeModal'
 import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
@@ -164,65 +165,18 @@ export default function EmployeesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Cabeçalho */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-        <Box>
-          <Typography variant="h1">Funcionários</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {kpis.total} membros na equipe
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="success"
-          size="small"
-          startIcon={<AddRounded />}
-          onClick={() => setAddOpen(true)}
-          sx={{ mt: 0.5 }}
-        >
+      <PageHeader title="Funcionários" description={`${kpis.total} membros na equipe`}>
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Adicionar
         </Button>
-      </Box>
+      </PageHeader>
 
-      {/* KPIs */}
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' } }}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <GroupRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Total</Typography>
-            </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.total}</Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <CheckCircleOutlineRounded sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Ativos</Typography>
-            </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.active}</Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <BadgeOutlined sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Gerentes</Typography>
-            </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.managers}</Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <PersonOffOutlined sx={{ fontSize: 15, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">Inativos</Typography>
-            </Box>
-            <Typography variant="h1" sx={{ lineHeight: 1 }}>{kpis.inactive}</Typography>
-          </CardContent>
-        </Card>
-      </Box>
+      <PageKpiGrid>
+        <PageKpiCard icon={GroupRounded} label="Total" value={kpis.total} />
+        <PageKpiCard icon={CheckCircleOutlineRounded} label="Ativos" value={kpis.active} />
+        <PageKpiCard icon={BadgeOutlined} label="Gerentes" value={kpis.managers} />
+        <PageKpiCard icon={PersonOffOutlined} label="Inativos" value={kpis.inactive} />
+      </PageKpiGrid>
 
       {/* Tabs */}
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
