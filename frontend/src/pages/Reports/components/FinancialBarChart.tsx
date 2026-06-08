@@ -1,55 +1,48 @@
 import { useTheme } from '@mui/material'
-import { LineChart } from '@mui/x-charts/LineChart'
+import { BarChart } from '@mui/x-charts/BarChart'
 import { formatBRL } from '../../../utils/currency'
 import { formatCompactBRL } from './chartHelpers'
 import ChartCard from './ChartCard'
 import type { FinancialSummaryPoint } from '../../../types/report.types'
 
-export interface AccumulatedProfitChartProps {
+export interface FinancialBarChartProps {
   data: FinancialSummaryPoint[]
   loading?: boolean
 }
 
-export default function AccumulatedProfitChart({
-  data,
-  loading = false,
-}: AccumulatedProfitChartProps) {
+export default function FinancialBarChart({ data, loading = false }: FinancialBarChartProps) {
   const theme = useTheme()
 
   const labels = data.map((d) => d.label)
-
-  // Soma cumulativa do resultado líquido ao longo do período
-  let running = 0
-  const accumulated = data.map((d) => {
-    running += d.netResult
-    return running
-  })
+  const revenue = data.map((d) => d.revenue)
+  const netResult = data.map((d) => d.netResult)
 
   return (
     <ChartCard
-      title="Lucro acumulado"
-      subtitle="Resultado líquido somado no período"
+      title="Receita × Resultado líquido"
+      subtitle="Receita − custo dos produtos − despesas"
       loading={loading}
       isEmpty={data.length === 0}
     >
-      <LineChart
+      <BarChart
         height={300}
-        xAxis={[{ scaleType: 'point', data: labels }]}
+        xAxis={[{ scaleType: 'band', data: labels }]}
         yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={[
           {
-            data: accumulated,
-            label: 'Lucro acumulado',
+            data: revenue,
+            label: 'Receita',
             color: theme.palette.success.main,
-            area: true,
-            showMark: false,
+            valueFormatter: (v) => formatBRL(v ?? 0),
+          },
+          {
+            data: netResult,
+            label: 'Resultado líquido',
+            color: theme.palette.data.blue.main,
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
         ]}
         margin={{ left: 16 }}
-        sx={{
-          '& .MuiAreaElement-root': { fillOpacity: 0.15 },
-        }}
       />
     </ChartCard>
   )

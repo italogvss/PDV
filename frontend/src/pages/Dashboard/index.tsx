@@ -9,13 +9,17 @@ import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentR
 import AddRounded from '@mui/icons-material/AddRounded'
 import { formatBRL } from '../../utils/currency'
 import { MOCK_METRICS, MOCK_DAILY_BILLING, MOCK_PAYMENT_METHODS, MOCK_SALES, MOCK_TOP_PRODUCTS } from './mock'
-import { DateRangeOption } from '../../types/report.types'
 import DashboardMetricCard from './components/DashboardMetricCard'
 import BillingChart from './components/BillingChart'
 import PaymentMethodsChart from './components/PaymentMethodsChart'
 import RecentSalesTable from './components/RecentSalesTable'
 import TopProductsTable from './components/TopProductsTable'
 import { useAppSelector } from '../../store'
+
+interface DateRangeOption {
+  label: string
+  days: number
+}
 
 const DATE_RANGE_OPTIONS: DateRangeOption[] = [
   { label: '7 dias', days: 7 },

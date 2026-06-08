@@ -1,0 +1,427 @@
+================================================================
+ZELO — SISTEMA DE GESTÃO
+DOCUMENTAÇÃO DA SEÇÃO DE AGENDAMENTOS
+================================================================
+
+Objetivo da seção:
+Permitir que negócios de serviço com hora marcada — salões de
+cabeleireiro, barbearias, manicures/pedicures, estúdios de
+sobrancelha e cílios, estética e profissionais autônomos em
+geral — organizem a agenda da equipe ao longo do dia. A tela
+mostra quem atende quem, em qual horário, por quanto tempo e por
+qual valor; sinaliza conflitos de horário; acompanha o status de
+cada atendimento (a confirmar, confirmado, em atendimento,
+concluído, cancelado); e resume a ocupação e a receita prevista
+do dia.
+
+A tela é composta por:
+- Cabeçalho com data selecionada, alternador Dia/Semana e ações
+  (Hoje, Novo agendamento)
+- 4 cartões de métricas agregadas do dia (KPIs)
+- Faixa seletora dos 7 dias da semana (com contagem por dia)
+- VISÃO DIA:
+    * Timeline com colunas por profissional (09h–19h)
+    * Painel lateral: Resumo do dia, Equipe, A seguir / Agenda
+- VISÃO SEMANA:
+    * Grade de 7 colunas (uma por dia) com mini-cartões
+- Modal "Novo agendamento"
+- Modal "Detalhe do agendamento"
+- Toast de confirmação
+
+
+================================================================
+1. ENTIDADES
+================================================================
+
+ENTIDADE: Agendamento (Appointment)
+------------------------------------
+Representa um horário reservado para um cliente, com um
+profissional, prestando um serviço específico.
+
+Campos:
+
+- id
+
+- datetime
+Restrição: Obrigatório
+
+- UserId (Employee)
+Restrição: Obrigatório
+
+- customer
+
+    Descrição: Referencia a um customer.
+    Restrição: Obrigatório
+    UI: no modal digitar no textfield mostra as opções numa lista
+
+- phone (telefone / WhatsApp)
+    Tipo: texto (string)
+    Descrição: Contato do cliente, usado para confirmação e para
+               o botão "WhatsApp" no detalhe. Pode ser puxado do customer caso haja um
+    Restrição: Opcional.
+
+- serviceId (serviço)
+    Tipo: Service
+    Descrição: Nome do serviço prestado (denormalizado a partir
+               do catálogo SERVICOS no momento da criação). Pode haver mais de um por agendamento
+    Restrição: Obrigatório.
+    Exemplo: "Corte feminino", "Corte + barba", "Lash lifting".
+
+- start (início)
+    Tipo: DateTime
+    Descrição: Horário de início do atendimento.
+    Restrição: Obrigatório.
+
+- duration (duração)
+    Tipo: número inteiro(minutos)
+    Descrição: Duração do atendimento em minutos.
+    Restrição: Obrigatório, > 0.
+    Sugestão: ao escolher os serviços, calcula o tempo necessario com o tempo de cada serviço, mas pode ser colocado pelo usuario.
+
+- price (valor)
+    Tipo: número (decimal, BRL)
+    Descrição: Valor cobrado pelo atendimento.
+    Restrição: >= 0 (0 se não informado).
+    Sugestão: preenchido com o calculo do preço dos serviços selecionados, mas pode ser colocado pelo usuario.
+
+- status
+    Tipo: enum (string)
+    Descrição: Estado do atendimento no fluxo.
+    Valores aceitos:
+        "pendente"        → "A confirmar"    (âmbar, ícone clock)
+        "confirmado"      → "Confirmado"     (verde, ícone check)
+        "em_atendimento"  → "Em atendimento" (azul,  ícone bolt)
+        "concluido"       → "Concluído"      (cinza, ícone check)
+        "cancelado"       → "Cancelado"      (vermelho, ícone x)
+    Default no modal de criação: "confirmado".
+
+- note (observações)
+    Tipo: texto (string)
+    Descrição: Anotações livres — preferências, alergias,
+               referências, observações de atendimento.
+    Restrição: Opcional.
+    UI: quando presente, aparece como um bloco âmbar destacado
+        no modal de detalhe.
+
+================================================================
+2. CONSTANTES DE TEMPO E LAYOUT
+================================================================
+
+BASE_A      = 14/05/2026          ("hoje" do sistema demo)
+NOW_MIN     = 860 (14:20)         ("agora" — linha vermelha)
+DAY_START   = 540 (09:00)         (início da grade)
+DAY_END     = 1140 (19:00)        (fim da grade)
+PX_MIN      = 1.2                 (pixels por minuto → 72px/hora)
+CANVAS_H    = (DAY_END-DAY_START)*PX_MIN = 720px (altura da grade)
+
+
+================================================================
+3. AGREGADOS / KPIs
+================================================================
+
+Todos calculados sobre os agendamentos do DIA SELECIONADO
+(selOffset). Atualizam em tempo real ao criar/atualizar.
+
+Conjuntos auxiliares:
+  selAppts   = todos os agendamentos do dia selecionado
+  active     = selAppts onde status !== "cancelado"
+  confirmados= status "confirmado" OU "em_atendimento"
+  pendentes  = status "pendente"
+
+KPI 1 — Agendamentos
+    Valor: active.length  (horários válidos do dia).
+    Delta: "{pendentes} a confirmar".
+    Direção: "warn" se houver pendentes, senão "up".
+
+KPI 2 — Confirmados
+    Valor: count de confirmados.
+    Delta: "{%} da agenda" = round(confirmados / active.length * 100).
+
+KPI 3 — Receita prevista
+    Valor: soma de price em `active`, prefixo "R$".
+    Delta: "serviços do dia".
+
+KPI 4 — Taxa de ocupação
+    bookedMin = soma das durações em `active`.
+    availMin  = nº de profissionais * (DAY_END - DAY_START).
+    Valor: round(bookedMin / availMin * 100) + "%".
+    Delta: "{bookedMin em h}h de {availMin em h}h".
+    Direção: "up" se > 70%, senão "warn".
+
+Contagem por dia (faixa da semana):
+    countFor(offset) = nº de agendamentos do dia com
+                       status !== "cancelado".
+
+
+================================================================
+4. FAIXA SELETORA DA SEMANA (week-strip)
+================================================================
+
+- 7 chips (segunda a domingo) cobrindo a semana que contém hoje.
+  weekOffsets calculado a partir do dia da semana de hoje
+  (todayDow = (BASE_A.getDay()+6)%7, semana iniciando na segunda).
+- Cada chip mostra:
+    [dow abreviado]  [número do dia]  [pip + contagem | "—"]
+- Estados visuais:
+    .on    → dia selecionado (fundo escuro var(--text)).
+    .today → hoje, quando não selecionado (borda verde).
+- Clique: define selOffset e força mode = "dia".
+
+deve haver um datepicker para selecionar um dia, ao selecionar a faixa deletora da semana muda para a semna daquele dia
+
+
+================================================================
+5. VISÃO DIA — TIMELINE
+================================================================
+
+Layout: MUI X Scheduler
+
+5.1 Cabeçalho da timeline
+    - Título = fData do dia exmplo: Quinta-feira, 14 de maio .
+    - Filtro por profissional (chips): "Todos" + um chip por
+      profissional (com dot colorido). filterPro controla quais
+      colunas aparecem (visiblePros).
+
+5.2 Cabeçalho de colunas (sched-headrow)
+    - Coluna "canto" com ícone de relógio.
+    - Uma coluna por profissional visível, com avatar (cor),
+      nome, e subtítulo "{N} hoje · {especialidade}".
+
+5.3 Área da grade (sched-canvas)
+    - Gutter à esquerda com marcações de hora (09:00…19:00),
+      posicionadas em top = (hora*60 - DAY_START) * PX_MIN.
+    - Uma coluna por profissional, altura = CANVAS_H, com linhas
+      de hora desenhadas via repeating-linear-gradient (72px).
+    - Colunas pares recebem leve sombreado (zebra).
+    - Linha do "agora" (now-line vermelha tracejada) + etiqueta
+      com a hora, exibida só quando selOffset === 0 e NOW_MIN
+      está dentro do expediente.
+
+5.4 Bloco de agendamento (ApptBlock)
+    - Posição: top = (startMin - DAY_START) * PX_MIN.
+    - Altura: dur * PX_MIN - 3.
+    - Fundo: cor soft do status; borda esquerda = cor do
+      profissional.
+    - Conteúdo: "HH:MM–HH:MM", nome do serviço, e (se altura
+      >= 50px) o nome do cliente.
+    - Modificadores visuais:
+        .done / .cancel → opacidade reduzida (0.62);
+                          .cancel risca o serviço.
+        .live (em_atendimento) → anel azul.
+    - Clique no bloco → abre modal de detalhe (setDetailId).
+
+5.5 Criar agendamento clicando na grade
+    - Clique numa coluna (área vazia) chama openNewAt(proId, min):
+        min = DAY_START + (offsetY do clique) / PX_MIN
+        arredonda para múltiplo de 15, limitado ao expediente.
+    - Abre o modal pré-preenchido com profissional, data e hora.
+
+
+================================================================
+6. VISÃO DIA — PAINEL LATERAL
+================================================================
+
+6.1 Cartão "Resumo do dia"
+    - Selo "Ao vivo" (verde) quando o dia é hoje e dentro do
+      expediente.
+    - 4 mini-blocos: Horários (active.length), Receita (BRL),
+      Confirmados (verde), A confirmar (âmbar).
+
+6.2 Cartão "Equipe"
+    - Tag com o total de profissionais.
+    - Uma linha por profissional:
+        [avatar cor]  Primeiro nome      {N} · {horas}h
+                      [barra de ocupação % na cor do pro]
+      pct = min(100, round(minutosOcupados / expediente * 100)),
+      contando apenas atendimentos não cancelados do dia.
+
+6.3 Cartão "A seguir" (hoje) / "Agenda do dia" (outros dias)
+    - Lista upcoming: status != cancelado e != concluido;
+      se for hoje, apenas os que ainda não terminaram
+      (fim >= NOW_MIN); ordenados por horário; até 6 itens.
+    - Cada item: [hora] [barra cor do pro] serviço / "cliente ·
+      profissional" + tag de status (só o dot).
+    - Estado vazio: ícone "leaf" + "Nada mais por hoje".
+    - Clique → modal de detalhe.
+
+
+================================================================
+7. VISÃO SEMANA
+================================================================
+
+- Substitui timeline+lateral por uma grade de 7 colunas
+  (.week-grid, min-width 720px, rolagem horizontal).
+- Cabeçalho do cartão: "Semana de DD/MM a DD/MM" + total de
+  agendamentos não cancelados da semana.
+- Cada coluna (dia):
+    - Cabeçalho com dia da semana e DD/MM (hoje destacado).
+    - Mini-cartões (week-chip) ordenados por horário:
+        [hora]  serviço  "primeiroNomeCliente · primeiroNomePro"
+        borda esquerda na cor do profissional;
+        .cancel risca/atenua.
+    - Estado vazio do dia: "livre".
+    - Clique no chip → modal de detalhe.
+
+
+================================================================
+8. MODAL "NOVO AGENDAMENTO"
+================================================================
+
+Trigger:
+  - Botão verde "Novo agendamento" no cabeçalho (sem prefill).
+  - Clique numa área vazia da timeline (prefill com proId, data,
+    hora).
+
+O design pode da modal pode ser semelhante a de adicionar produto, adicionar funcionario etc
+
+Campos do form:
+
+(a) Cliente — texto, obrigatório.
+    Placeholder "Nome do cliente"; <datalist> "ag-clientes" com
+    nomes já existentes para autocompletar.
+
+(b) Telefone / WhatsApp — texto, opcional, pode ser puxado do customer caso houver.
+
+(c) Serviço — obrigatório. Lista agrupada por categoria de serviço ServiceCategory
+    dentro de uma caixa rolável; cada serviço é um
+    chip com dot da cor da categoria, nome e "· {DurationMinutes}min".
+
+(d) Profissional — obrigatório. Chip-picker com avatar+primeiro
+    nome de cada membro de PROS. Seleção única.
+
+(e) Data — input type="date", obrigatório, datepicker mui.
+
+(f) Horário — input type="time" obrigatório,
+    adornment relógio.
+
+(g) Duração — número (minutos), obrigatório, adornment "min". Calculo dos DurationMinutes de cada serviço selecionar, mas pode ser modificado pelo usuairo
+    Edição manual.
+
+(h) Valor — decimal (BRL), opcional, adornment "R$". Calculado pelo preço dos serviços selecionados
+    Edição manual marca priceTouched = true.
+
+(i) Resumo de horário + conflito (faixa informativa):
+    - Quando serviço e horário definidos, mostra
+      "Término previsto HH:MM–HH:MM" (fim = start + dur).
+    - Se houver sobreposição na agenda do mesmo profissional/dia,
+      mostra chip de aviso "Conflito com {cliente} ({hora})".
+
+(j) Situação — chip-picker com 2 opções:
+       "Confirmado" (status="confirmado", default)
+       "Aguardando confirmação" (status="pendente")
+
+(k) Observações — textarea, opcional.
+    Placeholder de exemplo (alergias, foto de referência…).
+
+Rodapé do modal:
+    - Texto "Confirmação enviada por WhatsApp ao salvar".
+    - Botões "Cancelar" e "Agendar" (verde).
+
+Detecção de conflito (conflictsFor):
+      → agendamentos do mesmo dia e profissional, não cancelados,. Hoje é apenas um AVISO de dialog ao salvar agendamento, se o usuario confirmar, não
+        bloqueia o salvamento.
+
+Validação no submit utilizar zod e validar campos.
+
+
+================================================================
+9. MODAL "DETALHE DO AGENDAMENTO"
+================================================================
+
+Trigger: clique em qualquer bloco/chip/item de agendamento.
+Fechamento: "×", Esc, clique no scrim.
+
+Cabeçalho (appt-hero):
+    - Avatar com iniciais do cliente (cor do profissional).
+    - Nome do cliente, nome do serviço.
+    - Tags: status (cor do status) + profissional (avatar+nome).
+
+Corpo (grade de blocos):
+    - Data        → "dow, DD/MM"
+    - Horário     → "start–fim" (tabular)
+    - Duração     → "{dur} min"
+    - Valor       → fmtBRL(price)
+    - Contato     → telefone + botão "WhatsApp" (se houver phone)
+    - Observação  → bloco âmbar, só quando note != "".
+
+Rodapé — ações dependentes do status:
+    - Sempre (se não concluído/cancelado): "Cancelar" (abre
+      confirmação inline) e "Editar".
+    - status "pendente"        → botão "Confirmar"  → confirmado.
+    - status "confirmado"      → botão "Iniciar"    → em_atendimento.
+    - status "em_atendimento"  → botão "Concluir"   → concluido.
+    - status "concluido"/"cancelado" → apenas "Fechar".
+    Cada transição dispara um toast descritivo (via onToast).
+
+Confirmação de cancelamento:
+    - Estado intermediário: "Cancelar este agendamento?" com
+      "Voltar" e "Sim, cancelar" (vermelho).
+    - Confirmar → status = "cancelado" + toast.
+
+Atualização de status (handleUpdate):
+    setAppts(map(a => a.id === id ? { ...a, ...patch } : a))
+
+
+================================================================
+10. TOAST DE CONFIRMAÇÃO
+================================================================
+
+- Aparece no canto inferior direito, fundo verde, ícone check.
+- Dispara em: criação, confirmação, início, conclusão e
+  cancelamento de agendamento.
+- Duração: 2,8 segundos (fireToast).
+
+
+================================================================
+11. ESTADO DO COMPONENTE (React)
+================================================================
+
+appts       — lista de agendamentos (seed SEED_APPTS).
+selOffset   — dia selecionado (offset; default 0 = hoje).
+mode        — "dia" | "semana" (default "dia").
+filterPro   — "todos" | proId (filtro de colunas na timeline).
+detailId    — id do agendamento aberto no modal de detalhe | null.
+newOpen     — boolean (modal de novo aberto?).
+prefill     — { proId, dateIso, start } | null (pré-preenchimento).
+toast       — string | null (mensagem do toast).
+
+================================================================
+13. RESUMO DAS REGRAS DE NEGÓCIO
+================================================================
+
+R1.  Todo agendamento tem cliente, serviço, profissional, data,
+     horário e duração > 0. Telefone, valor e observações são
+     opcionais.
+R2.  Ao escolher o serviço, duração e valor são pré-preenchidos
+     com os padrões do catálogo, sobrescrevíveis pelo usuário.
+R3.  fim = início + duração; é exibido como "HH:MM–HH:MM".
+R4.  Conflito = sobreposição de horário no mesmo profissional e
+     dia (intervalos [s, s+dur) que se cruzam). Hoje gera apenas
+     AVISO, não impede salvar.
+R5.  Status default ao criar é "confirmado". Fluxo de transição:
+     pendente → confirmado → concluido.
+     Qualquer estado ativo pode ir para "cancelado".
+R6.  Agendamentos "cancelado" não contam em KPIs, ocupação nem
+     na contagem por dia.
+R7.  KPIs e painel lateral consideram sempre o DIA SELECIONADO.
+R8.  Taxa de ocupação = minutos agendados / (nº profissionais ×
+     expediente do dia).
+R9.  Expediente exibido: 09:00–19:00; linha do "agora" só no dia
+     de hoje e dentro do expediente.
+R10. A faixa da semana cobre segunda a domingo da semana atual,
+     com contagem de horários por dia.
+R11. Toast de confirmação aparece por 2,8s após cada ação.
+R12. Esc, clique fora e "×" fecham os modais; campos com
+     asterisco vermelho são obrigatórios e exibem erro inline.
+
+
+================================================================
+14. EVOLUÇÕES SUGERIDAS (a implementar de fato)
+================================================================
+
+E2.  Bloquear (não apenas avisar) conflitos de horário, ou
+     sugerir o próximo horário livre do profissional.
+E3.  Editar agendamento (modal pré-preenchido).
+E4.  Envio real de confirmação/lembrete por WhatsApp e
+     notificações ("appt") na véspera e no dia.
+

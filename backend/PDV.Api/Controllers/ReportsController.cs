@@ -39,6 +39,44 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("financial-summary")]
+    public async Task<IActionResult> GetFinancialSummary(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] string groupBy = "month")
+    {
+        var result = await service.GetFinancialSummaryAsync(startDate, endDate, groupBy);
+        return Ok(result);
+    }
+
+    [HttpGet("sales/by-payment-method")]
+    public async Task<IActionResult> GetSalesByPaymentMethod(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetSalesByPaymentMethodAsync(startDate, endDate);
+        return Ok(result);
+    }
+
+    [HttpGet("products/top")]
+    public async Task<IActionResult> GetTopProducts(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] int limit = 10)
+    {
+        var result = await service.GetTopProductsAsync(startDate, endDate, limit);
+        return Ok(result);
+    }
+
+    [HttpGet("expenses/by-category")]
+    public async Task<IActionResult> GetExpensesByCategory(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetExpensesByCategoryAsync(startDate, endDate);
+        return Ok(result);
+    }
+
     [HttpGet("sales/export")]
     public async Task<IActionResult> ExportSalesCSV(
         [FromQuery] string? period,

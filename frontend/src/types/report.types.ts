@@ -1,31 +1,15 @@
-export interface ReportMetrics {
-  totalRevenue: number
-  netProfit: number
-  costs: number
-  averageTicket: number
-  revenueChangePercent: number
-  profitMarginPercent: number
-  costsChangePercent: number
-  averageTicketChange: number
-}
-
-export interface DailyRevenueData {
-  date: string
-  revenue: number
-  profit: number
-}
-
-export interface AccumulatedProfitData {
-  date: string
-  profit: number
-}
-
-export type DateRangeKey = '7d' | '14d' | '30d' | '3m' | '1y'
-
-export interface DateRangeOption {
+export interface MonthPreset {
   label: string
-  key: DateRangeKey
+  key: string
+  months: number
 }
+
+export interface DateRangeParams {
+  startDate: string
+  endDate: string
+}
+
+export type GroupBy = 'day' | 'week' | 'month'
 
 export interface SalesMetrics {
   totalSales: number
@@ -33,4 +17,38 @@ export interface SalesMetrics {
   averageTicket: number
   cancelledCount: number
   period: string
+}
+
+export interface FinancialSummaryPoint {
+  label: string
+  revenue: number
+  cost: number
+  expenses: number
+  grossProfit: number
+  netResult: number
+}
+
+export interface SalesByOperator {
+  operatorId: string
+  operatorName: string
+  totalSales: number
+  totalRevenue: number
+}
+
+export interface SalesByPaymentMethod {
+  paymentMethod: string
+  total: number
+  count: number
+}
+
+export interface TopProduct {
+  productName: string
+  quantity: number
+  revenue: number
+}
+
+export interface ExpensesByCategory {
+  category: string
+  total: number
+  count: number
 }

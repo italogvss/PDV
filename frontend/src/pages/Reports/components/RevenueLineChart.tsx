@@ -5,30 +5,20 @@ import { formatCompactBRL } from './chartHelpers'
 import ChartCard from './ChartCard'
 import type { FinancialSummaryPoint } from '../../../types/report.types'
 
-export interface AccumulatedProfitChartProps {
+export interface RevenueLineChartProps {
   data: FinancialSummaryPoint[]
   loading?: boolean
 }
 
-export default function AccumulatedProfitChart({
-  data,
-  loading = false,
-}: AccumulatedProfitChartProps) {
+export default function RevenueLineChart({ data, loading = false }: RevenueLineChartProps) {
   const theme = useTheme()
 
   const labels = data.map((d) => d.label)
-
-  // Soma cumulativa do resultado líquido ao longo do período
-  let running = 0
-  const accumulated = data.map((d) => {
-    running += d.netResult
-    return running
-  })
+  const revenue = data.map((d) => d.revenue)
 
   return (
     <ChartCard
-      title="Lucro acumulado"
-      subtitle="Resultado líquido somado no período"
+      title="Receita ao longo do tempo"
       loading={loading}
       isEmpty={data.length === 0}
     >
@@ -38,8 +28,8 @@ export default function AccumulatedProfitChart({
         yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={[
           {
-            data: accumulated,
-            label: 'Lucro acumulado',
+            data: revenue,
+            label: 'Receita',
             color: theme.palette.success.main,
             area: true,
             showMark: false,
