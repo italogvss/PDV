@@ -4,6 +4,7 @@ import DashboardLayout from '../layouts/DashboardLayout'
 
 import DashboardPage from '../pages/Dashboard'
 import ServicesPage from '../pages/Services'
+import AppointmentsPage from '../pages/Appointments'
 import SalesPage from '../pages/Sales'
 import SalesHistoryPage from '../pages/SalesHistory'
 import InventoryPage from '../pages/Inventory'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
           { path: 'historico', element: <SalesHistoryPage /> },
           { path: 'estoque', element: <InventoryPage /> },
           { path: 'servicos', element: <ServicesPage /> },
+          { path: 'agendamentos', element: <AppointmentsPage /> },
           { path: 'despesas', element: <ExpensesPage /> },
           { path: 'funcionarios', element: <EmployeesPage /> },
           { path: 'relatorios', element: <ReportsPage /> },

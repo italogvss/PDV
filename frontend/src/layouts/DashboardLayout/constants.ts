@@ -11,6 +11,7 @@ import {
   SettingsOutlined,
   HelpOutlineOutlined,
   MiscellaneousServicesOutlined,
+  CalendarMonthOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 
@@ -45,6 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
         badge: { label: '3', tone: 'count' },
       },
       { label: 'Serviços', path: '/servicos', icon: MiscellaneousServicesOutlined },
+      { label: 'Agendamentos', path: '/agendamentos', icon: CalendarMonthOutlined },
       { label: 'Despesas', path: '/despesas', icon: PaidOutlined },
       { label: 'Funcionários', path: '/funcionarios', icon: GroupOutlined },
       { label: 'Lucros & relatórios', path: '/relatorios', icon: InsightsOutlined },
