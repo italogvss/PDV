@@ -1,13 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Box,
   Avatar,
   Button,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
   Chip,
+  CircularProgress,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
@@ -15,20 +13,57 @@ import { DeleteOutlined } from '@mui/icons-material'
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import { useAppSelector } from '../../../../store'
+import { useUpdateUser } from '../../../../hooks/useUser'
+import { formatPhone } from '../../../../utils/phone'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export default function ProfileSection() {
-  const [name, setName] = useState('Marcos Almeida')
-  const [email] = useState('marcos.almeida@cafedaesquina.com.br')
-  const [phone, setPhone] = useState('(11) 98765-4321')
-  const [cpf, setCpf] = useState('123.456.789-00')
-  const [role, setRole] = useState('Proprietário')
-  const [language, setLanguage] = useState('pt-BR')
-  const [timezone, setTimezone] = useState('america_sao_paulo')
+  const { userId, name: authName, email, phone: authPhone } = useAppSelector((s) => s.auth)
+  const updateUser = useUpdateUser()
+
+  const [name, setName] = useState(authName ?? '')
+  const [phone, setPhone] = useState(formatPhone(authPhone ?? ''))
+  const [cpf] = useState('123.456.789-00')
+  const [role] = useState('Proprietário')
+  // const [language, setLanguage] = useState('pt-BR')
   const [hasChanges, setHasChanges] = useState(false)
 
-  const handleChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setter(e.target.value)
+  // Sincroniza o formulário com a sessão (carga inicial e após salvar).
+  useEffect(() => {
+    setName(authName ?? '')
+    setPhone(formatPhone(authPhone ?? ''))
+    setHasChanges(false)
+  }, [authName, authPhone])
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value)
     setHasChanges(true)
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhone(e.target.value))
+    setHasChanges(true)
+  }
+
+  const handleCancel = () => {
+    setName(authName ?? '')
+    setPhone(formatPhone(authPhone ?? ''))
+    setHasChanges(false)
+  }
+
+  const handleSave = () => {
+    if (!userId) return
+    updateUser.mutate({
+      id: userId,
+      payload: { name: name.trim(), phone: phone.trim() || null },
+    })
   }
 
   return (
@@ -39,15 +74,23 @@ export default function ProfileSection() {
         action={
           hasChanges ? (
             <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <Button variant="outlined" size="small" onClick={() => setHasChanges(false)}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleCancel}
+                disabled={updateUser.isPending}
+              >
                 Cancelar
               </Button>
               <Button
                 variant="contained"
                 color="secondary"
                 size="small"
-                startIcon={<CheckIcon />}
-                onClick={() => setHasChanges(false)}
+                startIcon={
+                  updateUser.isPending ? <CircularProgress size={16} color="inherit" /> : <CheckIcon />
+                }
+                onClick={handleSave}
+                disabled={updateUser.isPending || !name.trim()}
               >
                 Salvar
               </Button>
@@ -68,7 +111,7 @@ export default function ProfileSection() {
                   fontWeight: 700,
                 }}
               >
-                MA
+                {getInitials(name)}
               </Avatar>
               <Box
                 sx={{
@@ -102,19 +145,13 @@ export default function ProfileSection() {
           <TextField
             size="small"
             value={name}
-            onChange={handleChange(setName)}
+            onChange={handleNameChange}
             sx={{ width: 340 }}
           />
         </SettingRow>
 
         <SettingRow label="E-mail">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <TextField
-              size="small"
-              value={email}
-              slotProps={{htmlInput: { readOnly: true }}}
-              sx={{ width: 300 }}
-            />
             <Chip
               label="Verificado"
               size="small"
@@ -126,6 +163,12 @@ export default function ProfileSection() {
                 '& .MuiChip-icon': { color: 'success.ink' },
               }}
             />
+            <TextField
+              size="small"
+              value={email ?? ''}
+              disabled
+              sx={{ width: 300 }}
+            />
           </Box>
         </SettingRow>
 
@@ -133,7 +176,8 @@ export default function ProfileSection() {
           <TextField
             size="small"
             value={phone}
-            onChange={handleChange(setPhone)}
+            onChange={handlePhoneChange}
+            placeholder="(99) 99999-9999"
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -142,7 +186,7 @@ export default function ProfileSection() {
           <TextField
             size="small"
             value={cpf}
-            onChange={handleChange(setCpf)}
+            disabled
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -151,12 +195,12 @@ export default function ProfileSection() {
           <TextField
             size="small"
             value={role}
-            onChange={handleChange(setRole)}
+            disabled
             sx={{ width: 340 }}
           />
         </SettingRow>
 
-        <SettingRow label="Idioma">
+        {/* <SettingRow label="Idioma">
           <FormControl size="small" sx={{ width: 340 }}>
             <Select
               value={language}
@@ -167,22 +211,7 @@ export default function ProfileSection() {
               <MenuItem value="es">Español</MenuItem>
             </Select>
           </FormControl>
-        </SettingRow>
-
-        <SettingRow label="Fuso horário">
-          <FormControl size="small" sx={{ width: 340 }}>
-            <Select
-              value={timezone}
-              onChange={(e) => { setTimezone(e.target.value); setHasChanges(true) }}
-            >
-              <MenuItem value="america_sao_paulo">São Paulo — GMT-3</MenuItem>
-              <MenuItem value="america_manaus">Manaus — GMT-4</MenuItem>
-              <MenuItem value="america_belem">Belém — GMT-3</MenuItem>
-              <MenuItem value="america_fortaleza">Fortaleza — GMT-3</MenuItem>
-              <MenuItem value="america_noronha">Fernando de Noronha — GMT-2</MenuItem>
-            </Select>
-          </FormControl>
-        </SettingRow>
+        </SettingRow> */}
       </SettingCard>
 
       <SettingCard title="Zona de risco" subtitle="Ações permanentes e irreversíveis" danger>

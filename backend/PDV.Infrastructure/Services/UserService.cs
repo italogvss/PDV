@@ -45,11 +45,12 @@ public class UserService(
             ?? throw new NotFoundException("Usuário não encontrado.");
 
         user.Name = request.Name;
+        user.Phone = request.Phone;
         user.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
         return ToResponse(user);
     }
 
     private static UserResponse ToResponse(PDV.Domain.Entities.User u) =>
-        new(u.Id, u.Name, u.Email, u.AvatarUrl, u.CreatedAt);
+        new(u.Id, u.Name, u.Email, u.Phone, u.AvatarUrl, u.CreatedAt);
 }

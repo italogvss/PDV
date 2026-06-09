@@ -32,13 +32,13 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineOutlined },
   { id: 'assinatura', label: 'Assinatura', icon: WorkspacePremiumOutlinedIcon },
-  { id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
-  { id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
+//{ id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
+//{ id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
   { id: 'negocios', label: 'Meus negócios', icon: StorefrontOutlinedIcon },
   { id: 'seguranca', label: 'Segurança', icon: SecurityOutlinedIcon },
   { id: 'notificacoes', label: 'Notificações', icon: NotificationsNoneOutlinedIcon },
-  { id: 'sessoes', label: 'Sessões', icon: VisibilityOutlinedIcon },
-  { id: 'integracoes', label: 'Integrações', icon: SyncAltOutlinedIcon },
+//{ id: 'sessoes', label: 'Sessões', icon: VisibilityOutlinedIcon },
+//{ id: 'integracoes', label: 'Integrações', icon: SyncAltOutlinedIcon },
 ]
 
 function renderSection(tab: AccountTab) {

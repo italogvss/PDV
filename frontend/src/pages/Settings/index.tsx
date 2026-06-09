@@ -1,28 +1,24 @@
-import { useState } from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
-import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
-import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined'
-import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
-import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
-import FiberManualRecordOutlinedIcon from '@mui/icons-material/FiberManualRecordOutlined'
 import { HelpOutlined, type SvgIconComponent } from '@mui/icons-material'
-import { type SettingsTab } from './types'
-import BusinessSection from './components/BusinessSection'
-import OperationSection from './components/OperationSection'
-import PaymentsSection from './components/PaymentsSection'
-import FiscalSection from './components/FiscalSection'
-import PrintingSection from './components/PrintingSection'
+import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
+import FiberManualRecordOutlinedIcon from '@mui/icons-material/FiberManualRecordOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
+import { Box, Button, Typography } from '@mui/material'
+import { useState } from 'react'
+import AdvancedSection from './components/AdvancedSection'
 import AppearanceSection from './components/AppearanceSection'
 import BackupSection from './components/BackupSection'
+import BusinessSection from './components/BusinessSection'
+import FiscalSection from './components/FiscalSection'
 import IntegrationsSection from './components/IntegrationsSection'
+import OperationSection from './components/OperationSection'
+import PaymentsSection from './components/PaymentsSection'
+import PrintingSection from './components/PrintingSection'
 import TeamSection from './components/TeamSection'
-import AdvancedSection from './components/AdvancedSection'
+import { type SettingsTab } from './types'
 
 interface NavItem {
   id: SettingsTab
@@ -34,14 +30,14 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'negocio', label: 'Negócio', subtitle: 'Dados, endereço e horário', icon: StorefrontOutlinedIcon },
   { id: 'operacao', label: 'Operação / PDV', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlinedIcon },
-  { id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlinedIcon },
-  { id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlinedIcon },
-  { id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlinedIcon },
+  //{ id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlinedIcon },
+  //{ id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlinedIcon },
+  //{ id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlinedIcon },
   { id: 'aparencia', label: 'Aparência', subtitle: 'Tema e densidade', icon: TuneOutlinedIcon },
-  { id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlinedIcon },
-  { id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlinedIcon },
+  //{ id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlinedIcon },
+  //{ id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlinedIcon },
   { id: 'equipe', label: 'Equipe & permissões', subtitle: 'Papéis e acessos', icon: GroupOutlinedIcon },
-  { id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlinedIcon },
+  //{ id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlinedIcon },
 ]
 
 function renderSection(tab: SettingsTab) {
@@ -68,10 +64,10 @@ export default function SettingsPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="h4" color="text.primary" sx={{lineHeight: 1.15, fontWeight: 700}}>
+          <Typography variant="h4" color="text.primary" sx={{ lineHeight: 1.15, fontWeight: 700 }}>
             Configurações
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             {current.subtitle}
           </Typography>
         </Box>

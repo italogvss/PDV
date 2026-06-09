@@ -8,6 +8,7 @@ export interface AuthUser {
   tenantId: string | null
   name: string
   email: string
+  phone: string | null
   avatarUrl: string | null
   role: UserRole
   settings: UserSettingsDTO | null

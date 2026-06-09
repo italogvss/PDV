@@ -1,47 +1,30 @@
-import {
-  Box,
-  Typography,
-  Button,
-  Avatar,
-  Chip,
-  IconButton,
-  Paper,
-  Divider,
-} from '@mui/material'
+import { Box, Typography, Button, Avatar, Chip, Paper, Divider, CircularProgress } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAppDispatch, useAppSelector } from '../../../../store'
+import { setTenant } from '../../../../store/slices/auth.slice'
+import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
 
-interface Business {
-  id: string
-  initials: string
-  name: string
-  role: string
-  address: string
-  color: string
-  active?: boolean
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
 }
 
-const BUSINESSES: Business[] = [
-  {
-    id: '1',
-    initials: 'CE',
-    name: 'Café da Esquina',
-    role: 'Proprietário',
-    address: 'Rua Augusta, 1480 — São Paulo/SP',
-    color: '#2fa040',
-    active: true,
-  },
-  {
-    id: '2',
-    initials: 'BP',
-    name: 'Padaria Bom Pão',
-    role: 'Gerente',
-    address: 'Av. Paulista, 2200 — São Paulo/SP',
-    color: '#d97a1f',
-  },
-]
-
 export default function BusinessesSection() {
+  const { tenants, tenantId } = useAppSelector((s) => s.auth)
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const switchTenant = useSwitchTenant()
+
+  function handleNewBusiness() {
+    dispatch(setTenant({ tenantId: null }))
+    queryClient.clear()
+    navigate('/criar-negocio')
+  }
+
   return (
     <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
       <Box sx={{ px: 4, py: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -53,14 +36,14 @@ export default function BusinessesSection() {
             Você pode gerenciar mais de um estabelecimento
           </Typography>
         </Box>
-        <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />}>
+        <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={handleNewBusiness}>
           Novo negócio
         </Button>
       </Box>
       <Divider />
 
-      {BUSINESSES.map((biz, idx) => (
-        <Box key={biz.id}>
+      {tenants.map((tenant, idx) => (
+        <Box key={tenant.tenantId}>
           <Box
             sx={{
               display: 'flex',
@@ -76,21 +59,21 @@ export default function BusinessesSection() {
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: biz.color,
+                  bgcolor: 'accent.600',
                   color: 'common.white',
                   fontSize: 13,
                   fontWeight: 700,
                   borderRadius: 2,
                 }}
               >
-                {biz.initials}
+                {getInitials(tenant.name)}
               </Avatar>
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
-                    {biz.name}
+                    {tenant.name}
                   </Typography>
-                  {biz.active && (
+                  {tenant.tenantId === tenantId && (
                     <Chip
                       label="Ativo"
                       size="small"
@@ -99,22 +82,27 @@ export default function BusinessesSection() {
                   )}
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  {biz.role} • {biz.address}
+                  {tenant.role === 'Owner' ? 'Proprietário' : 'Funcionário'}
                 </Typography>
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              {!biz.active && (
-                <Button variant="outlined" size="small">
-                  Acessar
-                </Button>
-              )}
-              <IconButton size="small">
-                <MoreHorizIcon fontSize="small" />
-              </IconButton>
-            </Box>
+
+            {tenant.tenantId !== tenantId && (
+              <Button
+                variant="outlined"
+                disabled={switchTenant.isPending}
+                onClick={() => switchTenant.mutate(tenant.tenantId)}
+                endIcon={
+                  switchTenant.isPending && switchTenant.variables === tenant.tenantId
+                    ? <CircularProgress size={14} />
+                    : undefined
+                }
+              >
+                Acessar
+              </Button>
+            )}
           </Box>
-          {idx < BUSINESSES.length - 1 && <Divider />}
+          {idx < tenants.length - 1 && <Divider />}
         </Box>
       ))}
     </Paper>

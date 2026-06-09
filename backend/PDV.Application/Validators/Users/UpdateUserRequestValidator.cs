@@ -8,5 +8,7 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
     public UpdateUserRequestValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Phone).MaximumLength(20)
+            .When(x => !string.IsNullOrWhiteSpace(x.Phone));
     }
 }

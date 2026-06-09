@@ -8,6 +8,7 @@ export interface AuthState {
   role: UserRole | null
   name: string | null
   email: string | null
+  phone: string | null
   avatarUrl: string | null
   isAuthenticated: boolean
   isLoading: boolean
@@ -21,6 +22,7 @@ const initialState: AuthState = {
   role: null,
   name: null,
   email: null,
+  phone: null,
   avatarUrl: null,
   isAuthenticated: false,
   isLoading: true,
@@ -39,6 +41,7 @@ export const authSlice = createSlice({
       role: action.payload.role,
       name: action.payload.name,
       email: action.payload.email,
+      phone: action.payload.phone,
       avatarUrl: action.payload.avatarUrl,
       isAuthenticated: true,
       isLoading: false,
@@ -51,17 +54,23 @@ export const authSlice = createSlice({
       role: null,
       name: null,
       email: null,
+      phone: null,
       avatarUrl: null,
       isAuthenticated: false,
       isLoading: false,
       mustChangePassword: false,
       tenants: [],
     }),
+    setProfile: (state, action: PayloadAction<{ name: string; phone: string | null }>) => ({
+      ...state,
+      name: action.payload.name,
+      phone: action.payload.phone,
+    }),
     setLoading: (state, action: PayloadAction<boolean>) => ({
       ...state,
       isLoading: action.payload,
     }),
-    setTenant: (state, action: PayloadAction<{ tenantId: string }>) => ({
+    setTenant: (state, action: PayloadAction<{ tenantId: string | null }>) => ({
       ...state,
       tenantId: action.payload.tenantId,
     }),
@@ -72,5 +81,5 @@ export const authSlice = createSlice({
   },
 })
 
-export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword } = authSlice.actions
+export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword, setProfile } = authSlice.actions
 export default authSlice.reducer

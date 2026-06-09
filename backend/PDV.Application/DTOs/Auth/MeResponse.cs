@@ -6,6 +6,7 @@ public record MeResponse(
     Guid Id,
     string Name,
     string Email,
+    string? Phone,
     string? AvatarUrl,
     Guid? LastTenantId,
     string Role,

@@ -6,6 +6,7 @@ interface MeApiResponse {
   id: string
   name: string
   email: string
+  phone: string | null
   avatarUrl: string | null
   lastTenantId: string | null
   role: UserRole
@@ -22,6 +23,7 @@ export const authService = {
       tenantId: data.lastTenantId,
       name: data.name,
       email: data.email,
+      phone: data.phone,
       avatarUrl: data.avatarUrl,
       role: data.role ?? 'Owner',
       settings: data.settings ? { theme: data.settings.theme } : null,

@@ -4,8 +4,10 @@ import Breadcrumbs from '../Breadcrumbs'
 import UserMenu from '../UserMenu'
 import { TOPBAR_HEIGHT } from '../../constants'
 import { TopBarProps } from './types'
+import { useNavigate } from 'react-router-dom'
 
 export default function TopBar({ isMobile, onMenuClick }: TopBarProps) {
+   const navigate = useNavigate()
   return (
     <Box
       component="header"
@@ -46,6 +48,7 @@ export default function TopBar({ isMobile, onMenuClick }: TopBarProps) {
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <IconButton
+          onClick={() => navigate('/configuracoes')}
           size="small"
           sx={{
             color: 'text.tertiary',

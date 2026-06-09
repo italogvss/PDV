@@ -178,7 +178,7 @@ public class AuthService(
 
         var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastTenantId,
+        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.AvatarUrl, user.LastTenantId,
             user.Role.ToString(), settings, tenants, mustChangePassword);
     }
 

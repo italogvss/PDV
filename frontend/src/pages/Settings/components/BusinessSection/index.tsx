@@ -14,7 +14,7 @@ import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import { DeleteOutlined } from '@mui/icons-material'
+import { BlockOutlined, DeleteOutlined } from '@mui/icons-material'
 
 export default function BusinessSection() {
   const [fantasyName, setFantasyName] = useState('Café da Esquina')
@@ -231,6 +231,47 @@ export default function BusinessSection() {
               slotProps={{htmlInput: { maxLength: 2 }}}
             />
           </Box>
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Zona de risco" subtitle="Ações irreversíveis. Tenha cuidado." danger>
+        <SettingRow
+          label="Resetar configurações"
+          sublabel="Volta tudo para o padrão. Dados de vendas não são afetados."
+        >
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{ minWidth: 200 }}
+          >
+            Resetar
+          </Button>
+        </SettingRow>
+
+        <SettingRow
+          label="Apagar todos os dados de teste"
+          sublabel="Remove vendas, clientes e produtos marcados como teste"
+        >
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{ minWidth: 200 }}
+          >
+            Apagar
+          </Button>
+        </SettingRow>
+
+        <SettingRow
+          label="Encerrar estabelecimento"
+          sublabel="Cancela a assinatura e remove o acesso permanentemente"
+        >
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<BlockOutlined />}
+            sx={{ minWidth: 200 }}
+          >
+            Encerrar conta
+          </Button>
         </SettingRow>
       </SettingCard>
     </Box>

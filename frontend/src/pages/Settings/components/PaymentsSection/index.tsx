@@ -1,25 +1,18 @@
-import { useState } from 'react'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import CheckIcon from '@mui/icons-material/Check'
+import CreditCardIcon from '@mui/icons-material/CreditCard'
+import PixIcon from '@mui/icons-material/Pix'
 import {
   Box,
-  Typography,
-  Switch,
-  Button,
   Chip,
-  IconButton,
-  Select,
-  MenuItem,
   FormControl,
+  MenuItem,
+  Select,
+  Switch,
   TextField,
-  Divider,
+  Typography
 } from '@mui/material'
-import PixIcon from '@mui/icons-material/Pix'
-import CreditCardIcon from '@mui/icons-material/CreditCard'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
-import AddIcon from '@mui/icons-material/Add'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
-import CheckIcon from '@mui/icons-material/Check'
+import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 
@@ -35,21 +28,8 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   { id: 'card_credit', label: 'Cartão crédito', subtitle: 'Taxa média 3,2%', icon: CreditCardIcon },
   { id: 'card_debit', label: 'Cartão débito', subtitle: 'Taxa 1,5%', icon: CreditCardIcon },
   { id: 'cash', label: 'Dinheiro', subtitle: 'Sem taxa', icon: AttachMoneyIcon },
-  { id: 'voucher', label: 'Voucher / VR', subtitle: 'Taxa média 5,5%', icon: LocalOfferOutlinedIcon },
-  { id: 'payment_link', label: 'Link de pagamento', subtitle: 'Taxa 3,9%', icon: OpenInNewOutlinedIcon },
-]
-
-interface Machine {
-  id: string
-  name: string
-  serial: string
-  battery: number
-  status: 'connected' | 'offline'
-}
-
-const MACHINES: Machine[] = [
-  { id: '1', name: 'Cielo LIO V3', serial: 'SN CL-V3-882041', battery: 84, status: 'connected' },
-  { id: '2', name: 'Stone Ton T2', serial: 'SN STN-T2-118903', battery: 62, status: 'connected' },
+  //{ id: 'voucher', label: 'Voucher / VR', subtitle: 'Taxa média 5,5%', icon: LocalOfferOutlinedIcon },
+  //{ id: 'payment_link', label: 'Link de pagamento', subtitle: 'Taxa 3,9%', icon: OpenInNewOutlinedIcon },
 ]
 
 export default function PaymentsSection() {
@@ -123,69 +103,6 @@ export default function PaymentsSection() {
             )
           })}
         </Box>
-      </SettingCard>
-
-      <SettingCard
-        title="Maquininhas conectadas"
-        subtitle={`${MACHINES.length} dispositivos pareados`}
-        action={
-          <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />}>
-            Parear nova
-          </Button>
-        }
-      >
-        {MACHINES.map((machine) => (
-          <Box
-            key={machine.id}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 4,
-              py: 2.5,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  bgcolor: 'surface.raised',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <CreditCardIcon sx={{ fontSize: 18, color: 'text.tertiary' }} />
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                  {machine.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {machine.serial} • bateria {machine.battery}%
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Chip
-                label="Conectada"
-                size="small"
-                sx={{
-                  bgcolor: 'success.soft',
-                  color: 'success.ink',
-                  fontWeight: 600,
-                  '&::before': { content: '"•  "' },
-                }}
-              />
-              <IconButton size="small">
-                <MoreHorizIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-        ))}
-        {MACHINES.length > 1 && <Divider />}
       </SettingCard>
 
       <SettingCard

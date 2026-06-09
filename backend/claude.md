@@ -41,6 +41,23 @@ Regras:
 
 ---
 
+## Banco local (Docker)
+
+MySQL roda via Docker (`docker-compose.yml`). **A porta no host é `3307`** (mapeado `3307:3306`), não 3306. O `AppDbContextFactory` faz `ServerVersion.AutoDetect`, então comandos `dotnet ef` **precisam conectar** ao banco — passar a connection string apontando para a porta certa:
+
+```bash
+# rodar da pasta /backend
+DB_CONNECTION_STRING="Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin" \
+  dotnet ef migrations add NomeDaMigration -p PDV.Infrastructure -s PDV.Api
+
+DB_CONNECTION_STRING="Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin" \
+  dotnet ef database update -p PDV.Infrastructure -s PDV.Api
+```
+
+Credenciais em `.env` na raiz: `DB_NAME=pdv-ultra`, `DB_ROOT_PASSWORD=admin`, user `root`.
+
+---
+
 ## Autenticação
 
 JWT em **cookie HttpOnly** (`access_token`). Refresh token em cookie separado (`refresh_token`).
