@@ -6,8 +6,6 @@ import {
   Chip,
   TextField,
   InputAdornment,
-  Tab,
-  Tabs,
   CircularProgress,
   Typography,
 } from '@mui/material'
@@ -26,9 +24,7 @@ import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import AddEmployeeModal from './components/AddEmployeeModal'
 import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
-import PermissionsTab from './components/PermissionsTab'
 import type { Employee } from '../../types/employee.types'
-import { EMPLOYEE_TYPE_LABELS } from '../../types/employee.types'
 import type { AvatarColorKey } from './types'
 import { formatBRL } from '../../utils/currency'
 
@@ -48,7 +44,6 @@ function getInitials(name: string): string {
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('')
-  const [tab, setTab] = useState(0)
   const [addOpen, setAddOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
 
@@ -59,7 +54,7 @@ export default function EmployeesPage() {
     const total = employees.length
     const active = employees.filter((e) => e.isActive).length
     const inactive = total - active
-    const managers = employees.filter((e) => e.employeeType === 'Manager').length
+    const managers = employees.filter((e) => e.roleName === 'Gerente').length
     return { total, active, inactive, managers }
   }, [employees])
 
@@ -107,12 +102,12 @@ export default function EmployeesPage() {
         ),
       },
       {
-        field: 'employeeType',
-        headerName: 'Tipo',
+        field: 'roleName',
+        headerName: 'Papel',
         width: 130,
         renderCell: ({ row }) => (
           <Typography variant="body2" color="text.secondary">
-            {EMPLOYEE_TYPE_LABELS[row.employeeType]}
+            {row.roleName}
           </Typography>
         ),
       },
@@ -178,16 +173,7 @@ export default function EmployeesPage() {
         <PageKpiCard icon={PersonOffOutlined} label="Inativos" value={kpis.inactive} />
       </PageKpiGrid>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          <Tab label="Equipe" />
-          <Tab label="Permissões" />
-        </Tabs>
-      </Box>
-
-      {tab === 0 && (
-        <Card sx={{ overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden' }}>
           <Box
             sx={{
               display: 'flex',
@@ -261,9 +247,6 @@ export default function EmployeesPage() {
             />
           )}
         </Card>
-      )}
-
-      {tab === 1 && <PermissionsTab />}
 
       <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} />
 

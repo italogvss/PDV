@@ -1,4 +1,26 @@
-export type EmployeeType = 'Manager' | 'Employee'
+export interface TenantRole {
+  id: string
+  name: string
+  description?: string
+  isDefault: boolean
+  memberCount: number
+  permissions: string[]
+}
+
+export interface Employee {
+  id: string
+  userId: string
+  name: string
+  email: string
+  roleId: string
+  roleName: string
+  position: string
+  salary?: number
+  phone?: string
+  avatarUrl?: string
+  isActive: boolean
+  createdAt: string
+}
 
 export type Permission =
   | 'SellProducts'
@@ -10,36 +32,12 @@ export type Permission =
   | 'ViewReports'
   | 'ManageEmployees'
 
-export interface Employee {
-  id: string
-  userId: string
-  name: string
-  email: string
-  employeeType: EmployeeType
-  position: string
-  salary?: number
-  phone?: string
-  avatarPath?: string
-  isActive: boolean
-  createdAt: string
-}
-
-export interface EmployeePermissions {
-  employeeType: EmployeeType
-  permissions: Permission[]
-}
-
-export const EMPLOYEE_TYPE_LABELS: Record<EmployeeType, string> = {
-  Manager: 'Gerente',
-  Employee: 'Funcionário',
-}
-
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  SellProducts: 'Registrar vendas',
+  SellProducts: 'Realizar vendas',
   CancelSales: 'Cancelar vendas',
-  ViewStock: 'Ver estoque',
-  ManageStock: 'Ajustar estoque',
-  ViewExpenses: 'Ver despesas',
+  ViewStock: 'Visualizar estoque',
+  ManageStock: 'Gerenciar estoque',
+  ViewExpenses: 'Visualizar despesas',
   ManageExpenses: 'Gerenciar despesas',
   ViewReports: 'Ver relatórios',
   ManageEmployees: 'Gerenciar funcionários',
@@ -60,14 +58,14 @@ export interface CreateEmployeePayload {
   name: string
   email: string
   temporaryPassword: string
-  employeeType: EmployeeType
+  roleId: string
   position: string
   salary?: number
   phone?: string
 }
 
 export interface UpdateEmployeePayload {
-  employeeType: EmployeeType
+  roleId: string
   position: string
   salary?: number
   phone?: string

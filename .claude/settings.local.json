@@ -37,7 +37,8 @@
       "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\Persistence\\\\Configurations\\\\TenantConfiguration.cs\" -Force)",
       "Bash(Remove-Item \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\\\\PDV.Infrastructure\\\\obj\\\\Debug\\\\net10.0\\\\PDV.Infrastructure.csproj.CoreCompileInputs.cache\" -Force -ErrorAction SilentlyContinue)",
       "Bash(Get-ChildItem -Recurse -Directory -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -First 30 FullName)"
+      "Bash(Select-Object -First 30 FullName)",
+      "PowerShell(cd \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\"; $env:DB_CONNECTION_STRING = \"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\"; dotnet ef database update -p PDV.Infrastructure -s PDV.Api 2>&1)"
     ]
   }
 }

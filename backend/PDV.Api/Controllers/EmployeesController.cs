@@ -53,18 +53,4 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         await service.ReactivateAsync(id);
         return NoContent();
     }
-
-    [HttpGet("permissions/{employeeType}")]
-    public async Task<IActionResult> GetPermissions(string employeeType)
-    {
-        var result = await service.GetPermissionsAsync(employeeType);
-        return Ok(result);
-    }
-
-    [HttpPut("permissions")]
-    public async Task<IActionResult> SetPermissions([FromBody] EmployeePermissionsRequest request)
-    {
-        var result = await service.SetPermissionsAsync(request);
-        return Ok(result);
-    }
 }

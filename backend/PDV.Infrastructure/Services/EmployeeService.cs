@@ -11,7 +11,7 @@ namespace PDV.Infrastructure.Services;
 
 public class EmployeeService(
     IEmployeeRepository employeeRepository,
-    IEmployeeTypePermissionRepository permissionRepository,
+    ITenantRoleRepository roleRepository,
     IUserRepository userRepository,
     ITenantContext tenantContext,
     IValidator<CreateEmployeeRequest> createValidator,
@@ -39,14 +39,15 @@ public class EmployeeService(
         if (existing is not null)
             throw new BusinessException("Já existe um usuário com este e-mail.");
 
-        if (!Enum.TryParse<EmployeeType>(request.EmployeeType, out var employeeType))
-            throw new BusinessException("EmployeeType inválido.");
+        var role = await roleRepository.GetByIdAsync(request.RoleId)
+            ?? throw new BusinessException("Papel não encontrado.");
 
         var user = new User
         {
             Email = request.Email,
             Name = request.Name,
             Role = UserRole.Employee,
+            LastTenantId = tenantContext.TenantId,
         };
 
         user.LocalAuth = new LocalAuth
@@ -62,13 +63,26 @@ public class EmployeeService(
             Theme = Theme.Light,
         };
 
+        // Vincula o usuário ao tenant atual. Sem este UserTenant o login não resolve
+        // o tenantId (derivado de UserTenants) e o funcionário nunca acessa o tenant.
+        user.UserTenants =
+        [
+            new UserTenant
+            {
+                UserId = user.Id,
+                TenantId = tenantContext.TenantId,
+                Role = UserRole.Employee,
+                JoinedAt = DateTime.UtcNow,
+            }
+        ];
+
         await userRepository.AddAsync(user);
 
         var employee = new Employee
         {
             TenantId = tenantContext.TenantId,
             UserId = user.Id,
-            EmployeeType = employeeType,
+            RoleId = role.Id,
             Position = request.Position,
             Salary = request.Salary,
             Phone = request.Phone,
@@ -88,10 +102,10 @@ public class EmployeeService(
         var employee = await employeeRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
 
-        if (!Enum.TryParse<EmployeeType>(request.EmployeeType, out var employeeType))
-            throw new BusinessException("EmployeeType inválido.");
+        var role = await roleRepository.GetByIdAsync(request.RoleId)
+            ?? throw new BusinessException("Papel não encontrado.");
 
-        employee.EmployeeType = employeeType;
+        employee.RoleId = role.Id;
         employee.Position = request.Position;
         employee.Salary = request.Salary;
         employee.Phone = request.Phone;
@@ -109,12 +123,24 @@ public class EmployeeService(
         var employee = await employeeRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
 
-        employee.IsActive = false;
-        employee.User.IsActive = false;
-        employee.UpdatedAt = DateTime.UtcNow;
-        employee.User.UpdatedAt = DateTime.UtcNow;
+        // Carrega o usuário com seus vínculos de tenant para revogar o acesso apenas
+        // a ESTE tenant — sem desativar a conta global (o usuário pode pertencer a outros).
+        var user = await userRepository.GetByIdAsync(employee.UserId)
+            ?? throw new NotFoundException("Usuário do funcionário não encontrado.");
 
+        employee.IsActive = false;
+        employee.UpdatedAt = DateTime.UtcNow;
         await employeeRepository.UpdateAsync(employee);
+
+        var membership = user.UserTenants.FirstOrDefault(ut => ut.TenantId == tenantContext.TenantId);
+        if (membership is not null)
+            user.UserTenants.Remove(membership);
+
+        if (user.LastTenantId == tenantContext.TenantId)
+            user.LastTenantId = user.UserTenants.FirstOrDefault()?.TenantId;
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
     }
 
     public async Task ReactivateAsync(Guid id)
@@ -122,46 +148,32 @@ public class EmployeeService(
         var employee = await employeeRepository.GetByIdAnyStatusAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
 
+        var user = await userRepository.GetByIdAsync(employee.UserId)
+            ?? throw new NotFoundException("Usuário do funcionário não encontrado.");
+
         employee.IsActive = true;
-        employee.User.IsActive = true;
         employee.UpdatedAt = DateTime.UtcNow;
-        employee.User.UpdatedAt = DateTime.UtcNow;
-
         await employeeRepository.UpdateAsync(employee);
-    }
 
-    public async Task<EmployeePermissionsResponse> GetPermissionsAsync(string employeeType)
-    {
-        if (!Enum.TryParse<EmployeeType>(employeeType, out var type))
-            throw new BusinessException("EmployeeType inválido.");
-
-        var permissions = await permissionRepository.GetByTenantAndTypeAsync(tenantContext.TenantId, type);
-
-        return new EmployeePermissionsResponse(
-            type.ToString(),
-            permissions.Select(p => p.Permission.ToString()));
-    }
-
-    public async Task<EmployeePermissionsResponse> SetPermissionsAsync(EmployeePermissionsRequest request)
-    {
-        if (!Enum.TryParse<EmployeeType>(request.EmployeeType, out var type))
-            throw new BusinessException("EmployeeType inválido.");
-
-        var parsedPermissions = new List<Permission>();
-        foreach (var p in request.Permissions)
+        // Restaura o vínculo do usuário com este tenant (removido na desativação).
+        if (user.UserTenants.All(ut => ut.TenantId != tenantContext.TenantId))
         {
-            if (!Enum.TryParse<Permission>(p, out var permission))
-                throw new BusinessException($"Permissão inválida: '{p}'.");
-            parsedPermissions.Add(permission);
+            user.UserTenants.Add(new UserTenant
+            {
+                UserId = user.Id,
+                TenantId = tenantContext.TenantId,
+                Role = UserRole.Employee,
+                JoinedAt = DateTime.UtcNow,
+            });
         }
 
-        await permissionRepository.ReplaceAsync(tenantContext.TenantId, type, parsedPermissions);
-
-        return new EmployeePermissionsResponse(type.ToString(), parsedPermissions.Select(p => p.ToString()));
+        user.LastTenantId = tenantContext.TenantId;
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
     }
 
     private static EmployeeResponse Map(Employee e) =>
         new(e.Id, e.UserId, e.User.Name, e.User.Email,
-            e.EmployeeType.ToString(), e.Position,
+            e.RoleId, e.Role.Name, e.Position,
             e.Salary, e.Phone, e.AvatarUrl, e.IsActive, e.CreatedAt);
 }

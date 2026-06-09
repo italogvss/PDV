@@ -16,6 +16,7 @@ namespace PDV.Infrastructure.Services;
 public class TenantService(
     ITenantRepository tenantRepository,
     IUserRepository userRepository,
+    ITenantRoleRepository roleRepository,
     IConfiguration configuration) : ITenantService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -71,6 +72,8 @@ public class TenantService(
 
         await tenantRepository.AddAsync(tenant);
 
+        await roleRepository.AddRangeAsync(CreateDefaultRoles(tenant.Id));
+
         user.LastTenantId = tenant.Id;
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
@@ -79,6 +82,55 @@ public class TenantService(
         var response    = new CreateTenantResponse(tenant.Id, tenant.Settings.FantasyName);
 
         return (response, accessToken);
+    }
+
+    private static IEnumerable<TenantRole> CreateDefaultRoles(Guid tenantId)
+    {
+        return
+        [
+            new TenantRole
+            {
+                TenantId = tenantId,
+                Name = "Gerente",
+                Description = "Acesso completo ao sistema.",
+                IsDefault = true,
+                Permissions =
+                [
+                    new() { Permission = Permission.SellProducts },
+                    new() { Permission = Permission.CancelSales },
+                    new() { Permission = Permission.ViewStock },
+                    new() { Permission = Permission.ManageStock },
+                    new() { Permission = Permission.ViewExpenses },
+                    new() { Permission = Permission.ManageExpenses },
+                    new() { Permission = Permission.ViewReports },
+                    new() { Permission = Permission.ManageEmployees },
+                ],
+            },
+            new TenantRole
+            {
+                TenantId = tenantId,
+                Name = "Atendente",
+                Description = "Realiza vendas e consulta estoque.",
+                IsDefault = true,
+                Permissions =
+                [
+                    new() { Permission = Permission.SellProducts },
+                    new() { Permission = Permission.ViewStock },
+                ],
+            },
+            new TenantRole
+            {
+                TenantId = tenantId,
+                Name = "Estoquista",
+                Description = "Gerencia o estoque.",
+                IsDefault = true,
+                Permissions =
+                [
+                    new() { Permission = Permission.ViewStock },
+                    new() { Permission = Permission.ManageStock },
+                ],
+            },
+        ];
     }
 
     private static string? StripMask(string? value) =>

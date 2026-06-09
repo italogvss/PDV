@@ -10,7 +10,7 @@ namespace PDV.Infrastructure.Services;
 public class PermissionService(
     IHttpContextAccessor accessor,
     IEmployeeRepository employeeRepository,
-    IEmployeeTypePermissionRepository permissionRepository,
+    ITenantRoleRepository roleRepository,
     ITenantContext tenantContext) : IPermissionService
 {
     public async Task RequireAsync(Permission permission)
@@ -29,8 +29,7 @@ public class PermissionService(
         var employee = await employeeRepository.GetByUserIdAsync(userId, tenantContext.TenantId)
             ?? throw new UnauthorizedException("Funcionário não encontrado.");
 
-        var hasPermission = await permissionRepository.HasPermissionAsync(
-            tenantContext.TenantId, employee.EmployeeType, permission);
+        var hasPermission = await roleRepository.HasPermissionAsync(employee.RoleId, permission);
 
         if (!hasPermission)
             throw new UnauthorizedException("Sem permissão para realizar esta operação.");

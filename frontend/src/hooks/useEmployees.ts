@@ -1,18 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { employeeService } from '../services/employee.service'
-import type {
-  EmployeeType,
-  Permission,
-  CreateEmployeePayload,
-  UpdateEmployeePayload,
-} from '../types/employee.types'
+import type { CreateEmployeePayload, UpdateEmployeePayload } from '../types/employee.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 
 const QUERY_KEY = ['employees'] as const
-const PERMISSIONS_KEY = (type: EmployeeType) => ['employee-permissions', type] as const
 
-export function useEmployees(page = 1, pageSize = 20) {
+export function useEmployees(page = 1, pageSize = 50) {
   return useQuery({
     queryKey: [...QUERY_KEY, page, pageSize],
     queryFn: () => employeeService.getAll(page, pageSize),
@@ -77,33 +71,5 @@ export function useReactivateEmployee() {
       showToast('Funcionário reativado.', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao reativar funcionário.'),
-  })
-}
-
-export function useEmployeePermissions(employeeType: EmployeeType) {
-  return useQuery({
-    queryKey: PERMISSIONS_KEY(employeeType),
-    queryFn: () => employeeService.getPermissions(employeeType),
-  })
-}
-
-export function useSetEmployeePermissions() {
-  const queryClient = useQueryClient()
-  const showToast = useToast()
-  const handleError = useApiError()
-
-  return useMutation({
-    mutationFn: ({
-      employeeType,
-      permissions,
-    }: {
-      employeeType: EmployeeType
-      permissions: Permission[]
-    }) => employeeService.setPermissions(employeeType, permissions),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: PERMISSIONS_KEY(data.employeeType) })
-      showToast('Permissões salvas com sucesso!', 'success')
-    },
-    onError: (error) => handleError(error, 'Erro ao salvar permissões.'),
   })
 }

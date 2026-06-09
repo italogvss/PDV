@@ -19,7 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ExternalAuth> ExternalAuths => Set<ExternalAuth>();
     public DbSet<LocalAuth> LocalAuths => Set<LocalAuth>();
     public DbSet<Employee> Employees => Set<Employee>();
-    public DbSet<EmployeeTypePermission> EmployeeTypePermissions => Set<EmployeeTypePermission>();
+    public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
+    public DbSet<TenantRolePermission> TenantRolePermissions => Set<TenantRolePermission>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Service> Services => Set<Service>();
@@ -46,8 +47,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         modelBuilder.Entity<Employee>()
             .HasQueryFilter(e => e.TenantId == tenantContext.TenantId && e.IsActive);
 
-        modelBuilder.Entity<EmployeeTypePermission>()
-            .HasQueryFilter(p => p.TenantId == tenantContext.TenantId && p.IsActive);
+        modelBuilder.Entity<TenantRole>()
+            .HasQueryFilter(r => r.TenantId == tenantContext.TenantId && r.IsActive);
 
         modelBuilder.Entity<Customer>()
             .HasQueryFilter(c => c.TenantId == tenantContext.TenantId && c.IsActive);

@@ -1,7 +1,7 @@
 namespace PDV.Application.DTOs.Employees;
 
 public record UpdateEmployeeRequest(
-    string EmployeeType,
+    Guid RoleId,
     string Position,
     decimal? Salary,
     string? Phone);

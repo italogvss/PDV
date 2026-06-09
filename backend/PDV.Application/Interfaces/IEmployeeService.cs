@@ -11,6 +11,4 @@ public interface IEmployeeService
     Task<EmployeeResponse> UpdateAsync(Guid id, UpdateEmployeeRequest request);
     Task DeactivateAsync(Guid id);
     Task ReactivateAsync(Guid id);
-    Task<EmployeePermissionsResponse> GetPermissionsAsync(string employeeType);
-    Task<EmployeePermissionsResponse> SetPermissionsAsync(EmployeePermissionsRequest request);
 }

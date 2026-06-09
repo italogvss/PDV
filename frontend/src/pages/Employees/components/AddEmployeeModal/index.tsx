@@ -12,6 +12,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateEmployee } from '../../../../hooks/useEmployees'
+import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
@@ -22,9 +23,8 @@ const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
   email: z.string().email('E-mail inválido'),
   temporaryPassword: z.string().min(6, 'A senha temporária deve ter no mínimo 6 caracteres'),
-  employeeType: z.enum(['Manager', 'Employee']),
+  roleId: z.string().min(1, 'Selecione um papel'),
   position: z.string().min(1, 'Cargo é obrigatório').max(100),
-  // 0 = não informado (a máscara monetária sempre devolve número).
   salary: z.number().min(0),
   phone: z.string().max(20).optional().or(z.literal('')),
 })
@@ -35,7 +35,7 @@ const defaultValues: AddEmployeeForm = {
   name: '',
   email: '',
   temporaryPassword: '',
-  employeeType: 'Employee',
+  roleId: '',
   position: '',
   salary: 0,
   phone: '',
@@ -43,6 +43,7 @@ const defaultValues: AddEmployeeForm = {
 
 export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const createEmployee = useCreateEmployee()
+  const { data: roles, isLoading: rolesLoading } = useTeamRoles()
   const isPending = createEmployee.isPending
 
   const {
@@ -61,7 +62,7 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
       name: data.name,
       email: data.email,
       temporaryPassword: data.temporaryPassword,
-      employeeType: data.employeeType,
+      roleId: data.roleId,
       position: data.position,
       salary: data.salary ? data.salary : undefined,
       phone: data.phone || undefined,
@@ -129,18 +130,20 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Tipo" required />
+              <FieldLabel label="Papel" required />
               <Controller
-                name="employeeType"
+                name="roleId"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.employeeType}>
-                    <Select {...field}>
-                      <MenuItem value="Manager">Gerente</MenuItem>
-                      <MenuItem value="Employee">Funcionário</MenuItem>
+                  <FormControl fullWidth error={!!errors.roleId}>
+                    <Select {...field} displayEmpty disabled={rolesLoading}>
+                      <MenuItem value="" disabled>Selecione...</MenuItem>
+                      {roles?.map((r) => (
+                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                      ))}
                     </Select>
-                    {errors.employeeType && (
-                      <FormHelperText>{errors.employeeType.message}</FormHelperText>
+                    {errors.roleId && (
+                      <FormHelperText>{errors.roleId.message}</FormHelperText>
                     )}
                   </FormControl>
                 )}

@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
 import { useUpdateEmployee } from '../../../../hooks/useEmployees'
+import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
@@ -20,9 +21,8 @@ import FormModalActions from '../../../../components/FormModalActions'
 import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
-  employeeType: z.enum(['Manager', 'Employee']),
+  roleId: z.string().min(1, 'Selecione um papel'),
   position: z.string().min(1, 'Cargo é obrigatório').max(100),
-  // 0 = não informado (a máscara monetária sempre devolve número).
   salary: z.number().min(0),
   phone: z.string().max(20).optional().or(z.literal('')),
 })
@@ -31,6 +31,7 @@ type EditEmployeeForm = z.infer<typeof schema>
 
 export default function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
   const updateEmployee = useUpdateEmployee()
+  const { data: roles, isLoading: rolesLoading } = useTeamRoles()
   const isPending = updateEmployee.isPending
 
   const {
@@ -42,7 +43,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
   } = useForm<EditEmployeeForm>({
     resolver: zodResolver(schema),
     defaultValues: {
-      employeeType: employee.employeeType,
+      roleId: employee.roleId,
       position: employee.position,
       salary: employee.salary ?? 0,
       phone: employee.phone ?? '',
@@ -52,7 +53,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
   useEffect(() => {
     if (open) {
       reset({
-        employeeType: employee.employeeType,
+        roleId: employee.roleId,
         position: employee.position,
         salary: employee.salary ?? 0,
         phone: employee.phone ?? '',
@@ -64,7 +65,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     await updateEmployee.mutateAsync({
       id: employee.id,
       payload: {
-        employeeType: data.employeeType,
+        roleId: data.roleId,
         position: data.position,
         salary: data.salary ? data.salary : undefined,
         phone: data.phone || undefined,
@@ -96,18 +97,20 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
         >
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Tipo" required />
+              <FieldLabel label="Papel" required />
               <Controller
-                name="employeeType"
+                name="roleId"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.employeeType}>
-                    <Select {...field}>
-                      <MenuItem value="Manager">Gerente</MenuItem>
-                      <MenuItem value="Employee">Funcionário</MenuItem>
+                  <FormControl fullWidth error={!!errors.roleId}>
+                    <Select {...field} displayEmpty disabled={rolesLoading}>
+                      <MenuItem value="" disabled>Selecione...</MenuItem>
+                      {roles?.map((r) => (
+                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                      ))}
                     </Select>
-                    {errors.employeeType && (
-                      <FormHelperText>{errors.employeeType.message}</FormHelperText>
+                    {errors.roleId && (
+                      <FormHelperText>{errors.roleId.message}</FormHelperText>
                     )}
                   </FormControl>
                 )}

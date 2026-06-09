@@ -11,6 +11,7 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
     public async Task<Employee?> GetByIdAsync(Guid id) =>
         await context.Employees
             .Include(e => e.User)
+            .Include(e => e.Role)
             .FirstOrDefaultAsync(e => e.Id == id);
 
     public async Task<Employee?> GetByIdAnyStatusAsync(Guid id) =>
@@ -18,11 +19,13 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
         await context.Employees
             .IgnoreQueryFilters()
             .Include(e => e.User)
+            .Include(e => e.Role)
             .FirstOrDefaultAsync(e => e.Id == id && e.TenantId == tenantContext.TenantId);
 
     public async Task<Employee?> GetByUserIdAsync(Guid userId, Guid tenantId) =>
         await context.Employees
             .Include(e => e.User)
+            .Include(e => e.Role)
             // QueryFilter global já filtra por TenantId — parâmetro tenantId não precisa de filtro manual
             .FirstOrDefaultAsync(e => e.UserId == userId);
 
@@ -31,6 +34,7 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
     {
         var query = context.Employees
             .Include(e => e.User)
+            .Include(e => e.Role)
             .OrderBy(e => e.User.Name)
             .AsQueryable();
 

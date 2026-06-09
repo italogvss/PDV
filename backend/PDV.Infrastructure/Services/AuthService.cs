@@ -102,16 +102,7 @@ public class AuthService(
             }
         }
 
-        var tenants = user.UserTenants.ToList();
-        Guid? tenantId = null;
-
-        if (tenants.Count > 0)
-        {
-            var active = user.LastTenantId.HasValue
-                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
-                : tenants[0];
-            tenantId = active.TenantId;
-        }
+        var (tenantId, role) = ResolveActiveTenant(user);
 
         var rawRefreshToken = GenerateRefreshToken();
         user.RefreshToken = HashRefreshToken(rawRefreshToken);
@@ -119,7 +110,7 @@ public class AuthService(
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
 
-        return (GenerateToken(user.Id, tenantId, user.Name, user.Role.ToString()), rawRefreshToken);
+        return (GenerateToken(user.Id, tenantId, user.Name, role), rawRefreshToken);
     }
 
     public async Task<(string AccessToken, string RefreshToken)> RefreshAsync(string refreshToken)
@@ -131,18 +122,7 @@ public class AuthService(
         if (user.RefreshTokenExpiry is null || user.RefreshTokenExpiry < DateTime.UtcNow)
             throw new UnauthorizedException("Refresh token expirado.");
 
-        var tenants = user.UserTenants.ToList();
-        Guid? tenantId = null;
-        var role = UserRole.Owner.ToString();
-
-        if (tenants.Count > 0)
-        {
-            var active = user.LastTenantId.HasValue
-                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
-                : tenants[0];
-            tenantId = active.TenantId;
-            role = active.Role.ToString();
-        }
+        var (tenantId, role) = ResolveActiveTenant(user);
 
         var newRawRefreshToken = GenerateRefreshToken();
         user.RefreshToken = HashRefreshToken(newRawRefreshToken);
@@ -221,18 +201,7 @@ public class AuthService(
         if (!BCryptNet.Verify(password, localAuth.PasswordHash))
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        var tenants = user.UserTenants.ToList();
-        Guid? tenantId = null;
-        var role = user.Role.ToString();
-
-        if (tenants.Count > 0)
-        {
-            var active = user.LastTenantId.HasValue
-                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
-                : tenants[0];
-            tenantId = active.TenantId;
-            role = active.Role.ToString();
-        }
+        var (tenantId, role) = ResolveActiveTenant(user);
 
         var rawRefreshToken = GenerateRefreshToken();
         user.RefreshToken = HashRefreshToken(rawRefreshToken);
@@ -264,6 +233,22 @@ public class AuthService(
 
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
+    }
+
+    // Resolve o tenant ativo e o papel (role) do token a partir dos vínculos do usuário.
+    // O papel vem SEMPRE do UserTenant do tenant ativo — nunca de User.Role (global).
+    // Sem tenant ativo, o papel é vazio: nunca assumir "Owner" por padrão.
+    private static (Guid? TenantId, string Role) ResolveActiveTenant(User user)
+    {
+        var tenants = user.UserTenants.ToList();
+        if (tenants.Count == 0)
+            return (null, string.Empty);
+
+        var active = user.LastTenantId.HasValue
+            ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
+            : tenants[0];
+
+        return (active.TenantId, active.Role.ToString());
     }
 
     private static string GenerateRefreshToken()
