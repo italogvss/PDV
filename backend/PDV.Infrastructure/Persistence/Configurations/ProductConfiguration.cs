@@ -14,6 +14,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.NCM).HasMaxLength(10);
         builder.Property(p => p.Price).HasColumnType("decimal(10,2)");
         builder.Property(p => p.PurchasePrice).HasColumnType("decimal(10,2)");
+        builder.Property(p => p.ImageUrl).HasMaxLength(500);
 
         // Código de barras único por tenant
         builder.HasIndex(p => new { p.TenantId, p.Barcode }).IsUnique();

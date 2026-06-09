@@ -27,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<AppointmentServiceItem> AppointmentServiceItems => Set<AppointmentServiceItem>();
+    public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,5 +65,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<Appointment>()
             .HasQueryFilter(a => a.TenantId == tenantContext.TenantId && a.IsActive);
+
+        modelBuilder.Entity<MediaFile>()
+            .HasQueryFilter(m => m.TenantId == tenantContext.TenantId && m.IsActive);
     }
 }

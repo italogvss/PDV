@@ -2,7 +2,9 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Users;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Infrastructure.Persistence;
 
@@ -10,6 +12,7 @@ namespace PDV.Infrastructure.Services;
 
 public class UserService(
     AppDbContext context,
+    IStorageService storage,
     IValidator<UpdateUserRequest> updateValidator) : IUserService
 {
     public async Task<PaginatedResponse<UserResponse>> GetAllAsync(int page, int pageSize, string? search)
@@ -27,14 +30,15 @@ public class UserService(
             .ToListAsync();
 
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        return new PaginatedResponse<UserResponse>(users.Select(ToResponse), page, pageSize, totalCount, totalPages);
+        var mapped = await Task.WhenAll(users.Select(ToResponse));
+        return new PaginatedResponse<UserResponse>(mapped, page, pageSize, totalCount, totalPages);
     }
 
     public async Task<UserResponse> GetByIdAsync(Guid id)
     {
         var user = await context.Users.FindAsync(id)
             ?? throw new NotFoundException("Usuário não encontrado.");
-        return ToResponse(user);
+        return await ToResponse(user);
     }
 
     public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
@@ -48,9 +52,11 @@ public class UserService(
         user.Phone = request.Phone;
         user.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
-        return ToResponse(user);
+        return await ToResponse(user);
     }
 
-    private static UserResponse ToResponse(PDV.Domain.Entities.User u) =>
-        new(u.Id, u.Name, u.Email, u.Phone, u.ImageUrl, u.CreatedAt);
+    private async Task<UserResponse> ToResponse(PDV.Domain.Entities.User u) =>
+        new(u.Id, u.Name, u.Email, u.Phone,
+            await storage.ResolveReadUrlAsync(u.ImageUrl, MediaCategory.Profile, u.UpdatedAt),
+            u.CreatedAt);
 }

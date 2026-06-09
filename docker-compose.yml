@@ -23,6 +23,25 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # -- Storage de objetos MinIO (S3-compativel) ---------------
+  # API S3 na 9000, console web na 9001. O backend (container) acessa via
+  # minio:9000; o navegador (host) acessa as presigned URLs via localhost:9000.
+  minio:
+    image: minio/minio:latest
+    container_name: pdv-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # Libera o preflight CORS do navegador (PUT/GET direto do frontend no MinIO).
+      MINIO_API_CORS_ALLOW_ORIGIN: ${FRONTEND_URL}
+    ports:
+      - "9000:9000"            # API S3 (presigned URLs apontam para localhost:9000)
+      - "9001:9001"            # Console web (http://localhost:9001)
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
   # -- API .NET (estagio dev: SDK + dotnet watch + vsdbg) -----
   api:
     build:
@@ -54,6 +73,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     restart: unless-stopped
 
   # -- Frontend React (estagio dev: Vite dev server com HMR) --
@@ -82,3 +103,4 @@ services:
 
 volumes:
   mysql_data:
+  minio_data:

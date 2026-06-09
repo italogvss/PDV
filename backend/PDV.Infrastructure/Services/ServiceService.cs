@@ -2,8 +2,10 @@ using FluentValidation;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.ServiceCategories;
 using PDV.Application.DTOs.Services;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
 
@@ -12,6 +14,7 @@ namespace PDV.Infrastructure.Services;
 public class ServiceService(
     IServiceRepository repository,
     ITenantContext tenantContext,
+    IStorageService storage,
     IValidator<CreateServiceRequest> createValidator,
     IValidator<UpdateServiceRequest> updateValidator) : IServiceService
 {
@@ -23,14 +26,15 @@ public class ServiceService(
     {
         var (data, totalCount) = await repository.GetAllAsync(page, pageSize, name, categoryId, sortBy, sortOrder);
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        return new PaginatedResponse<ServiceResponse>(data.Select(Map), page, pageSize, totalCount, totalPages);
+        var mapped = await Task.WhenAll(data.Select(Map));
+        return new PaginatedResponse<ServiceResponse>(mapped, page, pageSize, totalCount, totalPages);
     }
 
     public async Task<ServiceResponse> GetByIdAsync(Guid id)
     {
         var service = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Serviço não encontrado.");
-        return Map(service);
+        return await Map(service);
     }
 
     public async Task<ServiceResponse> CreateAsync(CreateServiceRequest request)
@@ -52,7 +56,7 @@ public class ServiceService(
 
         var created = await repository.GetByIdAsync(service.Id)
             ?? throw new NotFoundException("Serviço não encontrado após criação.");
-        return Map(created);
+        return await Map(created);
     }
 
     public async Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request)
@@ -73,7 +77,7 @@ public class ServiceService(
 
         var updated = await repository.GetByIdAsync(service.Id)
             ?? throw new NotFoundException("Serviço não encontrado após atualização.");
-        return Map(updated);
+        return await Map(updated);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -88,6 +92,8 @@ public class ServiceService(
     private static ServiceCategoryResponse? MapCategory(ServiceCategory? c) =>
         c is null ? null : new(c.Id, c.Name, c.Color);
 
-    private static ServiceResponse Map(Service s) =>
-        new(s.Id, s.Name, s.Description, s.DurationMinutes, s.Price, s.IsActive, s.CreatedAt, MapCategory(s.Category));
+    private async Task<ServiceResponse> Map(Service s) =>
+        new(s.Id, s.Name, s.Description, s.DurationMinutes, s.Price, s.IsActive, s.CreatedAt,
+            MapCategory(s.Category),
+            await storage.ResolveReadUrlAsync(s.ImageUrl, MediaCategory.Service, s.UpdatedAt));
 }

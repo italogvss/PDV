@@ -6,28 +6,29 @@ import {
   Button,
   Typography,
   Chip,
-  IconButton,
   InputAdornment,
   Skeleton,
 } from '@mui/material'
-import CloseRounded from '@mui/icons-material/CloseRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
 import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
-import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { formatBRL } from '../../../../utils/currency'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
 import { useProductCategories } from '../../../../hooks/useProductCategories'
+import { useUploadImage, useRemoveImage } from '../../../../hooks/useMediaUpload'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
 import FormModalActions from '../../../../components/FormModalActions'
+import ImageUpload from '../../../../components/ImageUpload'
 import type { ProductModalProps } from './types'
+
+const PRODUCTS_QUERY_KEY = ['products'] as const
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100),
@@ -79,11 +80,20 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const isEditing = !!product
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
+  const uploadImage = useUploadImage('Product', PRODUCTS_QUERY_KEY)
+  const removeImage = useRemoveImage('Product', PRODUCTS_QUERY_KEY)
   const { data: categories = [], isLoading: isLoadingCategories } = useProductCategories()
-  const isPending = createProduct.isPending || updateProduct.isPending
+  const isPending =
+    createProduct.isPending ||
+    updateProduct.isPending ||
+    uploadImage.isPending ||
+    removeImage.isPending
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Imagem: no cadastro o upload é adiado até o produto existir (precisa do id).
+  // Guardamos o arquivo escolhido + um preview local; o PUT acontece no submit.
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [localPreview, setLocalPreview] = useState<string | null>(null)
+  const [removeExisting, setRemoveExisting] = useState(false)
 
   const {
     register,
@@ -125,30 +135,46 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
       } else {
         reset(buildDefaults())
       }
-      setImagePreview(null)
+      setSelectedFile(null)
+      setLocalPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      setRemoveExisting(false)
     }
   }, [open, product, reset])
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setImagePreview(url)
+  const handleImageSelect = (file: File) => {
+    setSelectedFile(file)
+    setRemoveExisting(false)
+    setLocalPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
   }
 
-  const handleRemoveImage = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setImagePreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  const handleRemoveImage = () => {
+    setSelectedFile(null)
+    setLocalPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+    // No modo edição, marca para remover a imagem já existente ao salvar.
+    if (isEditing) setRemoveExisting(true)
   }
+
+  // Preview: arquivo recém-escolhido > imagem atual do produto (salvo p/ remoção).
+  const currentImageUrl =
+    localPreview ?? (removeExisting ? null : product?.imageUrl ?? null)
 
   const onSubmit = async (data: ProductForm) => {
     const minStockVal = typeof data.minStock === 'number' ? data.minStock : undefined
     const criticalStockVal = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
     const categoryId = data.categoryId || null
 
+    let entityId: string
     if (isEditing) {
-      await updateProduct.mutateAsync({
+      const updated = await updateProduct.mutateAsync({
         id: product.id,
         name: data.name,
         barcode: data.barcode || undefined,
@@ -158,8 +184,9 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         minCriticalStock: criticalStockVal,
         categoryId,
       })
+      entityId = updated.id
     } else {
-      await createProduct.mutateAsync({
+      const created = await createProduct.mutateAsync({
         name: data.name,
         barcode: data.barcode || undefined,
         price: data.price,
@@ -169,7 +196,20 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         minCriticalStock: criticalStockVal,
         categoryId,
       })
+      entityId = created.id
     }
+
+    // Produto salvo. Trata a imagem (erro aqui não bloqueia o fechamento — já há toast próprio).
+    try {
+      if (selectedFile) {
+        await uploadImage.mutateAsync({ file: selectedFile, entityId })
+      } else if (isEditing && removeExisting && product?.imageUrl) {
+        await removeImage.mutateAsync(entityId)
+      }
+    } catch {
+      /* o hook de mídia já exibiu o toast de erro */
+    }
+
     onClose()
   }
 
@@ -201,64 +241,16 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           {/* Imagem do produto */}
           <Box>
             <FieldLabel label="Foto do produto" />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleImageSelect}
-            />
-            <Box
-              onClick={() => fileInputRef.current?.click()}
-              sx={{
-                position: 'relative',
-                height: 96,
-                borderRadius: 2,
-                border: '2px dashed',
-                borderColor: 'divider',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-                cursor: 'pointer',
-                overflow: 'hidden',
-                transition: 'border-color 0.2s',
-                '&:hover': { borderColor: 'primary.main' },
-              }}
-            >
-              {imagePreview ? (
-                <>
-                  <Box
-                    component="img"
-                    src={imagePreview}
-                    alt="Preview"
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={handleRemoveImage}
-                    sx={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      bgcolor: 'rgba(0,0,0,0.5)',
-                      color: 'white',
-                      p: 0.25,
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
-                    }}
-                  >
-                    <CloseRounded sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </>
-              ) : (
-                <>
-                  <AddPhotoAlternateRounded sx={{ fontSize: 28, color: 'text.disabled' }} />
-                  <Typography variant="caption" color="text.disabled">
-                    Clique para adicionar foto
-                  </Typography>
-                </>
-              )}
+            <Box sx={{ mt: 0.5 }}>
+              <ImageUpload
+                currentUrl={currentImageUrl}
+                onUpload={handleImageSelect}
+                onRemove={handleRemoveImage}
+                isLoading={uploadImage.isPending || removeImage.isPending}
+                disabled={isPending}
+                shape="square"
+                size={96}
+              />
             </Box>
           </Box>
 

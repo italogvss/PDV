@@ -1,6 +1,7 @@
 using FluentValidation;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Employees;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
@@ -14,6 +15,7 @@ public class EmployeeService(
     ITenantRoleRepository roleRepository,
     IUserRepository userRepository,
     ITenantContext tenantContext,
+    IStorageService storage,
     IValidator<CreateEmployeeRequest> createValidator,
     IValidator<UpdateEmployeeRequest> updateValidator) : IEmployeeService
 {
@@ -21,14 +23,15 @@ public class EmployeeService(
     {
         var (data, totalCount) = await employeeRepository.GetAllAsync(page, pageSize);
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        return new PaginatedResponse<EmployeeResponse>(data.Select(Map), page, pageSize, totalCount, totalPages);
+        var mapped = await Task.WhenAll(data.Select(Map));
+        return new PaginatedResponse<EmployeeResponse>(mapped, page, pageSize, totalCount, totalPages);
     }
 
     public async Task<EmployeeResponse> GetByIdAsync(Guid id)
     {
         var employee = await employeeRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
-        return Map(employee);
+        return await Map(employee);
     }
 
     public async Task<EmployeeResponse> CreateAsync(CreateEmployeeRequest request)
@@ -92,7 +95,7 @@ public class EmployeeService(
 
         var created = await employeeRepository.GetByIdAsync(employee.Id)
             ?? throw new NotFoundException("Funcionário não encontrado após criação.");
-        return Map(created);
+        return await Map(created);
     }
 
     public async Task<EmployeeResponse> UpdateAsync(Guid id, UpdateEmployeeRequest request)
@@ -115,7 +118,7 @@ public class EmployeeService(
 
         var updated = await employeeRepository.GetByIdAsync(employee.Id)
             ?? throw new NotFoundException("Funcionário não encontrado após atualização.");
-        return Map(updated);
+        return await Map(updated);
     }
 
     public async Task DeactivateAsync(Guid id)
@@ -172,8 +175,10 @@ public class EmployeeService(
         await userRepository.UpdateAsync(user);
     }
 
-    private static EmployeeResponse Map(Employee e) =>
+    private async Task<EmployeeResponse> Map(Employee e) =>
         new(e.Id, e.UserId, e.User.Name, e.User.Email,
             e.RoleId, e.Role.Name, e.Position,
-            e.Salary, e.Phone, e.ImageUrl, e.IsActive, e.CreatedAt);
+            e.Salary, e.Phone,
+            await storage.ResolveReadUrlAsync(e.ImageUrl, MediaCategory.Profile, e.UpdatedAt),
+            e.IsActive, e.CreatedAt);
 }

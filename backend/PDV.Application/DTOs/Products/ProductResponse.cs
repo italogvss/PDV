@@ -14,4 +14,5 @@ public record ProductResponse(
     int? MinCriticalStock,
     bool IsActive,
     DateTime CreatedAt,
-    ProductCategoryResponse? Category);
+    ProductCategoryResponse? Category,
+    string? ImageUrl);

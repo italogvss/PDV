@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Auth;
 using PDV.Application.DTOs.Users;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
@@ -20,7 +21,8 @@ public class AuthService(
     IUserRepository userRepository,
     IConfiguration configuration,
     IEmployeeRepository employeeRepository,
-    ITenantRoleRepository roleRepository) : IAuthService
+    ITenantRoleRepository roleRepository,
+    IStorageService storage) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential)
@@ -172,7 +174,9 @@ public class AuthService(
             }
         }
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.ImageUrl, user.LastTenantId,
+        var imageUrl = await storage.ResolveReadUrlAsync(user.ImageUrl, MediaCategory.Profile, user.UpdatedAt);
+
+        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, imageUrl, user.LastTenantId,
             user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
     }
 

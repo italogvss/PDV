@@ -83,23 +83,40 @@ export default function InventoryPage() {
         minWidth: 200,
         renderCell: ({ row }) => (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, height: '100%' }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                bgcolor: row.category ? `${row.category.color}22` : 'surface.raised',
-                border: '1px solid',
-                borderColor: row.category ? `${row.category.color}66` : 'border.subtle',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <CategoryRounded
-                sx={{ fontSize: 15, color: row.category ? row.category.color : 'text.tertiary' }}
+            {row.imageUrl ? (
+              <Box
+                component="img"
+                src={row.imageUrl}
+                alt={row.name}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  objectFit: 'cover',
+                  border: '1px solid',
+                  borderColor: 'border.subtle',
+                  flexShrink: 0,
+                }}
               />
-            </Box>
+            ) : (
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  bgcolor: row.category ? `${row.category.color}22` : 'surface.raised',
+                  border: '1px solid',
+                  borderColor: row.category ? `${row.category.color}66` : 'border.subtle',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CategoryRounded
+                  sx={{ fontSize: 15, color: row.category ? row.category.color : 'text.tertiary' }}
+                />
+              </Box>
+            )}
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {row.name}
             </Typography>

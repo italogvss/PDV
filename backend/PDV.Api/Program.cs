@@ -10,6 +10,7 @@ using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 using PDV.Infrastructure.Repositories;
 using PDV.Infrastructure.Services;
+using PDV.Infrastructure.Storage;
 using Scalar.AspNetCore;
 using System.Security.Claims;
 using System.Text;
@@ -105,8 +106,13 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IOAuthProvider, GoogleOAuthProvider>();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
+
+// Storage (MinIO em dev, S3 em prod) — AmazonS3Client é thread-safe, registrado como singleton.
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.AddSingleton<IStorageService, MinioStorageService>();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -121,6 +127,7 @@ builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

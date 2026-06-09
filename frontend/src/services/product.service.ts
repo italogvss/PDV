@@ -29,6 +29,7 @@ interface BackendProduct {
   isActive: boolean
   createdAt: string
   category: ProductCategory | null
+  imageUrl?: string | null
 }
 
 function mapProduct(p: BackendProduct): Product {
@@ -43,6 +44,7 @@ function mapProduct(p: BackendProduct): Product {
     isActive: p.isActive,
     minStock: p.minStock ?? undefined,
     criticalStock: p.minCriticalStock ?? undefined,
+    imageUrl: p.imageUrl ?? undefined,
   }
 }
 

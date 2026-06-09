@@ -12,5 +12,6 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
         builder.Property(s => s.Name).IsRequired().HasMaxLength(200);
         builder.Property(s => s.Description).HasMaxLength(300);
         builder.Property(s => s.Price).HasColumnType("decimal(10,2)");
+        builder.Property(s => s.ImageUrl).HasMaxLength(500);
     }
 }

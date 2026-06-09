@@ -6,6 +6,7 @@ using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Tenants;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
@@ -19,6 +20,7 @@ public class TenantService(
     IUserRepository userRepository,
     ITenantRoleRepository roleRepository,
     ITenantContext tenantContext,
+    IStorageService storage,
     IValidator<BusinessSettingsDto> businessValidator,
     IValidator<OperationSettingsDto> operationValidator,
     IConfiguration configuration) : ITenantService
@@ -92,7 +94,7 @@ public class TenantService(
     {
         var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
             ?? throw new NotFoundException("Configurações do tenant não encontradas.");
-        return Map(settings);
+        return await Map(settings);
     }
 
     public async Task<BusinessSettingsDto> UpdateBusinessAsync(BusinessSettingsDto request)
@@ -126,7 +128,7 @@ public class TenantService(
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
 
-        return Map(settings).Business;
+        return (await Map(settings)).Business;
     }
 
     public async Task<OperationSettingsDto> UpdateOperationAsync(OperationSettingsDto request)
@@ -148,13 +150,16 @@ public class TenantService(
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
 
-        return Map(settings).Operation;
+        return (await Map(settings)).Operation;
     }
 
-    private static TenantSettingsResponse Map(TenantSettings s) =>
-        new(
+    private async Task<TenantSettingsResponse> Map(TenantSettings s)
+    {
+        var logoUrl = await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt);
+        return
+            new(
             new BusinessSettingsDto(
-                s.LogoUrl,
+                logoUrl,
                 s.FantasyName,
                 s.CompanyName,
                 s.Cnpj,
@@ -177,6 +182,7 @@ public class TenantService(
                 s.DiscountLimitPercent,
                 s.RequireManagerCancel,
                 s.BarcodeReader));
+    }
 
     private static IEnumerable<TenantRole> CreateDefaultRoles(Guid tenantId)
     {

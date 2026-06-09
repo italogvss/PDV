@@ -10,4 +10,5 @@ public record ServiceResponse(
     decimal Price,
     bool IsActive,
     DateTime CreatedAt,
-    ServiceCategoryResponse? Category);
+    ServiceCategoryResponse? Category,
+    string? ImageUrl);

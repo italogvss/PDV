@@ -1,6 +1,4 @@
 import { HelpOutlined, type SvgIconComponent } from '@mui/icons-material'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import FiberManualRecordOutlinedIcon from '@mui/icons-material/FiberManualRecordOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'

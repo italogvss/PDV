@@ -12,6 +12,7 @@ public class Product : BaseEntity
     public int? MinStock { get; set; }
     public int? MinCriticalStock { get; set; }
     public Guid? CategoryId { get; set; }
+    public string? ImageUrl { get; set; } // {tenantId}/product/{productId}.webp
 
     public ProductCategory? Category { get; set; }
 }

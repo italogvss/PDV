@@ -50,4 +50,5 @@ export interface Product {
   isActive: boolean
   minStock?: number
   criticalStock?: number
+  imageUrl?: string
 }

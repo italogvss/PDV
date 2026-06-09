@@ -2,8 +2,10 @@ using FluentValidation;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.ProductCategories;
 using PDV.Application.DTOs.Products;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
 
@@ -12,6 +14,7 @@ namespace PDV.Infrastructure.Services;
 public class ProductService(
     IProductRepository repository,
     ITenantContext tenantContext,
+    IStorageService storage,
     IValidator<CreateProductRequest> createValidator,
     IValidator<UpdateProductRequest> updateValidator) : IProductService
 {
@@ -23,14 +26,15 @@ public class ProductService(
     {
         var (data, totalCount) = await repository.GetAllAsync(page, pageSize, name, barcode, categoryId, sortBy, sortOrder);
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        return new PaginatedResponse<ProductResponse>(data.Select(Map), page, pageSize, totalCount, totalPages);
+        var mapped = await Task.WhenAll(data.Select(Map));
+        return new PaginatedResponse<ProductResponse>(mapped, page, pageSize, totalCount, totalPages);
     }
 
     public async Task<ProductResponse> GetByIdAsync(Guid id)
     {
         var product = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Produto não encontrado.");
-        return Map(product);
+        return await Map(product);
     }
 
     public async Task<ProductResponse> CreateAsync(CreateProductRequest request)
@@ -62,7 +66,7 @@ public class ProductService(
         // Recarrega para obter a navegação Category populada
         var created = await repository.GetByIdAsync(product.Id)
             ?? throw new NotFoundException("Produto não encontrado após criação.");
-        return Map(created);
+        return await Map(created);
     }
 
     public async Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request)
@@ -88,7 +92,7 @@ public class ProductService(
 
         var updated = await repository.GetByIdAsync(product.Id)
             ?? throw new NotFoundException("Produto não encontrado após atualização.");
-        return Map(updated);
+        return await Map(updated);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -115,14 +119,15 @@ public class ProductService(
 
         var updated = await repository.GetByIdAsync(product.Id)
             ?? throw new NotFoundException("Produto não encontrado após ajuste.");
-        return Map(updated);
+        return await Map(updated);
     }
 
     private static ProductCategoryResponse? MapCategory(ProductCategory? c) =>
         c is null ? null : new(c.Id, c.Name, c.Color);
 
-    private static ProductResponse Map(Product p) =>
+    private async Task<ProductResponse> Map(Product p) =>
         new(p.Id, p.Name, p.Barcode, p.NCM, p.Price, p.PurchasePrice,
             p.Stock, p.MinStock, p.MinCriticalStock, p.IsActive, p.CreatedAt,
-            MapCategory(p.Category));
+            MapCategory(p.Category),
+            await storage.ResolveReadUrlAsync(p.ImageUrl, MediaCategory.Product, p.UpdatedAt));
 }
