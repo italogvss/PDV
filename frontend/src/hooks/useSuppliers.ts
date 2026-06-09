@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  supplierService,
-  type CreateSupplierPayload,
-  type UpdateSupplierPayload,
-} from '../services/supplier.service'
+import { supplierService } from '../services/supplier.service'
+import type { CreateSupplierPayload, UpdateSupplierPayload } from '../types/supplier.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

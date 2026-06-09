@@ -1,9 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  expenseService,
-  type CreateExpensePayload,
-  type UpdateExpensePayload,
-} from '../services/expense.service'
+import { expenseService } from '../services/expense.service'
+import type { CreateExpensePayload, UpdateExpensePayload } from '../types/expense.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

@@ -23,7 +23,6 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         '&:hover': {
           borderColor: 'border.strong',
           boxShadow: (theme) => theme.customShadows.sm,
-          transform: 'translateY(-1px)',
         },
       }}
     >

@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Customer } from '../types/customers.types'
+import type { Customer, CreateCustomerPayload, UpdateCustomerPayload } from '../types/customers.types'
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -39,23 +39,6 @@ function mapCustomer(c: BackendCustomer): Customer {
     address: c.address,
   }
 }
-
-export interface CreateCustomerPayload {
-  name: string
-  phone: string | null
-  email: string | null
-  document: string | null
-  note: string
-  address: {
-    street: string | null
-    number: string | null
-    city: string | null
-    state: string | null
-    zipCode: string | null
-  } | null
-}
-
-export type UpdateCustomerPayload = CreateCustomerPayload
 
 export const customerService = {
   getAll: async (

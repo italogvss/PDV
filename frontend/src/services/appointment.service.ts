@@ -1,5 +1,11 @@
 import { api } from './api'
-import type { Appointment, AppointmentServiceRef, AppointmentStatus } from '../types/appointment.types'
+import type {
+  Appointment,
+  AppointmentServiceRef,
+  AppointmentStatus,
+  CreateAppointmentPayload,
+  UpdateAppointmentPayload,
+} from '../types/appointment.types'
 
 interface BackendServiceRef {
   id: string
@@ -21,6 +27,7 @@ interface BackendAppointment {
   price: number
   status: string
   note: string
+  color: string
   createdAt: string
 }
 
@@ -47,23 +54,9 @@ function mapAppointment(a: BackendAppointment): Appointment {
     price: a.price,
     status: a.status as AppointmentStatus,
     note: a.note,
+    color: a.color || undefined,
   }
 }
-
-export interface CreateAppointmentPayload {
-  customerId: string | null
-  customerName: string
-  customerPhone?: string
-  employeeId: string
-  serviceIds: string[]
-  start: string
-  durationMinutes: number
-  price: number
-  status: AppointmentStatus
-  note: string
-}
-
-export type UpdateAppointmentPayload = CreateAppointmentPayload
 
 export const appointmentService = {
   getByDateRange: async (startDate: string, endDate: string): Promise<Appointment[]> => {

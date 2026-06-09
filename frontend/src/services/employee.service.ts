@@ -1,5 +1,12 @@
 import { api } from './api'
-import type { Employee, EmployeePermissions, EmployeeType, Permission } from '../types/employee.types'
+import type {
+  Employee,
+  EmployeePermissions,
+  EmployeeType,
+  Permission,
+  CreateEmployeePayload,
+  UpdateEmployeePayload,
+} from '../types/employee.types'
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -37,23 +44,6 @@ function mapEmployee(e: BackendEmployee): Employee {
     isActive: e.isActive,
     createdAt: e.createdAt,
   }
-}
-
-export interface CreateEmployeePayload {
-  name: string
-  email: string
-  temporaryPassword: string
-  employeeType: EmployeeType
-  position: string
-  salary?: number
-  phone?: string
-}
-
-export interface UpdateEmployeePayload {
-  employeeType: EmployeeType
-  position: string
-  salary?: number
-  phone?: string
 }
 
 export const employeeService = {

@@ -45,4 +45,8 @@ export const authService = {
   logout: async (): Promise<void> => {
     await api.post('/auth/logout')
   },
+
+  switchTenant: async (tenantId: string): Promise<void> => {
+    await api.post(`/auth/switch-tenant/${tenantId}`)
+  },
 }

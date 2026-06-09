@@ -26,6 +26,17 @@ import type { Appointment, AppointmentServiceRef } from '../../../../types/appoi
 import { conflictsFor, formatHM } from '../appointmentHelpers'
 import type { NewAppointmentModalProps } from './types'
 
+const APPOINTMENT_COLORS = [
+  '#ef4444', // vermelho
+  '#f97316', // laranja
+  '#eab308', // amarelo
+  '#22c55e', // verde
+  '#3b82f6', // azul
+  '#8b5cf6', // roxo
+  '#ec4899', // rosa
+  '#14b8a6', // teal
+]
+
 const schema = z.object({
   customerName: z.string().min(1, 'Cliente é obrigatório'),
   phone: z.string(),
@@ -39,6 +50,7 @@ const schema = z.object({
   price: z.number({ message: 'Valor inválido' }).min(0),
   status: z.enum(['confirmado', 'pendente']),
   note: z.string(),
+  color: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -55,6 +67,7 @@ function buildEmptyValues(date: string): FormValues {
     price: 0,
     status: 'confirmado',
     note: '',
+    color: '',
   }
 }
 
@@ -180,6 +193,7 @@ export default function NewAppointmentModal({
       price: data.price,
       status: data.status,
       note: data.note.trim(),
+      color: data.color || undefined,
     }
     onCreate(appointment)
     onClose()
@@ -295,19 +309,10 @@ export default function NewAppointmentModal({
                         <Chip
                           key={service.id}
                           clickable
+                          size="large"
                           onClick={() => toggleService(service.id)}
                           variant={selected ? 'filled' : 'outlined'}
                           label={`${service.name} · ${service.durationMinutes ?? 30}min`}
-                          avatar={
-                            <Box
-                              sx={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: '50%',
-                                bgcolor: group.color,
-                              }}
-                            />
-                          }
                           sx={
                             selected
                               ? {
@@ -347,6 +352,7 @@ export default function NewAppointmentModal({
                         <Chip
                           key={pro.id}
                           clickable
+                          size="large"
                           onClick={() => field.onChange(pro.id)}
                           variant={selected ? 'filled' : 'outlined'}
                           label={pro.name}
@@ -506,6 +512,7 @@ export default function NewAppointmentModal({
                       <Chip
                         key={opt.value}
                         clickable
+                        size="large"
                         onClick={() => field.onChange(opt.value)}
                         variant={selected ? 'filled' : 'outlined'}
                         label={opt.label}
@@ -522,6 +529,65 @@ export default function NewAppointmentModal({
                       />
                     )
                   })}
+                </Box>
+              )}
+            />
+          </Box>
+
+          {/* Cor */}
+          <Box>
+            {fieldLabel('Cor do agendamento', false)}
+            <Controller
+              name="color"
+              control={control}
+              render={({ field }) => (
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Box
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => field.onChange('')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') field.onChange('') }}
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      border: '2px solid',
+                      borderColor: !field.value ? 'text.primary' : 'border.subtle',
+                      bgcolor: 'surface.sunken',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {!field.value && (
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', lineHeight: 1 }}>
+                        —
+                      </Typography>
+                    )}
+                  </Box>
+                  {APPOINTMENT_COLORS.map((c) => (
+                    <Box
+                      key={c}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => field.onChange(c)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') field.onChange(c) }}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        bgcolor: c,
+                        cursor: 'pointer',
+                        border: '2px solid',
+                        borderColor: field.value === c ? 'text.primary' : 'transparent',
+                        outline: field.value === c ? `2px solid` : 'none',
+                        outlineColor: field.value === c ? c : 'transparent',
+                        outlineOffset: '2px',
+                        transition: 'outline 0.15s',
+                      }}
+                    />
+                  ))}
                 </Box>
               )}
             />

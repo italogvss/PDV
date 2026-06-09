@@ -69,7 +69,7 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      slotProps={{ paper: { sx: { borderRadius: 2 } } }}
     >
       <DialogTitle
         sx={{
@@ -137,12 +137,12 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
                 Itens
               </Typography>
               <Table size="small" sx={{ mt: 1 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ pl: 0, color: 'text.tertiary', fontSize: 11 }}>Produto</TableCell>
+                <TableHead sx={{  }}>
+                  <TableRow >
+                    <TableCell align="left" sx={{ pl: 1, color: 'text.tertiary', fontSize: 11 }}>Produto</TableCell>
                     <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Qtd</TableCell>
-                    <TableCell align="right" sx={{ color: 'text.tertiary', fontSize: 11 }}>Unit.</TableCell>
-                    <TableCell align="right" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Total</TableCell>
+                    <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Unit.</TableCell>
+                    <TableCell align="center" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Total</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

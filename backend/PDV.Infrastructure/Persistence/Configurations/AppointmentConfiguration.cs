@@ -13,6 +13,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.CustomerPhone).HasMaxLength(30);
         builder.Property(a => a.Price).HasColumnType("decimal(10,2)");
         builder.Property(a => a.Note).HasMaxLength(1000);
+        builder.Property(a => a.Color).HasMaxLength(20);
         builder.Property(a => a.Status)
             .IsRequired()
             .HasConversion<string>()

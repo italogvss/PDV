@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Box } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import SalesHeader from './components/SalesHeader'
 import ProductCatalog from './components/ProductCatalog'
 import CartPanel from './components/CartPanel'
@@ -14,6 +14,9 @@ import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useCreateSale } from '../../hooks/useSales'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
+import PageHeader from '../../components/PageHeader'
+import AddRounded from '@mui/icons-material/AddRounded'
+import { RestartAltRounded } from '@mui/icons-material'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -178,6 +181,15 @@ export default function SalesPage() {
     setInstallments(1)
   }
 
+  const handleRestart = () => {
+    setCart([])
+    setCustomer({ type: 'none' })
+    setCashReceived('')
+    setMethod('card')
+    setCardType('credit')
+    setInstallments(1)
+  }
+
   return (
     <Box
       sx={{
@@ -187,7 +199,14 @@ export default function SalesPage() {
         gap: 4,
       }}
     >
-      <SalesHeader />
+      <PageHeader
+              title="Vender"
+              description={"Operador: Nome"}
+            >
+              <Button variant="outlined" startIcon={<RestartAltRounded />} onClick={() => handleRestart()}>
+                Recomeçar
+              </Button>
+            </PageHeader>
       <Box
         sx={{
           flex: { md: 1 },

@@ -51,6 +51,7 @@ public class AppointmentService(
             Price = request.Price,
             Status = ParseStatus(request.Status),
             Note = request.Note,
+            Color = request.Color,
             ServiceItems = serviceItems,
         };
 
@@ -80,6 +81,7 @@ public class AppointmentService(
         appointment.Price = request.Price;
         appointment.Status = ParseStatus(request.Status);
         appointment.Note = request.Note;
+        appointment.Color = request.Color;
 
         var serviceIds = request.ServiceIds.ToList();
         var newServiceItems = await BuildServiceItemsAsync(serviceIds, id);
@@ -156,5 +158,5 @@ public class AppointmentService(
     private static AppointmentResponse Map(Appointment a) =>
         new(a.Id, a.CustomerId, a.CustomerName, a.CustomerPhone,
             a.EmployeeId, a.ServiceItems.Select(MapItem),
-            a.Start, a.DurationMinutes, a.Price, MapStatus(a.Status), a.Note, a.CreatedAt);
+            a.Start, a.DurationMinutes, a.Price, MapStatus(a.Status), a.Note, a.Color, a.CreatedAt);
 }

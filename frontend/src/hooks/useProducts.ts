@@ -1,9 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  productService,
-  type CreateProductPayload,
-  type UpdateProductPayload,
-} from '../services/product.service'
+import { productService } from '../services/product.service'
+import type { CreateProductPayload, UpdateProductPayload } from '../types/product.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

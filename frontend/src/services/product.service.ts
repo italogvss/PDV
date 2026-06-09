@@ -1,5 +1,12 @@
 import { api } from './api'
-import type { Product, ProductCategory } from '../types/product.types'
+import type {
+  Product,
+  ProductCategory,
+  CreateProductPayload,
+  UpdateProductPayload,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+} from '../types/product.types'
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -37,37 +44,6 @@ function mapProduct(p: BackendProduct): Product {
     minStock: p.minStock ?? undefined,
     criticalStock: p.minCriticalStock ?? undefined,
   }
-}
-
-export interface CreateProductPayload {
-  name: string
-  barcode?: string
-  price: number
-  purchasePrice?: number
-  stock: number
-  minStock?: number
-  minCriticalStock?: number
-  categoryId?: string | null
-}
-
-export interface UpdateProductPayload {
-  name: string
-  barcode?: string
-  price: number
-  purchasePrice?: number
-  minStock?: number
-  minCriticalStock?: number
-  categoryId?: string | null
-}
-
-export interface CreateCategoryPayload {
-  name: string
-  color: string
-}
-
-export interface UpdateCategoryPayload {
-  name: string
-  color: string
 }
 
 export const productService = {

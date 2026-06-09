@@ -5,6 +5,23 @@ export interface CustomerMetrics {
   withDocument: number
 }
 
+export interface CreateCustomerPayload {
+  name: string
+  phone: string | null
+  email: string | null
+  document: string | null
+  note: string
+  address: {
+    street: string | null
+    number: string | null
+    city: string | null
+    state: string | null
+    zipCode: string | null
+  } | null
+}
+
+export type UpdateCustomerPayload = CreateCustomerPayload
+
 export interface Customer {
   id: string
   name: string

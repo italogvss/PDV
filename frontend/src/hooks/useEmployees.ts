@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  employeeService,
-  type CreateEmployeePayload,
-  type UpdateEmployeePayload,
-} from '../services/employee.service'
-import type { EmployeeType, Permission } from '../types/employee.types'
+import { employeeService } from '../services/employee.service'
+import type {
+  EmployeeType,
+  Permission,
+  CreateEmployeePayload,
+  UpdateEmployeePayload,
+} from '../types/employee.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

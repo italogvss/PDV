@@ -1,10 +1,6 @@
 import { api } from './api'
 import type { CreateTenantFormData } from '../pages/CreateTenant/types'
-
-export interface CreateTenantResponse {
-  tenantId: string
-  fantasyName: string
-}
+import type { CreateTenantResponse } from '../types/tenant.types'
 
 export const tenantService = {
   async create(form: CreateTenantFormData): Promise<CreateTenantResponse> {

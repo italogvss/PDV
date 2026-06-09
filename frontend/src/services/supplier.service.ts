@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Supplier } from '../types/supplier.types'
+import type { Supplier, CreateSupplierPayload, UpdateSupplierPayload } from '../types/supplier.types'
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -24,13 +24,6 @@ function mapSupplier(s: BackendSupplier): Supplier {
     createdAt: s.createdAt,
   }
 }
-
-export interface CreateSupplierPayload {
-  name: string
-  phone: string | null
-}
-
-export type UpdateSupplierPayload = CreateSupplierPayload
 
 export const supplierService = {
   getAll: async (

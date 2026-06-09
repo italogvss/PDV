@@ -4,9 +4,9 @@ import type { PageKpiCardBadge, Props } from './types'
 
 const BADGE_ICON_SX = {
   '& .MuiChip-icon': {
-    fontSize: '12px !important',
+    fontSize: '14px !important',
     color: 'inherit',
-    ml: 0.75,
+    ml: 1,
     mr: '-3px',
   },
 }
@@ -49,7 +49,6 @@ function BadgeChip({ badge }: { badge: PageKpiCardBadge }) {
   const BadgeIcon = badge.icon
   return (
     <Chip
-      size="small"
       color={badge.color ?? 'default'}
       label={badge.label}
       icon={BadgeIcon ? <BadgeIcon /> : undefined}

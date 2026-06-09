@@ -53,6 +53,9 @@ declare module '@mui/material/Chip' {
     accent: true;
     premium: true;
   }
+  interface ChipPropsSizeOverrides {
+    large: true;
+  }
 }
 declare module '@mui/material/Button' {
   interface ButtonPropsVariantOverrides {

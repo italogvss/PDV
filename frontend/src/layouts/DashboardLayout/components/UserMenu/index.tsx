@@ -6,12 +6,6 @@ import Dropdown from './components/Dropdown'
 
 export default function UserMenu() {
   const auth = useAppSelector((state) => state.auth)
-  const initials = auth.name ?? "Usuário"
-    .split(' ')
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)

@@ -98,7 +98,14 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var token = await authService.SwitchTenantAsync(userId, tenantId);
-        return Ok(new TokenResponse(token));
+        Response.Cookies.Append("access_token", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = IsProduction,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromHours(8),
+        });
+        return NoContent();
     }
 
     [HttpPost("local")]

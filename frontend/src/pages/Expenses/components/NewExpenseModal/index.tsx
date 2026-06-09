@@ -201,6 +201,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                           key={cat}
                           label={EXPENSE_CATEGORY_LABELS[cat]}
                           clickable
+                          size="large"
                           onClick={() => field.onChange(cat)}
                           variant={selected ? 'filled' : 'outlined'}
                           sx={selected ? {

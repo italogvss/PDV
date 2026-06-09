@@ -94,7 +94,7 @@ export default function WeekStrip({ selectedDate, appointments, onSelectDay }: W
                   variant="caption"
                   sx={{ color: isSelected ? 'rgba(255,255,255,0.5)' : 'text.disabled' }}
                 >
-                  —
+                  
                 </Typography>
               )}
             </Box>

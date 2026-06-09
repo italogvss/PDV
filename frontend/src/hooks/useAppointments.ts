@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  appointmentService,
-  type CreateAppointmentPayload,
-  type UpdateAppointmentPayload,
-} from '../services/appointment.service'
-import type { AppointmentStatus } from '../types/appointment.types'
+import { appointmentService } from '../services/appointment.service'
+import type {
+  AppointmentStatus,
+  CreateAppointmentPayload,
+  UpdateAppointmentPayload,
+} from '../types/appointment.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

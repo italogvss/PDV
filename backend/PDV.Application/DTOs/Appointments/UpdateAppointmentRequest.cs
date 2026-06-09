@@ -10,5 +10,6 @@ public record UpdateAppointmentRequest(
     int DurationMinutes,
     decimal Price,
     string Status,
-    string Note
+    string Note,
+    string Color = ""
 );

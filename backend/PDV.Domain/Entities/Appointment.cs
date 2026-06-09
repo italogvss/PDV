@@ -16,6 +16,7 @@ public class Appointment : BaseEntity
     public decimal Price { get; set; }
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Confirmado;
     public string Note { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
 
     public ICollection<AppointmentServiceItem> ServiceItems { get; set; } = [];
 }

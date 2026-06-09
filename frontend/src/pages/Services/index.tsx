@@ -5,16 +5,12 @@ import {
   Card,
   TextField,
   InputAdornment,
-  IconButton,
   Select,
   MenuItem,
   Chip,
-  Skeleton,
   Typography,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
-import CloseRounded from '@mui/icons-material/CloseRounded'
-import EditRounded from '@mui/icons-material/EditRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import MiscellaneousServicesRounded from '@mui/icons-material/MiscellaneousServicesRounded'
 import CategoryRounded from '@mui/icons-material/CategoryRounded'
@@ -30,9 +26,10 @@ import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import ServiceRowMenu from './components/ServiceRowMenu'
 import ServiceModal from './components/ServiceModal'
-import CategoryFormModal from './components/CategoryFormModal'
+import CategoryStrip from '../../components/CategoryStrip'
+import CategoryFormModal from '../../components/CategoryFormModal'
 import { useServices, useDeleteService } from '../../hooks/useServices'
-import { useServiceCategories, useDeleteServiceCategory } from '../../hooks/useServiceCategories'
+import { useServiceCategories, useDeleteServiceCategory, useCreateServiceCategory, useUpdateServiceCategory } from '../../hooks/useServiceCategories'
 
 const STATUS_OPTIONS = ['Ativo', 'Inativo']
 
@@ -48,6 +45,8 @@ export default function ServicesPage() {
   const { data: categories = [], isLoading: isLoadingCategories } = useServiceCategories()
   const deleteService = useDeleteService()
   const deleteCategory = useDeleteServiceCategory()
+  const createCategory = useCreateServiceCategory()
+  const updateCategory = useUpdateServiceCategory()
 
   const [search, setSearch] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -289,73 +288,14 @@ export default function ServicesPage() {
       </PageKpiGrid>
 
       {/* Strip de categorias */}
-      <Box>
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: 600,
-            color: 'text.disabled',
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
-            display: 'block',
-            mb: 1.5,
-          }}
-        >
-          Categorias
-        </Typography>
-
-        {isLoadingCategories ? (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} variant="rounded" width={100} height={36} sx={{ borderRadius: '999px' }} />
-            ))}
-          </Box>
-        ) : categories.length === 0 ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, py: 2.5 }}>
-            <Typography variant="body2" color="text.disabled">
-              Nenhuma categoria cadastrada ainda
-            </Typography>
-            <Chip
-              label="+ Adicionar"
-              size="small"
-              variant="outlined"
-              onClick={() => setAddCategoryOpen(true)}
-              sx={{ cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
-            />
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 1,
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              pb: 0.5,
-              '&::-webkit-scrollbar': { height: 3 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: 'border.subtle', borderRadius: '999px' },
-              '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-            }}
-          >
-            {categories.map((cat) => (
-              <CategoryChip
-                key={cat.id}
-                category={cat}
-                count={countByCategory[cat.name] ?? 0}
-                onEdit={() => setEditingCategory(cat)}
-                onDelete={() => deleteCategory.mutate(cat.id)}
-              />
-            ))}
-
-            <Chip
-              label="+ Adicionar"
-              size="small"
-              variant="outlined"
-              onClick={() => setAddCategoryOpen(true)}
-              sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}
-            />
-          </Box>
-        )}
-      </Box>
+      <CategoryStrip
+        categories={categories}
+        countByCategory={countByCategory}
+        isLoading={isLoadingCategories}
+        onAdd={() => setAddCategoryOpen(true)}
+        onEdit={(cat) => setEditingCategory(cat)}
+        onDelete={(id) => deleteCategory.mutate(id)}
+      />
 
       {/* Barra de busca e filtros */}
       <Card sx={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -466,101 +406,19 @@ export default function ServicesPage() {
         onClose={() => setEditService(null)}
       />
       <CategoryFormModal
-        open={addCategoryOpen}
-        onClose={() => setAddCategoryOpen(false)}
-      />
-      <CategoryFormModal
-        open={!!editingCategory}
+        open={addCategoryOpen || !!editingCategory}
+        onClose={() => { setAddCategoryOpen(false); setEditingCategory(null) }}
         category={editingCategory ?? undefined}
-        onClose={() => setEditingCategory(null)}
-      />
-    </Box>
-  )
-}
-
-// ─── CategoryChip ─────────────────────────────────────────────────────────────
-
-interface CategoryChipProps {
-  category: ServiceCategory
-  count: number
-  onEdit: () => void
-  onDelete: () => void
-}
-
-function CategoryChip({ category, count, onEdit, onDelete }: CategoryChipProps) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <Box
-      sx={{ position: 'relative', flexShrink: 0 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <Chip
-        label={
-          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Box
-              sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: category.color, flexShrink: 0 }}
-            />
-            <Typography component="span" variant="body2" sx={{ fontWeight: 500 }}>
-              {category.name}
-            </Typography>
-            <Typography component="span" variant="body2" sx={{ opacity: 0.45, fontWeight: 400 }}>
-              {count}
-            </Typography>
-          </Box>
-        }
-        sx={{
-          height: 36,
-          px: 0.5,
-          pr: hovered ? 5.5 : undefined,
-          transition: 'padding 0.15s',
-          fontSize: 14,
+        onSave={async (data) => {
+          if (editingCategory) {
+            await updateCategory.mutateAsync({ id: editingCategory.id, ...data })
+          } else {
+            await createCategory.mutateAsync(data)
+          }
         }}
+        isPending={createCategory.isPending || updateCategory.isPending}
       />
-      {hovered && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            right: 4,
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            gap: 0.25,
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={onEdit}
-            sx={{
-              width: 20,
-              height: 20,
-              p: 0,
-              bgcolor: 'surface.paper',
-              border: '1px solid',
-              borderColor: 'border.subtle',
-              '&:hover': { bgcolor: 'surface.raised' },
-            }}
-          >
-            <EditRounded sx={{ fontSize: 11 }} />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={onDelete}
-            sx={{
-              width: 20,
-              height: 20,
-              p: 0,
-              bgcolor: 'surface.paper',
-              border: '1px solid',
-              borderColor: 'border.subtle',
-              '&:hover': { bgcolor: 'error.soft', borderColor: 'error.main' },
-            }}
-          >
-            <CloseRounded sx={{ fontSize: 11 }} />
-          </IconButton>
-        </Box>
-      )}
     </Box>
   )
 }
+

@@ -1,14 +1,13 @@
-import { useState } from 'react'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import {
   Button,
+  Checkbox,
+  Divider,
   Menu,
   MenuItem,
-  Checkbox,
-  ListItemText,
-  Divider,
-  Typography,
+  Typography
 } from '@mui/material'
-import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import { useState } from 'react'
 import type { FilterMenuProps } from './types'
 
 export default function FilterMenu({
@@ -60,13 +59,13 @@ export default function FilterMenu({
             sx={{ gap: 0.5, py: 0.75 }}
           >
             <Checkbox
-              size="small"
+              size="medium"
               checked={selected.includes(option)}
               sx={{ p: 0, mr: 0.5 }}
             />
-            <ListItemText
-              primary={option}            
-            />
+            <Typography variant="body2">
+              {option}
+            </Typography>
           </MenuItem>
         ))}
 

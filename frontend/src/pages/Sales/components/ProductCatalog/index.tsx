@@ -1,9 +1,8 @@
-import { Box, CircularProgress, InputBase, Tab, Tabs, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import { Grid } from '@mui/material'
 import { SearchOutlined } from '@mui/icons-material'
+import { Box, CircularProgress, Grid, InputBase, Tab, Tabs, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import ProductCard from '../ProductCard'
 import ServiceCard from '../ServiceCard'
-import { ProductCatalogProps, CategoryValue, CatalogMode } from './types'
+import { CatalogMode, CategoryValue, ProductCatalogProps } from './types'
 
 export default function ProductCatalog({
   mode,
@@ -20,16 +19,16 @@ export default function ProductCatalog({
   onAddService,
   isLoading,
 }: ProductCatalogProps) {
-  const tabs =
+  const tabs: Array<{ value: CategoryValue; label: string; color?: string }> =
     mode === 'products'
       ? [
-          { value: 'all' as CategoryValue, label: 'Tudo' },
-          ...productCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
-        ]
+        { value: 'all' as CategoryValue, label: 'Tudo' },
+        ...productCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name, color: c.color })),
+      ]
       : [
-          { value: 'all' as CategoryValue, label: 'Tudo' },
-          ...serviceCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name })),
-        ]
+        { value: 'all' as CategoryValue, label: 'Tudo' },
+        ...serviceCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name, color: c.color })),
+      ]
 
   const items = mode === 'products' ? products : services
   const isEmpty = items.length === 0
@@ -75,7 +74,21 @@ export default function ProductCatalog({
           exclusive
           onChange={(_, v: CatalogMode | null) => v && onModeChange(v)}
           size="small"
-          sx={{ flexShrink: 0 }}
+          sx={{
+            flexShrink: 0,
+            border: 1,
+            borderColor: 'border.subtle',
+            borderRadius: 999,
+            '& .MuiToggleButtonGroup-grouped': {
+              border: 'none',
+              '&:first-of-type': {
+                borderRadius: '999px 0 0 999px',
+              },
+              '&:last-of-type': {
+                borderRadius: '0px 999px 999px 0',
+              },
+            },
+          }}
         >
           <ToggleButton value="products" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
             Produtos
@@ -94,7 +107,7 @@ export default function ProductCatalog({
         sx={{
           minHeight: 36,
           maxWidth: '100%',
-          borderRadius: 2,
+          borderRadius: 999,
           border: 1,
           borderColor: 'border.subtle',
           '& .MuiTab-root': {
@@ -107,18 +120,18 @@ export default function ProductCatalog({
             border: 'none',
             borderRadius: 2,
             mr: 1,
-            '&.Mui-selected': {
-              color: 'text.primary',
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'border.subtle',
-            },
+            my: 0.75
           },
           '& .MuiTabs-indicator': { display: 'none' },
         }}
       >
         {tabs.map((t) => (
-          <Tab key={t.value} value={t.value} label={t.label} />
+          <Tab key={t.value} value={t.value} label={t.label} sx={{
+            '&.Mui-selected': {
+              color: 'black',
+              bgcolor: t.color,
+            },
+          }} />
         ))}
       </Tabs>
 
@@ -147,7 +160,7 @@ export default function ProductCatalog({
             {mode === 'products' ? 'Nenhum produto encontrado.' : 'Nenhum serviço encontrado.'}
           </Box>
         ) : mode === 'products' ? (
-          <Grid container spacing={1}>
+          <Grid container spacing={1} sx={{ overflow: 'visible' }}>
             {products.map((p) => (
               <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}>
                 <ProductCard product={p} onAdd={onAddProduct} />

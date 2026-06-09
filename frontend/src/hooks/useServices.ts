@@ -1,9 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  serviceService,
-  type CreateServicePayload,
-  type UpdateServicePayload,
-} from '../services/service.service'
+import { serviceService } from '../services/service.service'
+import type { CreateServicePayload, UpdateServicePayload } from '../types/service.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 

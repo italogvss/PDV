@@ -1,19 +1,22 @@
 import AddRounded from '@mui/icons-material/AddRounded'
 import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
+import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import WarningRounded from '@mui/icons-material/WarningRounded'
-import { Box, Button, Menu, MenuItem } from '@mui/material'
+import { Box, Button, Menu, MenuItem, Skeleton } from '@mui/material'
+import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
+import { useProducts } from '../../hooks/useProducts'
+import { useExpensesByCategory, useSalesMetrics } from '../../hooks/useReports'
 import { useAppSelector } from '../../store'
 import { formatBRL } from '../../utils/currency'
-import { MOCK_METRICS } from './mock'
 
 interface DateRangeOption {
   label: string
@@ -28,27 +31,43 @@ const DATE_RANGE_OPTIONS: DateRangeOption[] = [
 ]
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const [dateAnchor, setDateAnchor] = useState<HTMLElement | null>(null)
   const [selectedDays, setSelectedDays] = useState(14)
   const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
 
   const selectedDateRange = useMemo(
-    () => DATE_RANGE_OPTIONS.find((opt) => opt.days === selectedDays) || DATE_RANGE_OPTIONS[1],
+    () => DATE_RANGE_OPTIONS.find((opt) => opt.days === selectedDays) ?? DATE_RANGE_OPTIONS[1],
     [selectedDays],
   )
 
-  const handleNewSale = () => {
-    // TODO: Navigate to sales page or open sales modal
-    console.log('Nova venda')
-  }
+  const endDate = dayjs().format('YYYY-MM-DD')
+  const startDate = useMemo(() => dayjs().subtract(selectedDays, 'day').format('YYYY-MM-DD'), [selectedDays])
 
-  const handleExport = () => {
-    // TODO: Implementar exportação
-    console.log('Exportar')
-  }
+  const { data: metrics, isLoading: metricsLoading } = useSalesMetrics(startDate, endDate)
+  const { data: products } = useProducts()
+  const { data: expensesByCategory, isLoading: expensesLoading } = useExpensesByCategory(startDate, endDate)
 
-  const today = new Date()
-  const formattedDate = today.toLocaleDateString('pt-BR', {
+  const lowStockCount = useMemo(
+    () => products?.filter((p) => p.minStock !== undefined && p.stock <= p.minStock).length ?? 0,
+    [products],
+  )
+
+  const criticalStockCount = useMemo(
+    () => products?.filter((p) => p.criticalStock !== undefined && p.stock <= p.criticalStock).length ?? 0,
+    [products],
+  )
+
+  const totalExpenses = useMemo(
+    () => expensesByCategory?.reduce((sum, e) => sum + e.total, 0) ?? 0,
+    [expensesByCategory],
+  )
+
+  const estimatedProfit = (metrics?.totalRevenue ?? 0) - totalExpenses
+
+  const kpisLoading = metricsLoading || expensesLoading
+
+  const formattedDate = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -65,10 +84,7 @@ export default function DashboardPage() {
         >
           {selectedDateRange.label}
         </Button>
-        <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={handleExport}>
-          Exportar
-        </Button>
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={handleNewSale}>
+        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => navigate('/vendas')}>
           Nova venda
         </Button>
       </PageHeader>
@@ -94,52 +110,48 @@ export default function DashboardPage() {
         ))}
       </Menu>
 
-      <PageKpiGrid>
-        <PageKpiCard
-          icon={ShoppingCartRounded}
-          label="Faturamento de hoje"
-          value={formatBRL(MOCK_METRICS.billingToday)}
-          badge={{ label: `+${MOCK_METRICS.billingTodayChange}% ontem`, color: 'success', icon: TrendingUpRounded }}
-        />
-        <PageKpiCard
-          icon={WarningRounded}
-          label="Estoque baixo"
-          value={MOCK_METRICS.lowStockCount.toString()}
-          badge={{ label: `${MOCK_METRICS.criticalStockCount} críticos`, color: 'error', icon: TrendingDownRounded }}
-        />
-        <PageKpiCard
-          icon={ShoppingCartRounded}
-          label="Despesas do mês"
-          value={formatBRL(MOCK_METRICS.monthlyExpenses)}
-          badge={{ label: `${MOCK_METRICS.monthlyExpensesChange}% vs. abril`, color: 'error', icon: TrendingDownRounded }}
-        />
-        <PageKpiCard
-          icon={LocalFireDepartmentRounded}
-          label="Lucros estimados"
-          value={formatBRL(MOCK_METRICS.estimatedProfit)}
-          badge={{ label: `+${MOCK_METRICS.estimatedProfitChange}% vs. mês ant.`, color: 'success', icon: TrendingUpRounded }}
-        />
-      </PageKpiGrid>
-
-      {/* Gráfico de faturamento 
-      <BillingChart data={MOCK_DAILY_BILLING} />
-
-
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: '2fr 3fr',
-          },
-        }}
-      >
-        <PaymentMethodsChart methods={MOCK_PAYMENT_METHODS} />
-        <RecentSalesTable sales={MOCK_SALES} />
-      </Box>
-      <TopProductsTable products={MOCK_TOP_PRODUCTS} />
-      */}
+      {kpisLoading ? (
+        <PageKpiGrid>
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} variant="rounded" height={120} />
+          ))}
+        </PageKpiGrid>
+      ) : (
+        <PageKpiGrid>
+          <PageKpiCard
+            icon={ShoppingCartRounded}
+            label="Faturamento do período"
+            value={formatBRL(metrics?.totalRevenue ?? 0)}
+            badge={{ label: `${metrics?.totalSales ?? 0} vendas`, color: 'success', icon: TrendingUpRounded }}
+          />
+          <PageKpiCard
+            icon={WarningRounded}
+            label="Estoque baixo"
+            value={lowStockCount.toString()}
+            badge={
+              criticalStockCount > 0
+                ? { label: `${criticalStockCount} críticos`, color: 'error', icon: TrendingDownRounded }
+                : undefined
+            }
+          />
+          <PageKpiCard
+            icon={ReceiptLongRounded}
+            label="Despesas do período"
+            value={formatBRL(totalExpenses)}
+            badge={{ label: selectedDateRange.label, color: 'warning', icon: TrendingDownRounded }}
+          />
+          <PageKpiCard
+            icon={LocalFireDepartmentRounded}
+            label="Lucro estimado"
+            value={formatBRL(estimatedProfit)}
+            badge={
+              estimatedProfit >= 0
+                ? { label: 'positivo', color: 'success', icon: TrendingUpRounded }
+                : { label: 'negativo', color: 'error', icon: TrendingDownRounded }
+            }
+          />
+        </PageKpiGrid>
+      )}
     </Box>
   )
 }

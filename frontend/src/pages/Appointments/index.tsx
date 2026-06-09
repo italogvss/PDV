@@ -1,36 +1,35 @@
-import { useMemo, useState } from 'react'
+import AddRounded from '@mui/icons-material/AddRounded'
+import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
+import PaidOutlined from '@mui/icons-material/PaidOutlined'
+import TodayOutlined from '@mui/icons-material/TodayOutlined'
 import {
   Box,
   Button,
   Chip,
   ToggleButton,
   ToggleButtonGroup,
-  useTheme,
+  Typography
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
-import TodayOutlined from '@mui/icons-material/TodayOutlined'
-import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
-import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import PaidOutlined from '@mui/icons-material/PaidOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import { DatePicker } from '@mui/x-date-pickers'
 import type { SchedulerEvent } from '@mui/x-scheduler/models'
 import dayjs from 'dayjs'
-import type { Appointment, AppointmentStatus } from '../../types/appointment.types'
-import type { Professional } from '../../types/appointment.types'
-import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useDeleteAppointment, useUpdateAppointment } from '../../hooks/useAppointments'
-import { useEmployees } from '../../hooks/useEmployees'
-import { useServices } from '../../hooks/useServices'
-import { useCustomers } from '../../hooks/useCustomers'
-import { computeKpis, proColorKey, type ProColorKey } from './components/appointmentHelpers'
-import { formatBRL } from '../../utils/currency'
-import WeekStrip from './components/WeekStrip'
+import { useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
-import SidePanel from './components/SidePanel'
+import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useDeleteAppointment, useUpdateAppointment } from '../../hooks/useAppointments'
+import { useCustomers } from '../../hooks/useCustomers'
+import { useEmployees } from '../../hooks/useEmployees'
+import { useServices } from '../../hooks/useServices'
+import type { Appointment, AppointmentStatus, Professional } from '../../types/appointment.types'
+import { formatBRL } from '../../utils/currency'
+import AppointmentDetailModal from './components/AppointmentDetailModal'
+import { computeKpis } from './components/appointmentHelpers'
 import AppointmentScheduler from './components/AppointmentScheduler'
 import NewAppointmentModal from './components/NewAppointmentModal'
-import AppointmentDetailModal from './components/AppointmentDetailModal'
+import SidePanel from './components/SidePanel'
+import WeekStrip from './components/WeekStrip'
 import type { AgendaView, NewAppointmentPrefill } from './types'
 
 const DOW_FULL = [
@@ -58,7 +57,6 @@ const MONTHS = [
 ]
 
 export default function AppointmentsPage() {
-  const theme = useTheme()
   // ─── Data da API ────────────────────────────────────────────────────────────
 
   const { data: employeesPage } = useEmployees(1, 100)
@@ -112,11 +110,6 @@ export default function AppointmentsPage() {
     return Object.fromEntries(professionals.map((p) => [p.id, p.id === proFilter]))
   }, [proFilter, professionals])
 
-  const proHex = (id: string): string => {
-    const key: ProColorKey = proColorKey(id)
-    return key === 'green' ? theme.palette.success.main : theme.palette.data[key].main
-  }
-
   const detailAppointment = detailId
     ? (appointments.find((a) => a.id === detailId) ?? null)
     : null
@@ -136,6 +129,7 @@ export default function AppointmentsPage() {
       price: appointment.price,
       status: appointment.status,
       note: appointment.note,
+      color: appointment.color,
     })
     setNewOpen(false)
   }
@@ -174,6 +168,7 @@ export default function AppointmentsPage() {
             price: a.price,
             status: a.status,
             note: a.note,
+            color: a.color,
           },
         })
       }
@@ -254,6 +249,18 @@ export default function AppointmentsPage() {
       </PageKpiGrid>
 
       {/* Faixa da semana */}
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 600,
+          color: 'text.disabled',
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
+          display: 'block',
+        }}
+      >
+        Filtrar por dia
+      </Typography>
       <WeekStrip
         selectedDate={selectedDate}
         appointments={appointments}
@@ -274,9 +281,22 @@ export default function AppointmentsPage() {
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
           {/* Filtro por profissional */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              color: 'text.disabled',
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              display: 'block',
+            }}
+          >
+            Filtrar por profissional
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Chip
               clickable
+              size="large"
               label="Todos"
               variant={proFilter === 'todos' ? 'filled' : 'outlined'}
               onClick={() => setProFilter('todos')}
@@ -292,14 +312,10 @@ export default function AppointmentsPage() {
                 <Chip
                   key={pro.id}
                   clickable
+                  size="large"
                   label={pro.name}
                   variant={selected ? 'filled' : 'outlined'}
                   onClick={() => setProFilter(selected ? 'todos' : pro.id)}
-                  avatar={
-                    <Box
-                      sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: proHex(pro.id) }}
-                    />
-                  }
                   sx={
                     selected
                       ? { bgcolor: 'text.primary', color: 'background.paper', fontWeight: 600 }

@@ -1,5 +1,12 @@
 import { api } from './api'
-import type { Service, ServiceCategory } from '../types/service.types'
+import type {
+  Service,
+  ServiceCategory,
+  CreateServicePayload,
+  UpdateServicePayload,
+  CreateServiceCategoryPayload,
+  UpdateServiceCategoryPayload,
+} from '../types/service.types'
 
 interface BackendService {
   id: string
@@ -28,34 +35,6 @@ function mapService(s: BackendService): Service {
     category: s.category,
     isActive: s.isActive,
   }
-}
-
-export interface CreateServicePayload {
-  name: string
-  description?: string
-  durationMinutes?: number
-  price: number
-  categoryId?: string | null
-  isActive?: boolean
-}
-
-export interface UpdateServicePayload {
-  name: string
-  description?: string
-  durationMinutes?: number
-  price: number
-  categoryId?: string | null
-  isActive: boolean
-}
-
-export interface CreateServiceCategoryPayload {
-  name: string
-  color: string
-}
-
-export interface UpdateServiceCategoryPayload {
-  name: string
-  color: string
 }
 
 export const serviceService = {

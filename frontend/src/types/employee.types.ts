@@ -55,3 +55,20 @@ export const ALL_PERMISSIONS: Permission[] = [
   'ViewReports',
   'ManageEmployees',
 ]
+
+export interface CreateEmployeePayload {
+  name: string
+  email: string
+  temporaryPassword: string
+  employeeType: EmployeeType
+  position: string
+  salary?: number
+  phone?: string
+}
+
+export interface UpdateEmployeePayload {
+  employeeType: EmployeeType
+  position: string
+  salary?: number
+  phone?: string
+}

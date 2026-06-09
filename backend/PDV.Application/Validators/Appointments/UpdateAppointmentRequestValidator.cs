@@ -17,5 +17,6 @@ public class UpdateAppointmentRequestValidator : AbstractValidator<UpdateAppoint
         RuleFor(x => x.Price).GreaterThanOrEqualTo(0);
         RuleFor(x => x.Status).Must(s => ValidStatuses.Contains(s)).WithMessage("Status inválido.");
         RuleFor(x => x.Note).MaximumLength(1000).When(x => x.Note is not null);
+        RuleFor(x => x.Color).MaximumLength(20).When(x => x.Color is not null);
     }
 }

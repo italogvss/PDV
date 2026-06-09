@@ -48,6 +48,8 @@ export interface Appointment {
   price: number
   status: AppointmentStatus
   note: string
+  /** Cor hex customizada do agendamento. Vazio = usa cor derivada do profissional. */
+  color?: string
 }
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
@@ -66,3 +68,19 @@ export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
   'concluido',
   'cancelado',
 ]
+
+export interface CreateAppointmentPayload {
+  customerId: string | null
+  customerName: string
+  customerPhone?: string
+  employeeId: string
+  serviceIds: string[]
+  start: string
+  durationMinutes: number
+  price: number
+  status: AppointmentStatus
+  note: string
+  color?: string
+}
+
+export type UpdateAppointmentPayload = CreateAppointmentPayload

@@ -16,7 +16,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
-import { useCreateProductCategory, useUpdateProductCategory } from '../../../../hooks/useProductCategories'
 import type { CategoryFormModalProps } from './types'
 
 const PRESET_COLORS = [
@@ -33,10 +32,14 @@ const schema = z.object({
 
 type CategoryForm = z.infer<typeof schema>
 
-export default function CategoryFormModal({ open, onClose, category }: CategoryFormModalProps) {
+export default function CategoryFormModal({
+  open,
+  onClose,
+  category,
+  onSave,
+  isPending,
+}: CategoryFormModalProps) {
   const isEditing = !!category
-  const createCategory = useCreateProductCategory()
-  const updateCategory = useUpdateProductCategory()
 
   const {
     register,
@@ -52,7 +55,6 @@ export default function CategoryFormModal({ open, onClose, category }: CategoryF
 
   const watchColor = watch('color')
   const isValidColor = /^#[0-9A-Fa-f]{6}$/.test(watchColor)
-  const isPending = createCategory.isPending || updateCategory.isPending
 
   useEffect(() => {
     if (open) {
@@ -64,11 +66,7 @@ export default function CategoryFormModal({ open, onClose, category }: CategoryF
   }, [open, category, reset])
 
   const onSubmit = async (data: CategoryForm) => {
-    if (isEditing) {
-      await updateCategory.mutateAsync({ id: category.id, name: data.name, color: data.color })
-    } else {
-      await createCategory.mutateAsync({ name: data.name, color: data.color })
-    }
+    await onSave({ name: data.name, color: data.color })
     onClose()
   }
 

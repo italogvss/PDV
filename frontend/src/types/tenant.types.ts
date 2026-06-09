@@ -1,3 +1,8 @@
+export interface CreateTenantResponse {
+  tenantId: string
+  fantasyName: string
+}
+
 export interface TenantListItem {
   tenantId: string
   name: string

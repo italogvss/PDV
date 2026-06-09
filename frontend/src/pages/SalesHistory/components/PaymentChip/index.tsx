@@ -18,7 +18,6 @@ export default function PaymentChip({ method }: PaymentChipProps) {
   const Icon = iconMap[method]
   return (
     <Chip
-      size="small"
       label={method}
       icon={<Icon />}
     />

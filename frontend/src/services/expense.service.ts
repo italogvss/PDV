@@ -1,6 +1,7 @@
 import { api } from './api'
 import type { Expense } from '../pages/Expenses/types'
 import type { ExpenseCategory } from '../pages/Expenses/types'
+import type { CreateExpensePayload, UpdateExpensePayload } from '../types/expense.types'
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -34,17 +35,6 @@ function mapExpense(e: BackendExpense): Expense {
     paidAt: e.paidAt,
   }
 }
-
-export interface CreateExpensePayload {
-  description: string
-  category: string
-  amount: number
-  isRecurring: boolean
-  dueDate: string
-  isPaid: boolean
-}
-
-export type UpdateExpensePayload = CreateExpensePayload
 
 export const expenseService = {
   getAll: async (month?: number, year?: number): Promise<Expense[]> => {

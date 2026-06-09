@@ -49,21 +49,28 @@ export default function AppointmentDetailModal({
 }: AppointmentDetailModalProps) {
   const theme = useTheme()
   const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [cached, setCached] = useState(appointment)
+
+  useEffect(() => {
+    if (appointment) setCached(appointment)
+  }, [appointment])
 
   useEffect(() => {
     if (open) setConfirmingCancel(false)
   }, [open, appointment?.id])
 
-  if (!appointment) return null
+  const data = appointment ?? cached
 
-  const meta = STATUS_META[appointment.status]
-  const color = proHex(theme, appointment.employeeId)
-  const start = dayjs(appointment.start)
-  const isClosed = appointment.status === 'concluido' || appointment.status === 'cancelado'
-  const waDigits = appointment.customerPhone?.replace(/\D/g, '')
+  if (!data) return null
+
+  const meta = STATUS_META[data.status]
+  const color = data.color || proHex(theme, data.employeeId)
+  const start = dayjs(data.start)
+  const isClosed = data.status === 'concluido' || data.status === 'cancelado'
+  const waDigits = data.customerPhone?.replace(/\D/g, '')
 
   const advance = (() => {
-    switch (appointment.status) {
+    switch (data.status) {
       case 'pendente':
         return { label: 'Confirmar', icon: <CheckRounded />, next: 'confirmado' as const }
       case 'confirmado':
@@ -100,15 +107,15 @@ export default function AppointmentDetailModal({
             }}
           >
             <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-              {initialsOf(appointment.customerName)}
+              {initialsOf(data.customerName)}
             </Typography>
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="h3" sx={{ fontWeight: 600 }}>
-              {appointment.customerName}
+              {data.customerName}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {appointment.services.map((s) => s.name).join(' + ')}
+              {data.services.map((s) => s.name).join(' + ')}
             </Typography>
           </Box>
         </Box>
@@ -141,13 +148,13 @@ export default function AppointmentDetailModal({
           <Detail label="Data" value={`${DOW_SHORT[start.day()]}, ${start.format('DD/MM')}`} />
           <Detail
             label="Horário"
-            value={formatRange(appointment.start, appointment.durationMinutes)}
+            value={formatRange(data.start, data.durationMinutes)}
           />
-          <Detail label="Duração" value={`${appointment.durationMinutes} min`} />
-          <Detail label="Valor" value={formatBRL(appointment.price)} />
+          <Detail label="Duração" value={`${data.durationMinutes} min`} />
+          <Detail label="Valor" value={formatBRL(data.price)} />
         </Box>
 
-        {appointment.customerPhone && (
+        
           <Box
             sx={{
               mt: 2,
@@ -161,7 +168,7 @@ export default function AppointmentDetailModal({
               <Typography variant="caption" color="text.tertiary" sx={{ display: 'block' }}>
                 Contato
               </Typography>
-              <Typography variant="body2">{appointment.customerPhone}</Typography>
+              <Typography variant="body2">{data.customerPhone}</Typography>
             </Box>
             <Button
               size="small"
@@ -176,9 +183,9 @@ export default function AppointmentDetailModal({
               WhatsApp
             </Button>
           </Box>
-        )}
+        
 
-        {appointment.note && (
+        {data.note && (
           <Box
             sx={{
               mt: 2,
@@ -191,7 +198,7 @@ export default function AppointmentDetailModal({
             <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.25 }}>
               Observação
             </Typography>
-            <Typography variant="body2">{appointment.note}</Typography>
+            <Typography variant="body2">{data.note}</Typography>
           </Box>
         )}
       </DialogContent>
@@ -213,7 +220,7 @@ export default function AppointmentDetailModal({
                 variant="contained"
                 color="error"
                 size="small"
-                onClick={() => onChangeStatus(appointment.id, 'cancelado')}
+                onClick={() => onChangeStatus(data.id, 'cancelado')}
               >
                 Sim, cancelar
               </Button>
@@ -240,7 +247,7 @@ export default function AppointmentDetailModal({
                     variant="contained"
                     color="success"
                     startIcon={advance.icon}
-                    onClick={() => onChangeStatus(appointment.id, advance.next)}
+                    onClick={() => onChangeStatus(data.id, advance.next)}
                   >
                     {advance.label}
                   </Button>

@@ -16,13 +16,13 @@ import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
 import PageHeader from '../../components/PageHeader'
-import type { SaleListItem } from '../../services/sale.service'
 import type { FilterState, SaleRecord, SaleStatus, SalePaymentMethod } from './types'
 import StatusChip from './components/StatusChip'
 import PaymentChip from './components/PaymentChip'
 import FiltersPopover from './components/FiltersPopover'
 import RowActionsMenu from './components/RowActionsMenu'
 import SaleDetailModal from './components/SaleDetailModal'
+import { SaleListItem } from '../../types/sale.types'
 
 const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
