@@ -10,6 +10,6 @@ public record EmployeeResponse(
     string Position,
     decimal? Salary,
     string? Phone,
-    string? AvatarUrl,
+    string? ImageUrl,
     bool IsActive,
     DateTime CreatedAt);

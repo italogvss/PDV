@@ -7,5 +7,4 @@ export type SettingsTab =
   | 'aparencia'
   | 'backup'
   | 'integracoes'
-  | 'equipe'
   | 'avancado'

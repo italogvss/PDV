@@ -52,5 +52,5 @@ public class UserService(
     }
 
     private static UserResponse ToResponse(PDV.Domain.Entities.User u) =>
-        new(u.Id, u.Name, u.Email, u.Phone, u.AvatarUrl, u.CreatedAt);
+        new(u.Id, u.Name, u.Email, u.Phone, u.ImageUrl, u.CreatedAt);
 }

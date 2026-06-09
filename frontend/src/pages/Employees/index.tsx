@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -8,23 +8,44 @@ import {
   InputAdornment,
   CircularProgress,
   Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Checkbox,
+  Skeleton,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogContent,
 } from '@mui/material'
-import GroupRounded from '@mui/icons-material/GroupRounded'
-import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined'
-import BadgeOutlined from '@mui/icons-material/BadgeOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
+import AddIcon from '@mui/icons-material/Add'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import { DeleteOutlineOutlined } from '@mui/icons-material'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useEmployees } from '../../hooks/useEmployees'
+import { useTeamRoles, useCreateRole, useUpdateRole, useDeactivateRole, useSetRolePermissions } from '../../hooks/useTeamRoles'
 import EmployeeAvatar from './components/EmployeeAvatar'
 import PageHeader from '../../components/PageHeader'
-import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import AddEmployeeModal from './components/AddEmployeeModal'
 import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
-import type { Employee } from '../../types/employee.types'
+import SettingCard from '../../components/SettingCard'
+import ModalHeader from '../../components/ModalHeader'
+import FormModalActions from '../../components/FormModalActions'
+import FieldLabel from '../../components/FieldLabel'
+import type { Employee, TenantRole } from '../../types/employee.types'
+import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../../types/employee.types'
 import type { AvatarColorKey } from './types'
 import { formatBRL } from '../../utils/currency'
 
@@ -42,21 +63,163 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+// ─── RoleFormModal ───────────────────────────────────────────────────────────
+
+const roleSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').max(100),
+  description: z.string().max(255).optional(),
+})
+
+type RoleFormValues = z.infer<typeof roleSchema>
+
+interface RoleFormModalProps {
+  open: boolean
+  editRole?: TenantRole | null
+  onClose: () => void
+}
+
+function RoleFormModal({ open, editRole, onClose }: RoleFormModalProps) {
+  const createRole = useCreateRole()
+  const updateRole = useUpdateRole()
+  const isPending = createRole.isPending || updateRole.isPending
+
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<RoleFormValues>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: { name: '', description: '' },
+  })
+
+  useEffect(() => {
+    if (open) {
+      reset(editRole ? { name: editRole.name, description: editRole.description ?? '' } : { name: '', description: '' })
+    }
+  }, [open, editRole, reset])
+
+  const onSubmit = (values: RoleFormValues) => {
+    const payload = { name: values.name, description: values.description || undefined }
+    const mutation = editRole
+      ? updateRole.mutateAsync({ id: editRole.id, payload })
+      : createRole.mutateAsync(payload)
+    mutation.then(onClose)
+  }
+
+  return (
+    <Dialog open={open} onClose={isPending ? undefined : onClose} maxWidth="xs" fullWidth>
+      <ModalHeader
+        title={editRole ? 'Editar papel' : 'Novo papel'}
+        subtitle={editRole ? 'Altere o nome ou descrição do papel.' : 'Crie um papel personalizado para a sua equipe.'}
+        onClose={onClose}
+        disabled={isPending}
+      />
+      <DialogContent>
+        <Box
+          component="form"
+          id="role-form"
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
+        >
+          <Box>
+            <FieldLabel label="Nome" required />
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  size="small"
+                  fullWidth
+                  placeholder="ex: Supervisor"
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                />
+              )}
+            />
+          </Box>
+          <Box>
+            <FieldLabel label="Descrição" />
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  size="small"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="O que este papel pode fazer?"
+                  error={!!errors.description}
+                  helperText={errors.description?.message}
+                />
+              )}
+            />
+          </Box>
+        </Box>
+      </DialogContent>
+      <FormModalActions
+        formId="role-form"
+        onCancel={onClose}
+        isPending={isPending}
+        submitLabel={editRole ? 'Salvar alterações' : 'Criar papel'}
+        pendingLabel="Salvando..."
+      />
+    </Dialog>
+  )
+}
+
+// ─── EmployeesPage ───────────────────────────────────────────────────────────
+
 export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
+  const [roleModal, setRoleModal] = useState<{ open: boolean; role?: TenantRole | null }>({ open: false })
 
   const { data, isLoading } = useEmployees(1, 200)
   const employees = data?.data ?? []
 
-  const kpis = useMemo(() => {
-    const total = employees.length
-    const active = employees.filter((e) => e.isActive).length
-    const inactive = total - active
-    const managers = employees.filter((e) => e.roleName === 'Gerente').length
-    return { total, active, inactive, managers }
-  }, [employees])
+  const { data: rolesData, isLoading: rolesLoading } = useTeamRoles()
+  const deactivateRole = useDeactivateRole()
+  const setPermissions = useSetRolePermissions()
+
+  const [pendingPermissions, setPendingPermissions] = useState<Record<string, string[]>>({})
+  const [savingRole, setSavingRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (rolesData) {
+      const initial: Record<string, string[]> = {}
+      rolesData.forEach((r) => { initial[r.id] = [...r.permissions] })
+      setPendingPermissions(initial)
+    }
+  }, [rolesData])
+
+  const togglePermission = (roleId: string, permission: string) => {
+    setPendingPermissions((prev) => {
+      const current = prev[roleId] ?? []
+      return {
+        ...prev,
+        [roleId]: current.includes(permission)
+          ? current.filter((p) => p !== permission)
+          : [...current, permission],
+      }
+    })
+  }
+
+  const hasUnsavedChanges = (role: TenantRole) => {
+    const pending = pendingPermissions[role.id] ?? []
+    const original = role.permissions
+    return (
+      pending.length !== original.length ||
+      pending.some((p) => !original.includes(p))
+    )
+  }
+
+  const savePermissions = async (roleId: string) => {
+    setSavingRole(roleId)
+    await setPermissions.mutateAsync({ id: roleId, permissions: pendingPermissions[roleId] ?? [] })
+    setSavingRole(null)
+  }
+
+  const roles = rolesData ?? []
 
   const filteredRows = useMemo(
     () =>
@@ -83,7 +246,7 @@ export default function EmployeesPage() {
               colorKey={getColorKey(row.name)}
               size={34}
             />
-            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%'}}>
+            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
               <Typography
                 variant="body2"
                 sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
@@ -160,20 +323,16 @@ export default function EmployeesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Funcionários" description={`${kpis.total} membros na equipe`}>
+      <PageHeader title="Funcionários" description={`${employees.length} membros na equipe`}>
         <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
-          Adicionar
+          Novo funcionário
         </Button>
       </PageHeader>
 
-      <PageKpiGrid>
-        <PageKpiCard icon={GroupRounded} label="Total" value={kpis.total} />
-        <PageKpiCard icon={CheckCircleOutlineRounded} label="Ativos" value={kpis.active} />
-        <PageKpiCard icon={BadgeOutlined} label="Gerentes" value={kpis.managers} />
-        <PageKpiCard icon={PersonOffOutlined} label="Inativos" value={kpis.inactive} />
-      </PageKpiGrid>
-
-      <Card sx={{ overflow: 'hidden' }}>
+      {/* DataGrid + Papéis lado a lado */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
+        {/* DataGrid */}
+        <Card sx={{ overflow: 'hidden', flex: 1, minWidth: 0, borderRadius: 2 }}>
           <Box
             sx={{
               display: 'flex',
@@ -248,6 +407,165 @@ export default function EmployeesPage() {
           )}
         </Card>
 
+        {/* Papéis disponíveis */}
+        <Box sx={{ width: { xs: '100%', md: 400 }, flexShrink: 0 }}>
+          <SettingCard
+            title="Papéis disponíveis"
+            subtitle="Gerencie os papéis da equipe."
+            action={
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={() => setRoleModal({ open: true, role: null })}
+              >
+                Novo papel
+              </Button>
+            }
+          >
+            {rolesLoading
+              ? [1, 2, 3].map((i) => (
+                  <Box key={i} sx={{ px: 4, py: 2.5 }}>
+                    <Skeleton width={160} height={20} />
+                  </Box>
+                ))
+              : roles.map((role) => (
+                  <Box
+                    key={role.id}
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2 }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 32, height: 32, borderRadius: 2, bgcolor: 'surface.raised',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <PeopleAltOutlinedIcon sx={{ fontSize: 16, color: 'text.tertiary' }} />
+                      </Box>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+                            {role.name}
+                          </Typography>
+                          {role.isDefault && (
+                            <Chip label="padrão" size="small" sx={{ height: 16, fontSize: 10, bgcolor: 'surface.raised', color: 'text.tertiary' }} />
+                          )}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {role.memberCount} {role.memberCount === 1 ? 'membro' : 'membros'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Tooltip title="Editar papel">
+                        <IconButton size="small" onClick={() => setRoleModal({ open: true, role })}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {role.memberCount === 0 && !role.isDefault && (
+                        <Tooltip title="Remover papel">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => deactivateRole.mutate(role.id)}
+                            disabled={deactivateRole.isPending}
+                          >
+                            <DeleteOutlineOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+          </SettingCard>
+        </Box>
+      </Box>
+
+      {/* Matriz de permissões */}
+      <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+        <Box sx={{ px: 4, py: 3 }}>
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
+            Matriz de permissões
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Configure o que cada papel pode fazer. Salve as alterações por papel.
+          </Typography>
+        </Box>
+        <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'surface.sunken' }}>
+              <TableCell
+                sx={{ fontWeight: 600, fontSize: 11, color: 'text.tertiary', letterSpacing: '0.06em', py: 1.5, pl: 4, borderBottom: 1, borderColor: 'border.subtle' }}
+              >
+                PERMISSÃO
+              </TableCell>
+              {rolesLoading
+                ? [1, 2, 3].map((i) => (
+                    <TableCell key={i} align="center" sx={{ py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}>
+                      <Skeleton width={60} sx={{ mx: 'auto' }} />
+                    </TableCell>
+                  ))
+                : roles.map((role) => (
+                    <TableCell
+                      key={role.id}
+                      align="center"
+                      sx={{ fontWeight: 600, fontSize: 11, color: 'text.tertiary', letterSpacing: '0.06em', py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}
+                    >
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                        {role.name.toUpperCase()}
+                        {hasUnsavedChanges(role) && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            sx={{ fontSize: 10, py: 0.25, px: 1, minWidth: 0, height: 22 }}
+                            onClick={() => savePermissions(role.id)}
+                            disabled={savingRole === role.id}
+                            startIcon={savingRole === role.id ? <CircularProgress size={10} color="inherit" /> : <SaveOutlinedIcon sx={{ fontSize: '12px !important' }} />}
+                          >
+                            {savingRole === role.id ? '' : 'Salvar'}
+                          </Button>
+                        )}
+                      </Box>
+                    </TableCell>
+                  ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {ALL_PERMISSIONS.map((perm) => (
+              <TableRow key={perm} sx={{ '&:last-child td': { border: 0 } }}>
+                <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 4, borderColor: 'border.subtle' }}>
+                  {PERMISSION_LABELS[perm]}
+                </TableCell>
+                {rolesLoading
+                  ? [1, 2, 3].map((i) => (
+                      <TableCell key={i} align="center" sx={{ py: 1.5, borderColor: 'border.subtle' }}>
+                        <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                      </TableCell>
+                    ))
+                  : roles.map((role) => {
+                      const checked = (pendingPermissions[role.id] ?? []).includes(perm)
+                      return (
+                        <TableCell key={role.id} align="center" sx={{ py: 0.5, borderColor: 'border.subtle' }}>
+                          <Checkbox
+                            size="small"
+                            checked={checked}
+                            onChange={() => togglePermission(role.id, perm)}
+                            sx={{ p: 0.5 }}
+                          />
+                        </TableCell>
+                      )
+                    })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        </Box>
+      </Paper>
+
       <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} />
 
       {editEmployee && (
@@ -257,6 +575,12 @@ export default function EmployeesPage() {
           onClose={() => setEditEmployee(null)}
         />
       )}
+
+      <RoleFormModal
+        open={roleModal.open}
+        editRole={roleModal.role}
+        onClose={() => setRoleModal({ open: false })}
+      />
     </Box>
   )
 }

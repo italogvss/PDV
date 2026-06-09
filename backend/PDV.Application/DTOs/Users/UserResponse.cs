@@ -5,5 +5,5 @@ public record UserResponse(
     string Name,
     string Email,
     string? Phone,
-    string? AvatarUrl,
+    string? ImageUrl,
     DateTime CreatedAt);

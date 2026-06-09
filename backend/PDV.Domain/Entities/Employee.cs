@@ -8,7 +8,7 @@ public class Employee : BaseEntity
     public string Position { get; set; } = string.Empty;
     public decimal? Salary { get; set; }
     public string? Phone { get; set; }
-    public string? AvatarUrl { get; set; } // {tenantId}/employees/{employeeId}.webp
+    public string? ImageUrl { get; set; } // {tenantId}/employees/{employeeId}.webp
 
     public User User { get; set; } = null!;
     public TenantRole Role { get; set; } = null!;

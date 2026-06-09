@@ -175,5 +175,5 @@ public class EmployeeService(
     private static EmployeeResponse Map(Employee e) =>
         new(e.Id, e.UserId, e.User.Name, e.User.Email,
             e.RoleId, e.Role.Name, e.Position,
-            e.Salary, e.Phone, e.AvatarUrl, e.IsActive, e.CreatedAt);
+            e.Salary, e.Phone, e.ImageUrl, e.IsActive, e.CreatedAt);
 }

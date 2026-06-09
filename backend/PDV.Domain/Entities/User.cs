@@ -7,7 +7,7 @@ public class User : BaseEntity
     public string Email { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string? AvatarUrl { get; set; }
+    public string? ImageUrl { get; set; }
     public Guid? LastTenantId { get; set; }
     public Tenant? LastTenant { get; set; }
     public UserRole Role { get; set; }

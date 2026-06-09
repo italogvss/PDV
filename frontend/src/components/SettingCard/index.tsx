@@ -1,4 +1,4 @@
-import { Paper, Box, Typography, Divider, Stack } from '@mui/material'
+import { Paper, Box, Typography, Divider, Stack, Card } from '@mui/material'
 import { ReactNode } from 'react'
 
 interface SettingCardProps {
@@ -11,10 +11,10 @@ interface SettingCardProps {
 
 export default function SettingCard({ title, subtitle, action, children, danger }: SettingCardProps) {
   return (
-    <Paper
+    <Card
       variant="outlined"
       sx={{
-        borderRadius: 3,
+        borderRadius: 2,
         overflow: 'hidden',
         ...(danger && {
           borderColor: 'error.main',
@@ -47,6 +47,6 @@ export default function SettingCard({ title, subtitle, action, children, danger 
       <Stack divider={<Divider sx={danger ? { borderColor: 'error.main', opacity: 0.2 } : undefined} />}>
         {children}
       </Stack>
-    </Paper>
+    </Card>
   )
 }

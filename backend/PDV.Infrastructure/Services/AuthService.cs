@@ -65,7 +65,7 @@ public class AuthService(
                 Email = email,
                 Name = name,
                 Role = UserRole.Owner,
-                AvatarUrl = avatarUrl,
+                ImageUrl = avatarUrl,
             };
             user.ExternalLogins.Add(new ExternalAuth
             {
@@ -95,7 +95,7 @@ public class AuthService(
             }
 
             if (user.Name != name) { user.Name = name; changed = true; }
-            if (user.AvatarUrl != avatarUrl) { user.AvatarUrl = avatarUrl; changed = true; }
+            if (user.ImageUrl != avatarUrl) { user.ImageUrl = avatarUrl; changed = true; }
 
             if (changed)
             {
@@ -172,7 +172,7 @@ public class AuthService(
             }
         }
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.AvatarUrl, user.LastTenantId,
+        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.ImageUrl, user.LastTenantId,
             user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
     }
 

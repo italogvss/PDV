@@ -11,7 +11,7 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(e => e.Position).IsRequired().HasMaxLength(100);
         builder.Property(e => e.Salary).HasColumnType("decimal(10,2)");
         builder.Property(e => e.Phone).HasMaxLength(20);
-        builder.Property(e => e.AvatarUrl).HasMaxLength(500);
+        builder.Property(e => e.ImageUrl).HasMaxLength(500);
 
         builder.HasOne(e => e.User)
             .WithMany()

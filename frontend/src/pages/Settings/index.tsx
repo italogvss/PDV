@@ -2,7 +2,6 @@ import { HelpOutlined, type SvgIconComponent } from '@mui/icons-material'
 import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
 import FiberManualRecordOutlinedIcon from '@mui/icons-material/FiberManualRecordOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
@@ -17,7 +16,6 @@ import IntegrationsSection from './components/IntegrationsSection'
 import OperationSection from './components/OperationSection'
 import PaymentsSection from './components/PaymentsSection'
 import PrintingSection from './components/PrintingSection'
-import TeamSection from './components/TeamSection'
 import { type SettingsTab } from './types'
 
 interface NavItem {
@@ -36,7 +34,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'aparencia', label: 'Aparência', subtitle: 'Tema e densidade', icon: TuneOutlinedIcon },
   //{ id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlinedIcon },
   //{ id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlinedIcon },
-  { id: 'equipe', label: 'Equipe & permissões', subtitle: 'Papéis e acessos', icon: GroupOutlinedIcon },
   //{ id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlinedIcon },
 ]
 
@@ -50,7 +47,6 @@ function renderSection(tab: SettingsTab) {
     case 'aparencia': return <AppearanceSection />
     case 'backup': return <BackupSection />
     case 'integracoes': return <IntegrationsSection />
-    case 'equipe': return <TeamSection />
     case 'avancado': return <AdvancedSection />
   }
 }

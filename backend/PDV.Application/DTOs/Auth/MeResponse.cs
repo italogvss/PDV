@@ -7,7 +7,7 @@ public record MeResponse(
     string Name,
     string Email,
     string? Phone,
-    string? AvatarUrl,
+    string? ImageUrl,
     Guid? LastTenantId,
     string Role,
     UserSettingsDTO? Settings = null,
