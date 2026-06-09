@@ -162,6 +162,41 @@ Regras:
 
 ---
 
+## Padrão de modal
+
+Modais dividem-se em três arquétipos: **formulário** (criar/editar), **detalhe**
+(leitura/ações) e **ação pontual**. Toda modal de formulário usa os mesmos primitivos
+compartilhados em `components/` — nunca recriar header, footer ou label inline.
+
+Primitivos (`components/`):
+- `ModalHeader` — `title` + `subtitle?` + botão fechar (X). Substitui o `DialogTitle`.
+- `FormModalActions` — rodapé "Cancelar" (ghost) + primário verde com spinner. Modo
+  `formId` (botão `type=submit`) ou `onSubmit` (sem `<form>`). Props: `submitLabel`,
+  `isPending`, `submitDisabled?`, `showRequiredHint?`, `hint?`.
+- `FieldLabel` — label externo (caption acima do input) + asterisco de obrigatório.
+- `CurrencyField` — entrada monetária única (máscara em centavos, adorno `R$`). Sempre via
+  `Controller` (`value`/`onChange` em reais). Como a máscara devolve número, trate `0`
+  como "não informado" em campos opcionais.
+
+Convenções:
+- Labels sempre externos via `FieldLabel` — nunca a prop `label=` flutuante do MUI.
+- Header sempre com X; subtítulo curto descrevendo a ação.
+- Cancelar sempre `variant="ghost"`; primário sempre `color="success"`. Rótulos: `Salvar`
+  (criar) / `Salvar alterações` (editar); loading "Salvando...".
+- `isPending` = `mutation.isPending` (ou `create.isPending || update.isPending`) — fonte
+  única para `disabled`, spinner e guarda do `handleClose`. Não gatear por `formState.isSubmitting`.
+- `reset()` no `useEffect(if open)` ao abrir.
+- Container do form: `<Box component="form" id="{feature}-form" sx={{ display:'flex',
+  flexDirection:'column', gap:2.5 }}>`.
+- Não sobrescrever padding de `DialogTitle`/`DialogContent`/`DialogActions` — o tema já
+  padroniza (`theme/components.ts`).
+- `maxWidth` por densidade: `xs` (1–2 campos), `sm` (formulário padrão), `md` (multi-coluna
+  largo, ex.: endereço).
+- Chips de seleção: pílula escura quando selecionado (`bgcolor: text.primary` /
+  `color: background.paper`).
+
+---
+
 ## Tipagem
 
 - Nunca `any` — usar `unknown` com narrowing

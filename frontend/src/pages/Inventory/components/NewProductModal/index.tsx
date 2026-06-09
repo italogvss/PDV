@@ -1,8 +1,6 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   TextField,
   Button,
@@ -10,11 +8,9 @@ import {
   Chip,
   IconButton,
   InputAdornment,
-  CircularProgress,
   Skeleton,
 } from '@mui/material'
 import CloseRounded from '@mui/icons-material/CloseRounded'
-import CheckRounded from '@mui/icons-material/CheckRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
@@ -24,10 +20,13 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState, useEffect, useRef } from 'react'
-import type { TextFieldProps } from '@mui/material'
 import { formatBRL } from '../../../../utils/currency'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
 import { useProductCategories } from '../../../../hooks/useProductCategories'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import CurrencyField from '../../../../components/CurrencyField'
+import FormModalActions from '../../../../components/FormModalActions'
 import type { ProductModalProps } from './types'
 
 const schema = z.object({
@@ -76,53 +75,6 @@ function generateEAN13(): string {
   return [...digits, check].join('')
 }
 
-// ─── CurrencyTextField ────────────────────────────────────────────────────────
-
-function fmtCents(n: number): string {
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-interface CurrencyTextFieldProps extends Omit<TextFieldProps, 'value' | 'onChange'> {
-  value: number
-  onChange: (v: number) => void
-}
-
-function CurrencyTextField({ value, onChange, onBlur, ...rest }: CurrencyTextFieldProps) {
-  const [display, setDisplay] = useState(() => fmtCents(value))
-
-  useEffect(() => {
-    setDisplay(fmtCents(value))
-  }, [value])
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '')
-    const cents = parseInt(digits || '0', 10)
-    const reals = cents / 100
-    setDisplay(fmtCents(reals))
-    onChange(reals)
-  }
-
-  return (
-    <TextField
-      {...rest}
-      value={display}
-      onChange={handleChange}
-      onBlur={onBlur as TextFieldProps['onBlur']}
-      onFocus={(e) => e.target.select()}
-      slotProps={{
-        ...rest.slotProps,
-        input: {
-          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-          ...(rest.slotProps?.input as object),
-        },
-        htmlInput: { inputMode: 'numeric', ...(rest.slotProps?.htmlInput as object) },
-      }}
-    />
-  )
-}
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
-
 export default function ProductModal({ open, onClose, product }: ProductModalProps) {
   const isEditing = !!product
   const createProduct = useCreateProduct()
@@ -140,7 +92,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
     reset,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ProductForm>({
     resolver: zodResolver(schema),
     defaultValues: buildDefaults(),
@@ -228,30 +180,23 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
-              {isEditing ? 'Editar produto' : 'Novo produto'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              {isEditing
-                ? 'Edite as informações do produto'
-                : 'Cadastre um item para começar a vender no PDV'}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={handleClose} disabled={isPending} sx={{ mt: -0.5, mr: -0.5 }}>
-            <CloseRounded sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <ModalHeader
+        title={isEditing ? 'Editar produto' : 'Novo produto'}
+        subtitle={
+          isEditing
+            ? 'Edite as informações do produto'
+            : 'Cadastre um item para começar a vender no PDV'
+        }
+        onClose={handleClose}
+        disabled={isPending}
+      />
 
       <DialogContent sx={{ pt: 2.5 }}>
         <Box
           component="form"
           id="product-form"
           onSubmit={handleSubmit(onSubmit)}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
         >
           {/* Imagem do produto */}
           <Box>
@@ -342,7 +287,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                   name="costPrice"
                   control={control}
                   render={({ field }) => (
-                    <CurrencyTextField
+                    <CurrencyField
                       value={Number(field.value) || 0}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -364,7 +309,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                   name="price"
                   control={control}
                   render={({ field }) => (
-                    <CurrencyTextField
+                    <CurrencyField
                       value={Number(field.value) || 0}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -533,9 +478,19 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                         }
                         size="medium"
                         onClick={() => field.onChange(field.value === cat.id ? null : cat.id)}
-                        color={field.value === cat.id ? 'success' : 'default'}
                         variant={field.value === cat.id ? 'filled' : 'outlined'}
-                        sx={{ cursor: 'pointer' }}
+                        sx={
+                          field.value === cat.id
+                            ? {
+                                cursor: 'pointer',
+                                bgcolor: 'text.primary',
+                                color: 'background.paper',
+                                borderColor: 'text.primary',
+                                fontWeight: 600,
+                                '&:hover': { bgcolor: 'text.primary' },
+                              }
+                            : { cursor: 'pointer', borderColor: 'border.subtle', color: 'text.secondary' }
+                        }
                       />
                     ))}
                   </Box>
@@ -546,59 +501,12 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1.5 }}>
-        <Typography variant="caption" color="text.disabled" sx={{ flex: 1 }}>
-          ✓ Os campos com * são obrigatórios
-        </Typography>
-        <Button variant="ghost" onClick={handleClose} disabled={isPending}>
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form="product-form"
-          variant="contained"
-          color="success"
-          disabled={isPending || isSubmitting}
-          startIcon={
-            isPending ? (
-              <CircularProgress size={14} color="inherit" />
-            ) : (
-              <CheckRounded />
-            )
-          }
-        >
-          {isPending ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar produto'}
-        </Button>
-      </DialogActions>
+      <FormModalActions
+        formId="product-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel={isEditing ? 'Salvar alterações' : 'Salvar'}
+      />
     </Dialog>
-  )
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-interface FieldLabelProps {
-  label: string
-  required?: boolean
-  inline?: boolean
-}
-
-function FieldLabel({ label, required, inline }: FieldLabelProps) {
-  return (
-    <Typography
-      variant="caption"
-      sx={{
-        fontWeight: 500,
-        color: 'text.secondary',
-        display: inline ? 'inline' : 'block',
-        mb: inline ? 0 : 0.5,
-      }}
-    >
-      {label}
-      {required && (
-        <Typography component="span" variant="caption" color="error.main" sx={{ ml: 0.25 }}>
-          *
-        </Typography>
-      )}
-    </Typography>
   )
 }

@@ -1,30 +1,29 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   TextField,
-  Button,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   FormHelperText,
-  CircularProgress,
-  InputAdornment,
 } from '@mui/material'
-import SaveRounded from '@mui/icons-material/SaveRounded'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useEffect } from 'react'
 import { useUpdateEmployee } from '../../../../hooks/useEmployees'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import CurrencyField from '../../../../components/CurrencyField'
+import FormModalActions from '../../../../components/FormModalActions'
 import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
   employeeType: z.enum(['Manager', 'Employee']),
   position: z.string().min(1, 'Cargo é obrigatório').max(100),
-  salary: z.coerce.number().positive('Salário deve ser positivo').optional().or(z.literal('')),
+  // 0 = não informado (a máscara monetária sempre devolve número).
+  salary: z.number().min(0),
   phone: z.string().max(20).optional().or(z.literal('')),
 })
 
@@ -32,21 +31,34 @@ type EditEmployeeForm = z.infer<typeof schema>
 
 export default function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
   const updateEmployee = useUpdateEmployee()
+  const isPending = updateEmployee.isPending
 
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors },
   } = useForm<EditEmployeeForm>({
     resolver: zodResolver(schema),
     defaultValues: {
       employeeType: employee.employeeType,
       position: employee.position,
-      salary: employee.salary ?? '',
+      salary: employee.salary ?? 0,
       phone: employee.phone ?? '',
     },
   })
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        employeeType: employee.employeeType,
+        position: employee.position,
+        salary: employee.salary ?? 0,
+        phone: employee.phone ?? '',
+      })
+    }
+  }, [open, employee, reset])
 
   const onSubmit = async (data: EditEmployeeForm) => {
     await updateEmployee.mutateAsync({
@@ -54,16 +66,26 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
       payload: {
         employeeType: data.employeeType,
         position: data.position,
-        salary: data.salary ? Number(data.salary) : undefined,
+        salary: data.salary ? data.salary : undefined,
         phone: data.phone || undefined,
       },
     })
     onClose()
   }
 
+  const handleClose = () => {
+    if (isPending) return
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Editar funcionário</DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <ModalHeader
+        title="Editar funcionário"
+        subtitle="Atualize os dados do funcionário"
+        onClose={handleClose}
+        disabled={isPending}
+      />
 
       <DialogContent>
         <Box
@@ -73,72 +95,72 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}
         >
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Controller
-              name="employeeType"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.employeeType}>
-                  <InputLabel>Tipo</InputLabel>
-                  <Select {...field} label="Tipo">
-                    <MenuItem value="Manager">Gerente</MenuItem>
-                    <MenuItem value="Employee">Funcionário</MenuItem>
-                  </Select>
-                  {errors.employeeType && (
-                    <FormHelperText>{errors.employeeType.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
-
-            <TextField
-              {...register('position')}
-              label="Cargo"
-              fullWidth
-              error={!!errors.position}
-              helperText={errors.position?.message}
-            />
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Tipo" required />
+              <Controller
+                name="employeeType"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.employeeType}>
+                    <Select {...field}>
+                      <MenuItem value="Manager">Gerente</MenuItem>
+                      <MenuItem value="Employee">Funcionário</MenuItem>
+                    </Select>
+                    {errors.employeeType && (
+                      <FormHelperText>{errors.employeeType.message}</FormHelperText>
+                    )}
+                  </FormControl>
+                )}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Cargo" required />
+              <TextField
+                {...register('position')}
+                fullWidth
+                error={!!errors.position}
+                helperText={errors.position?.message}
+              />
+            </Box>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              {...register('salary')}
-              label="Salário"
-              type="number"
-              fullWidth
-              error={!!errors.salary}
-              helperText={errors.salary?.message}
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                },
-              }}
-            />
-            <TextField
-              {...register('phone')}
-              label="Telefone"
-              fullWidth
-              error={!!errors.phone}
-              helperText={errors.phone?.message}
-            />
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Salário" />
+              <Controller
+                name="salary"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyField
+                    value={Number(field.value) || 0}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    fullWidth
+                    error={!!errors.salary}
+                    helperText={errors.salary?.message}
+                  />
+                )}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Telefone" />
+              <TextField
+                {...register('phone')}
+                fullWidth
+                error={!!errors.phone}
+                helperText={errors.phone?.message}
+              />
+            </Box>
           </Box>
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form="edit-employee-form"
-          variant="contained"
-          color="success"
-          disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <SaveRounded />}
-        >
-          {isSubmitting ? 'Salvando...' : 'Salvar'}
-        </Button>
-      </DialogActions>
+      <FormModalActions
+        formId="edit-employee-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel="Salvar alterações"
+      />
     </Dialog>
   )
 }

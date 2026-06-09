@@ -16,6 +16,7 @@ import WhatsApp from '@mui/icons-material/WhatsApp'
 import CheckRounded from '@mui/icons-material/CheckRounded'
 import BoltRounded from '@mui/icons-material/BoltRounded'
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded'
+import PaletteRounded from '@mui/icons-material/PaletteRounded'
 import dayjs from 'dayjs'
 import { formatBRL } from '../../../../utils/currency'
 import {
@@ -29,6 +30,11 @@ import {
 import type { AppointmentDetailModalProps } from './types'
 
 const DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+const APPOINTMENT_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6',
+]
 
 function proHex(theme: Theme, id: string): string {
   const key: ProColorKey = proColorKey(id)
@@ -46,6 +52,7 @@ export default function AppointmentDetailModal({
   professional,
   onClose,
   onChangeStatus,
+  onChangeColor,
 }: AppointmentDetailModalProps) {
   const theme = useTheme()
   const [confirmingCancel, setConfirmingCancel] = useState(false)
@@ -154,7 +161,7 @@ export default function AppointmentDetailModal({
           <Detail label="Valor" value={formatBRL(data.price)} />
         </Box>
 
-        
+        {data.customerPhone && (
           <Box
             sx={{
               mt: 2,
@@ -176,14 +183,14 @@ export default function AppointmentDetailModal({
               color="success"
               startIcon={<WhatsApp />}
               component="a"
-              href={waDigits ? `https://wa.me/55${waDigits}` : undefined}
+              href={`https://wa.me/55${waDigits}`}
               target="_blank"
               rel="noopener"
             >
               WhatsApp
             </Button>
           </Box>
-        
+        )}
 
         {data.note && (
           <Box
@@ -199,6 +206,97 @@ export default function AppointmentDetailModal({
               Observação
             </Typography>
             <Typography variant="body2">{data.note}</Typography>
+          </Box>
+        )}
+
+        {!isClosed && onChangeColor && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" color="text.tertiary" sx={{ display: 'block', mb: 0.75 }}>
+              Cor do agendamento
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Box
+                role="button"
+                tabIndex={0}
+                onClick={() => onChangeColor(data.id, '')}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onChangeColor(data.id, '') }}
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: '2px solid',
+                  borderColor: !data.color ? 'text.primary' : 'border.subtle',
+                  bgcolor: 'surface.sunken',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {!data.color && (
+                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: 'text.secondary', lineHeight: 1 }}>
+                    —
+                  </Typography>
+                )}
+              </Box>
+              {APPOINTMENT_COLORS.map((c) => (
+                <Box
+                  key={c}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onChangeColor(data.id, c)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onChangeColor(data.id, c) }}
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    bgcolor: c,
+                    cursor: 'pointer',
+                    border: '2px solid',
+                    borderColor: data.color === c ? 'text.primary' : 'transparent',
+                    outline: data.color === c ? `2px solid ${c}` : 'none',
+                    outlineOffset: '2px',
+                    transition: 'outline 0.15s',
+                  }}
+                />
+              ))}
+              {(() => {
+                const isCustom = !!data.color && !APPOINTMENT_COLORS.includes(data.color)
+                return (
+                  <Box
+                    component="label"
+                    title="Cor personalizada"
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      border: '2px solid',
+                      borderColor: isCustom ? 'text.primary' : 'border.subtle',
+                      outline: isCustom ? `2px solid ${data.color}` : 'none',
+                      outlineOffset: '2px',
+                      bgcolor: isCustom ? data.color : 'surface.sunken',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      transition: 'outline 0.15s',
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={data.color || '#000000'}
+                      onChange={(e) => onChangeColor(data.id, e.target.value)}
+                      style={{ position: 'absolute', opacity: 0, inset: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                    />
+                    {!isCustom && (
+                      <PaletteRounded sx={{ fontSize: 12, color: 'text.secondary', pointerEvents: 'none' }} />
+                    )}
+                  </Box>
+                )
+              })()}
+            </Box>
           </Box>
         )}
       </DialogContent>

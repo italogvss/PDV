@@ -10,4 +10,5 @@ export interface AppointmentDetailModalProps {
   professional?: Professional
   onClose: () => void
   onChangeStatus: (id: string, status: AppointmentStatus) => void
+  onChangeColor?: (id: string, color: string) => void
 }

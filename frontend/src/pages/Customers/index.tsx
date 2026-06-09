@@ -83,7 +83,7 @@ export default function CustomersPage() {
           value={kpis.total}
           badge={{ label: `${kpis.total} cadastrados`, color: 'success', icon: TrendingUpRounded }}
         />
-{/*
+        {/*
         <PageKpiCard icon={PhoneAndroidOutlined} label="Com telefone" value={kpis.withPhone} badge={{ label: 'disponíveis para WhatsApp', color: 'success', icon: TrendingUpRounded }} />
         <PageKpiCard icon={EmailOutlined} label="Com e-mail" value={kpis.withEmail} badge={{ label: 'para contato', color: 'success', icon: TrendingUpRounded }} />
         <PageKpiCard icon={BadgeOutlined} label="Com documento" value={kpis.withDocument} badge={{ label: 'CPF / CNPJ', color: 'default' }} />
@@ -91,19 +91,31 @@ export default function CustomersPage() {
       </PageKpiGrid>
 
       {/* Busca */}
-      <Card>
-        <CardContent sx={{ py: '10px !important', px: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <SearchOutlined sx={{ fontSize: 18, color: 'text.tertiary', flexShrink: 0 }} />
-            <InputBase
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar nome, e-mail, telefone ou documento..."
-              sx={{ flex: 1, fontSize: 14 }}
-            />
-          </Box>
-        </CardContent>
-      </Card>
+
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          border: 1,
+          borderColor: 'border.subtle',
+          bgcolor: 'background.paper',
+          '&:focus-within': { borderColor: 'border.strong' },
+        }}
+      >
+        <SearchOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
+        <InputBase
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar nome, e-mail, telefone ou documento..."
+          sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
+        />
+        {isLoading && <CircularProgress size={14} color="inherit" />}
+      </Box>
 
       {/* Tabela + Painel de detalhe */}
       {isLoading ? (

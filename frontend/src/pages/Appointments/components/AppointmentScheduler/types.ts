@@ -13,4 +13,6 @@ export interface AppointmentSchedulerProps {
   onVisibleDateChange: (date: Date) => void
   /** Disparado quando o usuário move/redimensiona/exclui um evento na grade nativa. */
   onEventsChange: (next: SchedulerEvent[]) => void
+  /** Disparado quando o usuário clica sobre um evento existente. */
+  onEventClick: (id: string) => void
 }

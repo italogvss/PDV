@@ -16,6 +16,7 @@ import {
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
+import PaletteRounded from '@mui/icons-material/PaletteRounded'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
@@ -24,6 +25,10 @@ import { z } from 'zod'
 import type { Service } from '../../../../types/service.types'
 import type { Appointment, AppointmentServiceRef } from '../../../../types/appointment.types'
 import { conflictsFor, formatHM } from '../appointmentHelpers'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import CurrencyField from '../../../../components/CurrencyField'
+import FormModalActions from '../../../../components/FormModalActions'
 import type { NewAppointmentModalProps } from './types'
 
 const APPOINTMENT_COLORS = [
@@ -209,25 +214,13 @@ export default function NewAppointmentModal({
     finalize(data)
   }
 
-  const fieldLabel = (text: string, required = true) => (
-    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block' }}>
-      {text}{' '}
-      {required && (
-        <Typography component="span" variant="caption" color="error.main">
-          *
-        </Typography>
-      )}
-    </Typography>
-  )
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 0.5 }}>
-        Novo agendamento
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 400 }}>
-          Reserve um horário para um cliente
-        </Typography>
-      </DialogTitle>
+      <ModalHeader
+        title="Novo agendamento"
+        subtitle="Reserve um horário para um cliente"
+        onClose={onClose}
+      />
 
       <DialogContent>
         <Box
@@ -239,7 +232,7 @@ export default function NewAppointmentModal({
           {/* Cliente + Telefone */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Cliente')}
+              <FieldLabel label="Cliente" required />
               <Controller
                 name="customerName"
                 control={control}
@@ -268,7 +261,7 @@ export default function NewAppointmentModal({
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Telefone / WhatsApp', false)}
+              <FieldLabel label="Telefone / WhatsApp" />
               <TextField
                 {...register('phone')}
                 fullWidth
@@ -279,7 +272,7 @@ export default function NewAppointmentModal({
 
           {/* Serviços */}
           <Box>
-            {fieldLabel('Serviços')}
+            <FieldLabel label="Serviços" required />
             <Box
               sx={{
                 maxHeight: 180,
@@ -339,7 +332,7 @@ export default function NewAppointmentModal({
 
           {/* Profissional */}
           <Box>
-            {fieldLabel('Profissional')}
+            <FieldLabel label="Profissional" required />
             <Controller
               name="employeeId"
               control={control}
@@ -383,7 +376,7 @@ export default function NewAppointmentModal({
           {/* Data + Horário */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Data')}
+              <FieldLabel label="Data" required />
               <Controller
                 name="date"
                 control={control}
@@ -404,7 +397,7 @@ export default function NewAppointmentModal({
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Horário')}
+              <FieldLabel label="Horário" required />
               <TextField
                 {...register('time')}
                 type="time"
@@ -428,7 +421,7 @@ export default function NewAppointmentModal({
           {/* Duração + Valor */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Duração')}
+              <FieldLabel label="Duração" required />
               <TextField
                 {...register('duration', {
                   valueAsNumber: true,
@@ -445,20 +438,23 @@ export default function NewAppointmentModal({
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              {fieldLabel('Valor', false)}
-              <TextField
-                {...register('price', {
-                  valueAsNumber: true,
-                  onChange: () => setPriceTouched(true),
-                })}
-                type="number"
-                fullWidth
-                error={!!errors.price}
-                helperText={errors.price?.message}
-                slotProps={{
-                  input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> },
-                  htmlInput: { min: 0, step: 0.01 },
-                }}
+              <FieldLabel label="Valor" />
+              <Controller
+                name="price"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyField
+                    value={Number(field.value) || 0}
+                    onChange={(v) => {
+                      setPriceTouched(true)
+                      field.onChange(v)
+                    }}
+                    onBlur={field.onBlur}
+                    fullWidth
+                    error={!!errors.price}
+                    helperText={errors.price?.message}
+                  />
+                )}
               />
             </Box>
           </Box>
@@ -495,7 +491,7 @@ export default function NewAppointmentModal({
 
           {/* Situação */}
           <Box>
-            {fieldLabel('Situação', false)}
+            <FieldLabel label="Situação" />
             <Controller
               name="status"
               control={control}
@@ -536,7 +532,7 @@ export default function NewAppointmentModal({
 
           {/* Cor */}
           <Box>
-            {fieldLabel('Cor do agendamento', false)}
+            <FieldLabel label="Cor do agendamento" />
             <Controller
               name="color"
               control={control}
@@ -581,13 +577,48 @@ export default function NewAppointmentModal({
                         cursor: 'pointer',
                         border: '2px solid',
                         borderColor: field.value === c ? 'text.primary' : 'transparent',
-                        outline: field.value === c ? `2px solid` : 'none',
-                        outlineColor: field.value === c ? c : 'transparent',
+                        outline: field.value === c ? `2px solid ${c}` : 'none',
                         outlineOffset: '2px',
                         transition: 'outline 0.15s',
                       }}
                     />
                   ))}
+                  {(() => {
+                    const isCustom = !!field.value && !APPOINTMENT_COLORS.includes(field.value)
+                    return (
+                      <Box
+                        component="label"
+                        title="Cor personalizada"
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          border: '2px solid',
+                          borderColor: isCustom ? 'text.primary' : 'border.subtle',
+                          outline: isCustom ? `2px solid ${field.value}` : 'none',
+                          outlineOffset: '2px',
+                          bgcolor: isCustom ? field.value : 'surface.sunken',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'outline 0.15s',
+                        }}
+                      >
+                        <input
+                          type="color"
+                          value={field.value || '#000000'}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          style={{ position: 'absolute', opacity: 0, inset: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                        />
+                        {!isCustom && (
+                          <PaletteRounded sx={{ fontSize: 14, color: 'text.secondary', pointerEvents: 'none' }} />
+                        )}
+                      </Box>
+                    )
+                  })()}
                 </Box>
               )}
             />
@@ -595,7 +626,7 @@ export default function NewAppointmentModal({
 
           {/* Observações */}
           <Box>
-            {fieldLabel('Observações', false)}
+            <FieldLabel label="Observações" />
             <TextField
               {...register('note')}
               fullWidth
@@ -607,19 +638,13 @@ export default function NewAppointmentModal({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-        <Typography variant="caption" color="text.tertiary">
-          Confirmação enviada por WhatsApp ao salvar
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="new-appointment-form" variant="contained" color="success">
-            Agendar
-          </Button>
-        </Box>
-      </DialogActions>
+      <FormModalActions
+        formId="new-appointment-form"
+        onCancel={onClose}
+        isPending={false}
+        submitLabel="Agendar"
+        hint="Confirmação enviada por WhatsApp ao salvar"
+      />
 
       {/* Confirmação de conflito (R4: avisa, não bloqueia) */}
       <Dialog open={!!conflictData} onClose={() => setConflictData(null)} maxWidth="xs" fullWidth>

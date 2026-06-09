@@ -15,6 +15,7 @@ import { useSuppliers } from '../../hooks/useSuppliers'
 import type { Supplier } from '../../types/supplier.types'
 import SupplierRowMenu from './components/SupplierRowMenu'
 import SupplierFormModal from './components/SupplierFormModal'
+import PageHeader from '../../components/PageHeader'
 
 export default function SuppliersPage() {
   const [search, setSearch] = useState('')
@@ -77,22 +78,8 @@ export default function SuppliersPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h1">Fornecedores</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {suppliers.length} fornecedor{suppliers.length !== 1 ? 'es' : ''} cadastrado{suppliers.length !== 1 ? 's' : ''}
-          </Typography>
-        </Box>
-
-        <Button
+      
+      <PageHeader title='Fornecedores' description={`Total de fornecedores: ${suppliers.length}`}><Button
           variant="contained"
           color="success"
           size="small"
@@ -101,8 +88,7 @@ export default function SuppliersPage() {
           sx={{ mt: 0.5 }}
         >
           Novo fornecedor
-        </Button>
-      </Box>
+        </Button></PageHeader>
 
       <Card sx={{ overflow: 'hidden' }}>
         <Box

@@ -1,21 +1,18 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   TextField,
-  Button,
-  Typography,
-  IconButton,
-  CircularProgress,
 } from '@mui/material'
-import CloseRounded from '@mui/icons-material/CloseRounded'
-import CheckRounded from '@mui/icons-material/CheckRounded'
+import PaletteRounded from '@mui/icons-material/PaletteRounded'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
+import { MuiColorInput } from 'mui-color-input'
+import ModalHeader from '../ModalHeader'
+import FieldLabel from '../FieldLabel'
+import FormModalActions from '../FormModalActions'
 import type { CategoryFormModalProps } from './types'
 
 const PRESET_COLORS = [
@@ -47,7 +44,7 @@ export default function CategoryFormModal({
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<CategoryForm>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', color: '#6B7280' },
@@ -77,16 +74,12 @@ export default function CategoryFormModal({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {isEditing ? 'Editar categoria' : 'Nova categoria'}
-          </Typography>
-          <IconButton size="small" onClick={handleClose} disabled={isPending} sx={{ mr: -0.5 }}>
-            <CloseRounded sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <ModalHeader
+        title={isEditing ? 'Editar categoria' : 'Nova categoria'}
+        subtitle={isEditing ? 'Edite a categoria' : 'Organize seus itens por categoria'}
+        onClose={handleClose}
+        disabled={isPending}
+      />
 
       <DialogContent sx={{ pt: 2 }}>
         <Box
@@ -96,9 +89,7 @@ export default function CategoryFormModal({
           sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
         >
           <Box>
-            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 0.5 }}>
-              Nome <Typography component="span" variant="caption" color="error.main">*</Typography>
-            </Typography>
+            <FieldLabel label="Nome" required />
             <TextField
               {...register('name')}
               fullWidth
@@ -110,9 +101,7 @@ export default function CategoryFormModal({
           </Box>
 
           <Box>
-            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1 }}>
-              Cor <Typography component="span" variant="caption" color="error.main">*</Typography>
-            </Typography>
+            <FieldLabel label="Cor" required />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
               {PRESET_COLORS.map((c) => (
@@ -126,64 +115,66 @@ export default function CategoryFormModal({
                     bgcolor: c,
                     cursor: 'pointer',
                     border: '3px solid',
-                    borderColor: watchColor === c ? 'text.primary' : 'transparent',
+                    borderColor: watchColor.toUpperCase() === c ? 'text.primary' : 'transparent',
                     transition: 'border-color 0.1s',
                     '&:hover': { opacity: 0.85 },
                   }}
                 />
               ))}
-            </Box>
-
-            <TextField
-              {...register('color')}
-              size="small"
-              placeholder="#RRGGBB"
-              error={!!errors.color}
-              helperText={errors.color?.message}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <Box
+              {(() => {
+                const isCustom = isValidColor && !PRESET_COLORS.some((c) => c.toLowerCase() === watchColor.toLowerCase())
+                return (
+                  <Box
+                    title="Cor personalizada"
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      border: '3px solid',
+                      borderColor: isCustom ? 'text.primary' : 'border.subtle',
+                      bgcolor: isCustom ? watchColor : 'surface.sunken',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      transition: 'border-color 0.1s',
+                      '&:hover': { opacity: 0.85 },
+                    }}
+                  >
+                    <PaletteRounded sx={{ fontSize: 14, color: isCustom ? 'common.white' : 'text.secondary', pointerEvents: 'none', position: 'relative', zIndex: 1 }} />
+                    <MuiColorInput
+                      format="hex"
+                      value={isValidColor ? watchColor : '#6B7280'}
+                      onChange={(color) => setValue('color', color, { shouldValidate: true })}
                       sx={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 0.5,
-                        bgcolor: isValidColor ? watchColor : 'grey.300',
-                        mr: 1,
-                        flexShrink: 0,
-                        border: '1px solid',
-                        borderColor: 'border.subtle',
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0,
+                        '& .MuiInputBase-root': { p: 0, height: '100%', minHeight: 0 },
+                        '& input': { display: 'none' },
+                        '& .MuiInputAdornment-root': { m: 0, height: '100%', maxHeight: 'none' },
+                        '& button': { position: 'absolute', inset: 0, width: '100%', height: '100%', minWidth: 0, p: 0 },
+                        '& fieldset': { display: 'none' },
                       }}
                     />
-                  ),
-                },
-              }}
-            />
+                  </Box>
+                )
+              })()}
+            </Box>
+            
           </Box>
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
-        <Button variant="ghost" onClick={handleClose} disabled={isPending}>
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form="category-form"
-          variant="contained"
-          color="success"
-          disabled={isPending || isSubmitting}
-          startIcon={
-            isPending ? (
-              <CircularProgress size={14} color="inherit" />
-            ) : (
-              <CheckRounded />
-            )
-          }
-        >
-          {isPending ? 'Salvando...' : isEditing ? 'Salvar' : 'Criar categoria'}
-        </Button>
-      </DialogActions>
+      <FormModalActions
+        formId="category-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel={isEditing ? 'Salvar alterações' : 'Salvar'}
+        showRequiredHint={false}
+      />
     </Dialog>
   )
 }

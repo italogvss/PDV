@@ -138,6 +138,27 @@ export default function AppointmentsPage() {
     changeStatus.mutate({ id, status })
   }
 
+  const handleChangeColor = (id: string, color: string) => {
+    const appt = appointments.find((a) => a.id === id)
+    if (!appt) return
+    updateAppt.mutate({
+      id,
+      payload: {
+        customerId: appt.customerId,
+        customerName: appt.customerName,
+        customerPhone: appt.customerPhone,
+        employeeId: appt.employeeId,
+        serviceIds: appt.services.map((s) => s.id),
+        start: appt.start,
+        durationMinutes: appt.durationMinutes,
+        price: appt.price,
+        status: appt.status,
+        note: appt.note,
+        color: color || undefined,
+      },
+    })
+  }
+
   // Reconcilia mover/redimensionar/excluir feitos na grade nativa do scheduler.
   const handleEventsChange = (next: SchedulerEvent[]) => {
     const byId = new Map(next.map((e) => [String(e.id), e]))
@@ -335,6 +356,7 @@ export default function AppointmentsPage() {
             onViewChange={setView}
             onVisibleDateChange={(date) => setSelectedDate(dayjs(date))}
             onEventsChange={handleEventsChange}
+            onEventClick={(id) => setDetailId(id)}
           />
         </Box>
 
@@ -366,6 +388,7 @@ export default function AppointmentsPage() {
         professional={detailPro}
         onClose={() => setDetailId(null)}
         onChangeStatus={handleChangeStatus}
+        onChangeColor={handleChangeColor}
       />
     </Box>
   )

@@ -209,6 +209,8 @@ export function toSchedulerEvents(appts: Appointment[]): SchedulerEvent[] {
     color: STATUS_META[a.status].scheduler,
     // Concluídos/cancelados não são editáveis pela UI nativa do scheduler.
     readOnly: a.status === 'concluido' || a.status === 'cancelado',
+    // Embute o ID no DOM para interceptar cliques antes do dialog nativo do MUI X.
+    className: `appt-${a.id}`,
   }))
 }
 

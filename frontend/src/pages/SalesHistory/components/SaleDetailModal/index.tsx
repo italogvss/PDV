@@ -64,13 +64,7 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
   const payment = sale ? (PAYMENT_MAP[sale.paymentMethod] ?? (sale.paymentMethod as SalePaymentMethod)) : null
 
   return (
-    <Dialog
-      open={saleId !== null}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 2 } } }}
-    >
+    <Dialog open={saleId !== null} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle
         sx={{
           display: 'flex',

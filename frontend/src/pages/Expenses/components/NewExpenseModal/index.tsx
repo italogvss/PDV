@@ -1,22 +1,16 @@
 import { useEffect } from 'react'
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   Chip,
   TextField,
-  Button,
   Typography,
   ToggleButton,
   ToggleButtonGroup,
   FormHelperText,
-  CircularProgress,
-  InputAdornment,
   Switch,
 } from '@mui/material'
-import SaveOutlined from '@mui/icons-material/SaveOutlined'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
@@ -27,6 +21,10 @@ import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
 import type { ExpenseCategory } from '../../types'
 import type { NewExpenseModalProps } from './types'
 import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import CurrencyField from '../../../../components/CurrencyField'
+import FormModalActions from '../../../../components/FormModalActions'
 
 const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória').max(150),
@@ -60,11 +58,13 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ExpenseForm>({
     resolver: zodResolver(schema),
     defaultValues: emptyDefaults,
   })
+
+  const isPending = createExpense.isPending || updateExpense.isPending
 
   useEffect(() => {
     if (open) {
@@ -103,20 +103,22 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   }
 
   const handleClose = () => {
-    if (isSubmitting) return
+    if (isPending) return
     onClose()
   }
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 0.5 }}>
-        {isEditing ? 'Editar despesa' : 'Nova despesa'}
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 400 }}>
-          {isEditing
+      <ModalHeader
+        title={isEditing ? 'Editar despesa' : 'Nova despesa'}
+        subtitle={
+          isEditing
             ? 'Atualize os dados da despesa'
-            : 'Registre uma conta a pagar — recorrente ou pontual'}
-        </Typography>
-      </DialogTitle>
+            : 'Registre uma conta a pagar — recorrente ou pontual'
+        }
+        onClose={handleClose}
+        disabled={isPending}
+      />
 
       <DialogContent>
         <Box
@@ -127,9 +129,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
         >
           {/* Descrição */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block' }}>
-              Descrição <Typography component="span" variant="caption" color="error.main">*</Typography>
-            </Typography>
+            <FieldLabel label="Descrição" required />
             <TextField
               {...register('description')}
               fullWidth
@@ -142,26 +142,24 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
           {/* Valor + Vencimento */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block' }}>
-                Valor <Typography component="span" variant="caption" color="error.main">*</Typography>
-              </Typography>
-              <TextField
-                {...register('amount')}
-                fullWidth
-                type="number"
-                placeholder="0,00"
-                error={!!errors.amount}
-                helperText={errors.amount?.message}
-                slotProps={{
-                  input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> },
-                  htmlInput: { step: 0.01, min: 0 },
-                }}
+              <FieldLabel label="Valor" required />
+              <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyField
+                    value={Number(field.value) || 0}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    fullWidth
+                    error={!!errors.amount}
+                    helperText={errors.amount?.message}
+                  />
+                )}
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block' }}>
-                Vencimento <Typography component="span" variant="caption" color="error.main">*</Typography>
-              </Typography>
+              <FieldLabel label="Vencimento" required />
               <Controller
                 name="dueDate"
                 control={control}
@@ -185,9 +183,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
 
           {/* Categoria */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              Categoria <Typography component="span" variant="caption" color="error.main">*</Typography>
-            </Typography>
+            <FieldLabel label="Categoria" required />
             <Controller
               name="category"
               control={control}
@@ -229,9 +225,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
 
           {/* Status */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              Status do pagamento
-            </Typography>
+            <FieldLabel label="Status do pagamento" />
             <Controller
               name="isPaid"
               control={control}
@@ -305,26 +299,12 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-        <Typography variant="caption" color="text.tertiary">
-          Os campos com <Typography component="span" variant="caption" color="error.main">*</Typography> são obrigatórios
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            form="expense-form"
-            variant="contained"
-            color="success"
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <SaveOutlined />}
-          >
-            {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar despesa'}
-          </Button>
-        </Box>
-      </DialogActions>
+      <FormModalActions
+        formId="expense-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel={isEditing ? 'Salvar alterações' : 'Salvar'}
+      />
     </Dialog>
   )
 }

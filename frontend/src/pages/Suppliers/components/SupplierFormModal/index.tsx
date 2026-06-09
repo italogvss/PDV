@@ -1,18 +1,12 @@
 import { useEffect } from 'react'
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  CircularProgress,
-} from '@mui/material'
+import { Dialog, DialogContent, TextField, Box } from '@mui/material'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCreateSupplier, useUpdateSupplier } from '../../../../hooks/useSuppliers'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import FormModalActions from '../../../../components/FormModalActions'
 import type { SupplierFormModalProps } from './types'
 
 const schema = z.object({
@@ -26,6 +20,7 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
   const isEdit = Boolean(supplier)
   const create = useCreateSupplier()
   const update = useUpdateSupplier()
+  const isPending = create.isPending || update.isPending
 
   const {
     register,
@@ -46,8 +41,6 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
     }
   }, [open, supplier, reset])
 
-  const isPending = create.isPending || update.isPending
-
   const onSubmit = async (values: FormValues) => {
     const payload = {
       name: values.name,
@@ -62,24 +55,39 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
     onClose()
   }
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{isEdit ? 'Editar fornecedor' : 'Novo fornecedor'}</DialogTitle>
+  const handleClose = () => {
+    if (isPending) return
+    onClose()
+  }
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+      <ModalHeader
+        title={isEdit ? 'Editar fornecedor' : 'Novo fornecedor'}
+        subtitle={isEdit ? 'Atualize os dados do fornecedor' : 'Cadastre um fornecedor'}
+        onClose={handleClose}
+        disabled={isPending}
+      />
+
+      <DialogContent>
+        <Box
+          component="form"
+          id="supplier-form"
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}
+        >
+          <Box>
+            <FieldLabel label="Nome" required />
             <TextField
-              label="Nome"
-              size="small"
               fullWidth
               {...register('name')}
               error={Boolean(errors.name)}
               helperText={errors.name?.message}
             />
+          </Box>
+          <Box>
+            <FieldLabel label="Telefone" />
             <TextField
-              label="Telefone"
-              size="small"
               fullWidth
               placeholder="(11) 99999-9999"
               {...register('phone')}
@@ -87,23 +95,16 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
               helperText={errors.phone?.message}
             />
           </Box>
-        </DialogContent>
+        </Box>
+      </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button variant="outlined" size="small" onClick={onClose} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            size="small"
-            disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : undefined}
-          >
-            {isPending ? 'Salvando...' : isEdit ? 'Salvar' : 'Cadastrar'}
-          </Button>
-        </DialogActions>
-      </form>
+      <FormModalActions
+        formId="supplier-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel={isEdit ? 'Salvar alterações' : 'Salvar'}
+        showRequiredHint={false}
+      />
     </Dialog>
   )
 }

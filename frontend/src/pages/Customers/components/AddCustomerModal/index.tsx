@@ -1,19 +1,17 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   TextField,
-  Button,
-  CircularProgress,
   Typography,
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateCustomer } from '../../../../hooks/useCustomers'
+import ModalHeader from '../../../../components/ModalHeader'
+import FieldLabel from '../../../../components/FieldLabel'
+import FormModalActions from '../../../../components/FormModalActions'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
@@ -50,12 +48,13 @@ interface AddCustomerModalProps {
 
 export default function AddCustomerModal({ open, onClose }: AddCustomerModalProps) {
   const createCustomer = useCreateCustomer()
+  const isPending = createCustomer.isPending
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AddCustomerForm>({
     resolver: zodResolver(schema),
     defaultValues,
@@ -84,106 +83,133 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
   }
 
   const handleClose = () => {
-    if (isSubmitting || createCustomer.isPending) return
+    if (isPending) return
     reset(defaultValues)
     onClose()
   }
 
-  const isPending = isSubmitting || createCustomer.isPending
-
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <DialogTitle>Novo cliente</DialogTitle>
+      <ModalHeader
+        title="Novo cliente"
+        subtitle="Cadastre um novo cliente"
+        onClose={handleClose}
+        disabled={isPending}
+      />
 
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+      <DialogContent>
+        <Box
+          component="form"
+          id="add-customer-form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}
+        >
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Nome completo" required />
               <TextField
                 {...register('name')}
-                label="Nome completo"
                 fullWidth
                 error={!!errors.name}
                 helperText={errors.name?.message}
               />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Telefone" />
               <TextField
                 {...register('phone')}
-                label="Telefone"
                 fullWidth
                 placeholder="(11) 99999-9999"
                 error={!!errors.phone}
                 helperText={errors.phone?.message}
               />
             </Box>
+          </Box>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="E-mail" />
               <TextField
                 {...register('email')}
-                label="E-mail"
                 fullWidth
                 error={!!errors.email}
                 helperText={errors.email?.message}
               />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="CPF / CNPJ" />
               <TextField
                 {...register('document')}
-                label="CPF / CNPJ"
                 fullWidth
                 placeholder="000.000.000-00"
                 error={!!errors.document}
                 helperText={errors.document?.message}
               />
             </Box>
+          </Box>
 
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, mb: -1 }}>
-              Endereço (opcional)
-            </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, mb: -1 }}>
+            Endereço (opcional)
+          </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 2 }}>
+              <FieldLabel label="Rua" />
               <TextField
                 {...register('street')}
-                label="Rua"
-                sx={{ flex: 2 }}
+                fullWidth
                 error={!!errors.street}
                 helperText={errors.street?.message}
               />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Número" />
               <TextField
                 {...register('number')}
-                label="Número"
-                sx={{ flex: 1 }}
+                fullWidth
                 error={!!errors.number}
                 helperText={errors.number?.message}
               />
             </Box>
+          </Box>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="CEP" />
               <TextField
                 {...register('zipCode')}
-                label="CEP"
                 fullWidth
                 placeholder="00000-000"
                 error={!!errors.zipCode}
                 helperText={errors.zipCode?.message}
               />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Cidade" />
               <TextField
                 {...register('city')}
-                label="Cidade"
                 fullWidth
                 error={!!errors.city}
                 helperText={errors.city?.message}
               />
+            </Box>
+            <Box sx={{ width: 96 }}>
+              <FieldLabel label="UF" />
               <TextField
                 {...register('state')}
-                label="UF"
-                sx={{ width: 72 }}
+                fullWidth
                 error={!!errors.state}
                 helperText={errors.state?.message}
                 slotProps={{ htmlInput: { maxLength: 2 } }}
               />
             </Box>
+          </Box>
 
+          <Box>
+            <FieldLabel label="Observação" />
             <TextField
               {...register('note')}
-              label="Observação"
               fullWidth
               multiline
               rows={3}
@@ -192,23 +218,15 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
               helperText={errors.note?.message}
             />
           </Box>
-        </DialogContent>
+        </Box>
+      </DialogContent>
 
-        <DialogActions>
-          <Button variant="ghost" onClick={handleClose} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="success"
-            disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : <AddRounded />}
-          >
-            {isPending ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </DialogActions>
-      </Box>
+      <FormModalActions
+        formId="add-customer-form"
+        onCancel={handleClose}
+        isPending={isPending}
+        submitLabel="Salvar"
+      />
     </Dialog>
   )
 }

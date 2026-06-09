@@ -76,18 +76,7 @@ export default function ProductCatalog({
           size="small"
           sx={{
             flexShrink: 0,
-            border: 1,
-            borderColor: 'border.subtle',
-            borderRadius: 999,
-            '& .MuiToggleButtonGroup-grouped': {
-              border: 'none',
-              '&:first-of-type': {
-                borderRadius: '999px 0 0 999px',
-              },
-              '&:last-of-type': {
-                borderRadius: '0px 999px 999px 0',
-              },
-            },
+            borderColor: 'border.subtle',           
           }}
         >
           <ToggleButton value="products" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
@@ -160,7 +149,7 @@ export default function ProductCatalog({
             {mode === 'products' ? 'Nenhum produto encontrado.' : 'Nenhum serviço encontrado.'}
           </Box>
         ) : mode === 'products' ? (
-          <Grid container spacing={1} sx={{ overflow: 'visible' }}>
+          <Grid container spacing={1}>
             {products.map((p) => (
               <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}>
                 <ProductCard product={p} onAdd={onAddProduct} />

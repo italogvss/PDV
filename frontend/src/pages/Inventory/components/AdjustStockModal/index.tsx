@@ -1,20 +1,17 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   TextField,
-  Button,
   Typography,
   IconButton,
-  CircularProgress,
 } from '@mui/material'
-import CloseRounded from '@mui/icons-material/CloseRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
 import RemoveRounded from '@mui/icons-material/RemoveRounded'
 import { useState, useEffect } from 'react'
 import { useAdjustStock } from '../../../../hooks/useProducts'
+import ModalHeader from '../../../../components/ModalHeader'
+import FormModalActions from '../../../../components/FormModalActions'
 import type { AdjustStockModalProps } from './types'
 
 export default function AdjustStockModal({ open, onClose, product }: AdjustStockModalProps) {
@@ -40,21 +37,12 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
-              Ajustar estoque
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              {product.name}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={handleClose} disabled={adjustStock.isPending} sx={{ mt: -0.5, mr: -0.5 }}>
-            <CloseRounded sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <ModalHeader
+        title="Ajustar estoque"
+        subtitle={product.name}
+        onClose={handleClose}
+        disabled={adjustStock.isPending}
+      />
 
       <DialogContent sx={{ pt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -130,24 +118,14 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
-        <Button variant="ghost" onClick={handleClose} disabled={adjustStock.isPending}>
-          Cancelar
-        </Button>
-        <Button
-          variant="contained"
-          color="success"
-          disabled={isInvalid || adjustStock.isPending}
-          onClick={handleSubmit}
-          startIcon={
-            adjustStock.isPending ? (
-              <CircularProgress size={14} color="inherit" />
-            ) : undefined
-          }
-        >
-          {adjustStock.isPending ? 'Salvando...' : 'Confirmar ajuste'}
-        </Button>
-      </DialogActions>
+      <FormModalActions
+        onCancel={handleClose}
+        onSubmit={handleSubmit}
+        isPending={adjustStock.isPending}
+        submitDisabled={isInvalid}
+        submitLabel="Confirmar ajuste"
+        showRequiredHint={false}
+      />
     </Dialog>
   )
 }

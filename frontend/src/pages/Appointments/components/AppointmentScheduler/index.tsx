@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type React from 'react'
 import { Box } from '@mui/material'
 import { EventCalendar, eventCalendarClasses } from '@mui/x-scheduler/event-calendar'
 import { ptBR } from '@mui/x-scheduler/locales'
@@ -12,11 +13,11 @@ const localeText = ptBR.components.MuiEventCalendar.defaultProps.localeText
  * Wrapper do MUI X Scheduler (EventCalendar) controlado pelo estado da página.
  *
  * Observações da integração (beta 9.0.0):
- * - O EventCalendar não expõe `onEventClick`/`onSlotClick`; criar/editar passa pelo
- *   dialog interno do componente. Por isso a criação rica acontece no nosso modal
- *   "Novo agendamento" (`eventCreation={false}`) e o detalhe com transições de status
- *   é aberto pelo painel lateral. Mover/redimensionar/excluir na grade reflete em
- *   `onEventsChange`, que a página reconcilia por id.
+ * - O EventCalendar não expõe `onEventClick`/`onSlotClick`. Usamos `onClickCapture`
+ *   no wrapper + `className: appt-{id}` em cada evento para interceptar cliques antes
+ *   que o MUI X abra seu dialog nativo, abrindo nosso `AppointmentDetailModal`.
+ *   Mover/redimensionar/excluir na grade reflete em `onEventsChange`, que a página
+ *   reconcilia por id (esses gestos usam mousedown, não click, sem conflito).
  * - A toolbar e o painel lateral nativos são ocultados — usamos o nosso cabeçalho,
  *   DatePicker, faixa da semana e painel lateral.
  */
@@ -29,11 +30,26 @@ export default function AppointmentScheduler({
   onViewChange,
   onVisibleDateChange,
   onEventsChange,
+  onEventClick,
 }: AppointmentSchedulerProps) {
   const events = useMemo(() => toSchedulerEvents(appointments), [appointments])
   const resources = useMemo(() => toSchedulerResources(professionals), [professionals])
 
+  const handleClickCapture = (e: React.MouseEvent) => {
+    let node: HTMLElement | null = e.target as HTMLElement
+    while (node && node !== e.currentTarget) {
+      const apptClass = Array.from(node.classList).find((c) => c.startsWith('appt-'))
+      if (apptClass) {
+        e.stopPropagation()
+        onEventClick(apptClass.slice('appt-'.length))
+        return
+      }
+      node = node.parentElement
+    }
+  }
+
   return (
+    <Box onClickCapture={handleClickCapture}>
     <Box sx={{ height: 660, minHeight: 0 }}>
       <EventCalendar
         events={events}
@@ -60,6 +76,7 @@ export default function AppointmentScheduler({
           [`& .${eventCalendarClasses.sidePanel}`]: { display: 'none' },
         }}
       />
+    </Box>
     </Box>
   )
 }
