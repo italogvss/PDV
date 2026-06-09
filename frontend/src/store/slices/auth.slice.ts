@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AuthUser, UserRole } from '../../types/auth.types'
+import type { Permission } from '../../types/employee.types'
 import type { TenantListItem } from '../../types/tenant.types'
 
 export interface AuthState {
@@ -14,6 +15,7 @@ export interface AuthState {
   isLoading: boolean
   mustChangePassword: boolean
   tenants: TenantListItem[]
+  permissions: Permission[]
 }
 
 const initialState: AuthState = {
@@ -28,6 +30,7 @@ const initialState: AuthState = {
   isLoading: true,
   mustChangePassword: false,
   tenants: [],
+  permissions: [],
 }
 
 export const authSlice = createSlice({
@@ -47,6 +50,7 @@ export const authSlice = createSlice({
       isLoading: false,
       mustChangePassword: action.payload.mustChangePassword ?? false,
       tenants: action.payload.tenants ?? [],
+      permissions: action.payload.permissions ?? [],
     }),
     clearAuth: () => ({
       userId: null,
@@ -60,6 +64,7 @@ export const authSlice = createSlice({
       isLoading: false,
       mustChangePassword: false,
       tenants: [],
+      permissions: [],
     }),
     setProfile: (state, action: PayloadAction<{ name: string; phone: string | null }>) => ({
       ...state,

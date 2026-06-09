@@ -79,15 +79,19 @@ Um usuário pode ter múltiplos tenants (`UserTenant`). O tenant ativo é `User.
 
 ## Convenções de entidade
 
-Cada entidade define seus próprios campos — não há BaseEntity. Campos obrigatórios em entidades com tenant:
+Toda entidade herda de `BaseEntity` (`PDV.Domain/Entities/BaseEntity.cs`), que já fornece os campos comuns:
 
 ```csharp
-public Guid Id { get; set; } = Guid.NewGuid();
-public Guid TenantId { get; set; }
-public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-public bool IsActive { get; set; } = true;  // soft delete
+public abstract class BaseEntity
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public bool IsActive { get; set; } = true;       // soft delete
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
 ```
+
+Entidades com tenant adicionam o próprio `public Guid TenantId { get; set; }` (o `HasQueryFilter` global isola por ele). Entidades de ligação puras (ex.: `UserTenant`, `TenantRolePermission`) não herdam `BaseEntity` — definem só suas chaves.
 
 **Soft delete via `IsActive = false`** — nunca deletar fisicamente. O `HasQueryFilter` já filtra `IsActive`.
 

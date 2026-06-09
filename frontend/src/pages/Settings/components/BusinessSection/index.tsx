@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Box,
   Button,
@@ -8,6 +8,7 @@ import {
   MenuItem,
   FormControl,
   Chip,
+  CircularProgress,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
@@ -15,27 +16,35 @@ import SearchIcon from '@mui/icons-material/Search'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { BlockOutlined, DeleteOutlined } from '@mui/icons-material'
+import { useTenantSettings, useUpdateBusinessSettings } from '../../../../hooks/useTenantSettings'
+import type { BusinessAddress, BusinessSettings } from '../../../../types/settings.types'
 
 export default function BusinessSection() {
-  const [fantasyName, setFantasyName] = useState('Café da Esquina')
-  const [companyName, setCompanyName] = useState('Café da Esquina Comércio de Alimentos Ltda.')
-  const [cnpj, setCnpj] = useState('12.345.678/0001-90')
-  const [stateRegistration, setStateRegistration] = useState('123.456.789.110')
-  const [segment, setSegment] = useState('cafeteria')
-  const [phone, setPhone] = useState('(11) 3344-5566')
-  const [cep, setCep] = useState('01310-100')
-  const [street, setStreet] = useState('Rua das Flores')
-  const [number, setNumber] = useState('123')
-  const [complement, setComplement] = useState('Sala 1')
-  const [neighborhood, setNeighborhood] = useState('Bela Vista')
-  const [city, setCity] = useState('São Paulo')
-  const [state, setState] = useState('SP')
-  const [hasChanges, setHasChanges] = useState(false)
+  const { data, isLoading } = useTenantSettings()
+  const update = useUpdateBusinessSettings()
+  const [form, setForm] = useState<BusinessSettings | null>(null)
 
-  const handleChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setter(e.target.value)
-    setHasChanges(true)
+  useEffect(() => {
+    if (data) setForm(data.business)
+  }, [data])
+
+  if (isLoading || !form) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
   }
+
+  const set = (patch: Partial<BusinessSettings>) =>
+    setForm((f) => (f ? { ...f, ...patch } : f))
+  const setAddress = (patch: Partial<BusinessAddress>) =>
+    setForm((f) => (f ? { ...f, address: { ...f.address, ...patch } } : f))
+
+  const hasChanges = JSON.stringify(form) !== JSON.stringify(data?.business)
+
+  const handleSave = () => update.mutate(form)
+  const handleCancel = () => data && setForm(data.business)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -45,15 +54,16 @@ export default function BusinessSection() {
         action={
           hasChanges ? (
             <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <Button variant="outlined" size="small" onClick={() => setHasChanges(false)}>
+              <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
                 Cancelar
               </Button>
               <Button
                 variant="contained"
                 size="small"
                 color="secondary"
-                startIcon={<CheckIcon />}
-                onClick={() => setHasChanges(false)}
+                startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                onClick={handleSave}
+                disabled={update.isPending}
               >
                 Salvar alterações
               </Button>
@@ -75,7 +85,7 @@ export default function BusinessSection() {
                 borderRadius: 2,
               }}
             >
-              Z
+              {form.fantasyName.charAt(0).toUpperCase() || 'Z'}
             </Avatar>
             <Button variant="outlined" size="small" startIcon={<FileUploadOutlinedIcon />}>
               Alterar
@@ -89,8 +99,8 @@ export default function BusinessSection() {
         <SettingRow label="Nome fantasia">
           <TextField
             size="small"
-            value={fantasyName}
-            onChange={handleChange(setFantasyName)}
+            value={form.fantasyName}
+            onChange={(e) => set({ fantasyName: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -98,8 +108,8 @@ export default function BusinessSection() {
         <SettingRow label="Razão social">
           <TextField
             size="small"
-            value={companyName}
-            onChange={handleChange(setCompanyName)}
+            value={form.companyName}
+            onChange={(e) => set({ companyName: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -108,8 +118,8 @@ export default function BusinessSection() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <TextField
               size="small"
-              value={cnpj}
-              onChange={handleChange(setCnpj)}
+              value={form.cnpj}
+              onChange={(e) => set({ cnpj: e.target.value })}
               sx={{ width: 200 }}
             />
             <Chip
@@ -129,18 +139,15 @@ export default function BusinessSection() {
         <SettingRow label="Inscrição estadual">
           <TextField
             size="small"
-            value={stateRegistration}
-            onChange={handleChange(setStateRegistration)}
+            value={form.stateRegistration}
+            onChange={(e) => set({ stateRegistration: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
 
         <SettingRow label="Segmento">
           <FormControl size="small" sx={{ width: 340 }}>
-            <Select
-              value={segment}
-              onChange={(e) => { setSegment(e.target.value); setHasChanges(true) }}
-            >
+            <Select value={form.segment} onChange={(e) => set({ segment: e.target.value })}>
               <MenuItem value="cafeteria">Cafeteria / Padaria</MenuItem>
               <MenuItem value="restaurante">Restaurante</MenuItem>
               <MenuItem value="mercado">Mercado / Mercearia</MenuItem>
@@ -156,8 +163,8 @@ export default function BusinessSection() {
         <SettingRow label="Telefone público">
           <TextField
             size="small"
-            value={phone}
-            onChange={handleChange(setPhone)}
+            value={form.phone}
+            onChange={(e) => set({ phone: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -168,8 +175,8 @@ export default function BusinessSection() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <TextField
               size="small"
-              value={cep}
-              onChange={handleChange(setCep)}
+              value={form.address.cep}
+              onChange={(e) => setAddress({ cep: e.target.value })}
               sx={{ width: 140 }}
             />
             <Button variant="outlined" size="small" startIcon={<SearchIcon />}>
@@ -181,8 +188,8 @@ export default function BusinessSection() {
         <SettingRow label="Rua">
           <TextField
             size="small"
-            value={street}
-            onChange={handleChange(setStreet)}
+            value={form.address.street}
+            onChange={(e) => setAddress({ street: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -191,15 +198,15 @@ export default function BusinessSection() {
           <Box sx={{ display: 'flex', gap: 1.5 }}>
             <TextField
               size="small"
-              value={number}
-              onChange={handleChange(setNumber)}
+              value={form.address.number}
+              onChange={(e) => setAddress({ number: e.target.value })}
               sx={{ width: 100 }}
               placeholder="Nº"
             />
             <TextField
               size="small"
-              value={complement}
-              onChange={handleChange(setComplement)}
+              value={form.address.complement ?? ''}
+              onChange={(e) => setAddress({ complement: e.target.value })}
               sx={{ width: 220 }}
               placeholder="Complemento"
             />
@@ -209,8 +216,8 @@ export default function BusinessSection() {
         <SettingRow label="Bairro">
           <TextField
             size="small"
-            value={neighborhood}
-            onChange={handleChange(setNeighborhood)}
+            value={form.address.neighborhood}
+            onChange={(e) => setAddress({ neighborhood: e.target.value })}
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -219,16 +226,16 @@ export default function BusinessSection() {
           <Box sx={{ display: 'flex', gap: 1.5 }}>
             <TextField
               size="small"
-              value={city}
-              onChange={handleChange(setCity)}
+              value={form.address.city}
+              onChange={(e) => setAddress({ city: e.target.value })}
               sx={{ width: 260 }}
             />
             <TextField
               size="small"
-              value={state}
-              onChange={handleChange(setState)}
+              value={form.address.state}
+              onChange={(e) => setAddress({ state: e.target.value })}
               sx={{ width: 72 }}
-              slotProps={{htmlInput: { maxLength: 2 }}}
+              slotProps={{ htmlInput: { maxLength: 2 } }}
             />
           </Box>
         </SettingRow>

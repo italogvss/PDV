@@ -6,7 +6,7 @@ import TuneRounded from '@mui/icons-material/TuneRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import type { ProductRowMenuProps } from './types'
 
-export default function ProductRowMenu({ product, onEdit, onAdjustStock, onDelete }: ProductRowMenuProps) {
+export default function ProductRowMenu({ product, canManage, onEdit, onAdjustStock, onDelete }: ProductRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -29,6 +29,8 @@ export default function ProductRowMenu({ product, onEdit, onAdjustStock, onDelet
     handleClose()
     onDelete(product.id)
   }
+
+  if (!canManage) return null
 
   return (
     <>

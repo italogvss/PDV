@@ -12,7 +12,8 @@ public class TenantRoleService(
     ITenantRoleRepository roleRepository,
     ITenantContext tenantContext,
     IValidator<CreateTenantRoleRequest> createValidator,
-    IValidator<UpdateTenantRoleRequest> updateValidator) : ITenantRoleService
+    IValidator<UpdateTenantRoleRequest> updateValidator,
+    IValidator<SetRolePermissionsRequest> setPermissionsValidator) : ITenantRoleService
 {
     public async Task<IEnumerable<TenantRoleResponse>> GetAllAsync()
     {
@@ -53,6 +54,11 @@ public class TenantRoleService(
         var role = await roleRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Papel não encontrado.");
 
+        // Papéis padrão são referência do sistema — o nome não pode ser alterado
+        // (a matriz de permissões e o seed dependem dele); a descrição pode.
+        if (role.IsDefault && role.Name != request.Name.Trim())
+            throw new BusinessException("O nome de um papel padrão não pode ser alterado.");
+
         role.Name = request.Name.Trim();
         role.Description = request.Description?.Trim();
         role.UpdatedAt = DateTime.UtcNow;
@@ -68,6 +74,9 @@ public class TenantRoleService(
     {
         var role = await roleRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Papel não encontrado.");
+
+        if (role.IsDefault)
+            throw new BusinessException("Papéis padrão não podem ser removidos.");
 
         var activeEmployees = await roleRepository.CountActiveEmployeesAsync(id);
         if (activeEmployees > 0)
@@ -87,6 +96,8 @@ public class TenantRoleService(
 
     public async Task<IEnumerable<string>> SetPermissionsAsync(Guid id, SetRolePermissionsRequest request)
     {
+        await setPermissionsValidator.ValidateAndThrowAsync(request);
+
         var role = await roleRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Papel não encontrado.");
 

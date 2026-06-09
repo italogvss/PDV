@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Employees;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/employees")]
-[Authorize(Roles = "Owner")]
+[Authorize]
+[RequirePermission(Permission.ManageEmployees)]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
     [HttpGet]

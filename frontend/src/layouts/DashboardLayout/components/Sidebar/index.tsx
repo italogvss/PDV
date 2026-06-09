@@ -5,8 +5,18 @@ import SidebarNav from '../SidebarNav'
 import PremiumBanner from '../PremiumBanner'
 import { DRAWER_WIDTH, NAV_SECTIONS } from '../../constants'
 import { SidebarProps } from './types'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 
 export default function Sidebar({ isMobile, mobileOpen, onClose }: SidebarProps) {
+  const { hasPermission } = useUserPermissions()
+
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter(
+      (item) => !item.requiredPermission || hasPermission(item.requiredPermission),
+    ),
+  }))
+
   return (
     <Drawer
       variant={isMobile ? 'temporary' : 'permanent'}
@@ -34,7 +44,7 @@ export default function Sidebar({ isMobile, mobileOpen, onClose }: SidebarProps)
       >
         {!isMobile && <BrandHeader />}
         <StoreSelector />
-        <SidebarNav sections={NAV_SECTIONS} />
+        <SidebarNav sections={visibleSections} />
         <PremiumBanner />
       </Box>
     </Drawer>

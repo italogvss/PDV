@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/reports")]
 [Authorize]
+[RequirePermission(Permission.ViewReports)]
 public class ReportsController(IReportService service) : ControllerBase
 {
     [HttpGet("sales")]

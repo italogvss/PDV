@@ -1,7 +1,22 @@
-import { useState } from 'react'
-import { Box, Switch, TextField, Select, MenuItem, FormControl, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
+import {
+  Box,
+  Button,
+  Switch,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  Typography,
+  InputAdornment,
+  CircularProgress,
+} from '@mui/material'
+import CheckIcon from '@mui/icons-material/Check'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import CurrencyField from '../../../../components/CurrencyField'
+import { useTenantSettings, useUpdateOperationSettings } from '../../../../hooks/useTenantSettings'
+import type { OperationSettings } from '../../../../types/settings.types'
 
 interface Shortcut {
   label: string
@@ -44,46 +59,86 @@ function KeyChip({ label }: { label: string }) {
 }
 
 export default function OperationSection() {
-  const [autoOpen, setAutoOpen] = useState(true)
-  const [requireOperator, setRequireOperator] = useState(true)
-  const [cashFund, setCashFund] = useState('R$ 200,00')
-  const [inactivityLock, setInactivityLock] = useState('5')
-  const [allowDiscounts, setAllowDiscounts] = useState(true)
-  const [discountLimit, setDiscountLimit] = useState('10%')
-  const [requireManagerCancel, setRequireManagerCancel] = useState(false)
-  const [barcodeReader, setBarcodeReader] = useState(true)
+  const { data, isLoading } = useTenantSettings()
+  const update = useUpdateOperationSettings()
+  const [form, setForm] = useState<OperationSettings | null>(null)
+
+  useEffect(() => {
+    if (data) setForm(data.operation)
+  }, [data])
+
+  if (isLoading || !form) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
+  }
+
+  const set = (patch: Partial<OperationSettings>) =>
+    setForm((f) => (f ? { ...f, ...patch } : f))
+
+  const hasChanges = JSON.stringify(form) !== JSON.stringify(data?.operation)
+
+  const handleSave = () => update.mutate(form)
+  const handleCancel = () => data && setForm(data.operation)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Caixa e turno" subtitle="Comportamento do ponto de venda">
+      <SettingCard
+        title="Caixa e turno"
+        subtitle="Comportamento do ponto de venda"
+        action={
+          hasChanges ? (
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="secondary"
+                startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                onClick={handleSave}
+                disabled={update.isPending}
+              >
+                Salvar alterações
+              </Button>
+            </Box>
+          ) : undefined
+        }
+      >
         <SettingRow label="Abertura automática" sublabel="Abre o caixa ao primeiro login do dia">
           <Switch
-            checked={autoOpen}
-            onChange={(e) => setAutoOpen(e.target.checked)}
+            checked={form.autoOpen}
+            onChange={(e) => set({ autoOpen: e.target.checked })}
             color="secondary"
           />
         </SettingRow>
 
         <SettingRow label="Solicitar operador" sublabel="Pede confirmação a cada venda">
           <Switch
-            checked={requireOperator}
-            onChange={(e) => setRequireOperator(e.target.checked)}
+            checked={form.requireOperator}
+            onChange={(e) => set({ requireOperator: e.target.checked })}
             color="secondary"
           />
         </SettingRow>
 
         <SettingRow label="Fundo de caixa" sublabel="Valor inicial sugerido na abertura">
-          <TextField
+          <CurrencyField
             size="small"
-            value={cashFund}
-            onChange={(e) => setCashFund(e.target.value)}
+            value={form.cashFundAmount}
+            onChange={(v) => set({ cashFundAmount: v })}
             sx={{ width: 160 }}
           />
         </SettingRow>
 
         <SettingRow label="Bloqueio por inatividade">
           <FormControl size="small" sx={{ width: 200 }}>
-            <Select value={inactivityLock} onChange={(e) => setInactivityLock(e.target.value)}>
+            <Select
+              value={String(form.inactivityLockMinutes)}
+              onChange={(e) => set({ inactivityLockMinutes: Number(e.target.value) })}
+            >
               <MenuItem value="0">Nunca</MenuItem>
               <MenuItem value="1">Após 1 minuto</MenuItem>
               <MenuItem value="5">Após 5 minutos</MenuItem>
@@ -97,8 +152,8 @@ export default function OperationSection() {
       <SettingCard title="Vendas e descontos">
         <SettingRow label="Permitir descontos no PDV">
           <Switch
-            checked={allowDiscounts}
-            onChange={(e) => setAllowDiscounts(e.target.checked)}
+            checked={form.allowDiscounts}
+            onChange={(e) => set({ allowDiscounts: e.target.checked })}
             color="secondary"
           />
         </SettingRow>
@@ -106,25 +161,29 @@ export default function OperationSection() {
         <SettingRow label="Limite de desconto sem gerente" sublabel="Acima disso pede liberação">
           <TextField
             size="small"
-            value={discountLimit}
-            onChange={(e) => setDiscountLimit(e.target.value)}
+            type="number"
+            value={form.discountLimitPercent}
+            onChange={(e) => set({ discountLimitPercent: Number(e.target.value) || 0 })}
             sx={{ width: 100 }}
-            disabled={!allowDiscounts}
+            disabled={!form.allowDiscounts}
+            slotProps={{
+              input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+            }}
           />
         </SettingRow>
 
         <SettingRow label="Cancelamento exige gerente">
           <Switch
-            checked={requireManagerCancel}
-            onChange={(e) => setRequireManagerCancel(e.target.checked)}
+            checked={form.requireManagerCancel}
+            onChange={(e) => set({ requireManagerCancel: e.target.checked })}
             color="secondary"
           />
         </SettingRow>
 
         <SettingRow label="Leitor de código de barras" sublabel="Bipa produtos pelo SKU">
           <Switch
-            checked={barcodeReader}
-            onChange={(e) => setBarcodeReader(e.target.checked)}
+            checked={form.barcodeReader}
+            onChange={(e) => set({ barcodeReader: e.target.checked })}
             color="secondary"
           />
         </SettingRow>

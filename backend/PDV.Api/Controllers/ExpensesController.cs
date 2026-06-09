@@ -1,16 +1,19 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Expenses;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/expenses")]
-[Authorize(Roles = "Owner")]
+[Authorize]
 public class ExpensesController(IExpenseService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.ViewExpenses)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -23,6 +26,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpGet("chart")]
+    [RequirePermission(Permission.ViewExpenses)]
     public async Task<IActionResult> GetChart(
         [FromQuery] string startDate,
         [FromQuery] string endDate,
@@ -35,6 +39,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpGet("recurring")]
+    [RequirePermission(Permission.ViewExpenses)]
     public async Task<IActionResult> GetRecurring()
     {
         var result = await service.GetRecurringUnpaidAsync();
@@ -42,6 +47,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewExpenses)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -49,6 +55,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission(Permission.ManageExpenses)]
     public async Task<IActionResult> Create([FromBody] CreateExpenseRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -56,6 +63,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(Permission.ManageExpenses)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateExpenseRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -63,6 +71,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/pay")]
+    [RequirePermission(Permission.ManageExpenses)]
     public async Task<IActionResult> MarkAsPaid(Guid id)
     {
         var result = await service.MarkAsPaidAsync(id);
@@ -70,6 +79,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequirePermission(Permission.ManageExpenses)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

@@ -34,4 +34,18 @@ public class TenantController(ITenantService tenantService) : ControllerBase
 
         return Created($"/api/tenants/{response.TenantId}", response);
     }
+
+    [HttpGet("settings")]
+    public async Task<IActionResult> GetSettings()
+        => Ok(await tenantService.GetSettingsAsync());
+
+    [HttpPut("settings/business")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> UpdateBusiness([FromBody] BusinessSettingsDto request)
+        => Ok(await tenantService.UpdateBusinessAsync(request));
+
+    [HttpPut("settings/operation")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> UpdateOperation([FromBody] OperationSettingsDto request)
+        => Ok(await tenantService.UpdateOperationAsync(request));
 }

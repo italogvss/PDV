@@ -15,6 +15,7 @@ import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import PageHeader from '../../components/PageHeader'
 import type { FilterState, SaleRecord, SaleStatus, SalePaymentMethod } from './types'
 import StatusChip from './components/StatusChip'
@@ -76,6 +77,8 @@ export default function SalesHistoryPage() {
 
   const { data: salesRaw = [], isLoading } = useSales()
   const cancelSale = useCancelSale()
+  const { hasPermission } = useUserPermissions()
+  const canCancel = hasPermission('CancelSales')
 
   const sales: SaleRecord[] = useMemo(() => salesRaw.map(mapToRecord), [salesRaw])
 
@@ -173,13 +176,14 @@ export default function SalesHistoryPage() {
         renderCell: ({ row }) => (
           <RowActionsMenu
             sale={row}
+            canCancel={canCancel}
             onViewDetails={setSelectedSaleId}
             onCancel={setCancelId}
           />
         ),
       },
     ],
-    [],
+    [canCancel],
   )
 
   return (

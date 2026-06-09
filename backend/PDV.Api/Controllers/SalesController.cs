@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Sales;
 using PDV.Application.Interfaces;
 using PDV.Domain.Enums;
@@ -13,6 +14,7 @@ namespace PDV.Api.Controllers;
 public class SalesController(ISaleService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.SellProducts)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -30,6 +32,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.SellProducts)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -37,6 +40,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission(Permission.SellProducts)]
     public async Task<IActionResult> Create([FromBody] CreateSaleRequest request)
     {
         var operatorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -45,7 +49,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.CancelSales)]
     public async Task<IActionResult> Cancel(Guid id)
     {
         var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

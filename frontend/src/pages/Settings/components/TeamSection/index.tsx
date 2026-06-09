@@ -22,10 +22,6 @@ import {
   Avatar,
   Skeleton,
   CircularProgress,
-  Select,
-  MenuItem,
-  FormControl,
-  InputAdornment,
 } from '@mui/material'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddIcon from '@mui/icons-material/Add'
@@ -37,10 +33,11 @@ import ModalHeader from '../../../../components/ModalHeader'
 import FormModalActions from '../../../../components/FormModalActions'
 import FieldLabel from '../../../../components/FieldLabel'
 import { useTeamRoles, useCreateRole, useUpdateRole, useDeactivateRole, useSetRolePermissions } from '../../../../hooks/useTeamRoles'
-import { useEmployees, useCreateEmployee, useDeactivateEmployee } from '../../../../hooks/useEmployees'
+import { useEmployees, useDeactivateEmployee } from '../../../../hooks/useEmployees'
 import type { TenantRole } from '../../../../types/employee.types'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../../../../types/employee.types'
 import { DeleteOutlineOutlined } from '@mui/icons-material'
+import AddEmployeeModal from '../../../Employees/components/AddEmployeeModal'
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
 
@@ -49,18 +46,7 @@ const roleSchema = z.object({
   description: z.string().max(255).optional(),
 })
 
-const employeeSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(200),
-  email: z.string().min(1, 'E-mail é obrigatório').email('E-mail inválido'),
-  temporaryPassword: z.string().min(6, 'Mínimo 6 caracteres'),
-  roleId: z.string().min(1, 'Selecione um papel'),
-  position: z.string().min(1, 'Cargo é obrigatório').max(100),
-  salary: z.number().positive('Salário deve ser positivo').optional(),
-  phone: z.string().max(20).optional(),
-})
-
 type RoleFormValues = z.infer<typeof roleSchema>
-type EmployeeFormValues = z.infer<typeof employeeSchema>
 
 // ─── RoleFormModal ───────────────────────────────────────────────────────────
 
@@ -152,167 +138,6 @@ function RoleFormModal({ open, editRole, onClose }: RoleFormModalProps) {
         onCancel={onClose}
         isPending={isPending}
         submitLabel={editRole ? 'Salvar alterações' : 'Criar papel'}
-        pendingLabel="Salvando..."
-      />
-    </Dialog>
-  )
-}
-
-// ─── EmployeeFormModal ───────────────────────────────────────────────────────
-
-interface EmployeeFormModalProps {
-  open: boolean
-  roles: TenantRole[]
-  onClose: () => void
-}
-
-function EmployeeFormModal({ open, roles, onClose }: EmployeeFormModalProps) {
-  const createEmployee = useCreateEmployee()
-
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<EmployeeFormValues>({
-    resolver: zodResolver(employeeSchema),
-    defaultValues: { name: '', email: '', temporaryPassword: '', roleId: '', position: '', salary: undefined, phone: '' },
-  })
-
-  useEffect(() => {
-    if (open) reset({ name: '', email: '', temporaryPassword: '', roleId: '', position: '', salary: undefined, phone: '' })
-  }, [open, reset])
-
-  const onSubmit = (values: EmployeeFormValues) => {
-    createEmployee.mutate(
-      {
-        name: values.name,
-        email: values.email,
-        temporaryPassword: values.temporaryPassword,
-        roleId: values.roleId,
-        position: values.position,
-        salary: values.salary,
-        phone: values.phone || undefined,
-      },
-      { onSuccess: onClose },
-    )
-  }
-
-  return (
-    <Dialog open={open} onClose={createEmployee.isPending ? undefined : onClose} maxWidth="sm" fullWidth>
-      <ModalHeader
-        title="Convidar funcionário"
-        subtitle="O funcionário receberá uma senha temporária para o primeiro acesso."
-        onClose={onClose}
-        disabled={createEmployee.isPending}
-      />
-      <DialogContent>
-        <Box
-          component="form"
-          id="employee-form"
-          onSubmit={handleSubmit(onSubmit)}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
-        >
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box>
-              <FieldLabel label="Nome completo" required />
-              <Controller
-                name="name"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} size="small" fullWidth error={!!errors.name} helperText={errors.name?.message} />
-                )}
-              />
-            </Box>
-            <Box>
-              <FieldLabel label="E-mail" required />
-              <Controller
-                name="email"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} size="small" fullWidth type="email" error={!!errors.email} helperText={errors.email?.message} />
-                )}
-              />
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box>
-              <FieldLabel label="Senha temporária" required />
-              <Controller
-                name="temporaryPassword"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} size="small" fullWidth type="password" error={!!errors.temporaryPassword} helperText={errors.temporaryPassword?.message} />
-                )}
-              />
-            </Box>
-            <Box>
-              <FieldLabel label="Papel" required />
-              <Controller
-                name="roleId"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth size="small" error={!!errors.roleId}>
-                    <Select {...field} displayEmpty>
-                      <MenuItem value="" disabled>Selecione...</MenuItem>
-                      {roles.map((r) => (
-                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
-              />
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box>
-              <FieldLabel label="Cargo" required />
-              <Controller
-                name="position"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} size="small" fullWidth placeholder="ex: Atendente de balcão" error={!!errors.position} helperText={errors.position?.message} />
-                )}
-              />
-            </Box>
-            <Box>
-              <FieldLabel label="Salário" />
-              <Controller
-                name="salary"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))
-                    }
-                    size="small"
-                    fullWidth
-                    type="number"
-                    slotProps={{ input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> } }}
-                    error={!!errors.salary}
-                    helperText={errors.salary?.message}
-                  />
-                )}
-              />
-            </Box>
-          </Box>
-
-          <Box>
-            <FieldLabel label="Telefone" />
-            <Controller
-              name="phone"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} size="small" fullWidth placeholder="(11) 99999-9999" error={!!errors.phone} helperText={errors.phone?.message} />
-              )}
-            />
-          </Box>
-        </Box>
-      </DialogContent>
-      <FormModalActions
-        formId="employee-form"
-        onCancel={onClose}
-        isPending={createEmployee.isPending}
-        submitLabel="Convidar funcionário"
         pendingLabel="Salvando..."
       />
     </Dialog>
@@ -438,7 +263,7 @@ export default function TeamSection() {
                       <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  {role.memberCount === 0 && (
+                  {role.memberCount === 0 && !role.isDefault && (
                     <Tooltip title="Remover papel">
                       <IconButton
                         size="small"
@@ -611,9 +436,8 @@ export default function TeamSection() {
         editRole={roleModal.role}
         onClose={() => setRoleModal({ open: false })}
       />
-      <EmployeeFormModal
+      <AddEmployeeModal
         open={employeeModal}
-        roles={roles}
         onClose={() => setEmployeeModal(false)}
       />
     </Box>

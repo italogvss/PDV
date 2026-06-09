@@ -39,6 +39,7 @@ import {
   useMarkExpensePaid,
   useDeleteExpense,
 } from '../../hooks/useExpenses'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 
 const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -65,6 +66,8 @@ export default function ExpensesPage() {
   const { data: recurringExpenses = [] } = useRecurringExpenses()
   const markAsPaid = useMarkExpensePaid()
   const deleteExpense = useDeleteExpense()
+  const { hasPermission } = useUserPermissions()
+  const canManage = hasPermission('ManageExpenses')
 
   const monthName = MONTHS_PT[selectedMonth - 1]
   const year = selectedYear
@@ -232,13 +235,14 @@ export default function ExpensesPage() {
       renderCell: ({ row }: { row: Expense }) => (
         <ExpenseRowMenu
           expense={row}
+          canManage={canManage}
           onEdit={handleOpenEdit}
           onMarkPaid={(id) => markAsPaid.mutate(id)}
           onDelete={(id) => deleteExpense.mutate(id)}
         />
       ),
     },
-  ], [markAsPaid, deleteExpense])
+  ], [markAsPaid, deleteExpense, canManage, handleOpenEdit])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -256,9 +260,11 @@ export default function ExpensesPage() {
           format="MMMM YYYY"
           slotProps={{ textField: { sx: { width: 200 } } }}
         />
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
-          Nova despesa
-        </Button>
+        {canManage && (
+          <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
+            Nova despesa
+          </Button>
+        )}
       </PageHeader>
 
       <PageKpiGrid>

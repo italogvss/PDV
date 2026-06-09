@@ -88,7 +88,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<IActionResult> Me()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var user = await authService.GetMeAsync(userId);
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        Guid? tenantId = Guid.TryParse(User.FindFirstValue("tenantId"), out var tid) ? tid : null;
+        var user = await authService.GetMeAsync(userId, role, tenantId);
         return Ok(user);
     }
 

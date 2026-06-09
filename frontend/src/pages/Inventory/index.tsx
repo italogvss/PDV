@@ -34,6 +34,7 @@ import CategoryFormModal from '../../components/CategoryFormModal'
 import AdjustStockModal from './components/AdjustStockModal'
 import { useProducts, useDeleteProduct } from '../../hooks/useProducts'
 import { useProductCategories, useDeleteProductCategory, useCreateProductCategory, useUpdateProductCategory } from '../../hooks/useProductCategories'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 
 export default function InventoryPage() {
   const { data: products = [], isLoading: isLoadingProducts } = useProducts()
@@ -42,6 +43,8 @@ export default function InventoryPage() {
   const deleteCategory = useDeleteProductCategory()
   const createCategory = useCreateProductCategory()
   const updateCategory = useUpdateProductCategory()
+  const { hasPermission } = useUserPermissions()
+  const canManage = hasPermission('ManageStock')
 
   const [search, setSearch] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -204,6 +207,7 @@ export default function InventoryPage() {
         renderCell: ({ row }) => (
           <ProductRowMenu
             product={row}
+            canManage={canManage}
             onEdit={setEditProduct}
             onAdjustStock={setAdjustStockProduct}
             onDelete={(id) => deleteProduct.mutate(id)}
@@ -211,7 +215,7 @@ export default function InventoryPage() {
         ),
       },
     ],
-    [deleteProduct],
+    [deleteProduct, canManage],
   )
 
   const rows = useMemo(() => {
@@ -246,9 +250,11 @@ export default function InventoryPage() {
         title="Estoque"
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
       >
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
-          Novo produto
-        </Button>
+        {canManage && (
+          <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+            Novo produto
+          </Button>
+        )}
       </PageHeader>
 
       <PageKpiGrid>

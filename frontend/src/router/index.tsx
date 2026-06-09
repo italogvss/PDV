@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import RouterGuard from '../components/RouterGuard'
+import PermissionGuard from '../components/PermissionGuard'
 import DashboardLayout from '../layouts/DashboardLayout'
 
 import DashboardPage from '../pages/Dashboard'
@@ -41,14 +42,56 @@ export const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          { path: 'vendas', element: <SalesPage /> },
-          { path: 'historico', element: <SalesHistoryPage /> },
-          { path: 'estoque', element: <InventoryPage /> },
+          {
+            path: 'vendas',
+            element: (
+              <PermissionGuard permission="SellProducts">
+                <SalesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'historico',
+            element: (
+              <PermissionGuard permission="SellProducts">
+                <SalesHistoryPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'estoque',
+            element: (
+              <PermissionGuard permission="ViewStock">
+                <InventoryPage />
+              </PermissionGuard>
+            ),
+          },
           { path: 'servicos', element: <ServicesPage /> },
           { path: 'agendamentos', element: <AppointmentsPage /> },
-          { path: 'despesas', element: <ExpensesPage /> },
-          { path: 'funcionarios', element: <EmployeesPage /> },
-          { path: 'relatorios', element: <ReportsPage /> },
+          {
+            path: 'despesas',
+            element: (
+              <PermissionGuard permission="ViewExpenses">
+                <ExpensesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'funcionarios',
+            element: (
+              <PermissionGuard permission="ManageEmployees">
+                <EmployeesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'relatorios',
+            element: (
+              <PermissionGuard permission="ViewReports">
+                <ReportsPage />
+              </PermissionGuard>
+            ),
+          },
           { path: 'clientes', element: <CustomersPage /> },
           { path: 'fornecedores', element: <SuppliersPage /> },
           { path: 'configuracoes', element: <SettingsPage /> },

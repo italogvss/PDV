@@ -44,8 +44,9 @@ export interface BusinessSettings {
   companyName: string
   cnpj: string
   stateRegistration: string
-  segment: BusinessSegment
+  segment: string
   phone: string
+  taxRegime: string
   address: BusinessAddress
   businessHours: BusinessHours | null
 }
@@ -56,7 +57,7 @@ export interface OperationSettings {
   autoOpen: boolean
   requireOperator: boolean
   cashFundAmount: number
-  inactivityLockMinutes: InactivityLockMinutes
+  inactivityLockMinutes: number
   allowDiscounts: boolean
   discountLimitPercent: number
   requireManagerCancel: boolean
@@ -136,19 +137,6 @@ export interface IntegrationsSettings {
   contaazul: IntegrationStatus
 }
 
-export type TeamRole = 'owner' | 'manager' | 'cashier' | 'attendant' | 'stock'
-export type TeamPermission =
-  | 'cancelSales'
-  | 'freeDiscounts'
-  | 'closeCashier'
-  | 'viewReports'
-  | 'manageStock'
-  | 'manageEmployees'
-
-export interface TeamSettings {
-  permissions: Record<TeamPermission, Record<TeamRole, boolean>>
-}
-
 export interface AdvancedSettings {
   apiPublicKey: string
   webhookUrl: string
@@ -158,15 +146,9 @@ export interface AdvancedSettings {
   appVersion: string
 }
 
+// Configurações persistidas do tenant. Hoje só Negócio e Operação têm endpoint
+// (GET/PUT /api/tenants/settings); as demais seções ainda são apenas UI.
 export interface TenantSettings {
   business: BusinessSettings
   operation: OperationSettings
-  payments: PaymentsSettings
-  fiscal: FiscalSettings
-  printing: PrintingSettings
-  appearance: AppearanceSettings
-  backup: BackupSettings
-  integrations: IntegrationsSettings
-  team: TeamSettings
-  advanced: AdvancedSettings
 }

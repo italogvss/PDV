@@ -1,5 +1,6 @@
 import { api } from './api'
 import type { AuthUser, UserRole } from '../types/auth.types'
+import type { Permission } from '../types/employee.types'
 import type { Theme } from '../types/usersettings.type'
 
 interface MeApiResponse {
@@ -13,6 +14,7 @@ interface MeApiResponse {
   settings: { theme: Theme } | null
   tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee' }>
   mustChangePassword?: boolean
+  permissions?: string[]
 }
 
 export const authService = {
@@ -29,6 +31,7 @@ export const authService = {
       settings: data.settings ? { theme: data.settings.theme } : null,
       tenants: data.tenants ?? [],
       mustChangePassword: data.mustChangePassword ?? false,
+      permissions: (data.permissions ?? []) as Permission[],
     }
   },
 

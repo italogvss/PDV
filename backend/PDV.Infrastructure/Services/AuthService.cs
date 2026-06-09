@@ -18,7 +18,9 @@ namespace PDV.Infrastructure.Services;
 
 public class AuthService(
     IUserRepository userRepository,
-    IConfiguration configuration) : IAuthService
+    IConfiguration configuration,
+    IEmployeeRepository employeeRepository,
+    ITenantRoleRepository roleRepository) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential)
@@ -144,7 +146,7 @@ public class AuthService(
         await userRepository.UpdateAsync(user);
     }
 
-    public async Task<MeResponse> GetMeAsync(Guid userId)
+    public async Task<MeResponse> GetMeAsync(Guid userId, string role, Guid? tenantId)
     {
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
@@ -158,8 +160,20 @@ public class AuthService(
 
         var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
 
+        IEnumerable<string> permissions = [];
+        if (role == "Employee" && tenantId.HasValue)
+        {
+            var employee = await employeeRepository.GetByUserIdAsync(userId, tenantId.Value);
+            if (employee is not null)
+            {
+                var tenantRole = await roleRepository.GetByIdAsync(employee.RoleId);
+                if (tenantRole is not null)
+                    permissions = tenantRole.Permissions.Select(p => p.Permission.ToString());
+            }
+        }
+
         return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.AvatarUrl, user.LastTenantId,
-            user.Role.ToString(), settings, tenants, mustChangePassword);
+            user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)

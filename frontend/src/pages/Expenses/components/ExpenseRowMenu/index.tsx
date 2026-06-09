@@ -6,9 +6,11 @@ import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRou
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import type { ExpenseRowMenuProps } from './types'
 
-export default function ExpenseRowMenu({ expense, onEdit, onMarkPaid, onDelete }: ExpenseRowMenuProps) {
+export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid, onDelete }: ExpenseRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const handleClose = () => setAnchor(null)
+
+  if (!canManage) return null
 
   return (
     <>

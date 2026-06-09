@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.TenantRoles;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/team-roles")]
-[Authorize(Roles = "Owner")]
+[Authorize]
+[RequirePermission(Permission.ManageEmployees)]
 public class TeamRolesController(ITenantRoleService service) : ControllerBase
 {
     [HttpGet]

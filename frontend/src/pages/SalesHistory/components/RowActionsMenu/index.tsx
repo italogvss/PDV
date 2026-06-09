@@ -5,7 +5,7 @@ import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import BlockRounded from '@mui/icons-material/BlockRounded'
 import type { RowActionsMenuProps } from './types'
 
-export default function RowActionsMenu({ sale, onViewDetails, onCancel }: RowActionsMenuProps) {
+export default function RowActionsMenu({ sale, canCancel, onViewDetails, onCancel }: RowActionsMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 
   const handleClose = () => setAnchor(null)
@@ -32,7 +32,7 @@ export default function RowActionsMenu({ sale, onViewDetails, onCancel }: RowAct
           Ver detalhes
         </MenuItem>
 
-        {sale.status !== 'Cancelado' && [
+        {canCancel && sale.status !== 'Cancelado' && [
           <Divider key="div" sx={{ my: 0.5 }} />,
           <MenuItem
             key="cancel"

@@ -21,4 +21,14 @@ public class TenantRepository(AppDbContext context) : ITenantRepository
         context.Tenants.Update(tenant);
         await context.SaveChangesAsync();
     }
+
+    // TenantSettings não tem query filter global — filtra explicitamente por TenantId.
+    public Task<TenantSettings?> GetSettingsAsync(Guid tenantId) =>
+        context.TenantSettings.FirstOrDefaultAsync(ts => ts.TenantId == tenantId);
+
+    public async Task UpdateSettingsAsync(TenantSettings settings)
+    {
+        context.TenantSettings.Update(settings);
+        await context.SaveChangesAsync();
+    }
 }

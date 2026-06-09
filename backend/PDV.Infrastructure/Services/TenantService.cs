@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Tenants;
@@ -17,6 +18,9 @@ public class TenantService(
     ITenantRepository tenantRepository,
     IUserRepository userRepository,
     ITenantRoleRepository roleRepository,
+    ITenantContext tenantContext,
+    IValidator<BusinessSettingsDto> businessValidator,
+    IValidator<OperationSettingsDto> operationValidator,
     IConfiguration configuration) : ITenantService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -83,6 +87,96 @@ public class TenantService(
 
         return (response, accessToken);
     }
+
+    public async Task<TenantSettingsResponse> GetSettingsAsync()
+    {
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
+            ?? throw new NotFoundException("Configurações do tenant não encontradas.");
+        return Map(settings);
+    }
+
+    public async Task<BusinessSettingsDto> UpdateBusinessAsync(BusinessSettingsDto request)
+    {
+        await businessValidator.ValidateAndThrowAsync(request);
+
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
+            ?? throw new NotFoundException("Configurações do tenant não encontradas.");
+
+        settings.FantasyName       = request.FantasyName.Trim();
+        settings.CompanyName       = request.CompanyName?.Trim();
+        settings.Cnpj              = StripMask(request.Cnpj);
+        settings.StateRegistration = request.StateRegistration?.Trim();
+        settings.Segment           = request.Segment?.Trim();
+        settings.Phone             = request.Phone?.Trim();
+        settings.LogoUrl           = request.LogoUrl;
+        settings.TaxRegime         = request.TaxRegime;
+
+        settings.AddressCep          = StripMask(request.Address.Cep);
+        settings.AddressStreet       = request.Address.Street?.Trim();
+        settings.AddressNumber       = request.Address.Number?.Trim();
+        settings.AddressComplement   = request.Address.Complement?.Trim();
+        settings.AddressNeighborhood = request.Address.Neighborhood?.Trim();
+        settings.AddressCity         = request.Address.City?.Trim();
+        settings.AddressState        = request.Address.State?.Trim();
+
+        settings.BusinessHoursJson = request.BusinessHours is null
+            ? null
+            : JsonSerializer.Serialize(request.BusinessHours, JsonOptions);
+
+        settings.UpdatedAt = DateTime.UtcNow;
+        await tenantRepository.UpdateSettingsAsync(settings);
+
+        return Map(settings).Business;
+    }
+
+    public async Task<OperationSettingsDto> UpdateOperationAsync(OperationSettingsDto request)
+    {
+        await operationValidator.ValidateAndThrowAsync(request);
+
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
+            ?? throw new NotFoundException("Configurações do tenant não encontradas.");
+
+        settings.AutoOpen              = request.AutoOpen;
+        settings.RequireOperator       = request.RequireOperator;
+        settings.CashFundAmount        = request.CashFundAmount;
+        settings.InactivityLockMinutes = request.InactivityLockMinutes;
+        settings.AllowDiscounts        = request.AllowDiscounts;
+        settings.DiscountLimitPercent  = request.DiscountLimitPercent;
+        settings.RequireManagerCancel  = request.RequireManagerCancel;
+        settings.BarcodeReader         = request.BarcodeReader;
+
+        settings.UpdatedAt = DateTime.UtcNow;
+        await tenantRepository.UpdateSettingsAsync(settings);
+
+        return Map(settings).Operation;
+    }
+
+    private static TenantSettingsResponse Map(TenantSettings s) =>
+        new(
+            new BusinessSettingsDto(
+                s.LogoUrl,
+                s.FantasyName,
+                s.CompanyName,
+                s.Cnpj,
+                s.StateRegistration,
+                s.Segment,
+                s.Phone,
+                s.TaxRegime,
+                new SettingsAddressDto(
+                    s.AddressCep, s.AddressStreet, s.AddressNumber, s.AddressComplement,
+                    s.AddressNeighborhood, s.AddressCity, s.AddressState),
+                s.BusinessHoursJson is null
+                    ? null
+                    : JsonSerializer.Deserialize<Dictionary<string, BusinessHoursDayDto>>(s.BusinessHoursJson, JsonOptions)),
+            new OperationSettingsDto(
+                s.AutoOpen,
+                s.RequireOperator,
+                s.CashFundAmount,
+                s.InactivityLockMinutes,
+                s.AllowDiscounts,
+                s.DiscountLimitPercent,
+                s.RequireManagerCancel,
+                s.BarcodeReader));
 
     private static IEnumerable<TenantRole> CreateDefaultRoles(Guid tenantId)
     {

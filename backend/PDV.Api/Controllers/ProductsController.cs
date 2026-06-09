@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Products;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
@@ -11,6 +13,7 @@ namespace PDV.Api.Controllers;
 public class ProductsController(IProductService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.ViewStock)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -25,6 +28,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewStock)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -32,7 +36,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -40,7 +44,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -48,7 +52,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);
@@ -56,7 +60,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/stock")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> AdjustStock(Guid id, [FromBody] AdjustStockRequest request)
     {
         var result = await service.AdjustStockAsync(id, request);
