@@ -1,19 +1,18 @@
-import { useState, useCallback } from 'react'
-import { Box, Typography, Button, Paper, Divider, useTheme, CircularProgress } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { Box, Button, CircularProgress, Divider, Paper, Typography, useTheme } from '@mui/material'
+import { useCallback, useState } from 'react'
 import { useSelector } from 'react-redux'
-import type { RootState } from '../../store'
 import { useCreateTenant } from '../../hooks/useCreateTenant'
-import type { CreateTenantFormData, FormErrors } from './types'
-import { INITIAL_FORM_DATA, STEPS } from './types'
-import StepperBar from './components/StepperBar'
-import StepNegocio from './components/StepNegocio'
+import type { RootState } from '../../store'
+import FinishScreen from './components/FinishScreen'
+import PreviewPanel from './components/PreviewPanel'
 import StepDocumentos from './components/StepDocumentos'
 import StepEndereco from './components/StepEndereco'
-import StepHorario from './components/StepHorario'
-import PreviewPanel from './components/PreviewPanel'
-import FinishScreen from './components/FinishScreen'
+import StepNegocio from './components/StepNegocio'
+import StepperBar from './components/StepperBar'
+import type { CreateTenantFormData, FormErrors } from './types'
+import { INITIAL_FORM_DATA, STEPS } from './types'
 
 function validateStep(step: number, data: CreateTenantFormData): FormErrors {
   const errors: FormErrors = {}
@@ -30,11 +29,11 @@ function validateStep(step: number, data: CreateTenantFormData): FormErrors {
 
   if (step === 3) {
     if (data.cep.replace(/\D/g, '').length !== 8) errors.cep = 'CEP inválido'
-    if (!data.street.trim())        errors.street       = 'Logradouro obrigatório'
-    if (!data.number.trim())        errors.number       = 'Número obrigatório'
-    if (!data.neighborhood.trim())  errors.neighborhood = 'Bairro obrigatório'
-    if (!data.city.trim())          errors.city         = 'Cidade obrigatória'
-    if (!data.state.trim())         errors.state        = 'UF obrigatória'
+    if (!data.street.trim()) errors.street = 'Logradouro obrigatório'
+    if (!data.number.trim()) errors.number = 'Número obrigatório'
+    if (!data.neighborhood.trim()) errors.neighborhood = 'Bairro obrigatório'
+    if (!data.city.trim()) errors.city = 'Cidade obrigatória'
+    if (!data.state.trim()) errors.state = 'UF obrigatória'
   }
 
   return errors
@@ -67,7 +66,7 @@ export default function OnboardingTenant() {
       setErrors(stepErrors)
       return
     }
-    if (step === 4) {
+    if (step === STEPS.length) {
       await createTenant.mutateAsync(formData)
     } else {
       setStep((s) => s + 1)
@@ -176,9 +175,9 @@ export default function OnboardingTenant() {
               {step === 3 && (
                 <StepEndereco data={formData} onChange={patch} errors={errors} />
               )}
-              {step === 4 && (
+              {/* {step === 4 && (
                 <StepHorario data={formData} onChange={patch} />
-              )}
+              )} */}
             </Box>
 
             <Divider />
@@ -211,7 +210,7 @@ export default function OnboardingTenant() {
                 color="text.tertiary"
                 sx={{ mx: 'auto', fontVariantNumeric: 'tabular-nums' }}
               >
-                {String(step).padStart(2, '0')} / 04
+                {String(step).padStart(2, '0')} / 0{STEPS.length}
               </Typography>
 
               <Button
@@ -221,7 +220,7 @@ export default function OnboardingTenant() {
                 onClick={handleNext}
                 disabled={createTenant.isPending}
               >
-                {step === 4 ? 'Finalizar' : 'Continuar'}
+                {step === STEPS.length ? 'Finalizar' : 'Continuar'}
               </Button>
             </Box>
           </Paper>

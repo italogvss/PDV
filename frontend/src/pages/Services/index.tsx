@@ -371,6 +371,7 @@ export default function ServicesPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          onRowDoubleClick={(params) => setEditService(params.row)}
           sx={(theme) => ({
             flex: 1,
             border: 'none',
@@ -393,6 +394,7 @@ export default function ServicesPage() {
               alignItems: 'center',
               '&:focus, &:focus-within': { outline: 'none' },
             },
+            '& .MuiDataGrid-row': { cursor: 'pointer' },
             '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
             '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
             '& .MuiDataGrid-footerContainer': {

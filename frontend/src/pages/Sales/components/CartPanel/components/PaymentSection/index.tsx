@@ -14,12 +14,6 @@ const METHODS: { value: PaymentMethod; label: string; Icon: typeof CreditCardOut
   { value: 'cash', label: 'Dinheiro', Icon: PaymentsOutlined },
 ]
 
-const METHOD_COLORS: Record<PaymentMethod, { bg: string; text: string; hover: string; border: string }> = {
-  card: { bg: 'warning.main', text: 'warning.contrastText', hover: 'warning.dark', border: 'warning.main' },
-  pix: { bg: 'info.main', text: 'info.contrastText', hover: 'info.dark', border: 'info.main' },
-  cash: { bg: 'success.main', text: 'success.contrastText', hover: 'success.dark', border: 'success.main' },
-}
-
 export default function PaymentSection({
   method,
   onMethodChange,

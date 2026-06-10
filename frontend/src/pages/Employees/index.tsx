@@ -255,6 +255,7 @@ export default function EmployeesPage() {
               disableRowSelectionOnClick
               pageSizeOptions={[10, 25, 50]}
               initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              onRowDoubleClick={(params) => setEditEmployee(params.row)}
               sx={(theme) => ({
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {
@@ -276,6 +277,7 @@ export default function EmployeesPage() {
                   alignItems: 'center',
                   '&:focus, &:focus-within': { outline: 'none' },
                 },
+                '& .MuiDataGrid-row': { cursor: 'pointer' },
                 '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
                 '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
                 '& .MuiDataGrid-footerContainer': {

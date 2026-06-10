@@ -59,7 +59,6 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
         justifyContent: 'center',
         px: { xs: 2, sm: 4 },
         py: 6,
-        background: 'linear-gradient(160deg, #fdfdfb 60%, #ecf7ee 100%)',
       }}
     >
       <Box sx={{ width: '100%', maxWidth: 520 }}>

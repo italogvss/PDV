@@ -6,7 +6,6 @@
 import type { Components, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { radius } from './shape';
-import { bgcolor } from '@mui/system';
 
 export const components = (theme: Theme): Components<Theme> => ({
   // ------------------------------------------------------------------

@@ -80,5 +80,4 @@ export const STEPS = [
   { label: 'Seu negócio', subtitle: 'Como ele se chama' },
   { label: 'Documentos', subtitle: 'CNPJ e razão social' },
   { label: 'Endereço', subtitle: 'Onde ele fica' },
-  { label: 'Horário', subtitle: 'Quando você atende' },
 ] as const

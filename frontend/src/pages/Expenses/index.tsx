@@ -352,6 +352,7 @@ export default function ExpensesPage() {
               disableRowSelectionOnClick
               pageSizeOptions={[10, 25]}
               initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              onRowDoubleClick={(params) => handleOpenEdit(params.row)}
               sx={(t) => ({
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {
@@ -375,6 +376,7 @@ export default function ExpensesPage() {
                   alignItems: 'center',
                   '&:focus, &:focus-within': { outline: 'none' },
                 },
+                '& .MuiDataGrid-row': { cursor: 'pointer' },
                 '& .MuiDataGrid-row:hover': { backgroundColor: t.palette.surface.sunken },
                 '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
                 '& .MuiDataGrid-footerContainer': {

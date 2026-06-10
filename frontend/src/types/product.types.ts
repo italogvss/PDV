@@ -23,6 +23,7 @@ export interface UpdateProductPayload {
   name: string
   barcode?: string
   price: number
+  stock: number
   purchasePrice?: number
   minStock?: number
   minCriticalStock?: number

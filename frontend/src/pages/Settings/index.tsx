@@ -24,8 +24,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'negocio', label: 'Negócio', subtitle: 'Dados, endereço e horário', icon: StorefrontOutlinedIcon },
-  { id: 'operacao', label: 'Operação / PDV', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlinedIcon },
+  { id: 'negocio', label: 'Meu Negócio', subtitle: 'Dados, endereço e horário', icon: StorefrontOutlinedIcon },
+  { id: 'operacao', label: 'Operação', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlinedIcon },
   //{ id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlinedIcon },
   //{ id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlinedIcon },
   //{ id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlinedIcon },

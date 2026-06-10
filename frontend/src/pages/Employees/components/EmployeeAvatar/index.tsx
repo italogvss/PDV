@@ -31,7 +31,7 @@ export default function EmployeeAvatar({ initials, colorKey, size = 36 }: Employ
         sx={{
           fontSize: size * 0.36,
           fontWeight: 700,
-          color: '#ffffff',
+          color: 'text.primary',
           lineHeight: 1,
           fontFamily: 'inherit',
           letterSpacing: '0.02em',

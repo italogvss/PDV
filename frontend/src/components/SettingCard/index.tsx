@@ -1,4 +1,4 @@
-import { Paper, Box, Typography, Divider, Stack, Card } from '@mui/material'
+import { Box, Card, Divider, Stack, Typography } from '@mui/material'
 import { ReactNode } from 'react'
 
 interface SettingCardProps {

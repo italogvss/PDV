@@ -5,10 +5,8 @@ import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   CircularProgress,
-  InputBase,
+  InputBase
 } from '@mui/material'
 import { useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader'
@@ -70,7 +68,7 @@ export default function CustomersPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Clientes" description={`${kpis.total} cadastrados • CRM e fidelidade`}>
+      <PageHeader title="Clientes" description={`Você tem ${kpis.total} cadastrados`}>
         <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Novo cliente
         </Button>

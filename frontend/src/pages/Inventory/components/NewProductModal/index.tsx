@@ -184,6 +184,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         barcode: data.barcode || undefined,
         price: data.price,
         purchasePrice: data.costPrice,
+        stock: data.stock,
         minStock: minStockVal,
         minCriticalStock: criticalStockVal,
         categoryId,
@@ -286,7 +287,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <FieldLabel label="Estoque atual" required={!isEditing} inline />
+                    <FieldLabel label="Estoque atual" required inline />
                   </Box>
                   <TextField
                     {...register('stock')}
@@ -294,13 +295,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                     size="small"
                     type="number"
                     placeholder="0"
-                    disabled={isEditing}
                     error={!!errors.stock}
-                    helperText={
-                      isEditing
-                        ? 'Use "Ajustar estoque" para alterar'
-                        : errors.stock?.message
-                    }
+                    helperText={ errors.stock?.message}
                     slotProps={{ htmlInput: { min: 0, step: 1 } }}
                   />
                 </Box>

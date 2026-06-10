@@ -29,14 +29,6 @@ interface CustomerDetailPanelProps {
   onDelete: (customerId: string) => void
 }
 
-const AVATAR_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-
-function getAvatarColor(name: string): string {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
-}
-
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -101,7 +93,6 @@ export default function CustomerDetailPanel({ customer, onEdit, onDelete }: Cust
                   height: 56,
                   fontSize: 18,
                   fontWeight: 600,
-                  backgroundColor: getAvatarColor(customer.name),
                   color: 'white',
                   flexShrink: 0,
                 }}

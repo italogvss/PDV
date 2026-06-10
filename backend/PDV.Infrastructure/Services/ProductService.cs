@@ -83,6 +83,7 @@ public class ProductService(
         product.Barcode = request.Barcode;
         product.NCM = request.Ncm;
         product.Price = request.Price;
+        product.Stock = request.Stock;
         product.PurchasePrice = request.PurchasePrice;
         product.MinStock = request.MinStock;
         product.MinCriticalStock = request.MinCriticalStock;

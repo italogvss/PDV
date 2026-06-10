@@ -1,8 +1,12 @@
 import { useRef, useState } from 'react'
-import { Box, Avatar, Typography, IconButton, Popover, CircularProgress } from '@mui/material'
-import { UnfoldMore, Check } from '@mui/icons-material'
-import { useAppSelector } from '../../../../store'
+import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { Box, Avatar, Typography, IconButton, Popover, CircularProgress, Button, Divider } from '@mui/material'
+import { UnfoldMore, Check, AddBusiness } from '@mui/icons-material'
+import { useAppSelector, useAppDispatch } from '../../../../store'
+import { setTenant } from '../../../../store/slices/auth.slice'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
+import { useTenantSettings } from '../../../../hooks/useTenantSettings'
 import type { TenantListItem } from '../../../../types/tenant.types'
 
 function getInitials(name: string): string {
@@ -79,15 +83,21 @@ function TenantRow({
 export default function StoreSelector() {
   const { tenantId, tenants } = useAppSelector((s) => s.auth)
   const switchTenant = useSwitchTenant()
+  const { data: settings } = useTenantSettings()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const queryClient = useQueryClient()
 
   const activeTenant = tenants.find((t) => t.tenantId === tenantId)
   const activeName = activeTenant?.name ?? ''
   const canSwitch = tenants.length > 1
+  const singleTenant = tenants.length === 1
+  const logoUrl = settings?.business.logoUrl ?? null
 
   function handleOpen() {
-    if (!canSwitch) return
+    if (!canSwitch && !singleTenant) return
     setAnchorEl(triggerRef.current)
   }
 
@@ -98,6 +108,13 @@ export default function StoreSelector() {
   function handleSwitch(id: string) {
     if (id === tenantId) return
     switchTenant.mutate(id, { onSettled: handleClose })
+  }
+
+  function handleCreateStore() {
+    handleClose()
+    dispatch(setTenant({ tenantId: null }))
+    queryClient.clear()
+    navigate('/criar-negocio')
   }
 
   return (
@@ -111,20 +128,19 @@ export default function StoreSelector() {
           gap: 2,
           px: 2,
           py: 1.5,
-          borderRadius: 2,
+          borderRadius: 1,
           border: 1,
           borderColor: 'border.subtle',
           bgcolor: 'background.paper',
-          cursor: canSwitch ? 'pointer' : 'default',
+          cursor: canSwitch || singleTenant ? 'pointer' : 'default',
           transition: 'background-color 0.15s',
-          '&:hover': { bgcolor: canSwitch ? 'surface.sunken' : 'background.paper' },
+          '&:hover': { bgcolor: canSwitch || singleTenant ? 'surface.sunken' : 'background.paper' },
         }}
       >
         <Avatar
           variant="rounded"
+          src={logoUrl ?? undefined}
           sx={{
-            width: 28,
-            height: 28,
             bgcolor: 'accent.600',
             color: 'common.white',
             fontSize: 12,
@@ -146,7 +162,7 @@ export default function StoreSelector() {
             {activeTenant?.role === 'Owner' ? 'Proprietário' : 'Funcionário'}
           </Typography>
         </Box>
-        {canSwitch && (
+        {(canSwitch || singleTenant) && (
           <IconButton size="small" sx={{ color: 'text.tertiary' }} tabIndex={-1}>
             <UnfoldMore sx={{ fontSize: 16 }} />
           </IconButton>
@@ -184,6 +200,20 @@ export default function StoreSelector() {
             onClick={() => handleSwitch(tenant.tenantId)}
           />
         ))}
+        {singleTenant && (
+          <>
+            <Divider sx={{ mx: 0.5 }} />
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddBusiness sx={{ fontSize: 16 }} />}
+              onClick={handleCreateStore}
+              sx={{ mx: 0.5, mb: 0.5 }}
+            >
+              Criar nova loja
+            </Button>
+          </>
+        )}
       </Popover>
     </Box>
   )

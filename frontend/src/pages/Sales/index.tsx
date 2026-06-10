@@ -16,6 +16,7 @@ import { useCreateSale } from '../../hooks/useSales'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
 import PageHeader from '../../components/PageHeader'
+import { useAppSelector } from '../../store'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -45,6 +46,7 @@ export default function SalesPage() {
   const { data: categories = [] } = useProductCategories()
   const { data: services = [], isLoading: loadingServices } = useServices()
   const { data: serviceCategories = [] } = useServiceCategories()
+  const auth = useAppSelector((state) => state.auth)
   const createSale = useCreateSale()
 
   useEffect(() => {
@@ -209,10 +211,10 @@ export default function SalesPage() {
     >
       <PageHeader
         title="Vender"
-        description="Operador: Nome"
+        description={`Operador: ${auth.name}`}
       >
         <Button variant="outlined" startIcon={<RestartAltRounded />} onClick={handleRestart}>
-          Recomeçar
+          Limpar
         </Button>
       </PageHeader>
       <Box

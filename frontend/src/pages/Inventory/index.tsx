@@ -91,9 +91,9 @@ export default function InventoryPage() {
                 src={row.imageUrl}
                 alt={row.name}
                 sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 1,
                   objectFit: 'cover',
                   border: '1px solid',
                   borderColor: 'border.subtle',
@@ -389,6 +389,7 @@ export default function InventoryPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          onRowDoubleClick={(params) => setEditProduct(params.row)}
           sx={(theme) => ({
             flex: 1,
             border: 'none',
@@ -411,6 +412,7 @@ export default function InventoryPage() {
               alignItems: 'center',
               '&:focus, &:focus-within': { outline: 'none' },
             },
+            '& .MuiDataGrid-row': { cursor: 'pointer' },
             '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
             '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
             '& .MuiDataGrid-footerContainer': {

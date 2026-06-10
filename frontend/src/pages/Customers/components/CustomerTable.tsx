@@ -29,23 +29,6 @@ const getInitials = (name: string) =>
     .join('')
     .toUpperCase()
 
-const AVATAR_COLORS = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
-  '#8B5CF6',
-  '#06B6D4',
-  '#EC4899',
-  '#6366F1',
-]
-
-function getAvatarColor(name: string): string {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
-}
-
 const HEADER_CELL_SX = {
   fontSize: 11,
   fontWeight: 500,
@@ -113,7 +96,6 @@ export default function CustomerTable({
                           height: 34,
                           fontSize: 12,
                           fontWeight: 600,
-                          backgroundColor: getAvatarColor(customer.name),
                           color: 'white',
                           flexShrink: 0,
                         }}

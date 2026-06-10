@@ -1,12 +1,10 @@
-import { Box, Typography, Avatar, Divider, Chip } from '@mui/material'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
-import InventoryIcon from '@mui/icons-material/Inventory'
-import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import LocationOnIcon from '@mui/icons-material/LocationOn'
 import BadgeIcon from '@mui/icons-material/Badge'
 import CheckIcon from '@mui/icons-material/Check'
-import type { DayOfWeek } from '../../../types/settings.types'
+import DashboardIcon from '@mui/icons-material/Dashboard'
+import InventoryIcon from '@mui/icons-material/Inventory'
+import LocationOnIcon from '@mui/icons-material/LocationOn'
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
+import { Avatar, Box, Chip, Divider, Typography } from '@mui/material'
 import type { CreateTenantFormData } from '../types'
 
 interface PreviewPanelProps {
@@ -14,29 +12,7 @@ interface PreviewPanelProps {
   step: number
 }
 
-const STEP_LABELS = ['Seu negócio', 'Documentos', 'Endereço', 'Horário']
-
-function formatHours(data: CreateTenantFormData): string {
-  const { businessHours } = data
-  const openDays = (Object.entries(businessHours) as [DayOfWeek, typeof businessHours[DayOfWeek]][])
-    .filter(([, d]) => d.open)
-  if (openDays.length === 0) return 'Fechado todos os dias'
-  if (openDays.length === 7) {
-    const first = openDays[0][1]
-    return `Todos os dias ${first.openTime}h-${first.closeTime}h`
-  }
-  const weekdays = openDays.filter(([k]) => !['saturday', 'sunday'].includes(k))
-  const saturday = businessHours.saturday
-  const parts: string[] = []
-  if (weekdays.length > 0) {
-    const wh = weekdays[0][1]
-    parts.push(`Seg-Sex ${wh.openTime}h-${wh.closeTime}h`)
-  }
-  if (saturday.open) {
-    parts.push(`Sáb ${saturday.openTime}h-${saturday.closeTime}h`)
-  }
-  return parts.join(', ')
-}
+const STEP_LABELS = ['Seu negócio', 'Documentos', 'Endereço']
 
 function formatAddress(data: CreateTenantFormData): string {
   if (!data.street) return ''
@@ -54,7 +30,6 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
       ? `CNPJ: ${data.cnpj}`
       : 'CNPJ pendente'
   const addressDisplay = formatAddress(data) || 'Endereço pendente'
-  const hoursDisplay = formatHours(data)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -205,12 +180,6 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
         <Divider />
         <Box sx={{ px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-            <AccessTimeIcon sx={{ fontSize: 14, color: 'text.disabled', mt: 0.1 }} />
-            <Typography variant="caption" color="text.secondary">
-              {hoursDisplay}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
             <LocationOnIcon sx={{ fontSize: 14, color: 'text.disabled', mt: 0.1 }} />
             <Typography
               variant="caption"
@@ -222,9 +191,6 @@ export default function PreviewPanel({ data, step }: PreviewPanelProps) {
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BadgeIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-            <Typography variant="caption" color="text.disabled">
-              Cupom #001 · passo {step} de 4
-            </Typography>
           </Box>
         </Box>
       </Box>

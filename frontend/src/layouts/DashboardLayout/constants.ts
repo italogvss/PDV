@@ -33,9 +33,9 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Operação',
     items: [
-      { label: 'Dashboard', path: '/', icon: SpaceDashboardOutlined },
+      { label: 'Inicio', path: '/', icon: SpaceDashboardOutlined },
       {
-        label: 'PDV — Vendas',
+        label: 'Vender',
         path: '/vendas',
         icon: PointOfSaleOutlined,
         badge: { label: 'Novo', tone: 'new' },

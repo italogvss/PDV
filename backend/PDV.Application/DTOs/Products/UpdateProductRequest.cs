@@ -6,6 +6,7 @@ public record UpdateProductRequest(
     string? Ncm,
     decimal Price,
     decimal? PurchasePrice,
+    int Stock,
     int? MinStock,
     int? MinCriticalStock,
     Guid? CategoryId);

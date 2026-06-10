@@ -189,7 +189,7 @@ export default function SalesHistoryPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Vendas" description="Histórico completo de pedidos">
+      <PageHeader title="Vendas" description="Histórico completo de vendas realizadas para o período">
         <Button
           variant="outlined"
           startIcon={<FilterListRounded />}
@@ -211,6 +211,7 @@ export default function SalesHistoryPage() {
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
           }}
+          onRowDoubleClick={(params) => setSelectedSaleId(params.row.id)}
           sx={(theme) => ({
             border: 'none',
             '& .MuiDataGrid-columnHeaders': {
@@ -234,6 +235,7 @@ export default function SalesHistoryPage() {
               alignItems: 'center',
               '&:focus, &:focus-within': { outline: 'none' },
             },
+            '& .MuiDataGrid-row': { cursor: 'pointer' },
             '& .MuiDataGrid-row:hover': {
               backgroundColor: theme.palette.surface.sunken,
             },

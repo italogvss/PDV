@@ -31,7 +31,7 @@ export default function CartPanel({
     >
       <Box sx={{ p: 3, borderBottom: 1, borderColor: 'border.subtle' }}>
         <Typography variant="h4" color="text.primary">
-          Venda atual
+          Carrinho
         </Typography>
       </Box>
 

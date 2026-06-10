@@ -1,27 +1,23 @@
-import { Box, Typography, Button } from '@mui/material'
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
-import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import { HelpOutlineOutlined, PersonOutlineOutlined, type SvgIconComponent } from '@mui/icons-material'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
+import { Box, Button, Typography } from '@mui/material'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppDispatch } from '../../store'
 import { clearAuth } from '../../store/slices/auth.slice'
-import type { AccountTab } from './types'
-import ProfileSection from './components/ProfileSection'
-import SubscriptionSection from './components/SubscriptionSection'
 import BillingPaymentsSection from './components/BillingPaymentsSection'
-import InvoicesSection from './components/InvoicesSection'
 import BusinessesSection from './components/BusinessesSection'
-import SecuritySection from './components/SecuritySection'
-import NotificationsSection from './components/NotificationsSection'
-import SessionsSection from './components/SessionsSection'
 import IntegrationsSection from './components/IntegrationsSection'
+import InvoicesSection from './components/InvoicesSection'
+import NotificationsSection from './components/NotificationsSection'
+import ProfileSection from './components/ProfileSection'
+import SecuritySection from './components/SecuritySection'
+import SessionsSection from './components/SessionsSection'
+import SubscriptionSection from './components/SubscriptionSection'
+import type { AccountTab } from './types'
 
 interface NavItem {
   id: AccountTab
@@ -32,13 +28,13 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineOutlined },
   { id: 'assinatura', label: 'Assinatura', icon: WorkspacePremiumOutlinedIcon },
-//{ id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
-//{ id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
+  //{ id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
+  //{ id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
   { id: 'negocios', label: 'Meus negócios', icon: StorefrontOutlinedIcon },
   { id: 'seguranca', label: 'Segurança', icon: SecurityOutlinedIcon },
   { id: 'notificacoes', label: 'Notificações', icon: NotificationsNoneOutlinedIcon },
-//{ id: 'sessoes', label: 'Sessões', icon: VisibilityOutlinedIcon },
-//{ id: 'integracoes', label: 'Integrações', icon: SyncAltOutlinedIcon },
+  //{ id: 'sessoes', label: 'Sessões', icon: VisibilityOutlinedIcon },
+  //{ id: 'integracoes', label: 'Integrações', icon: SyncAltOutlinedIcon },
 ]
 
 function renderSection(tab: AccountTab) {
@@ -80,7 +76,7 @@ export default function AccountPage() {
           <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.15 }} color="text.primary">
             Conta
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Gerencie seu perfil, plano e preferências
           </Typography>
         </Box>

@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box,
   Button,
-  Avatar,
   TextField,
   Select,
   MenuItem,
@@ -11,21 +10,39 @@ import {
   CircularProgress,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
-import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import { BlockOutlined, DeleteOutlined } from '@mui/icons-material'
+import ImageUpload from '../../../../components/ImageUpload'
+import { BlockOutlined } from '@mui/icons-material'
 import { useTenantSettings, useUpdateBusinessSettings } from '../../../../hooks/useTenantSettings'
+import { useUploadImage, useRemoveImage } from '../../../../hooks/useMediaUpload'
+import { useAppSelector } from '../../../../store'
+import { maskCNPJ, formatPhone, maskCEP } from '../../../../utils/masks'
 import type { BusinessAddress, BusinessSettings } from '../../../../types/settings.types'
+
+const TENANT_QUERY_KEY = ['tenant-settings'] as const
 
 export default function BusinessSection() {
   const { data, isLoading } = useTenantSettings()
   const update = useUpdateBusinessSettings()
+  const { tenantId } = useAppSelector((s) => s.auth)
   const [form, setForm] = useState<BusinessSettings | null>(null)
+  const initialized = useRef(false)
+
+  const uploadLogo = useUploadImage('Tenant', TENANT_QUERY_KEY)
+  const removeLogo = useRemoveImage('Tenant', TENANT_QUERY_KEY)
 
   useEffect(() => {
-    if (data) setForm(data.business)
+    if (data && !initialized.current) {
+      setForm({
+        ...data.business,
+        cnpj: maskCNPJ(data.business.cnpj),
+        phone: formatPhone(data.business.phone),
+        address: { ...data.business.address, cep: maskCEP(data.business.address.cep) },
+      })
+      initialized.current = true
+    }
   }, [data])
 
   if (isLoading || !form) {
@@ -41,10 +58,56 @@ export default function BusinessSection() {
   const setAddress = (patch: Partial<BusinessAddress>) =>
     setForm((f) => (f ? { ...f, address: { ...f.address, ...patch } } : f))
 
-  const hasChanges = JSON.stringify(form) !== JSON.stringify(data?.business)
+  const hasChanges = (() => {
+    if (!form || !data) return false
+    const orig = data.business
+    return (
+      form.fantasyName !== orig.fantasyName ||
+      form.companyName !== orig.companyName ||
+      form.cnpj.replace(/\D/g, '') !== orig.cnpj.replace(/\D/g, '') ||
+      form.stateRegistration !== orig.stateRegistration ||
+      form.segment !== orig.segment ||
+      form.phone.replace(/\D/g, '') !== orig.phone.replace(/\D/g, '') ||
+      form.taxRegime !== orig.taxRegime ||
+      form.address.cep.replace(/\D/g, '') !== orig.address.cep.replace(/\D/g, '') ||
+      form.address.street !== orig.address.street ||
+      form.address.number !== orig.address.number ||
+      form.address.complement !== orig.address.complement ||
+      form.address.neighborhood !== orig.address.neighborhood ||
+      form.address.city !== orig.address.city ||
+      form.address.state !== orig.address.state
+    )
+  })()
 
-  const handleSave = () => update.mutate(form)
-  const handleCancel = () => data && setForm(data.business)
+  const handleSave = () => {
+    if (!form) return
+    update.mutate({
+      ...form,
+      cnpj: form.cnpj.replace(/\D/g, ''),
+      phone: form.phone.replace(/\D/g, ''),
+      address: { ...form.address, cep: form.address.cep.replace(/\D/g, '') },
+    })
+  }
+
+  const handleCancel = () => {
+    if (!data) return
+    setForm({
+      ...data.business,
+      cnpj: maskCNPJ(data.business.cnpj),
+      phone: formatPhone(data.business.phone),
+      address: { ...data.business.address, cep: maskCEP(data.business.address.cep) },
+    })
+  }
+
+  const handleLogoUpload = (file: File) => {
+    if (!tenantId) return
+    uploadLogo.mutate({ file, entityId: tenantId })
+  }
+
+  const handleLogoRemove = () => {
+    if (!tenantId) return
+    removeLogo.mutate(tenantId)
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -71,29 +134,15 @@ export default function BusinessSection() {
           ) : undefined
         }
       >
-        <SettingRow label="Logo" sublabel="PNG ou SVG até 1MB" alignItems="center">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar
-              variant="rounded"
-              sx={{
-                width: 48,
-                height: 48,
-                bgcolor: 'text.primary',
-                color: 'background.paper',
-                fontWeight: 700,
-                fontSize: 20,
-                borderRadius: 2,
-              }}
-            >
-              {form.fantasyName.charAt(0).toUpperCase() || 'Z'}
-            </Avatar>
-            <Button variant="outlined" size="small" startIcon={<FileUploadOutlinedIcon />}>
-              Alterar
-            </Button>
-            <Button variant="outlined" size="small" startIcon={<DeleteOutlined />} color="inherit">
-              Remover
-            </Button>
-          </Box>
+        <SettingRow label="Logo" sublabel="JPG, PNG ou WebP até 5MB" alignItems="center">
+          <ImageUpload
+            currentUrl={data?.business.logoUrl ?? null}
+            onUpload={handleLogoUpload}
+            onRemove={handleLogoRemove}
+            isLoading={uploadLogo.isPending || removeLogo.isPending}
+            shape="square"
+            size={72}
+          />
         </SettingRow>
 
         <SettingRow label="Nome fantasia">
@@ -119,7 +168,8 @@ export default function BusinessSection() {
             <TextField
               size="small"
               value={form.cnpj}
-              onChange={(e) => set({ cnpj: e.target.value })}
+              onChange={(e) => set({ cnpj: maskCNPJ(e.target.value) })}
+              placeholder="00.000.000/0000-00"
               sx={{ width: 200 }}
             />
             <Chip
@@ -164,7 +214,8 @@ export default function BusinessSection() {
           <TextField
             size="small"
             value={form.phone}
-            onChange={(e) => set({ phone: e.target.value })}
+            onChange={(e) => set({ phone: formatPhone(e.target.value) })}
+            placeholder="(00) 00000-0000"
             sx={{ width: 340 }}
           />
         </SettingRow>
@@ -176,7 +227,8 @@ export default function BusinessSection() {
             <TextField
               size="small"
               value={form.address.cep}
-              onChange={(e) => setAddress({ cep: e.target.value })}
+              onChange={(e) => setAddress({ cep: maskCEP(e.target.value) })}
+              placeholder="00000-000"
               sx={{ width: 140 }}
             />
             <Button variant="outlined" size="small" startIcon={<SearchIcon />}>
@@ -251,19 +303,6 @@ export default function BusinessSection() {
             sx={{ minWidth: 200 }}
           >
             Resetar
-          </Button>
-        </SettingRow>
-
-        <SettingRow
-          label="Apagar todos os dados de teste"
-          sublabel="Remove vendas, clientes e produtos marcados como teste"
-        >
-          <Button
-            variant="outlined"
-            color="error"
-            sx={{ minWidth: 200 }}
-          >
-            Apagar
           </Button>
         </SettingRow>
 
