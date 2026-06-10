@@ -16,15 +16,14 @@ const PAYMENTS: Array<SalePaymentMethod | 'Todos'> = ['Todos', 'Pix', 'Dinheiro'
 
 const toggleSx = {
   borderRadius: '20px !important',
-  border: '1px solid !important',
-  borderColor: 'divider !important',
   fontSize: 12,
-  px: 1.5,
+  px: 2,
   py: 0.5,
   textTransform: 'none',
   fontWeight: 500,
   color: 'text.secondary',
   '&.Mui-selected': {
+    border: "none",
     bgcolor: 'action.selected',
     color: 'text.primary',
     fontWeight: 600,

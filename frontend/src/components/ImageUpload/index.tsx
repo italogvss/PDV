@@ -18,6 +18,7 @@ export default function ImageUpload({
   isLoading = false,
   shape = 'square',
   size = 120,
+  fullHeight = false,
   label,
   disabled = false,
 }: Props) {
@@ -43,13 +44,22 @@ export default function ImageUpload({
   const borderRadius = shape === 'circle' ? '50%' : 2
 
   return (
-    <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+    <Box
+      sx={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        height: fullHeight ? '100%' : undefined,
+      }}
+    >
       <Box
         onClick={handlePick}
         sx={{
           position: 'relative',
           width: size,
-          height: size,
+          height: fullHeight ? '100%' : size,
+          minHeight: fullHeight ? size : undefined,
           borderRadius,
           overflow: 'hidden',
           display: 'flex',

@@ -8,7 +8,9 @@ import {
   Chip,
   InputAdornment,
   Skeleton,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
@@ -77,6 +79,8 @@ function generateEAN13(): string {
 }
 
 export default function ProductModal({ open, onClose, product }: ProductModalProps) {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isEditing = !!product
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
@@ -238,33 +242,102 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
         >
-          {/* Imagem do produto */}
-          <Box>
-            <FieldLabel label="Foto do produto" />
-            <Box sx={{ mt: 0.5 }}>
-              <ImageUpload
-                currentUrl={currentImageUrl}
-                onUpload={handleImageSelect}
-                onRemove={handleRemoveImage}
-                isLoading={uploadImage.isPending || removeImage.isPending}
-                disabled={isPending}
-                shape="square"
-                size={96}
-              />
+          {/* Desktop: foto à esquerda; Nome + Estoque à direita (foto acompanha a altura).
+              Mobile: tudo em coluna (foto, nome, estoques). */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: 'stretch',
+            }}
+          >
+            {/* Imagem do produto */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <FieldLabel label="Foto do produto" />
+              <Box sx={{ mt: 0.5, flex: 1 }}>
+                <ImageUpload
+                  currentUrl={currentImageUrl}
+                  onUpload={handleImageSelect}
+                  onRemove={handleRemoveImage}
+                  isLoading={uploadImage.isPending || removeImage.isPending}
+                  disabled={isPending}
+                  shape="square"
+                  size={120}
+                  fullHeight={!isMobile}
+                />
+              </Box>
             </Box>
-          </Box>
 
-          {/* Nome */}
-          <Box>
-            <FieldLabel label="Nome do produto" required />
-            <TextField
-              {...register('name')}
-              fullWidth
-              size="small"
-              placeholder="Ex: Café espresso 50g"
-              error={!!errors.name}
-              helperText={errors.name?.message}
-            />
+            {/* Nome + Estoque */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <FieldLabel label="Nome do produto" required />
+                <TextField
+                  {...register('name')}
+                  fullWidth
+                  size="small"
+                  placeholder="Ex: Café espresso 50g"
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <FieldLabel label="Estoque atual" required={!isEditing} inline />
+                  </Box>
+                  <TextField
+                    {...register('stock')}
+                    fullWidth
+                    size="small"
+                    type="number"
+                    placeholder="0"
+                    disabled={isEditing}
+                    error={!!errors.stock}
+                    helperText={
+                      isEditing
+                        ? 'Use "Ajustar estoque" para alterar'
+                        : errors.stock?.message
+                    }
+                    slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                  />
+                </Box>
+
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <FieldLabel label="Estoque mínimo" inline />
+                  </Box>
+                  <TextField
+                    {...register('minStock')}
+                    fullWidth
+                    size="small"
+                    type="number"
+                    placeholder="Ex: 10"
+                    error={!!errors.minStock}
+                    helperText={errors.minStock?.message as string}
+                    slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                  />
+                </Box>
+
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <FieldLabel label="Estoque crítico" inline />
+                  </Box>
+                  <TextField
+                    {...register('criticalStock')}
+                    fullWidth
+                    size="small"
+                    type="number"
+                    placeholder="Ex: 3"
+                    error={!!errors.criticalStock}
+                    helperText={errors.criticalStock?.message as string}
+                    slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                  />
+                </Box>
+              </Box>
+            </Box>
           </Box>
 
           {/* Preços + margem */}
@@ -345,62 +418,6 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                 </Typography>
               </Box>
             )}
-          </Box>
-
-          {/* Estoque */}
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <FieldLabel label="Estoque atual" required={!isEditing} inline />
-              </Box>
-              <TextField
-                {...register('stock')}
-                fullWidth
-                size="small"
-                type="number"
-                placeholder="0"
-                disabled={isEditing}
-                error={!!errors.stock}
-                helperText={
-                  isEditing
-                    ? 'Use "Ajustar estoque" para alterar'
-                    : errors.stock?.message
-                }
-                slotProps={{ htmlInput: { min: 0, step: 1 } }}
-              />
-            </Box>
-
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <FieldLabel label="Estoque mínimo" inline />
-              </Box>
-              <TextField
-                {...register('minStock')}
-                fullWidth
-                size="small"
-                type="number"
-                placeholder="Ex: 10"
-                error={!!errors.minStock}
-                helperText={errors.minStock?.message as string}
-                slotProps={{ htmlInput: { min: 0, step: 1 } }}
-              />
-            </Box>
-
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <FieldLabel label="Estoque crítico" inline />
-              </Box>
-              <TextField
-                {...register('criticalStock')}
-                fullWidth
-                size="small"
-                type="number"
-                placeholder="Ex: 3"
-                error={!!errors.criticalStock}
-                helperText={errors.criticalStock?.message as string}
-                slotProps={{ htmlInput: { min: 0, step: 1 } }}
-              />
-            </Box>
           </Box>
 
           {/* Código de barras */}

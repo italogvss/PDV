@@ -215,6 +215,27 @@ export const components = (theme: Theme): Components<Theme> => ({
   // ------------------------------------------------------------------
   // Navegação lateral
   // ------------------------------------------------------------------
+  MuiToggleButtonGroup: {
+    styleOverrides: {
+      root: {
+        '& .MuiToggleButton-root': {
+          textTransform: 'none',
+          fontWeight: 500,
+          fontSize: 13,
+          px: 2,
+          borderColor: 'border.subtle',
+          color: 'text.secondary',
+          '&.Mui-selected': {
+            border: "none",
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            borderColor: theme.palette.action.selected,
+            '&:hover': { backgroundColor: theme.palette.primary.dark },
+          },
+        },
+      },
+    },
+  },
   MuiList: {
     styleOverrides: { root: { padding: '6px 10px' } },
   },
@@ -530,25 +551,25 @@ export const components = (theme: Theme): Components<Theme> => ({
     },
   },
   MuiSwitch: {
-     styleOverrides: {
-       root: {
-    //     width: 32, height: 18, padding: 0,
-    //     display: 'flex', alignItems: 'center',
-    //   },
-    //   switchBase: {
-    //     padding: 2,
-    //     '&.Mui-checked': {
-    //       transform: 'translateX(14px)',
-    //       color: '#fff',
-    //       '& + .MuiSwitch-track': { backgroundColor: theme.palette.accent[600], opacity: 1 },
-    //     },
-    //   },
-    //   thumb: { width: 14, height: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.2)' },
-    //   track: {
-    //     borderRadius: 999, opacity: 1,
-    //     backgroundColor: theme.palette.surface.raised,
-       },
-     },
+    styleOverrides: {
+      root: {
+        //     width: 32, height: 18, padding: 0,
+        //     display: 'flex', alignItems: 'center',
+        //   },
+        //   switchBase: {
+        //     padding: 2,
+        //     '&.Mui-checked': {
+        //       transform: 'translateX(14px)',
+        //       color: '#fff',
+        //       '& + .MuiSwitch-track': { backgroundColor: theme.palette.accent[600], opacity: 1 },
+        //     },
+        //   },
+        //   thumb: { width: 14, height: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.2)' },
+        //   track: {
+        //     borderRadius: 999, opacity: 1,
+        //     backgroundColor: theme.palette.surface.raised,
+      },
+    },
   },
   MuiTooltip: {
     styleOverrides: {

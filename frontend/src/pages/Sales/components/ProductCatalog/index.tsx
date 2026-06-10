@@ -75,14 +75,13 @@ export default function ProductCatalog({
           onChange={(_, v: CatalogMode | null) => v && onModeChange(v)}
           size="small"
           sx={{
-            flexShrink: 0,
-            borderColor: 'border.subtle',           
+            flexShrink: 0,        
           }}
         >
-          <ToggleButton value="products" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
+          <ToggleButton value="products" >
             Produtos
           </ToggleButton>
-          <ToggleButton value="services" sx={{ px: 2, textTransform: 'none', fontSize: 13, fontWeight: 500 }}>
+          <ToggleButton value="services" >
             Serviços
           </ToggleButton>
         </ToggleButtonGroup>

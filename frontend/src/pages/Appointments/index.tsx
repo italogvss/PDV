@@ -221,7 +221,6 @@ export default function AppointmentsPage() {
             '& .MuiToggleButton-root': {
               textTransform: 'none',
               px: 2,
-              borderColor: 'border.subtle',
               color: 'text.secondary',
               '&.Mui-selected': {
                 bgcolor: 'text.primary',

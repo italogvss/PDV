@@ -42,8 +42,9 @@ export default function CategoryStrip({
             Nenhuma categoria cadastrada ainda
           </Typography>
           <Chip
-            label="+ Adicionar"
+            label="+ Criar categoria"
             variant="outlined"
+            size="large"
             onClick={onAdd}
             sx={{ cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main' }}
           />
@@ -61,7 +62,7 @@ export default function CategoryStrip({
           gap: 1,
           overflowX: 'auto',
           flexWrap: 'nowrap',
-          pb: 0.5,
+          pb: 3,
           '&::-webkit-scrollbar': { height: 3 },
           '&::-webkit-scrollbar-thumb': { bgcolor: 'border.subtle', borderRadius: '999px' },
           '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
@@ -78,7 +79,7 @@ export default function CategoryStrip({
         ))}
 
         <Chip
-          label="+ Adicionar"
+          label="+ Criar categoria"
           variant="outlined"
           onClick={onAdd}
           sx={{ flexShrink: 0, cursor: 'pointer', borderStyle: 'dashed', borderColor: 'success.main', color: 'success.main', height: 36, fontSize: 14, px: 0.5 }}

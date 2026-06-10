@@ -235,22 +235,6 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                   value={field.value ? 'paid' : 'pending'}
                   onChange={(_, val: 'paid' | 'pending' | null) => val && field.onChange(val === 'paid')}
                   size="small"
-                  sx={{
-                    '& .MuiToggleButton-root': {
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      fontSize: 13,
-                      px: 2,
-                      borderColor: 'border.subtle',
-                      color: 'text.secondary',
-                      '&.Mui-selected': {
-                        bgcolor: 'text.primary',
-                        color: 'background.paper',
-                        borderColor: 'text.primary',
-                        '&:hover': { bgcolor: 'text.primary' },
-                      },
-                    },
-                  }}
                 >
                   <ToggleButton value="pending">A pagar</ToggleButton>
                   <ToggleButton value="paid">Já paga</ToggleButton>

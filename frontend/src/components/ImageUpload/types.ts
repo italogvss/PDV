@@ -6,8 +6,10 @@ export interface Props {
   isLoading?: boolean
   /** square: produto/serviço · circle: avatar/logo. Padrão: square. */
   shape?: 'square' | 'circle'
-  /** Tamanho em px. Padrão: 120. */
+  /** Largura em px. Padrão: 120. Também é a altura quando `fullHeight` é falso. */
   size?: number
+  /** Faz a altura preencher o container pai (mantém `size` como largura). */
+  fullHeight?: boolean
   /** Texto auxiliar abaixo da área (ex.: "Foto do produto"). */
   label?: string
   disabled?: boolean

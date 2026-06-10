@@ -18,7 +18,6 @@ export default function RouterGuard({ type }: { type: GuardType }) {
   if (isLoading) {
     return type === 'change-password' ? null : <Loading />
   }
-
   switch (type) {
     case 'public':
       if (isAuthenticated) {
