@@ -7,7 +7,6 @@ public record EmployeeResponse(
     string Email,
     Guid RoleId,
     string RoleName,
-    string Position,
     decimal? Salary,
     string? Phone,
     string? ImageUrl,

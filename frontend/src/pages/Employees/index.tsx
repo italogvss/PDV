@@ -18,8 +18,6 @@ import {
   Skeleton,
   IconButton,
   Tooltip,
-  Dialog,
-  DialogContent,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
@@ -28,22 +26,17 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { DeleteOutlineOutlined } from '@mui/icons-material'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useEmployees } from '../../hooks/useEmployees'
-import { useTeamRoles, useCreateRole, useUpdateRole, useDeactivateRole, useSetRolePermissions } from '../../hooks/useTeamRoles'
+import { useTeamRoles, useDeactivateRole, useSetRolePermissions } from '../../hooks/useTeamRoles'
 import EmployeeAvatar from './components/EmployeeAvatar'
 import PageHeader from '../../components/PageHeader'
 import AddEmployeeModal from './components/AddEmployeeModal'
 import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
+import RoleFormModal from './components/RoleFormModal'
 import SettingCard from '../../components/SettingCard'
-import ModalHeader from '../../components/ModalHeader'
-import FormModalActions from '../../components/FormModalActions'
-import FieldLabel from '../../components/FieldLabel'
 import type { Employee, TenantRole } from '../../types/employee.types'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../../types/employee.types'
 import type { AvatarColorKey } from './types'
@@ -61,109 +54,6 @@ function getInitials(name: string): string {
   const parts = name.trim().split(' ')
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
-
-// ─── RoleFormModal ───────────────────────────────────────────────────────────
-
-const roleSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100),
-  description: z.string().max(255).optional(),
-})
-
-type RoleFormValues = z.infer<typeof roleSchema>
-
-interface RoleFormModalProps {
-  open: boolean
-  editRole?: TenantRole | null
-  onClose: () => void
-}
-
-function RoleFormModal({ open, editRole, onClose }: RoleFormModalProps) {
-  const createRole = useCreateRole()
-  const updateRole = useUpdateRole()
-  const isPending = createRole.isPending || updateRole.isPending
-
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<RoleFormValues>({
-    resolver: zodResolver(roleSchema),
-    defaultValues: { name: '', description: '' },
-  })
-
-  useEffect(() => {
-    if (open) {
-      reset(editRole ? { name: editRole.name, description: editRole.description ?? '' } : { name: '', description: '' })
-    }
-  }, [open, editRole, reset])
-
-  const onSubmit = (values: RoleFormValues) => {
-    const payload = { name: values.name, description: values.description || undefined }
-    const mutation = editRole
-      ? updateRole.mutateAsync({ id: editRole.id, payload })
-      : createRole.mutateAsync(payload)
-    mutation.then(onClose)
-  }
-
-  return (
-    <Dialog open={open} onClose={isPending ? undefined : onClose} maxWidth="xs" fullWidth>
-      <ModalHeader
-        title={editRole ? 'Editar papel' : 'Novo papel'}
-        subtitle={editRole ? 'Altere o nome ou descrição do papel.' : 'Crie um papel personalizado para a sua equipe.'}
-        onClose={onClose}
-        disabled={isPending}
-      />
-      <DialogContent>
-        <Box
-          component="form"
-          id="role-form"
-          onSubmit={handleSubmit(onSubmit)}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
-        >
-          <Box>
-            <FieldLabel label="Nome" required />
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  size="small"
-                  fullWidth
-                  placeholder="ex: Supervisor"
-                  error={!!errors.name}
-                  helperText={errors.name?.message}
-                />
-              )}
-            />
-          </Box>
-          <Box>
-            <FieldLabel label="Descrição" />
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  size="small"
-                  fullWidth
-                  multiline
-                  rows={2}
-                  placeholder="O que este papel pode fazer?"
-                  error={!!errors.description}
-                  helperText={errors.description?.message}
-                />
-              )}
-            />
-          </Box>
-        </Box>
-      </DialogContent>
-      <FormModalActions
-        formId="role-form"
-        onCancel={onClose}
-        isPending={isPending}
-        submitLabel={editRole ? 'Salvar alterações' : 'Criar papel'}
-        pendingLabel="Salvando..."
-      />
-    </Dialog>
-  )
 }
 
 // ─── EmployeesPage ───────────────────────────────────────────────────────────
@@ -226,8 +116,7 @@ export default function EmployeesPage() {
       employees.filter(
         (e) =>
           e.name.toLowerCase().includes(search.toLowerCase()) ||
-          e.email.toLowerCase().includes(search.toLowerCase()) ||
-          e.position.toLowerCase().includes(search.toLowerCase()),
+          e.email.toLowerCase().includes(search.toLowerCase()),
       ),
     [employees, search],
   )
@@ -272,14 +161,6 @@ export default function EmployeesPage() {
           <Typography variant="body2" color="text.secondary">
             {row.roleName}
           </Typography>
-        ),
-      },
-      {
-        field: 'position',
-        headerName: 'Cargo',
-        width: 160,
-        renderCell: ({ row }) => (
-          <Typography variant="body2">{row.position}</Typography>
         ),
       },
       {
@@ -438,11 +319,12 @@ export default function EmployeesPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box
                         sx={{
-                          width: 32, height: 32, borderRadius: 2, bgcolor: 'surface.raised',
+                          width: 32, height: 32, borderRadius: 2,
+                          bgcolor: role.color ?? 'surface.raised',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}
                       >
-                        <PeopleAltOutlinedIcon sx={{ fontSize: 16, color: 'text.tertiary' }} />
+                        <PeopleAltOutlinedIcon sx={{ fontSize: 16, color: role.color ? 'common.white' : 'text.tertiary' }} />
                       </Box>
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

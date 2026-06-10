@@ -5,6 +5,5 @@ public record CreateEmployeeRequest(
     string Email,
     string TemporaryPassword,
     Guid RoleId,
-    string Position,
     decimal? Salary,
     string? Phone);

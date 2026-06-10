@@ -7,6 +7,8 @@ import {
   Box,
   CircularProgress,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { DataGrid, type GridColDef, type GridRowParams } from '@mui/x-data-grid'
 import { useCustomers } from '../../../../hooks/useCustomers'
@@ -20,6 +22,8 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const { data, isLoading } = useCustomers(1, 50, debouncedSearch || undefined)
 
@@ -46,7 +50,7 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
   const rows = data?.data ?? []
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
       <DialogTitle>Selecionar cliente</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
         <TextField

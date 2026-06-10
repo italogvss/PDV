@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import type { TaxRegime } from '../../../types/settings.types'
 import type { CreateTenantFormData, FormErrors } from '../types'
+import { maskCNPJ } from '../../../utils/masks'
 
 interface StepDocumentosProps {
   data: CreateTenantFormData
@@ -27,15 +28,6 @@ const TAX_REGIMES: { value: TaxRegime; label: string }[] = [
   { value: 'mei',       label: 'MEI' },
 ]
 
-function maskCNPJ(value: string): string {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 14)
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1/$2')
-    .replace(/(\d{4})(\d)/, '$1-$2')
-}
 
 export default function StepDocumentos({ data, onChange, errors }: StepDocumentosProps) {
   return (

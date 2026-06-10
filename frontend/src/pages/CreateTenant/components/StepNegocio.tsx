@@ -18,6 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PhoneIcon from '@mui/icons-material/Phone'
 import type { BusinessSegment } from '../../../types/settings.types'
 import type { CreateTenantFormData, FormErrors } from '../types'
+import { formatPhone } from '../../../utils/masks'
 
 interface StepNegocioProps {
   data: CreateTenantFormData
@@ -34,17 +35,6 @@ const SEGMENTS: { value: BusinessSegment; label: string; Icon: React.ElementType
   { value: 'outro',       label: 'Outro segmento',         Icon: GridViewIcon },
 ]
 
-function maskPhone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 10) {
-    return digits
-      .replace(/^(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{4})(\d)/, '$1-$2')
-  }
-  return digits
-    .replace(/^(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2')
-}
 
 export default function StepNegocio({ data, onChange, errors }: StepNegocioProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -174,7 +164,7 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
           label="Telefone público"
           fullWidth
           value={data.phone}
-          onChange={(e) => onChange({ phone: maskPhone(e.target.value) })}
+          onChange={(e) => onChange({ phone: formatPhone(e.target.value) })}
           placeholder="(11) 99999-9999"
           slotProps={{
             input: {

@@ -15,7 +15,7 @@ import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { useAppSelector } from '../../../../store'
 import { useUpdateUser } from '../../../../hooks/useUser'
-import { formatPhone } from '../../../../utils/phone'
+import { formatPhone, maskCPF } from '../../../../utils/masks'
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -30,7 +30,7 @@ export default function ProfileSection() {
 
   const [name, setName] = useState(authName ?? '')
   const [phone, setPhone] = useState(formatPhone(authPhone ?? ''))
-  const [cpf] = useState('123.456.789-00')
+  const [cpf] = useState(maskCPF('12345678900'))
   const [role] = useState('Proprietário')
   // const [language, setLanguage] = useState('pt-BR')
   const [hasChanges, setHasChanges] = useState(false)

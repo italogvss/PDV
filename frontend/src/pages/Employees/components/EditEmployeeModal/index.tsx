@@ -7,12 +7,15 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
 import { useUpdateEmployee } from '../../../../hooks/useEmployees'
+import { formatPhone } from '../../../../utils/masks'
 import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
@@ -22,9 +25,10 @@ import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
   roleId: z.string().min(1, 'Selecione um papel'),
-  position: z.string().min(1, 'Cargo é obrigatório').max(100),
   salary: z.number().min(0),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  phone: z.string()
+    .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
+    .optional().or(z.literal('')),
 })
 
 type EditEmployeeForm = z.infer<typeof schema>
@@ -33,9 +37,10 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
   const updateEmployee = useUpdateEmployee()
   const { data: roles, isLoading: rolesLoading } = useTeamRoles()
   const isPending = updateEmployee.isPending
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
-    register,
     control,
     handleSubmit,
     reset,
@@ -44,7 +49,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     resolver: zodResolver(schema),
     defaultValues: {
       roleId: employee.roleId,
-      position: employee.position,
       salary: employee.salary ?? 0,
       phone: employee.phone ?? '',
     },
@@ -54,7 +58,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     if (open) {
       reset({
         roleId: employee.roleId,
-        position: employee.position,
         salary: employee.salary ?? 0,
         phone: employee.phone ?? '',
       })
@@ -66,7 +69,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
       id: employee.id,
       payload: {
         roleId: data.roleId,
-        position: data.position,
         salary: data.salary ? data.salary : undefined,
         phone: data.phone || undefined,
       },
@@ -80,7 +82,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title="Editar funcionário"
         subtitle="Atualize os dados do funcionário"
@@ -95,36 +97,25 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}
         >
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Papel" required />
-              <Controller
-                name="roleId"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.roleId}>
-                    <Select {...field} displayEmpty disabled={rolesLoading}>
-                      <MenuItem value="" disabled>Selecione...</MenuItem>
-                      {roles?.map((r) => (
-                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                      ))}
-                    </Select>
-                    {errors.roleId && (
-                      <FormHelperText>{errors.roleId.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Cargo" required />
-              <TextField
-                {...register('position')}
-                fullWidth
-                error={!!errors.position}
-                helperText={errors.position?.message}
-              />
-            </Box>
+          <Box>
+            <FieldLabel label="Papel" required />
+            <Controller
+              name="roleId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.roleId}>
+                  <Select {...field} displayEmpty disabled={rolesLoading}>
+                    <MenuItem value="" disabled>Selecione...</MenuItem>
+                    {roles?.map((r) => (
+                      <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                    ))}
+                  </Select>
+                  {errors.roleId && (
+                    <FormHelperText>{errors.roleId.message}</FormHelperText>
+                  )}
+                </FormControl>
+              )}
+            />
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
@@ -147,11 +138,19 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone" />
-              <TextField
-                {...register('phone')}
-                fullWidth
-                error={!!errors.phone}
-                helperText={errors.phone?.message}
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                    placeholder="(99) 99999-9999"
+                    fullWidth
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
               />
             </Box>
           </Box>

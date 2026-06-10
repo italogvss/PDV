@@ -10,6 +10,7 @@ public class TenantRoleConfiguration : IEntityTypeConfiguration<TenantRole>
     {
         builder.Property(r => r.Name).IsRequired().HasMaxLength(100);
         builder.Property(r => r.Description).HasMaxLength(255);
+        builder.Property(r => r.Color).HasMaxLength(7);
 
         builder.HasMany(r => r.Permissions)
             .WithOne(p => p.Role)

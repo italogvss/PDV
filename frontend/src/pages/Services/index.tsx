@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import MiscellaneousServicesRounded from '@mui/icons-material/MiscellaneousServicesRounded'
 import CategoryRounded from '@mui/icons-material/CategoryRounded'
 import SellRounded from '@mui/icons-material/SellRounded'
@@ -21,7 +22,7 @@ import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import type { Service, ServiceCategory } from '../../types/service.types'
-import FilterMenu from './components/FilterMenu'
+import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import ServiceRowMenu from './components/ServiceRowMenu'
@@ -49,8 +50,9 @@ export default function ServicesPage() {
   const updateCategory = useUpdateServiceCategory()
 
   const [search, setSearch] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  const [categoryFilter, setCategoryFilter] = useState('Todos')
+  const [statusFilter, setStatusFilter] = useState('Todos')
+  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [editService, setEditService] = useState<Service | null>(null)
   const [sortBy, setSortBy] = useState('name-asc')
@@ -225,16 +227,16 @@ export default function ServicesPage() {
     [deleteService],
   )
 
+  const activeFiltersCount = [categoryFilter, statusFilter].filter((v) => v !== 'Todos').length
+
   const rows = useMemo(() => {
     const filtered = services.filter((s) => {
       const q = search.toLowerCase()
       const matchSearch = s.name.toLowerCase().includes(q) ||
         (s.description ?? '').toLowerCase().includes(q)
-      const matchCategory =
-        selectedCategories.length === 0 ||
-        (s.category !== null && selectedCategories.includes(s.category.name))
+      const matchCategory = categoryFilter === 'Todos' || s.category?.name === categoryFilter
       const statusLabel = s.isActive ? 'Ativo' : 'Inativo'
-      const matchStatus = selectedStatuses.length === 0 || selectedStatuses.includes(statusLabel)
+      const matchStatus = statusFilter === 'Todos' || statusLabel === statusFilter
       return matchSearch && matchCategory && matchStatus
     })
 
@@ -247,7 +249,7 @@ export default function ServicesPage() {
         default: return 0
       }
     })
-  }, [services, search, selectedCategories, selectedStatuses, sortBy])
+  }, [services, search, categoryFilter, statusFilter, sortBy])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
@@ -327,18 +329,22 @@ export default function ServicesPage() {
             }}
           />
 
-          <FilterMenu
-            label="Categoria"
-            options={categories.map((c) => c.name)}
-            selected={selectedCategories}
-            onChange={setSelectedCategories}
-          />
+          <Button
+            variant="outlined"
+            startIcon={<FilterListRounded />}
+            onClick={(e) => setFilterAnchor(e.currentTarget)}
+          >
+            {activeFiltersCount > 0 ? `Filtros (${activeFiltersCount})` : 'Filtros'}
+          </Button>
 
-          <FilterMenu
-            label="Status"
-            options={STATUS_OPTIONS}
-            selected={selectedStatuses}
-            onChange={setSelectedStatuses}
+          <FiltersPopover
+            anchorEl={filterAnchor}
+            onClose={() => setFilterAnchor(null)}
+            onClear={() => { setCategoryFilter('Todos'); setStatusFilter('Todos') }}
+            sections={[
+              { id: 'category', label: 'Categoria', options: ['Todos', ...categories.map((c) => c.name)], value: categoryFilter, onChange: setCategoryFilter },
+              { id: 'status', label: 'Status', options: ['Todos', ...STATUS_OPTIONS], value: statusFilter, onChange: setStatusFilter },
+            ]}
           />
 
           <Box sx={{ flex: 1 }} />

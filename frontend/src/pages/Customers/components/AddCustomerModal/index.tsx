@@ -4,26 +4,35 @@ import {
   Box,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateCustomer } from '../../../../hooks/useCustomers'
+import { formatPhone, maskDocument, maskCEP } from '../../../../utils/masks'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  phone: z.string()
+    .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
+    .optional().or(z.literal('')),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
-  document: z.string().max(18).optional().or(z.literal('')),
+  document: z.string()
+    .refine(v => !v || [11, 14].includes(v.replace(/\D/g, '').length), 'CPF ou CNPJ inválido')
+    .optional().or(z.literal('')),
   note: z.string().max(500).optional().or(z.literal('')),
   street: z.string().max(200).optional().or(z.literal('')),
   number: z.string().max(10).optional().or(z.literal('')),
   city: z.string().max(100).optional().or(z.literal('')),
   state: z.string().max(2).optional().or(z.literal('')),
-  zipCode: z.string().max(9).optional().or(z.literal('')),
+  zipCode: z.string()
+    .refine(v => !v || v.replace(/\D/g, '').length === 8, 'CEP inválido')
+    .optional().or(z.literal('')),
 })
 
 type AddCustomerForm = z.infer<typeof schema>
@@ -49,9 +58,12 @@ interface AddCustomerModalProps {
 export default function AddCustomerModal({ open, onClose }: AddCustomerModalProps) {
   const createCustomer = useCreateCustomer()
   const isPending = createCustomer.isPending
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -89,7 +101,7 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title="Novo cliente"
         subtitle="Cadastre um novo cliente"
@@ -117,12 +129,19 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone" />
-              <TextField
-                {...register('phone')}
-                fullWidth
-                placeholder="(11) 99999-9999"
-                error={!!errors.phone}
-                helperText={errors.phone?.message}
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                    placeholder="(99) 99999-9999"
+                    fullWidth
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
               />
             </Box>
           </Box>
@@ -139,12 +158,19 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="CPF / CNPJ" />
-              <TextField
-                {...register('document')}
-                fullWidth
-                placeholder="000.000.000-00"
-                error={!!errors.document}
-                helperText={errors.document?.message}
+              <Controller
+                name="document"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                    placeholder="000.000.000-00"
+                    fullWidth
+                    error={!!errors.document}
+                    helperText={errors.document?.message}
+                  />
+                )}
               />
             </Box>
           </Box>
@@ -177,12 +203,19 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="CEP" />
-              <TextField
-                {...register('zipCode')}
-                fullWidth
-                placeholder="00000-000"
-                error={!!errors.zipCode}
-                helperText={errors.zipCode?.message}
+              <Controller
+                name="zipCode"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(maskCEP(e.target.value))}
+                    placeholder="00000-000"
+                    fullWidth
+                    error={!!errors.zipCode}
+                    helperText={errors.zipCode?.message}
+                  />
+                )}
               />
             </Box>
             <Box sx={{ flex: 1 }}>

@@ -14,6 +14,8 @@ import {
   TableRow,
   TableCell,
   IconButton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import BlockRounded from '@mui/icons-material/BlockRounded'
@@ -59,12 +61,14 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetailModalProps) {
   const { data: sale, isLoading } = useSaleDetail(saleId)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const status = sale ? (STATUS_MAP[sale.status] ?? 'Ativo') : null
   const payment = sale ? (PAYMENT_MAP[sale.paymentMethod] ?? (sale.paymentMethod as SalePaymentMethod)) : null
 
   return (
-    <Dialog open={saleId !== null} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={saleId !== null} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle
         sx={{
           display: 'flex',
@@ -164,8 +168,15 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
 
             <Box sx={{ px: 3, py: 2 }}>
               <InfoRow label="Subtotal">
-                <Typography variant="body2">{formatBRL(sale.total)}</Typography>
+                <Typography variant="body2">{formatBRL(sale.total + (sale.discount ?? 0))}</Typography>
               </InfoRow>
+              {(sale.discount ?? 0) > 0 && (
+                <InfoRow label="Desconto">
+                  <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+                    -{formatBRL(sale.discount)}
+                  </Typography>
+                </InfoRow>
+              )}
               <InfoRow label="Valor pago">
                 <Typography variant="body2">{formatBRL(sale.amountPaid)}</Typography>
               </InfoRow>

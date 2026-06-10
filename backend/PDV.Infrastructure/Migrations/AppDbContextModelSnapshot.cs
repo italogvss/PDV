@@ -216,11 +216,6 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.Property<string>("Position")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
                     b.Property<Guid>("RoleId")
                         .HasColumnType("char(36)");
 
@@ -529,6 +524,9 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(65,30)");
+
                     b.Property<int?>("InstallmentCount")
                         .HasColumnType("int");
 
@@ -761,6 +759,10 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");

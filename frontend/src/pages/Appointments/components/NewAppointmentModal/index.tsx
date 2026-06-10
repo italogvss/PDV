@@ -12,6 +12,8 @@ import {
   InputAdornment,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
@@ -25,6 +27,7 @@ import { z } from 'zod'
 import type { Service } from '../../../../types/service.types'
 import type { Appointment, AppointmentServiceRef } from '../../../../types/appointment.types'
 import { conflictsFor, formatHM } from '../appointmentHelpers'
+import { formatPhone } from '../../../../utils/masks'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
@@ -44,7 +47,8 @@ const APPOINTMENT_COLORS = [
 
 const schema = z.object({
   customerName: z.string().min(1, 'Cliente é obrigatório'),
-  phone: z.string(),
+  phone: z.string()
+    .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido'),
   serviceIds: z.array(z.string()).min(1, 'Selecione ao menos um serviço'),
   employeeId: z.string().min(1, 'Selecione o profissional'),
   date: z.string().min(1, 'Data é obrigatória'),
@@ -101,6 +105,8 @@ export default function NewAppointmentModal({
   const [durationTouched, setDurationTouched] = useState(false)
   const [priceTouched, setPriceTouched] = useState(false)
   const [conflictData, setConflictData] = useState<FormValues | null>(null)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     control,
@@ -215,7 +221,7 @@ export default function NewAppointmentModal({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title="Novo agendamento"
         subtitle="Reserve um horário para um cliente"
@@ -262,10 +268,19 @@ export default function NewAppointmentModal({
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone / WhatsApp" />
-              <TextField
-                {...register('phone')}
-                fullWidth
-                placeholder="(00) 00000-0000"
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                    placeholder="(99) 99999-9999"
+                    fullWidth
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
               />
             </Box>
           </Box>

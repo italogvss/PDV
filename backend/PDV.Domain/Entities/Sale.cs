@@ -13,6 +13,7 @@ public class Sale : BaseEntity
     public bool IsInstallment { get; set; }
     public int? InstallmentCount { get; set; }
     public decimal? InstallmentValue { get; set; }
+    public decimal Discount { get; set; } = 0;
     public decimal Total { get; set; }
     public decimal AmountPaid { get; set; }
     public SaleStatus Status { get; set; } = SaleStatus.Active;

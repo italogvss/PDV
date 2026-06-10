@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import type { CreateTenantFormData, FormErrors } from '../types'
+import { maskCEP } from '../../../utils/masks'
 
 interface StepEnderecoProps {
   data: CreateTenantFormData
@@ -25,12 +26,6 @@ const STATES = [
   'RS','RO','RR','SC','SP','SE','TO',
 ]
 
-function maskCEP(value: string): string {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 8)
-    .replace(/^(\d{5})(\d)/, '$1-$2')
-}
 
 interface ViaCepResponse {
   logradouro: string

@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
 import SellRounded from '@mui/icons-material/SellRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
@@ -26,7 +27,7 @@ import { getStockLevel } from './utils'
 import StockLevelCell from './components/StockLevelCell'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
-import FilterMenu from './components/FilterMenu'
+import FiltersPopover from '../../components/FiltersPopover'
 import ProductRowMenu from './components/ProductRowMenu'
 import ProductModal from './components/NewProductModal'
 import CategoryStrip from '../../components/CategoryStrip'
@@ -47,8 +48,9 @@ export default function InventoryPage() {
   const canManage = hasPermission('ManageStock')
 
   const [search, setSearch] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedLevels, setSelectedLevels] = useState<string[]>([])
+  const [categoryFilter, setCategoryFilter] = useState('Todos')
+  const [levelFilter, setLevelFilter] = useState('Todos')
+  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [adjustStockProduct, setAdjustStockProduct] = useState<Product | null>(null)
@@ -235,16 +237,16 @@ export default function InventoryPage() {
     [deleteProduct, canManage],
   )
 
+  const activeFiltersCount = [categoryFilter, levelFilter].filter((v) => v !== 'Todos').length
+
   const rows = useMemo(() => {
     const filtered = products.filter((p) => {
       const q = search.toLowerCase()
       const matchSearch =
         p.name.toLowerCase().includes(q) || (p.barcode ?? '').toLowerCase().includes(q)
-      const matchCategory =
-        selectedCategories.length === 0 ||
-        (p.category !== null && selectedCategories.includes(p.category.name))
+      const matchCategory = categoryFilter === 'Todos' || p.category?.name === categoryFilter
       const level = getStockLevel(p.stock, p.minStock, p.criticalStock)
-      const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(level)
+      const matchLevel = levelFilter === 'Todos' || level === levelFilter
       return matchSearch && matchCategory && matchLevel
     })
 
@@ -259,7 +261,7 @@ export default function InventoryPage() {
         default: return 0
       }
     })
-  }, [products, search, selectedCategories, selectedLevels, sortBy])
+  }, [products, search, categoryFilter, levelFilter, sortBy])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
@@ -343,18 +345,22 @@ export default function InventoryPage() {
             }}
           />
 
-          <FilterMenu
-            label="Categoria"
-            options={categories.map((c) => c.name)}
-            selected={selectedCategories}
-            onChange={setSelectedCategories}
-          />
+          <Button
+            variant="outlined"
+            startIcon={<FilterListRounded />}
+            onClick={(e) => setFilterAnchor(e.currentTarget)}
+          >
+            {activeFiltersCount > 0 ? `Filtros (${activeFiltersCount})` : 'Filtros'}
+          </Button>
 
-          <FilterMenu
-            label="Status"
-            options={STOCK_LEVELS}
-            selected={selectedLevels}
-            onChange={setSelectedLevels}
+          <FiltersPopover
+            anchorEl={filterAnchor}
+            onClose={() => setFilterAnchor(null)}
+            onClear={() => { setCategoryFilter('Todos'); setLevelFilter('Todos') }}
+            sections={[
+              { id: 'category', label: 'Categoria', options: ['Todos', ...categories.map((c) => c.name)], value: categoryFilter, onChange: setCategoryFilter },
+              { id: 'level', label: 'Status', options: ['Todos', ...STOCK_LEVELS], value: levelFilter, onChange: setLevelFilter },
+            ]}
           />
 
           <Box sx={{ flex: 1 }} />

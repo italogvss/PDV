@@ -5,6 +5,8 @@ import {
   TextField,
   Typography,
   IconButton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import RemoveRounded from '@mui/icons-material/RemoveRounded'
@@ -17,6 +19,8 @@ import type { AdjustStockModalProps } from './types'
 export default function AdjustStockModal({ open, onClose, product }: AdjustStockModalProps) {
   const [quantity, setQuantity] = useState(0)
   const adjustStock = useAdjustStock()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     if (open) setQuantity(0)
@@ -36,7 +40,7 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title="Ajustar estoque"
         subtitle={product.name}

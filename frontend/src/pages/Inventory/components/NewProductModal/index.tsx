@@ -223,7 +223,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title={isEditing ? 'Editar produto' : 'Novo produto'}
         subtitle={

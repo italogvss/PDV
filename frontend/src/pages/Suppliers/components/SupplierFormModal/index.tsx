@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
-import { Dialog, DialogContent, TextField, Box } from '@mui/material'
-import { useForm } from 'react-hook-form'
+import { Dialog, DialogContent, TextField, Box, useMediaQuery, useTheme } from '@mui/material'
+import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCreateSupplier, useUpdateSupplier } from '../../../../hooks/useSuppliers'
+import { formatPhone } from '../../../../utils/masks'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
@@ -11,7 +12,9 @@ import type { SupplierFormModalProps } from './types'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório.').max(200),
-  phone: z.string().max(20).nullable().optional(),
+  phone: z.string()
+    .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
+    .nullable().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -21,11 +24,13 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
   const create = useCreateSupplier()
   const update = useUpdateSupplier()
   const isPending = create.isPending || update.isPending
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
-    register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -61,7 +66,7 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title={isEdit ? 'Editar fornecedor' : 'Novo fornecedor'}
         subtitle={isEdit ? 'Atualize os dados do fornecedor' : 'Cadastre um fornecedor'}
@@ -78,21 +83,35 @@ export default function SupplierFormModal({ open, supplier, onClose }: SupplierF
         >
           <Box>
             <FieldLabel label="Nome" required />
-            <TextField
-              fullWidth
-              {...register('name')}
-              error={Boolean(errors.name)}
-              helperText={errors.name?.message}
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  error={Boolean(errors.name)}
+                  helperText={errors.name?.message}
+                />
+              )}
             />
           </Box>
           <Box>
             <FieldLabel label="Telefone" />
-            <TextField
-              fullWidth
-              placeholder="(11) 99999-9999"
-              {...register('phone')}
-              error={Boolean(errors.phone)}
-              helperText={errors.phone?.message}
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                  placeholder="(99) 99999-9999"
+                  fullWidth
+                  error={Boolean(errors.phone)}
+                  helperText={errors.phone?.message}
+                />
+              )}
             />
           </Box>
         </Box>

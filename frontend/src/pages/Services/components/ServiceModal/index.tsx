@@ -9,6 +9,8 @@ import {
   Skeleton,
   Switch,
   FormControlLabel,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import { useForm, Controller } from 'react-hook-form'
@@ -56,6 +58,8 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
   const updateService = useUpdateService()
   const { data: categories = [], isLoading: isLoadingCategories } = useServiceCategories()
   const isPending = createService.isPending || updateService.isPending
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     register,
@@ -118,7 +122,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title={isEditing ? 'Editar serviço' : 'Novo serviço'}
         subtitle={

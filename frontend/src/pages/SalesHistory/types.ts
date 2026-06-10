@@ -9,6 +9,7 @@ export interface SaleRecord {
   operator: string
   payment: SalePaymentMethod
   total: number
+  discount: number
   status: SaleStatus
   amountPaid: number
   change: number

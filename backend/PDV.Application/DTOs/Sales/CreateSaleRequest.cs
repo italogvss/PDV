@@ -7,6 +7,7 @@ public record CreateSaleRequest(
     bool IsInstallment,
     int? InstallmentCount,
     decimal AmountPaid,
-    List<CreateSaleItemRequest> Items);
+    List<CreateSaleItemRequest> Items,
+    decimal Discount = 0);
 
 public record CreateSaleItemRequest(Guid? ProductId, Guid? ServiceId, int Quantity);

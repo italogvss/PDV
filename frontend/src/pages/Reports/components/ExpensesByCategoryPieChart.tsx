@@ -6,7 +6,9 @@ import { EXPENSE_CATEGORY_LABELS } from '../../Expenses/types'
 import ChartCard from './ChartCard'
 import type { ExpensesByCategory } from '../../../types/report.types'
 
-const CATEGORY_LABELS: Record<string, string> = EXPENSE_CATEGORY_LABELS
+const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(EXPENSE_CATEGORY_LABELS).map(([k, v]) => [k, v.label])
+)
 
 export interface ExpensesByCategoryPieChartProps {
   data: ExpensesByCategory[]

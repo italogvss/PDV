@@ -29,6 +29,9 @@ public class CreateSaleRequestValidator : AbstractValidator<CreateSaleRequest>
         RuleFor(x => x.AmountPaid)
             .GreaterThanOrEqualTo(0);
 
+        RuleFor(x => x.Discount)
+            .GreaterThanOrEqualTo(0).WithMessage("Desconto não pode ser negativo.");
+
         When(x => x.IsInstallment, () =>
         {
             RuleFor(x => x.InstallmentCount)

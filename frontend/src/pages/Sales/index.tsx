@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Button } from '@mui/material'
-import SalesHeader from './components/SalesHeader'
+import { RestartAltRounded } from '@mui/icons-material'
 import ProductCatalog from './components/ProductCatalog'
 import CartPanel from './components/CartPanel'
 import SelectCustomerModal from './components/SelectCustomerModal'
+import FinalizationModal from './components/FinalizationModal'
 import { EnrichedCartLine } from './components/CartPanel/types'
 import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
 import { CartLine, CardType, CustomerSelection, PaymentMethod } from './types'
@@ -15,8 +16,6 @@ import { useCreateSale } from '../../hooks/useSales'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
 import PageHeader from '../../components/PageHeader'
-import AddRounded from '@mui/icons-material/AddRounded'
-import { RestartAltRounded } from '@mui/icons-material'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -37,6 +36,8 @@ export default function SalesPage() {
   const [cardType, setCardType] = useState<CardType>('credit')
   const [installments, setInstallments] = useState(1)
   const [cashReceived, setCashReceived] = useState('')
+  const [finalizationOpen, setFinalizationOpen] = useState(false)
+  const [discountAmount, setDiscountAmount] = useState(0)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -151,13 +152,15 @@ export default function SalesPage() {
   const handleFinalize = async () => {
     if (cart.length === 0) return
 
+    const clampedDiscount = Math.min(discountAmount, subtotal)
     const paymentMethod = buildPaymentMethod(method, cardType)
     const isInstallment = method === 'card' && cardType === 'credit' && installments > 1
+    const total = Math.max(0, subtotal - clampedDiscount)
     const receivedNumber = Number(cashReceived.replace(',', '.'))
     const amountPaid =
       method === 'cash' && !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
         ? receivedNumber
-        : subtotal
+        : total
 
     await createSale.mutateAsync({
       customerId: customer.type === 'entity' ? customer.id : undefined,
@@ -166,6 +169,7 @@ export default function SalesPage() {
       isInstallment,
       installmentCount: isInstallment ? installments : undefined,
       amountPaid,
+      discount: clampedDiscount,
       items: cart.map((l) => ({
         productId: l.type === 'product' ? l.productId : undefined,
         serviceId: l.type === 'service' ? l.serviceId : undefined,
@@ -173,12 +177,14 @@ export default function SalesPage() {
       })),
     })
 
+    setFinalizationOpen(false)
     setCart([])
     setCustomer({ type: 'none' })
     setCashReceived('')
     setMethod('card')
     setCardType('credit')
     setInstallments(1)
+    setDiscountAmount(0)
   }
 
   const handleRestart = () => {
@@ -188,6 +194,8 @@ export default function SalesPage() {
     setMethod('card')
     setCardType('credit')
     setInstallments(1)
+    setDiscountAmount(0)
+    setFinalizationOpen(false)
   }
 
   return (
@@ -200,13 +208,13 @@ export default function SalesPage() {
       }}
     >
       <PageHeader
-              title="Vender"
-              description={"Operador: Nome"}
-            >
-              <Button variant="outlined" startIcon={<RestartAltRounded />} onClick={() => handleRestart()}>
-                Recomeçar
-              </Button>
-            </PageHeader>
+        title="Vender"
+        description="Operador: Nome"
+      >
+        <Button variant="outlined" startIcon={<RestartAltRounded />} onClick={handleRestart}>
+          Recomeçar
+        </Button>
+      </PageHeader>
       <Box
         sx={{
           flex: { md: 1 },
@@ -235,24 +243,35 @@ export default function SalesPage() {
           lines={cartLines}
           subtotal={subtotal}
           total={subtotal}
-          method={method}
-          onMethodChange={setMethod}
-          cardType={cardType}
-          onCardTypeChange={setCardType}
-          installments={installments}
-          onInstallmentsChange={setInstallments}
-          cashReceived={cashReceived}
-          onCashReceivedChange={setCashReceived}
           onIncrement={handleAdd}
           onDecrement={handleDecrement}
           onRemove={handleRemoveFromCart}
-          onFinalize={handleFinalize}
-          isSubmitting={createSale.isPending}
-          customer={customer}
-          onCustomerChange={setCustomer}
-          onOpenCustomerModal={() => setCustomerModalOpen(true)}
+          onFinalize={() => setFinalizationOpen(true)}
         />
       </Box>
+
+      <FinalizationModal
+        open={finalizationOpen}
+        onClose={() => setFinalizationOpen(false)}
+        lines={cartLines}
+        subtotal={subtotal}
+        discountAmount={discountAmount}
+        onDiscountChange={setDiscountAmount}
+        customer={customer}
+        onCustomerChange={setCustomer}
+        onOpenCustomerModal={() => setCustomerModalOpen(true)}
+        method={method}
+        onMethodChange={setMethod}
+        cardType={cardType}
+        onCardTypeChange={setCardType}
+        installments={installments}
+        onInstallmentsChange={setInstallments}
+        cashReceived={cashReceived}
+        onCashReceivedChange={setCashReceived}
+        onFinalize={handleFinalize}
+        isSubmitting={createSale.isPending}
+      />
+
       <SelectCustomerModal
         open={customerModalOpen}
         onClose={() => setCustomerModalOpen(false)}

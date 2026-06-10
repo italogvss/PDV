@@ -5,6 +5,7 @@ interface BackendTenantRole {
   id: string
   name: string
   description?: string | null
+  color?: string | null
   isDefault: boolean
   memberCount: number
   permissions: string[]
@@ -15,6 +16,7 @@ function mapRole(r: BackendTenantRole): TenantRole {
     id: r.id,
     name: r.name,
     description: r.description ?? undefined,
+    color: r.color ?? undefined,
     isDefault: r.isDefault,
     memberCount: r.memberCount,
     permissions: r.permissions,
@@ -24,11 +26,13 @@ function mapRole(r: BackendTenantRole): TenantRole {
 export interface CreateRolePayload {
   name: string
   description?: string
+  color?: string
 }
 
 export interface UpdateRolePayload {
   name: string
   description?: string
+  color?: string
 }
 
 export const teamRolesService = {

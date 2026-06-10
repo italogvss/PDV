@@ -6,8 +6,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Tab,
-  Tabs,
   useTheme,
   CircularProgress,
 } from '@mui/material'
@@ -16,6 +14,7 @@ import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRou
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
@@ -40,13 +39,13 @@ import {
   useDeleteExpense,
 } from '../../hooks/useExpenses'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
+import FiltersPopover from '../../components/FiltersPopover'
 
 const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
-type RecurringFilter = 'all' | 'recurring' | 'one-time'
 
 function fmtDueDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
@@ -60,7 +59,8 @@ export default function ExpensesPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   const [modalOpen, setModalOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [recurringFilter, setRecurringFilter] = useState<RecurringFilter>('all')
+  const [recurringFilter, setRecurringFilter] = useState('Todas')
+  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
 
   const { data: expenses = [], isLoading } = useExpenses(selectedMonth, selectedYear)
   const { data: recurringExpenses = [] } = useRecurringExpenses()
@@ -98,7 +98,7 @@ export default function ExpensesPage() {
   }
 
   const donutSegments = EXPENSE_CATEGORIES.map((cat) => ({
-    label: EXPENSE_CATEGORY_LABELS[cat],
+    label: EXPENSE_CATEGORY_LABELS[cat].label,
     value: expenses.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
     color: categoryColorMap[cat],
   }))
@@ -111,8 +111,8 @@ export default function ExpensesPage() {
   )
 
   const rows = useMemo(() => {
-    if (recurringFilter === 'recurring') return expenses.filter((e) => e.isRecurring)
-    if (recurringFilter === 'one-time') return expenses.filter((e) => !e.isRecurring)
+    if (recurringFilter === 'Recorrentes') return expenses.filter((e) => e.isRecurring)
+    if (recurringFilter === 'Pontuais') return expenses.filter((e) => !e.isRecurring)
     return expenses
   }, [expenses, recurringFilter])
 
@@ -163,20 +163,21 @@ export default function ExpensesPage() {
       headerName: 'Categoria',
       width: 130,
       renderCell: ({ row }: { row: Expense }) => (
-        <Typography
-          variant="caption"
+        <Chip
+          size="large"
+          
+          label={EXPENSE_CATEGORY_LABELS[row.category].label}
           sx={{
             fontWeight: 500,
-            bgcolor: 'surface.raised',
-            border: '1px solid',
-            borderColor: 'border.subtle',
+            bgcolor: EXPENSE_CATEGORY_LABELS[row.category].color,
             borderRadius: 'pill',
-            px: 1.25,
+            border: "none",
+            color: "common.white",
+            px: 1,
             py: 0.5,
           }}
         >
-          {EXPENSE_CATEGORY_LABELS[row.category]}
-        </Typography>
+        </Chip>
       ),
     },
     {
@@ -210,13 +211,13 @@ export default function ExpensesPage() {
     {
       field: 'isPaid',
       headerName: 'Status',
-      width: 120,
+      width: 110,
       renderCell: ({ row }: { row: Expense }) => <ExpenseStatusChip isPaid={row.isPaid} />,
     },
     {
       field: 'amount',
       headerName: 'Valor',
-      width: 130,
+      width: 110,
       align: 'right',
       headerAlign: 'right',
       renderCell: ({ row }: { row: Expense }) => (
@@ -319,27 +320,23 @@ export default function ExpensesPage() {
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Histórico de despesas
             </Typography>
-            <Tabs
-              value={recurringFilter}
-              onChange={(_, v: RecurringFilter) => setRecurringFilter(v)}
-              sx={{
-                minHeight: 36,
-                '& .MuiTab-root': {
-                  minHeight: 36,
-                  textTransform: 'none',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  py: 0,
-                },
-                '& .MuiTabs-indicator': {
-                  bottom: 0,
-                },
-              }}
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<FilterListRounded />}
+              onClick={(e) => setFilterAnchor(e.currentTarget)}
             >
-              <Tab value="all" label="Todas" />
-              <Tab value="recurring" label="Recorrentes" />
-              <Tab value="one-time" label="Pontuais" />
-            </Tabs>
+              {recurringFilter !== 'Todas' ? 'Filtros (1)' : 'Filtros'}
+            </Button>
+
+            <FiltersPopover
+              anchorEl={filterAnchor}
+              onClose={() => setFilterAnchor(null)}
+              onClear={() => setRecurringFilter('Todas')}
+              sections={[
+                { id: 'tipo', label: 'Tipo', options: ['Todas', 'Recorrentes', 'Pontuais'], value: recurringFilter, onChange: setRecurringFilter },
+              ]}
+            />
           </Box>
 
           {isLoading ? (

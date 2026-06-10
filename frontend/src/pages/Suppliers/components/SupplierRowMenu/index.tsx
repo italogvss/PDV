@@ -10,6 +10,8 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
@@ -28,6 +30,8 @@ export default function SupplierRowMenu({ supplier, onEdit }: SupplierRowMenuPro
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const deleteSupplier = useDeleteSupplier()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const handleClose = () => setAnchor(null)
 
@@ -91,7 +95,7 @@ export default function SupplierRowMenu({ supplier, onEdit }: SupplierRowMenuPro
         </MenuItem>
       </Menu>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth fullScreen={isMobile}>
         <DialogTitle>Excluir fornecedor?</DialogTitle>
         <DialogContent>
           <DialogContentText>

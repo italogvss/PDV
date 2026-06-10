@@ -11,6 +11,7 @@ public record SaleResponse(
     int? InstallmentCount,
     decimal? InstallmentValue,
     decimal Total,
+    decimal Discount,
     string Status,
     Guid? CancelledById,
     DateTime? CancelledAt,

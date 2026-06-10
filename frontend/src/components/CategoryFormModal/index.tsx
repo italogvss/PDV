@@ -14,11 +14,8 @@ import ModalHeader from '../ModalHeader'
 import FieldLabel from '../FieldLabel'
 import FormModalActions from '../FormModalActions'
 import type { CategoryFormModalProps } from './types'
+import { colors } from '../../theme/palette'
 
-const PRESET_COLORS = [
-  '#EF4444', '#F97316', '#EAB308', '#22C55E',
-  '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280',
-]
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100),
@@ -52,6 +49,7 @@ export default function CategoryFormModal({
 
   const watchColor = watch('color')
   const isValidColor = /^#[0-9A-Fa-f]{6}$/.test(watchColor)
+  const presetColors = Object.values(colors.data).map((color) => color.main)
 
   useEffect(() => {
     if (open) {
@@ -104,7 +102,7 @@ export default function CategoryFormModal({
             <FieldLabel label="Cor" required />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
-              {PRESET_COLORS.map((c) => (
+              {presetColors.map((c) => (
                 <Box
                   key={c}
                   onClick={() => setValue('color', c, { shouldValidate: true })}
@@ -114,15 +112,15 @@ export default function CategoryFormModal({
                     borderRadius: 1,
                     bgcolor: c,
                     cursor: 'pointer',
-                    border: '3px solid',
-                    borderColor: watchColor.toUpperCase() === c ? 'text.primary' : 'transparent',
+                    border: '2px solid',
+                    borderColor: watchColor.toLowerCase() === c.toLowerCase() ? 'text.primary' : 'transparent',
                     transition: 'border-color 0.1s',
-                    '&:hover': { opacity: 0.85 },
+                    '&:hover': { borderColor: 'text.primary' },
                   }}
                 />
               ))}
               {(() => {
-                const isCustom = isValidColor && !PRESET_COLORS.some((c) => c.toLowerCase() === watchColor.toLowerCase())
+                const isCustom = isValidColor && !presetColors.some((c) => c.toLowerCase() === watchColor.toLowerCase())
                 return (
                   <Box
                     title="Cor personalizada"
@@ -131,7 +129,7 @@ export default function CategoryFormModal({
                       height: 28,
                       borderRadius: 1,
                       cursor: 'pointer',
-                      border: '3px solid',
+                      border: '2px solid',
                       borderColor: isCustom ? 'text.primary' : 'border.subtle',
                       bgcolor: isCustom ? watchColor : 'surface.sunken',
                       display: 'flex',
@@ -140,13 +138,13 @@ export default function CategoryFormModal({
                       position: 'relative',
                       overflow: 'hidden',
                       transition: 'border-color 0.1s',
-                      '&:hover': { opacity: 0.85 },
+                      '&:hover': { opacity: 0.85, },
                     }}
                   >
                     <PaletteRounded sx={{ fontSize: 14, color: isCustom ? 'common.white' : 'text.secondary', pointerEvents: 'none', position: 'relative', zIndex: 1 }} />
                     <MuiColorInput
                       format="hex"
-                      value={isValidColor ? watchColor : '#6B7280'}
+                      value={isValidColor ? watchColor : '#10128b'}
                       onChange={(color) => setValue('color', color, { shouldValidate: true })}
                       sx={{
                         position: 'absolute',

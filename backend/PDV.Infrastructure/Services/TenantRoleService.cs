@@ -37,6 +37,7 @@ public class TenantRoleService(
             TenantId = tenantContext.TenantId,
             Name = request.Name.Trim(),
             Description = request.Description?.Trim(),
+            Color = request.Color?.Trim(),
             IsDefault = false,
         };
 
@@ -61,6 +62,7 @@ public class TenantRoleService(
 
         role.Name = request.Name.Trim();
         role.Description = request.Description?.Trim();
+        role.Color = request.Color?.Trim();
         role.UpdatedAt = DateTime.UtcNow;
 
         await roleRepository.UpdateAsync(role);
@@ -115,7 +117,7 @@ public class TenantRoleService(
     }
 
     private static TenantRoleResponse Map(TenantRole r) =>
-        new(r.Id, r.Name, r.Description, r.IsDefault,
+        new(r.Id, r.Name, r.Description, r.Color, r.IsDefault,
             r.Employees.Count(e => e.IsActive),
             r.Permissions.Select(p => p.Permission.ToString()));
 }

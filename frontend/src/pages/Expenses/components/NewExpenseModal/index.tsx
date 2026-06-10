@@ -10,6 +10,8 @@ import {
   ToggleButtonGroup,
   FormHelperText,
   Switch,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import { DatePicker } from '@mui/x-date-pickers'
@@ -52,6 +54,8 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   const isEditing = !!expense
   const createExpense = useCreateExpense()
   const updateExpense = useUpdateExpense()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     register,
@@ -108,7 +112,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title={isEditing ? 'Editar despesa' : 'Nova despesa'}
         subtitle={
@@ -195,21 +199,23 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                       return (
                         <Chip
                           key={cat}
-                          label={EXPENSE_CATEGORY_LABELS[cat]}
+                          label={EXPENSE_CATEGORY_LABELS[cat].label}
                           clickable
                           size="large"
                           onClick={() => field.onChange(cat)}
                           variant={selected ? 'filled' : 'outlined'}
                           sx={selected ? {
-                            bgcolor: 'text.primary',
+                            bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,
                             color: 'background.paper',
-                            borderColor: 'text.primary',
+                            borderColor: EXPENSE_CATEGORY_LABELS[cat].color,
                             fontWeight: 600,
-                            '&:hover': { bgcolor: 'text.primary' },
+                            
+                            '&:hover': { bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,  },
                           } : {
                             borderColor: 'border.subtle',
                             color: 'text.secondary',
                             fontWeight: 500,
+                            '&:hover': { borderColor: EXPENSE_CATEGORY_LABELS[cat].color,  },
                           }}
                         />
                       )

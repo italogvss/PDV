@@ -23,17 +23,22 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Outros',
 ]
 
-export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  Aluguel: 'Aluguel',
-  Fornecedor: 'Fornecedor',
-  Energia: 'Energia',
-  Agua: 'Água',
-  Internet: 'Internet',
-  Salarios: 'Salários',
-  Marketing: 'Marketing',
-  Impostos: 'Impostos',
-  Manutencao: 'Manutenção',
-  Outros: 'Outros',
+export type ExpanseCategoryChip = {
+  label: string
+  color: string
+}
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, ExpanseCategoryChip> = {
+  Aluguel: { label: 'Aluguel', color: '#be4444' },
+  Fornecedor: { label: 'Fornecedor', color: '#c78f45' },
+  Energia: { label: 'Energia', color: '#d4bd37' },
+  Agua: { label: 'Água', color: '#1d88b9' },
+  Internet: { label: 'Internet', color: '#243974' },
+  Salarios: { label: 'Salários', color: '#328539' },
+  Marketing: { label: 'Marketing', color: '#c244b1' },
+  Impostos: { label: 'Impostos', color: '#be4444' },
+  Manutencao: { label: 'Manutenção', color: '#42a881' },
+  Outros: { label: 'Outros', color: '#595e66' },
 }
 
 export interface Expense {

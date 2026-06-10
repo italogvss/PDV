@@ -61,6 +61,7 @@ function mapToRecord(s: SaleListItem): SaleRecord {
     operator: s.operatorName,
     payment: PAYMENT_MAP[s.paymentMethod] ?? (s.paymentMethod as SalePaymentMethod),
     total: s.total,
+    discount: s.discount,
     status: STATUS_MAP[s.status] ?? 'Ativo',
     amountPaid: s.total,
     change: 0,

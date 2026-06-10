@@ -149,7 +149,9 @@ public class SaleService(
             customerDocument = request.CustomerDocument;
         }
 
-        var total = saleItems.Sum(i => i.Subtotal);
+        var itemsTotal = saleItems.Sum(i => i.Subtotal);
+        var discount = Math.Max(0, Math.Min(request.Discount, itemsTotal));
+        var total = itemsTotal - discount;
         decimal? installmentValue = null;
         if (request.IsInstallment && request.InstallmentCount.HasValue)
             installmentValue = total / request.InstallmentCount.Value;
@@ -165,6 +167,7 @@ public class SaleService(
             IsInstallment = request.IsInstallment,
             InstallmentCount = request.InstallmentCount,
             InstallmentValue = installmentValue,
+            Discount = discount,
             Total = total,
             AmountPaid = request.AmountPaid,
             Status = SaleStatus.Active,
@@ -215,13 +218,13 @@ public class SaleService(
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt);
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt);
 
     private static SaleDetailResponse MapToDetail(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
             s.Items.Select(i => new SaleItemResponse(
                 i.Id, i.SaleId, i.ProductId, i.ServiceId,
                 i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),

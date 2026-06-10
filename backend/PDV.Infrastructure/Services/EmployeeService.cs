@@ -86,7 +86,6 @@ public class EmployeeService(
             TenantId = tenantContext.TenantId,
             UserId = user.Id,
             RoleId = role.Id,
-            Position = request.Position,
             Salary = request.Salary,
             Phone = request.Phone,
         };
@@ -109,7 +108,6 @@ public class EmployeeService(
             ?? throw new BusinessException("Papel não encontrado.");
 
         employee.RoleId = role.Id;
-        employee.Position = request.Position;
         employee.Salary = request.Salary;
         employee.Phone = request.Phone;
         employee.UpdatedAt = DateTime.UtcNow;
@@ -177,7 +175,7 @@ public class EmployeeService(
 
     private async Task<EmployeeResponse> Map(Employee e) =>
         new(e.Id, e.UserId, e.User.Name, e.User.Email,
-            e.RoleId, e.Role.Name, e.Position,
+            e.RoleId, e.Role.Name,
             e.Salary, e.Phone,
             await storage.ResolveReadUrlAsync(e.ImageUrl, MediaCategory.Profile, e.UpdatedAt),
             e.IsActive, e.CreatedAt);

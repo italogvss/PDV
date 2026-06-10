@@ -129,11 +129,14 @@ export const colors = {
 
   // Cores auxiliares para tags/avatars/integrações
   data: {
-    purple: { main: '#9152d4', soft: '#efe5fa', ink: '#4d2b80' },
-    blue:   { main: '#3a82d4', soft: '#e1eaf8', ink: '#1f4b8a' },
-    orange: { main: '#d97a1f', soft: '#fbe9d4', ink: '#7a3c10' },
-    pink:   { main: '#d94576', soft: '#fbe1ea', ink: '#80264a' },
-    teal:   { main: '#1f9aa6', soft: '#d4eef1', ink: '#0f4f55' },
+    red:   { main: '#d43737', soft: '#d4eef1', ink: '#0f4f55' },
+    orange: { main: '#d38339', soft: '#fbe9d4', ink: '#7a3c10' },
+    yellow: { main: '#e6bf41', soft: '#fbe9d4', ink: '#7a3c10' },
+    green:   { main: '#52ca3a', soft: '#d4eef1', ink: '#0f4f55' },
+    teal:   { main: '#34d698', soft: '#d4eef1', ink: '#0f4f55' },
+    blue:   { main: '#2f85cc', soft: '#e1eaf8', ink: '#1f4b8a' },
+    purple: { main: '#a551d6', soft: '#efe5fa', ink: '#4d2b80' },
+    pink:   { main: '#df52a9', soft: '#fbe1ea', ink: '#80264a' },
   },
 } as const;
 

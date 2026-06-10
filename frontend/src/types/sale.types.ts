@@ -11,6 +11,7 @@ export interface CreateSalePayload {
   isInstallment: boolean
   installmentCount?: number
   amountPaid: number
+  discount: number
   items: CreateSaleItemPayload[]
 }
 
@@ -25,6 +26,7 @@ export interface SaleListItem {
   installmentCount: number | null
   installmentValue: number | null
   total: number
+  discount: number
   status: string
   cancelledById: string | null
   cancelledAt: string | null

@@ -193,6 +193,7 @@ public class TenantService(
                 TenantId = tenantId,
                 Name = "Gerente",
                 Description = "Acesso completo ao sistema.",
+                Color = "#db2d2d",
                 IsDefault = true,
                 Permissions =
                 [
@@ -211,6 +212,7 @@ public class TenantService(
                 TenantId = tenantId,
                 Name = "Atendente",
                 Description = "Realiza vendas e consulta estoque.",
+                Color = "#2d55da",
                 IsDefault = true,
                 Permissions =
                 [
@@ -222,6 +224,7 @@ public class TenantService(
             {
                 TenantId = tenantId,
                 Name = "Estoquista",
+                Color = "#d39b23",
                 Description = "Gerencia o estoque.",
                 IsDefault = true,
                 Permissions =

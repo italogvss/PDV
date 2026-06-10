@@ -2,6 +2,7 @@ export interface TenantRole {
   id: string
   name: string
   description?: string
+  color?: string
   isDefault: boolean
   memberCount: number
   permissions: string[]
@@ -14,7 +15,6 @@ export interface Employee {
   email: string
   roleId: string
   roleName: string
-  position: string
   salary?: number
   phone?: string
   avatarUrl?: string
@@ -59,14 +59,12 @@ export interface CreateEmployeePayload {
   email: string
   temporaryPassword: string
   roleId: string
-  position: string
   salary?: number
   phone?: string
 }
 
 export interface UpdateEmployeePayload {
   roleId: string
-  position: string
   salary?: number
   phone?: string
 }

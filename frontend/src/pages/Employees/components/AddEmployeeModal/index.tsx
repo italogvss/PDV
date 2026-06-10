@@ -7,11 +7,14 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateEmployee } from '../../../../hooks/useEmployees'
+import { formatPhone } from '../../../../utils/masks'
 import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
@@ -24,9 +27,10 @@ const schema = z.object({
   email: z.string().email('E-mail inválido'),
   temporaryPassword: z.string().min(6, 'A senha temporária deve ter no mínimo 6 caracteres'),
   roleId: z.string().min(1, 'Selecione um papel'),
-  position: z.string().min(1, 'Cargo é obrigatório').max(100),
   salary: z.number().min(0),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  phone: z.string()
+    .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
+    .optional().or(z.literal('')),
 })
 
 type AddEmployeeForm = z.infer<typeof schema>
@@ -36,7 +40,6 @@ const defaultValues: AddEmployeeForm = {
   email: '',
   temporaryPassword: '',
   roleId: '',
-  position: '',
   salary: 0,
   phone: '',
 }
@@ -45,6 +48,8 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
   const createEmployee = useCreateEmployee()
   const { data: roles, isLoading: rolesLoading } = useTeamRoles()
   const isPending = createEmployee.isPending
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     register,
@@ -63,7 +68,6 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
       email: data.email,
       temporaryPassword: data.temporaryPassword,
       roleId: data.roleId,
-      position: data.position,
       salary: data.salary ? data.salary : undefined,
       phone: data.phone || undefined,
     })
@@ -78,7 +82,7 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title="Adicionar funcionário"
         subtitle="Cadastre um membro da equipe"
@@ -128,36 +132,25 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Papel" required />
-              <Controller
-                name="roleId"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.roleId}>
-                    <Select {...field} displayEmpty disabled={rolesLoading}>
-                      <MenuItem value="" disabled>Selecione...</MenuItem>
-                      {roles?.map((r) => (
-                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                      ))}
-                    </Select>
-                    {errors.roleId && (
-                      <FormHelperText>{errors.roleId.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Cargo" required />
-              <TextField
-                {...register('position')}
-                fullWidth
-                error={!!errors.position}
-                helperText={errors.position?.message}
-              />
-            </Box>
+          <Box>
+            <FieldLabel label="Papel" required />
+            <Controller
+              name="roleId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.roleId}>
+                  <Select {...field} displayEmpty disabled={rolesLoading}>
+                    <MenuItem value="" disabled>Selecione...</MenuItem>
+                    {roles?.map((r) => (
+                      <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                    ))}
+                  </Select>
+                  {errors.roleId && (
+                    <FormHelperText>{errors.roleId.message}</FormHelperText>
+                  )}
+                </FormControl>
+              )}
+            />
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
@@ -180,11 +173,19 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone" />
-              <TextField
-                {...register('phone')}
-                fullWidth
-                error={!!errors.phone}
-                helperText={errors.phone?.message}
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                    placeholder="(99) 99999-9999"
+                    fullWidth
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
               />
             </Box>
           </Box>

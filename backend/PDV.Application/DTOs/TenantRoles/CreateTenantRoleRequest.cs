@@ -1,3 +1,3 @@
 namespace PDV.Application.DTOs.TenantRoles;
 
-public record CreateTenantRoleRequest(string Name, string? Description);
+public record CreateTenantRoleRequest(string Name, string? Description, string? Color);

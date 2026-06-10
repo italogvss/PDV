@@ -8,6 +8,7 @@ import {
   Divider,
   IconButton,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material'
 import type { Theme } from '@mui/material'
@@ -55,6 +56,7 @@ export default function AppointmentDetailModal({
   onChangeColor,
 }: AppointmentDetailModalProps) {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [cached, setCached] = useState(appointment)
 
@@ -90,7 +92,7 @@ export default function AppointmentDetailModal({
   })()
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
       {/* Hero */}
       <Box sx={{ position: 'relative', p: 3, pb: 2 }}>
         <IconButton
