@@ -47,31 +47,11 @@ export default function PaymentSection({
         fullWidth
         value={method}
         onChange={(_, value: PaymentMethod | null) => value && onMethodChange(value)}
-        sx={{
-          '& .MuiToggleButton-root': {
-            flex: 1,
-            gap: 1,
-            py: 1.5,
-            textTransform: 'none',
-            fontWeight: 500,
-            fontSize: 13,
-            color: 'text.secondary',
-            borderColor: 'border.subtle',
-          },
-        }}
       >
         {METHODS.map(({ value, label, Icon }) => (
           <ToggleButton
             key={value}
             value={value}
-            sx={{
-              '&.Mui-selected': {
-                bgcolor: METHOD_COLORS[value].bg,
-                color: METHOD_COLORS[value].text,
-                borderColor: METHOD_COLORS[value].border,
-                '&:hover': { bgcolor: METHOD_COLORS[value].hover },
-              },
-            }}
           >
             <Icon sx={{ fontSize: 16 }} />
             {label}
@@ -86,23 +66,7 @@ export default function PaymentSection({
             fullWidth
             value={cardType}
             onChange={(_, value: 'credit' | 'debit' | null) => value && handleCardTypeChange(value)}
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                flex: 1,
-                textTransform: 'none',
-                fontWeight: 500,
-                fontSize: 13,
-                color: 'text.secondary',
-                borderColor: 'border.subtle',
-                '&.Mui-selected': {
-                  bgcolor: 'warning.main',
-                  color: 'warning.contrastText',
-                  borderColor: 'warning.main',
-                  '&:hover': { bgcolor: 'warning.dark' },
-                },
-              },
-            }}
+            size="small"           
           >
             <ToggleButton value="credit">Crédito</ToggleButton>
             <ToggleButton value="debit">Débito</ToggleButton>

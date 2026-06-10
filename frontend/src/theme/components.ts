@@ -220,8 +220,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       root: {
         '& .MuiToggleButton-root': {
           textTransform: 'none',
-          fontWeight: 500,
-          fontSize: 13,
+          fontWeight: 600,
           px: 2,
           borderColor: 'border.subtle',
           color: 'text.secondary',

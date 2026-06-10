@@ -7,7 +7,6 @@ import TodayOutlined from '@mui/icons-material/TodayOutlined'
 import {
   Box,
   Button,
-  Chip,
   ToggleButton,
   ToggleButtonGroup,
   Typography
@@ -16,6 +15,8 @@ import { DatePicker } from '@mui/x-date-pickers'
 import type { SchedulerEvent } from '@mui/x-scheduler/models'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
+import FilterTabs from '../../components/FilterTabs'
+import type { FilterTabOption } from '../../components/FilterTabs/types'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useDeleteAppointment, useUpdateAppointment } from '../../hooks/useAppointments'
@@ -103,6 +104,14 @@ export default function AppointmentsPage() {
   const kpis = useMemo(
     () => computeKpis(appointments, professionals, selectedDate),
     [appointments, professionals, selectedDate],
+  )
+
+  const proTabs = useMemo<FilterTabOption[]>(
+    () => [
+      { value: 'todos', label: 'Todos' },
+      ...professionals.map((pro) => ({ value: pro.id, label: pro.name })),
+    ],
+    [professionals],
   )
 
   const visibleResources = useMemo<Record<string, boolean>>(() => {
@@ -216,19 +225,7 @@ export default function AppointmentsPage() {
         <ToggleButtonGroup
           exclusive
           value={view}
-          onChange={(_, next: AgendaView | null) => next && setView(next)}
-          sx={{
-            '& .MuiToggleButton-root': {
-              textTransform: 'none',
-              px: 2,
-              color: 'text.secondary',
-              '&.Mui-selected': {
-                bgcolor: 'text.primary',
-                color: 'background.paper',
-                '&:hover': { bgcolor: 'text.primary' },
-              },
-            },
-          }}
+          onChange={(_, next: AgendaView | null) => next && setView(next)}         
         >
           <ToggleButton value="day">Dia</ToggleButton>
           <ToggleButton value="week">Semana</ToggleButton>
@@ -313,38 +310,11 @@ export default function AppointmentsPage() {
           >
             Filtrar por profissional
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            <Chip
-              clickable
-              size="large"
-              label="Todos"
-              variant={proFilter === 'todos' ? 'filled' : 'outlined'}
-              onClick={() => setProFilter('todos')}
-              sx={
-                proFilter === 'todos'
-                  ? { bgcolor: 'text.primary', color: 'background.paper', fontWeight: 600 }
-                  : { borderColor: 'border.subtle', color: 'text.secondary' }
-              }
-            />
-            {professionals.map((pro) => {
-              const selected = proFilter === pro.id
-              return (
-                <Chip
-                  key={pro.id}
-                  clickable
-                  size="large"
-                  label={pro.name}
-                  variant={selected ? 'filled' : 'outlined'}
-                  onClick={() => setProFilter(selected ? 'todos' : pro.id)}
-                  sx={
-                    selected
-                      ? { bgcolor: 'text.primary', color: 'background.paper', fontWeight: 600 }
-                      : { borderColor: 'border.subtle', color: 'text.secondary' }
-                  }
-                />
-              )
-            })}
-          </Box>
+          <FilterTabs
+            value={proFilter}
+            onChange={setProFilter}
+            options={proTabs}
+          />
 
           <AppointmentScheduler
             appointments={appointments}

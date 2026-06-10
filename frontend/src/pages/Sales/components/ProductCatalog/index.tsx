@@ -1,5 +1,6 @@
 import { SearchOutlined } from '@mui/icons-material'
-import { Box, CircularProgress, Grid, InputBase, Tab, Tabs, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import { Box, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import FilterTabs from '../../../../components/FilterTabs'
 import ProductCard from '../ProductCard'
 import ServiceCard from '../ServiceCard'
 import { CatalogMode, CategoryValue, ProductCatalogProps } from './types'
@@ -87,41 +88,7 @@ export default function ProductCatalog({
         </ToggleButtonGroup>
       </Box>
 
-      <Tabs
-        value={category}
-        onChange={(_, value: CategoryValue) => onCategoryChange(value)}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{
-          minHeight: 36,
-          maxWidth: '100%',
-          borderRadius: 999,
-          border: 1,
-          borderColor: 'border.subtle',
-          '& .MuiTab-root': {
-            minHeight: 36,
-            textTransform: 'none',
-            fontSize: 14,
-            fontWeight: 500,
-            color: 'text.secondary',
-            px: 3,
-            border: 'none',
-            borderRadius: 2,
-            mr: 1,
-            my: 0.75
-          },
-          '& .MuiTabs-indicator': { display: 'none' },
-        }}
-      >
-        {tabs.map((t) => (
-          <Tab key={t.value} value={t.value} label={t.label} sx={{
-            '&.Mui-selected': {
-              color: 'black',
-              bgcolor: t.color,
-            },
-          }} />
-        ))}
-      </Tabs>
+      <FilterTabs value={category} onChange={onCategoryChange} options={tabs} />
 
       <Box
         sx={{
