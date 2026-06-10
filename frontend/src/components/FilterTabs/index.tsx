@@ -14,22 +14,19 @@ export default function FilterTabs({ value, onChange, options }: Props) {
       variant="scrollable"
       scrollButtons="auto"
       sx={{
-        minHeight: 36,
         maxWidth: '100%',
         borderRadius: 999,
         border: 1,
         borderColor: 'border.subtle',
         '& .MuiTab-root': {
-          minHeight: 36,
-          textTransform: 'none',
-          fontSize: 14,
+          px: 3,
+          py: 2,
+          fontSize: 16,
           fontWeight: 500,
           color: 'text.secondary',
-          px: 3,
-          border: 'none',
+          border: '1px solid transparent',
           borderRadius: 2,
           mr: 1,
-          my: 0.75,
         },
         '& .MuiTabs-indicator': { display: 'none' },
       }}
@@ -40,10 +37,16 @@ export default function FilterTabs({ value, onChange, options }: Props) {
           value={t.value}
           label={t.label}
           sx={{
+            px: 1,
+            '&:hover': {
+              backgroundColor: 'action.hover',
+              borderColor: 'border.subtle',
+            },
             '&.Mui-selected': {
-              color: t.color ? 'black' : 'text.primary',
-              bgcolor: t.color ?? 'action.selected',
+              '&:hover': {border: "none"},
               fontWeight: 600,
+              color: 'common.white',
+              backgroundColor: t.color ?? 'neutral.300',
             },
           }}
         />

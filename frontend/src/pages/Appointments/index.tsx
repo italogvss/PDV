@@ -108,8 +108,8 @@ export default function AppointmentsPage() {
 
   const proTabs = useMemo<FilterTabOption[]>(
     () => [
-      { value: 'todos', label: 'Todos' },
-      ...professionals.map((pro) => ({ value: pro.id, label: pro.name })),
+      { value: 'todos', label: 'Todos', color: 'primary.main' },
+      ...professionals.map((pro) => ({ value: pro.id, label: pro.name, color: "primary.main" })),
     ],
     [professionals],
   )

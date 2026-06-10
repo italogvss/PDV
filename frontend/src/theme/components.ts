@@ -6,6 +6,7 @@
 import type { Components, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { radius } from './shape';
+import { bgcolor } from '@mui/system';
 
 export const components = (theme: Theme): Components<Theme> => ({
   // ------------------------------------------------------------------
@@ -41,10 +42,10 @@ export const components = (theme: Theme): Components<Theme> => ({
   // Botões
   // ------------------------------------------------------------------
   MuiButton: {
-    defaultProps: { disableElevation: true, disableRipple: false, variant: 'outlined' },
+    defaultProps: { disableElevation: true, variant: 'outlined' },
     styleOverrides: {
       root: {
-        borderRadius: radius.md - 2, // 8
+        borderRadius: radius.control,
         textTransform: 'none',
         fontWeight: 500,
         fontSize: 13,
@@ -68,8 +69,8 @@ export const components = (theme: Theme): Components<Theme> => ({
         },
       },
       contained: {
-        backgroundColor: theme.palette.text.primary,
-        color: theme.palette.surface.paper,
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
         '&:hover': { backgroundColor: theme.palette.neutral[800] },
       },
       text: {
@@ -84,7 +85,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         style: {
           backgroundColor: theme.palette.success.main,
           color: theme.palette.success.contrastText,
-          '&:hover': { backgroundColor: theme.palette.accent[700] },
+          '&:hover': { backgroundColor: theme.palette.success.dark },
         },
       },
       {
@@ -132,7 +133,7 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiIconButton: {
     styleOverrides: {
       root: {
-        borderRadius: radius.md - 2,
+        borderRadius: radius.control,
         color: theme.palette.text.secondary,
         '&:hover': {
           backgroundColor: theme.palette.surface.sunken,
@@ -141,10 +142,6 @@ export const components = (theme: Theme): Components<Theme> => ({
       },
       sizeSmall: { padding: 6 },
     },
-  },
-
-  MuiButtonBase: {
-    defaultProps: { disableRipple: false },
   },
 
   // ------------------------------------------------------------------
@@ -221,11 +218,12 @@ export const components = (theme: Theme): Components<Theme> => ({
         '& .MuiToggleButton-root': {
           textTransform: 'none',
           fontWeight: 600,
-          px: 2,
-          borderColor: 'border.subtle',
-          color: 'text.secondary',
+          paddingLeft: theme.spacing(2),
+          paddingRight: theme.spacing(2),
+          borderColor: theme.palette.border.subtle,
+          color: theme.palette.text.secondary,
           '&.Mui-selected': {
-            border: "none",
+            border: 'none',
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             borderColor: theme.palette.action.selected,
@@ -241,14 +239,10 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiListSubheader: {
     styleOverrides: {
       root: {
+        ...theme.typography.overline,
         backgroundColor: 'transparent',
         color: theme.palette.text.tertiary,
-        fontSize: 11,
-        fontWeight: 500,
-        textTransform: 'uppercase',
-        letterSpacing: '0.06em',
         padding: '8px 8px 4px',
-        lineHeight: 1.4,
       },
     },
   },
@@ -296,7 +290,7 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
-        borderRadius: radius.md - 3, // 7
+        borderRadius: radius.control,
         backgroundColor: theme.palette.surface.paper,
         fontSize: 15,
         '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.border.subtle },
@@ -337,13 +331,13 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiPickersOutlinedInput: {
     styleOverrides: {
       root: {
-        borderRadius: radius.md - 3,
+        borderRadius: radius.control,
         backgroundColor: theme.palette.surface.paper,
         fontSize: 15,
         '& .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.subtle },
         '&:hover .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.strong },
         '&.Mui-focused .MuiPickersOutlinedInput-notchedOutline': {
-          borderColor: theme.palette.primary.main,
+          borderColor: theme.palette.accent[600],
           borderWidth: 1,
         },
         '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.accent[100]}` },
@@ -412,7 +406,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         },
       },
       {
-        props: { color: 'premium' as any },
+        props: { color: 'premium' },
         style: {
           background: `linear-gradient(135deg, ${theme.palette.premium[100]}, ${theme.palette.premium[200]})`,
           color: theme.palette.premium[800],
@@ -442,12 +436,9 @@ export const components = (theme: Theme): Components<Theme> => ({
     styleOverrides: {
       root: {
         '& .MuiTableCell-root': {
+          ...theme.typography.overline,
           backgroundColor: theme.palette.surface.sunken,
           color: theme.palette.text.tertiary,
-          fontSize: 11.5,
-          fontWeight: 500,
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
         },
       },
     },
@@ -459,7 +450,6 @@ export const components = (theme: Theme): Components<Theme> => ({
         padding: '10px 16px',
         fontSize: 13,
       },
-      head: { fontSize: 11.5 },
     },
   },
   MuiTableRow: {
@@ -487,7 +477,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       flexContainer: {
         backgroundColor: theme.palette.surface.sunken,
         border: `none`,
-        borderRadius: radius.md - 2,
+        borderRadius: radius.control,
         padding: 3,
         gap: 2,
       },
@@ -504,7 +494,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         color: theme.palette.text.secondary,
         zIndex: 1,
         borderRadius: radius.sm,
-        '&.Mui-selected': { color: theme.palette.text.primary },
+        '&.Mui-selected': { color: theme.palette.text.primary, bgcolor: theme.palette.primary.main },
       },
     },
   },
@@ -518,7 +508,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         fontSize: 12,
         fontWeight: 600,
         backgroundColor: theme.palette.accent[600],
-        color: '#fff',
+        color: theme.palette.secondary.contrastText,
       },
       rounded: { borderRadius: radius.sm },
     },
@@ -552,21 +542,32 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiSwitch: {
     styleOverrides: {
       root: {
-        //     width: 32, height: 18, padding: 0,
-        //     display: 'flex', alignItems: 'center',
-        //   },
-        //   switchBase: {
-        //     padding: 2,
-        //     '&.Mui-checked': {
-        //       transform: 'translateX(14px)',
-        //       color: '#fff',
-        //       '& + .MuiSwitch-track': { backgroundColor: theme.palette.accent[600], opacity: 1 },
-        //     },
-        //   },
-        //   thumb: { width: 14, height: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.2)' },
-        //   track: {
-        //     borderRadius: 999, opacity: 1,
-        //     backgroundColor: theme.palette.surface.raised,
+        width: 34,
+        height: 20,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+      },
+      switchBase: {
+        padding: 3,
+        '&.Mui-checked': {
+          transform: 'translateX(14px)',
+          color: theme.palette.surface.paper,
+          '& + .MuiSwitch-track': {
+            backgroundColor: theme.palette.accent[600],
+            opacity: 1,
+          },
+        },
+      },
+      thumb: {
+        width: 14,
+        height: 14,
+        boxShadow: '0 1px 2px rgba(20,20,20,0.2)',
+      },
+      track: {
+        borderRadius: 999,
+        opacity: 1,
+        backgroundColor: theme.palette.surface.raised,
       },
     },
   },

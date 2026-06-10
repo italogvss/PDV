@@ -49,8 +49,6 @@ declare module '@mui/material/styles' {
 // Tag customizada no Chip + variant "green" no Button
 declare module '@mui/material/Chip' {
   interface ChipPropsColorOverrides {
-    neutral: true;
-    accent: true;
     premium: true;
   }
   interface ChipPropsSizeOverrides {
@@ -61,16 +59,6 @@ declare module '@mui/material/Button' {
   interface ButtonPropsVariantOverrides {
     soft: true;     // fundo claro + texto da cor
     ghost: true;    // transparente, vira "filled" no hover
-  }
-  interface ButtonPropsColorOverrides {
-    neutral: true;
-    accent: true;
-  }
-}
-declare module '@mui/material/IconButton' {
-  interface IconButtonPropsColorOverrides {
-    neutral: true;
-    accent: true;
   }
 }
 

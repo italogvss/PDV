@@ -66,9 +66,9 @@ Substitua `accentGreen` em `palette.ts` por outra escala de mesmo formato:
 
 ```ts
 const accentBlue: ColorScale = {
-  50: 'oklch(0.97 0.02 245)',
+  50:  '#eaf1fb',
   // ...
-  900: 'oklch(0.32 0.12 245)',
+  900: '#173a6b',
 };
 ```
 

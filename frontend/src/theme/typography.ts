@@ -1,7 +1,7 @@
 /**
  * Tipografia — Geist (com tabular-nums para números financeiros).
- * Os tamanhos seguem o sistema do produto: base 14px, 16px em campos de input,
- * 24px em headings de página.
+ * Os tamanhos seguem o sistema do produto: base 15px, 15px em campos de input,
+ * 32px em headings de página (h1).
  */
 
 import type { TypographyVariantsOptions } from '@mui/material/styles';
@@ -35,14 +35,14 @@ export function loadGeistFont() {
   link.id = id;
   link.rel = 'stylesheet';
   link.href =
-    'https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap';
+    'https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap';
   document.head.appendChild(link);
 }
 
 export const typography: TypographyVariantsOptions = {
   fontFamily,
   fontSize: 15,
-  htmlFontSize: 18,
+  htmlFontSize: 16,
   fontWeightLight: 300,
   fontWeightRegular: 400,
   fontWeightMedium: 500,

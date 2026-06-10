@@ -1,6 +1,6 @@
 /**
  * Palette tokens — Zelo design system
- * Use oklch() para máxima fidelidade de cor (cinzas levemente quentes).
+ * Cores em HEX (cinzas levemente quentes).
  *
  * Convenção:
  *   surface.* = backgrounds em camadas
@@ -28,7 +28,8 @@ export type SemanticTone = {
   contrastText: string;
   soft: string;     // fundo suave (chips, badges)
   ink: string;      // texto sobre o fundo soft
-  border?: string;  // borda alinhada ao tom (opcional)
+  light?: string;   // variante clara (apenas success por ora)
+  dark?: string;    // variante escura (apenas success por ora)
 };
 
 const neutral: ColorScale = {
@@ -95,12 +96,15 @@ export const colors = {
   },
 
   semantic: {
+    // Verde próprio, independente do accent da marca — assim trocar a cor
+    // de destaque por tenant não muda o significado de "sucesso".
     success: {
-      main: accentGreen[600],
+      main:  '#1f9d57',
+      light: '#4cbb7f',
+      dark:  '#177a43',
       contrastText: '#ffffff',
-      soft: accentGreen[100],
-      ink:  accentGreen[900],
-      border: 'transparent',
+      soft: '#e4f6ec',
+      ink:  '#0e5b30',
     } as SemanticTone,
     warning: {
       main: '#d49a2c',
@@ -114,11 +118,12 @@ export const colors = {
       soft: '#fbe6e1',
       ink:  '#8a2922',
     } as SemanticTone,
+    // Azul próprio do status (distinto do data.blue, que é cor de exemplo).
     info: {
-      main: '#3a82d4',
+      main: '#2d6cc9',
       contrastText: '#ffffff',
-      soft: '#e1eaf8',
-      ink:  '#1f4b8a',
+      soft: '#e3ecfa',
+      ink:  '#1b4380',
     } as SemanticTone,
   },
 

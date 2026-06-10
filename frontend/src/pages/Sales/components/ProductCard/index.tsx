@@ -1,11 +1,25 @@
-import { Box, Typography } from '@mui/material'
 import { Inventory2Outlined } from '@mui/icons-material'
+import { Box, Divider, SxProps, Typography } from '@mui/material'
 import { formatBRL } from '../../../../utils/currency'
 import { ProductCardProps } from './types'
 
 export default function ProductCard({ product, onAdd }: ProductCardProps) {
-  const color = product.category?.color ?? '#9e9e9e'
+  const color = product.category?.color ?? 'primary.main'
 
+  const imagesx: SxProps = {
+    height: 72,
+    borderRadius: 1.5,
+    borderEndStartRadius: 0,
+    borderEndEndRadius: 0,
+    overflow: 'hidden',
+    objectFit: 'cover',
+    width: '100%',
+    bgcolor: color,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'text.tertiary',
+  }
   return (
     <Box
       onClick={() => onAdd(product.id)}
@@ -13,8 +27,8 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
-        p: 2,
-        borderRadius: 3,
+        p: 1,
+        borderRadius: 2,
         border: 1,
         borderColor: 'border.subtle',
         bgcolor: 'background.paper',
@@ -26,20 +40,24 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         },
       }}
     >
-      <Box
-        sx={{
-          height: 72,
-          borderRadius: 2,
-          bgcolor: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'rgba(255,255,255,0.7)',
-        }}
-      >
-        <Inventory2Outlined sx={{ fontSize: 28 }} />
-      </Box>
+      {product.imageUrl ? (
+        <Box
+          component="img"
+          src={product.imageUrl}
+          alt={product.name}
+          sx={imagesx}
+        />
+      ) : (
+        <Box
+          sx={imagesx}
+        >
+          <Inventory2Outlined sx={{ fontSize: 28 }} />
+        </Box>
+        
+      )}
+      
       <Box sx={{ pl: 1 }}>
+        
         <Typography
           variant="body2"
           color="text.primary"

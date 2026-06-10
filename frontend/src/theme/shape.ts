@@ -8,6 +8,7 @@ import type { Shadows } from '@mui/material/styles';
 export const radius = {
   xs: 4,
   sm: 6,
+  control: 8, // botões / inputs / controles interativos
   md: 10,
   lg: 14,
   xl: 20,
@@ -21,12 +22,11 @@ const sh = {
   md:    '0 4px 14px rgba(20,20,20,0.06)',
   lg:    '0 10px 28px -8px rgba(20,20,20,0.12)',
   xl:    '0 24px 48px -16px rgba(20,20,20,0.18)',
-  ring:  '0 0 0 3px var(--mui-palette-accent-soft, rgba(34,197,94,0.18))',
 } as const;
 
 /**
  * MUI exige array de 25 entradas. Usamos as 6 primeiras como nossa escala
- * "ds" (xs/sm/md/lg/xl/ring) e replicamos a maior para os índices restantes.
+ * "ds" (none/xs/sm/md/lg/xl) e replicamos a maior para os índices restantes.
  */
 export const shadows: Shadows = [
   'none',

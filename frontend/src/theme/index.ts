@@ -39,6 +39,8 @@ const baseOptions: ThemeOptions = {
     },
     success: {
       main: colors.semantic.success.main,
+      light: colors.semantic.success.light,
+      dark: colors.semantic.success.dark,
       contrastText: colors.semantic.success.contrastText,
       soft: colors.semantic.success.soft,
       ink: colors.semantic.success.ink,

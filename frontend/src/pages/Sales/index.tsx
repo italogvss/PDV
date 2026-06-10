@@ -50,7 +50,7 @@ export default function SalesPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setDebouncedSearch(search)
-    }, 3000)
+    }, 1000)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }

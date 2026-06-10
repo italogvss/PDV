@@ -23,11 +23,11 @@ export default function ProductCatalog({
   const tabs: Array<{ value: CategoryValue; label: string; color?: string }> =
     mode === 'products'
       ? [
-        { value: 'all' as CategoryValue, label: 'Tudo' },
+        { value: 'all' as CategoryValue, label: 'Tudo', color: 'primary.main' },
         ...productCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name, color: c.color })),
       ]
       : [
-        { value: 'all' as CategoryValue, label: 'Tudo' },
+        { value: 'all' as CategoryValue, label: 'Tudo', color: 'primary.main' },
         ...serviceCategories.map((c) => ({ value: c.id as CategoryValue, label: c.name, color: c.color })),
       ]
 
