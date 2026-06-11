@@ -10,4 +10,12 @@ public enum Permission
     ManageExpenses,
     ViewReports,
     ManageEmployees,
+    ViewSalesHistory,
+    ViewEmployees,
+    ManageAppointments,
+    ViewAppointments,
+    ManageCustomers,
+    ViewCustomers,
+    ManageSuppliers,
+    ViewSuppliers,
 }

@@ -24,7 +24,7 @@ import SearchRounded from '@mui/icons-material/SearchRounded'
 import AddIcon from '@mui/icons-material/Add'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import CheckIcon from '@mui/icons-material/Check'
 import { DeleteOutlineOutlined } from '@mui/icons-material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
@@ -38,9 +38,8 @@ import EmployeeRowMenu from './components/EmployeeRowMenu'
 import RoleFormModal from './components/RoleFormModal'
 import SettingCard from '../../components/SettingCard'
 import type { Employee, TenantRole } from '../../types/employee.types'
-import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../../types/employee.types'
+import { PERMISSIONS } from '../../types/employee.types'
 import type { AvatarColorKey } from './types'
-import { formatBRL } from '../../utils/currency'
 
 const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
 
@@ -72,7 +71,6 @@ export default function EmployeesPage() {
   const setPermissions = useSetRolePermissions()
 
   const [pendingPermissions, setPendingPermissions] = useState<Record<string, string[]>>({})
-  const [savingRole, setSavingRole] = useState<string | null>(null)
 
   useEffect(() => {
     if (rolesData) {
@@ -103,13 +101,21 @@ export default function EmployeesPage() {
     )
   }
 
-  const savePermissions = async (roleId: string) => {
-    setSavingRole(roleId)
-    await setPermissions.mutateAsync({ id: roleId, permissions: pendingPermissions[roleId] ?? [] })
-    setSavingRole(null)
+  const roles = rolesData ?? []
+
+  const anyUnsavedChanges = roles.some(hasUnsavedChanges)
+
+  const cancelAll = () => {
+    if (!rolesData) return
+    const reset: Record<string, string[]> = {}
+    rolesData.forEach((r) => { reset[r.id] = [...r.permissions] })
+    setPendingPermissions(reset)
   }
 
-  const roles = rolesData ?? []
+  const saveAll = async () => {
+    const dirty = roles.filter(hasUnsavedChanges)
+    await Promise.all(dirty.map((r) => setPermissions.mutateAsync({ id: r.id, permissions: pendingPermissions[r.id] ?? [] })))
+  }
 
   const filteredRows = useMemo(
     () =>
@@ -160,18 +166,6 @@ export default function EmployeesPage() {
         renderCell: ({ row }) => (
           <Typography variant="body2" color="text.secondary">
             {row.roleName}
-          </Typography>
-        ),
-      },
-      {
-        field: 'salary',
-        headerName: 'Salário',
-        width: 130,
-        align: 'right',
-        headerAlign: 'right',
-        renderCell: ({ row }) => (
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            {row.salary != null ? formatBRL(row.salary) : '—'}
           </Typography>
         ),
       },
@@ -369,13 +363,32 @@ export default function EmployeesPage() {
 
       {/* Matriz de permissões */}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ px: 4, py: 3 }}>
-          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-            Matriz de permissões
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Configure o que cada papel pode fazer. Salve as alterações por papel.
-          </Typography>
+        <Box sx={{ px: 4, py: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
+              Matriz de permissões
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Configure o que cada papel pode fazer.
+            </Typography>
+          </Box>
+          {anyUnsavedChanges && (
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button variant="outlined" size="small" onClick={cancelAll} disabled={setPermissions.isPending}>
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="secondary"
+                startIcon={setPermissions.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                onClick={saveAll}
+                disabled={setPermissions.isPending}
+              >
+                Salvar alterações
+              </Button>
+            </Box>
+          )}
         </Box>
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
@@ -398,31 +411,16 @@ export default function EmployeesPage() {
                       align="center"
                       sx={{ fontWeight: 600, fontSize: 11, color: 'text.tertiary', letterSpacing: '0.06em', py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}
                     >
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                        {role.name.toUpperCase()}
-                        {hasUnsavedChanges(role) && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="success"
-                            sx={{ fontSize: 10, py: 0.25, px: 1, minWidth: 0, height: 22 }}
-                            onClick={() => savePermissions(role.id)}
-                            disabled={savingRole === role.id}
-                            startIcon={savingRole === role.id ? <CircularProgress size={10} color="inherit" /> : <SaveOutlinedIcon sx={{ fontSize: '12px !important' }} />}
-                          >
-                            {savingRole === role.id ? '' : 'Salvar'}
-                          </Button>
-                        )}
-                      </Box>
+                      {role.name.toUpperCase()}
                     </TableCell>
                   ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {ALL_PERMISSIONS.map((perm) => (
+            {(Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).map((perm) => (
               <TableRow key={perm} sx={{ '&:last-child td': { border: 0 } }}>
                 <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 4, borderColor: 'border.subtle' }}>
-                  {PERMISSION_LABELS[perm]}
+                  {PERMISSIONS[perm]}
                 </TableCell>
                 {rolesLoading
                   ? [1, 2, 3].map((i) => (

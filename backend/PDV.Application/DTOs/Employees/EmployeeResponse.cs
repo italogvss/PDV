@@ -7,7 +7,6 @@ public record EmployeeResponse(
     string Email,
     Guid RoleId,
     string RoleName,
-    decimal? Salary,
     string? Phone,
     string? ImageUrl,
     bool IsActive,

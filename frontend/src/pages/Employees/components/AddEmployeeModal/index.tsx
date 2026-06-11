@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -7,9 +8,12 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  IconButton,
+  InputAdornment,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,16 +22,18 @@ import { formatPhone } from '../../../../utils/masks'
 import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
-import CurrencyField from '../../../../components/CurrencyField'
 import FormModalActions from '../../../../components/FormModalActions'
 import type { AddEmployeeModalProps } from './types'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
   email: z.string().email('E-mail inválido'),
-  temporaryPassword: z.string().min(6, 'A senha temporária deve ter no mínimo 6 caracteres'),
+  temporaryPassword: z
+    .string()
+    .min(8, 'A senha deve ter no mínimo 8 caracteres')
+    .regex(/\d/, 'A senha deve conter pelo menos um número')
+    .regex(/[^a-zA-Z0-9]/, 'A senha deve conter pelo menos um caractere especial'),
   roleId: z.string().min(1, 'Selecione um papel'),
-  salary: z.number().min(0),
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
     .optional().or(z.literal('')),
@@ -40,11 +46,11 @@ const defaultValues: AddEmployeeForm = {
   email: '',
   temporaryPassword: '',
   roleId: '',
-  salary: 0,
   phone: '',
 }
 
 export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
+  const [showPassword, setShowPassword] = useState(false)
   const createEmployee = useCreateEmployee()
   const { data: roles, isLoading: rolesLoading } = useTeamRoles()
   const isPending = createEmployee.isPending
@@ -68,7 +74,6 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
       email: data.email,
       temporaryPassword: data.temporaryPassword,
       roleId: data.roleId,
-      salary: data.salary ? data.salary : undefined,
       phone: data.phone || undefined,
     })
     reset(defaultValues)
@@ -123,12 +128,29 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             <FieldLabel label="Senha temporária" required />
             <TextField
               {...register('temporaryPassword')}
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               fullWidth
               error={!!errors.temporaryPassword}
               helperText={
-                errors.temporaryPassword?.message ?? 'O funcionário precisará trocar no primeiro acesso'
+                errors.temporaryPassword?.message ??
+                'Mínimo 8 caracteres, com número e caractere especial. O funcionário precisará trocar no primeiro acesso.'
               }
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword((v) => !v)}
+                        edge="end"
+                        size="small"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
           </Box>
 
@@ -153,41 +175,22 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Salário" />
-              <Controller
-                name="salary"
-                control={control}
-                render={({ field }) => (
-                  <CurrencyField
-                    value={Number(field.value) || 0}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    fullWidth
-                    error={!!errors.salary}
-                    helperText={errors.salary?.message}
-                  />
-                )}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Telefone" />
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
-                    placeholder="(99) 99999-9999"
-                    fullWidth
-                    error={!!errors.phone}
-                    helperText={errors.phone?.message}
-                  />
-                )}
-              />
-            </Box>
+          <Box>
+            <FieldLabel label="Telefone" />
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                  placeholder="(99) 99999-9999"
+                  fullWidth
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
+                />
+              )}
+            />
           </Box>
         </Box>
       </DialogContent>

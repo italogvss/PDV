@@ -8,8 +8,11 @@ import {
   TextField,
   Button,
   CircularProgress,
+  IconButton,
+  InputAdornment,
 } from '@mui/material'
 import LockResetRounded from '@mui/icons-material/LockResetRounded'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,7 +25,11 @@ import { useApiError } from '../../hooks/useApiError'
 const schema = z
   .object({
     currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
-    newPassword: z.string().min(6, 'A nova senha deve ter no mínimo 6 caracteres'),
+    newPassword: z
+      .string()
+      .min(8, 'A nova senha deve ter no mínimo 8 caracteres')
+      .regex(/\d/, 'A nova senha deve conter pelo menos um número')
+      .regex(/[^a-zA-Z0-9]/, 'A nova senha deve conter pelo menos um caractere especial'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -38,6 +45,9 @@ export default function ChangePasswordPage() {
   const showToast = useToast()
   const handleError = useApiError()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const {
     register,
@@ -102,26 +112,62 @@ export default function ChangePasswordPage() {
             <TextField
               {...register('currentPassword')}
               label="Senha temporária"
-              type="password"
+              type={showCurrent ? 'text' : 'password'}
               fullWidth
               error={!!errors.currentPassword}
               helperText={errors.currentPassword?.message}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowCurrent((v) => !v)} edge="end" size="small" tabIndex={-1}>
+                        {showCurrent ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
             <TextField
               {...register('newPassword')}
               label="Nova senha"
-              type="password"
+              type={showNew ? 'text' : 'password'}
               fullWidth
               error={!!errors.newPassword}
-              helperText={errors.newPassword?.message}
+              helperText={
+                errors.newPassword?.message ??
+                'Mínimo 8 caracteres, com número e caractere especial.'
+              }
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowNew((v) => !v)} edge="end" size="small" tabIndex={-1}>
+                        {showNew ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
             <TextField
               {...register('confirmPassword')}
               label="Confirmar nova senha"
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               fullWidth
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword?.message}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowConfirm((v) => !v)} edge="end" size="small" tabIndex={-1}>
+                        {showConfirm ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
 
             <Button

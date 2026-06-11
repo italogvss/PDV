@@ -50,7 +50,8 @@
       "Bash(xargs grep -l \"UpdateProfile\\\\|ProfileDto\\\\|UserDto\")",
       "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add RemoveUnusedOperationSettings -p PDV.Infrastructure -s PDV.Api --no-build)",
       "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations remove -p PDV.Infrastructure -s PDV.Api --no-build)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "PowerShell(cd backend; $env:DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\"; dotnet ef database update -p PDV.Infrastructure -s PDV.Api)"
     ]
   }
 }

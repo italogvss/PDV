@@ -16,7 +16,6 @@ interface BackendEmployee {
   email: string
   roleId: string
   roleName: string
-  salary?: number | null
   phone?: string | null
   avatarUrl?: string | null
   isActive: boolean
@@ -31,7 +30,6 @@ function mapEmployee(e: BackendEmployee): Employee {
     email: e.email,
     roleId: e.roleId,
     roleName: e.roleName,
-    salary: e.salary ?? undefined,
     phone: e.phone ?? undefined,
     avatarUrl: e.avatarUrl ?? undefined,
     isActive: e.isActive,

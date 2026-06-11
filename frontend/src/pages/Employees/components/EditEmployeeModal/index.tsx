@@ -19,13 +19,11 @@ import { formatPhone } from '../../../../utils/masks'
 import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
-import CurrencyField from '../../../../components/CurrencyField'
 import FormModalActions from '../../../../components/FormModalActions'
 import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
   roleId: z.string().min(1, 'Selecione um papel'),
-  salary: z.number().min(0),
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
     .optional().or(z.literal('')),
@@ -49,7 +47,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     resolver: zodResolver(schema),
     defaultValues: {
       roleId: employee.roleId,
-      salary: employee.salary ?? 0,
       phone: employee.phone ?? '',
     },
   })
@@ -58,7 +55,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     if (open) {
       reset({
         roleId: employee.roleId,
-        salary: employee.salary ?? 0,
         phone: employee.phone ?? '',
       })
     }
@@ -69,7 +65,6 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
       id: employee.id,
       payload: {
         roleId: data.roleId,
-        salary: data.salary ? data.salary : undefined,
         phone: data.phone || undefined,
       },
     })
@@ -118,41 +113,22 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Salário" />
-              <Controller
-                name="salary"
-                control={control}
-                render={({ field }) => (
-                  <CurrencyField
-                    value={Number(field.value) || 0}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    fullWidth
-                    error={!!errors.salary}
-                    helperText={errors.salary?.message}
-                  />
-                )}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Telefone" />
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
-                    placeholder="(99) 99999-9999"
-                    fullWidth
-                    error={!!errors.phone}
-                    helperText={errors.phone?.message}
-                  />
-                )}
-              />
-            </Box>
+          <Box>
+            <FieldLabel label="Telefone" />
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                  placeholder="(99) 99999-9999"
+                  fullWidth
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
+                />
+              )}
+            />
           </Box>
         </Box>
       </DialogContent>
