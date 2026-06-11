@@ -1,6 +1,7 @@
 export type AccountTab =
   | 'perfil'
   | 'assinatura'
+  | 'aparencia'
   | 'pagamentos'
   | 'faturas'
   | 'negocios'

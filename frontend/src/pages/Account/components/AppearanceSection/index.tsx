@@ -133,12 +133,6 @@ export default function AppearanceSection() {
             onClick={() => setTheme('dark')}
             preview="dark"
           />
-          <ThemeCard
-            label="Automático"
-            selected={theme === 'auto'}
-            onClick={() => setTheme('auto')}
-            preview="split"
-          />
         </Box>
       </SettingCard>
 
@@ -184,39 +178,6 @@ export default function AppearanceSection() {
             )
           })}
         </Box>
-      </SettingCard>
-
-      <SettingCard title="Densidade">
-        <SettingRow label="Espaçamento das listas" sublabel="Compacto mostra mais linhas por tela">
-          <ToggleButtonGroup
-            value={density}
-            exclusive
-            onChange={(_, v) => v && setDensity(v)}
-            size="small"
-          >
-            <ToggleButton value="compact">Compacto</ToggleButton>
-            <ToggleButton value="comfortable">Confortável</ToggleButton>
-          </ToggleButtonGroup>
-        </SettingRow>
-
-        <SettingRow label="Idioma">
-          <FormControl size="small" sx={{ width: 220 }}>
-            <Select value={language} onChange={(e) => setLanguage(e.target.value)}>
-              <MenuItem value="pt-BR">Português (Brasil)</MenuItem>
-              <MenuItem value="en-US">English (US)</MenuItem>
-              <MenuItem value="es">Español</MenuItem>
-            </Select>
-          </FormControl>
-        </SettingRow>
-
-        <SettingRow label="Formato de moeda">
-          <FormControl size="small" sx={{ width: 220 }}>
-            <Select value={currencyFormat} onChange={(e) => setCurrencyFormat(e.target.value)}>
-              <MenuItem value="brl">R$ 1.234,56</MenuItem>
-              <MenuItem value="usd">$ 1,234.56</MenuItem>
-            </Select>
-          </FormControl>
-        </SettingRow>
       </SettingCard>
     </Box>
   )

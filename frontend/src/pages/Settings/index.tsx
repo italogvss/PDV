@@ -1,12 +1,11 @@
-import { HelpOutlined, type SvgIconComponent } from '@mui/icons-material'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import { BackupOutlined, FiberManualRecordOutlined, HelpOutlined, PrintOutlined, ReceiptLongOutlined, ShoppingCartOutlined, StorefrontOutlined, SyncAltOutlined, type SvgIconComponent } from '@mui/icons-material'
+import {FileDownloadOutlined, CreditCardOutlined } from '@mui/icons-material'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import { Box, Button, Typography } from '@mui/material'
 import { useState } from 'react'
 import AdvancedSection from './components/AdvancedSection'
-import AppearanceSection from './components/AppearanceSection'
+import AppearanceSection from '../Account/components/AppearanceSection'
 import BackupSection from './components/BackupSection'
 import BusinessSection from './components/BusinessSection'
 import FiscalSection from './components/FiscalSection'
@@ -24,15 +23,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'negocio', label: 'Meu Negócio', subtitle: 'Dados, endereço e horário', icon: StorefrontOutlinedIcon },
-  { id: 'operacao', label: 'Operação', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlinedIcon },
-  //{ id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlinedIcon },
-  //{ id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlinedIcon },
-  //{ id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlinedIcon },
-  { id: 'aparencia', label: 'Aparência', subtitle: 'Tema e densidade', icon: TuneOutlinedIcon },
-  //{ id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlinedIcon },
-  //{ id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlinedIcon },
-  //{ id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlinedIcon },
+  { id: 'negocio', label: 'Meu Negócio', subtitle: 'Dados, endereço e horário', icon: StorefrontOutlined },
+  { id: 'operacao', label: 'Operação', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined },
+  { id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlined },
+  { id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlined },
+  //{ id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlined },
+  { id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlined },
+  //{ id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlined },
+  { id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlined },
 ]
 
 function renderSection(tab: SettingsTab) {
@@ -67,10 +65,7 @@ export default function SettingsPage() {
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Button variant="outlined" startIcon={<HelpOutlined />} size="small">
-            Documentação
-          </Button>
-          <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />} size="small">
-            Baixar config
+            Precisa de ajuda?
           </Button>
         </Box>
       </Box>

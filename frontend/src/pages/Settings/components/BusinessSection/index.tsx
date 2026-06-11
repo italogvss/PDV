@@ -1,25 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import CheckIcon from '@mui/icons-material/Check'
+import SearchIcon from '@mui/icons-material/Search'
 import {
   Box,
   Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
   Chip,
   CircularProgress,
+  FormControl,
+  MenuItem,
+  Select,
+  TextField,
 } from '@mui/material'
-import CheckIcon from '@mui/icons-material/Check'
-import SearchIcon from '@mui/icons-material/Search'
+import { useEffect, useRef, useState } from 'react'
+import ImageUpload from '../../../../components/ImageUpload'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import ImageUpload from '../../../../components/ImageUpload'
-import { BlockOutlined } from '@mui/icons-material'
+import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
 import { useTenantSettings, useUpdateBusinessSettings } from '../../../../hooks/useTenantSettings'
-import { useUploadImage, useRemoveImage } from '../../../../hooks/useMediaUpload'
 import { useAppSelector } from '../../../../store'
-import { maskCNPJ, formatPhone, maskCEP } from '../../../../utils/masks'
 import type { BusinessAddress, BusinessSettings } from '../../../../types/settings.types'
+import { formatPhone, maskCEP, maskCNPJ } from '../../../../utils/masks'
 
 const TENANT_QUERY_KEY = ['tenant-settings'] as const
 
@@ -292,34 +291,7 @@ export default function BusinessSection() {
           </Box>
         </SettingRow>
       </SettingCard>
-      <SettingCard title="Zona de risco" subtitle="Ações irreversíveis. Tenha cuidado." danger>
-        <SettingRow
-          label="Resetar configurações"
-          sublabel="Volta tudo para o padrão. Dados de vendas não são afetados."
-        >
-          <Button
-            variant="outlined"
-            color="error"
-            sx={{ minWidth: 200 }}
-          >
-            Resetar
-          </Button>
-        </SettingRow>
 
-        <SettingRow
-          label="Encerrar estabelecimento"
-          sublabel="Cancela a assinatura e remove o acesso permanentemente"
-        >
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<BlockOutlined />}
-            sx={{ minWidth: 200 }}
-          >
-            Encerrar conta
-          </Button>
-        </SettingRow>
-      </SettingCard>
     </Box>
   )
 }

@@ -97,7 +97,7 @@ export default function SecuritySection() {
         </SettingRow>
       </SettingCard>
 
-      <SettingCard
+      {/* <SettingCard
         title="Autenticação em dois fatores (2FA)"
         subtitle="Camada extra de segurança ao entrar na conta"
         action={
@@ -132,7 +132,7 @@ export default function SecuritySection() {
             Baixar códigos
           </Button>
         </SettingRow>
-      </SettingCard>
+      </SettingCard> */}
     </Box>
   )
 }

@@ -1,31 +1,45 @@
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import { BlockOutlined } from '@mui/icons-material'
 import {
   Box,
-  Button,
-  Chip,
-  IconButton,
-  Switch,
-  TextField,
+  Button
 } from '@mui/material'
-import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 
 export default function AdvancedSection() {
-  const [secretRevealed, setSecretRevealed] = useState(false)
-  const [devMode, setDevMode] = useState(false)
-  const [auditLogs, setAuditLogs] = useState(true)
-  const [webhookUrl, setWebhookUrl] = useState('https://api.cafedaesquina.com/zelo/hook')
-
-  const publicKey = 'zlpk_live_4f23a8b1c9d77e018fa3b25d'
-  const secretKey = 'zlsk_live_••••••••••••••••a4c1'
-  const secretKeyReal = 'zlsk_live_a1b2c3d4e5f6g7h8a4c1'
-  const storeId = 'zelo:org:84021a-cafedaesquina'
-  const appVersion = 'v 4.18.2 — 12/05/2026'
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Chaves de API" subtitle="Use para integrar sistemas próprios">
+      <SettingCard title="Zona de risco" subtitle="Ações irreversíveis. Tenha cuidado." danger>
+        <SettingRow
+          label="Resetar configurações"
+          sublabel="Volta tudo para o padrão. Dados de vendas não são afetados."
+        >
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{ minWidth: 200 }}
+          >
+            Resetar
+          </Button>
+        </SettingRow>
+
+        <SettingRow
+          label="Encerrar estabelecimento"
+          sublabel="Cancela a assinatura e remove o acesso permanentemente"
+        >
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<BlockOutlined />}
+            sx={{ minWidth: 200 }}
+          >
+            Encerrar conta
+          </Button>
+        </SettingRow>
+      </SettingCard>
+
+      {/* <SettingCard title="Chaves de API" subtitle="Use para integrar sistemas próprios">
         <SettingRow label="Chave pública" sublabel="Pode ser exposta no navegador">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <TextField
@@ -120,9 +134,7 @@ export default function AdvancedSection() {
             sx={{ bgcolor: 'surface.raised', color: 'text.secondary', fontWeight: 500 }}
           />
         </SettingRow>
-      </SettingCard>
-
-
+      </SettingCard> */}
     </Box>
   )
 }

@@ -11,27 +11,23 @@ interface NotificationEvent {
   id: string
   label: string
   sublabel: string
-  email: boolean
-  push: boolean
   inApp: boolean
-  emailOnly?: boolean
 }
 
 const EVENTS: NotificationEvent[] = [
-  { id: 'new_sales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado', email: false, push: true, inApp: true },
-  { id: 'stock_alerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', email: true, push: true, inApp: true },
-  { id: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças', email: true, push: false, inApp: true },
-  { id: 'team_activity', label: 'Atividade da equipe', sublabel: 'Funcionários batem ponto, fechamento de caixa', email: false, push: false, inApp: true },
-  { id: 'updates', label: 'Novidades e dicas', sublabel: 'Receber atualizações de produto e tutoriais', email: false, push: false, inApp: false, emailOnly: true },
+  { id: 'new_sales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado', inApp: true },
+  { id: 'stock_alerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', inApp: true },
+  { id: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças', inApp: true },
+  { id: 'team_activity', label: 'Atividade da equipe', sublabel: 'Funcionários batem ponto, fechamento de caixa', inApp: true },
 ]
 
 export default function NotificationsSection() {
-  const [prefs, setPrefs] = useState<Record<string, { email: boolean; push: boolean; inApp: boolean }>>(
-    Object.fromEntries(EVENTS.map((e) => [e.id, { email: e.email, push: e.push, inApp: e.inApp }]))
+  const [prefs, setPrefs] = useState<Record<string, { inApp: boolean }>>(
+    Object.fromEntries(EVENTS.map((e) => [e.id, { inApp: e.inApp }]))
   )
 
-  const toggle = (id: string, channel: 'email' | 'push' | 'inApp') => {
-    setPrefs((prev) => ({ ...prev, [id]: { ...prev[id], [channel]: !prev[id][channel] } }))
+  const toggle = (id: string) => {
+    setPrefs((prev) => ({ ...prev, [id]: { inApp: !prev[id].inApp } }))
   }
 
   return (
@@ -50,7 +46,7 @@ export default function NotificationsSection() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr 100px 100px 100px',
+          gridTemplateColumns: '1fr 100px',
           px: 4,
           py: 1.5,
           bgcolor: 'surface.sunken',
@@ -61,15 +57,12 @@ export default function NotificationsSection() {
         <Typography variant="overline" sx={{ fontSize: 11, fontWeight: 700, color: 'text.tertiary', letterSpacing: '0.06em' }}>
           EVENTO
         </Typography>
-        {['E-MAIL', 'PUSH', 'NO APP'].map((col) => (
-          <Typography
-            key={col}
-            variant="overline"
-            sx={{ fontSize: 11, fontWeight: 700, color: 'text.tertiary', letterSpacing: '0.06em', textAlign: 'center' }}
-          >
-            {col}
-          </Typography>
-        ))}
+        <Typography
+          variant="overline"
+          sx={{ fontSize: 11, fontWeight: 700, color: 'text.tertiary', letterSpacing: '0.06em', textAlign: 'center' }}
+        >
+          NO APP
+        </Typography>
       </Box>
 
       {EVENTS.map((event, idx) => (
@@ -77,7 +70,7 @@ export default function NotificationsSection() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '1fr 100px 100px 100px',
+              gridTemplateColumns: '1fr 100px',
               alignItems: 'center',
               px: 4,
               py: 2.5,
@@ -92,57 +85,13 @@ export default function NotificationsSection() {
               </Typography>
             </Box>
 
-            {event.emailOnly ? (
-              /* Last row "Novidades e dicas" has inline label+switch pairs */
-              <>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25 }}>
-                  <Typography variant="caption" color="text.secondary">E-mail</Typography>
-                  <Switch
-                    checked={prefs[event.id].email}
-                    onChange={() => toggle(event.id, 'email')}
-                    color="secondary"
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25 }}>
-                  <Typography variant="caption" color="text.secondary">Push</Typography>
-                  <Switch
-                    checked={prefs[event.id].push}
-                    onChange={() => toggle(event.id, 'push')}
-                    color="secondary"
-                    size="small"
-                  />
-                </Box>
-                <Box />
-              </>
-            ) : (
-              <>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Switch
-                    checked={prefs[event.id].email}
-                    onChange={() => toggle(event.id, 'email')}
-                    color="secondary"
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Switch
-                    checked={prefs[event.id].push}
-                    onChange={() => toggle(event.id, 'push')}
-                    color="secondary"
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Switch
-                    checked={prefs[event.id].inApp}
-                    onChange={() => toggle(event.id, 'inApp')}
-                    color="secondary"
-                    size="small"
-                  />
-                </Box>
-              </>
-            )}
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Switch
+                checked={prefs[event.id].inApp}
+                onChange={() => toggle(event.id)}
+                color="secondary"
+              />
+            </Box>
           </Box>
           {idx < EVENTS.length - 1 && <Divider />}
         </Box>

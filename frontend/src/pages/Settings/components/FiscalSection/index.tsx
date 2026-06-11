@@ -1,98 +1,93 @@
-import { useState } from 'react'
+import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined'
 import {
   Box,
-  Typography,
-  Switch,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
+  Typography
 } from '@mui/material'
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import SettingCard from '../../../../components/SettingCard'
-import SettingRow from '../../../../components/SettingRow'
 
-function StatusCard({
-  variant,
-  label,
-  value,
-  detail,
-  warning,
-}: {
-  variant: 'success' | 'neutral' | 'warn'
-  label: string
-  value: string
-  detail: string
-  warning?: string
-}) {
-  const colors = {
-    success: { bg: 'success.soft', labelColor: 'success.ink', border: 'transparent' },
-    neutral: { bg: 'background.paper', labelColor: 'text.tertiary', border: 'border.subtle' },
-    warn: { bg: 'background.paper', labelColor: 'text.tertiary', border: 'border.subtle' },
-  }
+// function StatusCard({
+//   variant,
+//   label,
+//   value,
+//   detail,
+//   warning,
+// }: {
+//   variant: 'success' | 'neutral' | 'warn'
+//   label: string
+//   value: string
+//   detail: string
+//   warning?: string
+// }) {
+//   const colors = {
+//     success: { bg: 'success.soft', labelColor: 'success.ink', border: 'transparent' },
+//     neutral: { bg: 'background.paper', labelColor: 'text.tertiary', border: 'border.subtle' },
+//     warn: { bg: 'background.paper', labelColor: 'text.tertiary', border: 'border.subtle' },
+//   }
 
-  const c = colors[variant]
+//   const c = colors[variant]
 
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        p: 3,
-        borderRadius: 2,
-        bgcolor: c.bg,
-        border: 1,
-        borderColor: c.border,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        {variant === 'success' && (
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              bgcolor: 'success.main',
-              flexShrink: 0,
-            }}
-          />
-        )}
-        <Typography
-          variant="overline"
-          sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: c.labelColor }}
-        >
-          {label}
-        </Typography>
-      </Box>
-      <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700, mb: 0.5 }}>
-        {value}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {detail}
-      </Typography>
-      {warning && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-          <WarningAmberOutlinedIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-          <Typography variant="caption" color="warning.main" sx={{ fontWeight: 500 }}>
-            {warning}
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  )
-}
+//   return (
+//     <Box
+//       sx={{
+//         flex: 1,
+//         p: 3,
+//         borderRadius: 2,
+//         bgcolor: c.bg,
+//         border: 1,
+//         borderColor: c.border,
+//       }}
+//     >
+//       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+//         {variant === 'success' && (
+//           <Box
+//             sx={{
+//               width: 8,
+//               height: 8,
+//               borderRadius: '50%',
+//               bgcolor: 'success.main',
+//               flexShrink: 0,
+//             }}
+//           />
+//         )}
+//         <Typography
+//           variant="overline"
+//           sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: c.labelColor }}
+//         >
+//           {label}
+//         </Typography>
+//       </Box>
+//       <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700, mb: 0.5 }}>
+//         {value}
+//       </Typography>
+//       <Typography variant="caption" color="text.secondary">
+//         {detail}
+//       </Typography>
+//       {warning && (
+//         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+//           <WarningAmberOutlinedIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+//           <Typography variant="caption" color="warning.main" sx={{ fontWeight: 500 }}>
+//             {warning}
+//           </Typography>
+//         </Box>
+//       )}
+//     </Box>
+//   )
+// }
 
 export default function FiscalSection() {
-  const [taxRegime, setTaxRegime] = useState('simples')
-  const [cfop, setCfop] = useState('5102')
-  const [csosn, setCsosn] = useState('102')
-  const [serie, setSerie] = useState('001')
-  const [nextNumber, setNextNumber] = useState('0000012845')
-  const [autoEmit, setAutoEmit] = useState(true)
-  const [offlineContingency, setOfflineContingency] = useState(false)
+
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Status SEFAZ" subtitle="Conexão com a Secretaria da Fazenda">
+      <SettingCard title="Implementação Futura" subtitle="Está pagina esta em construção e ficara disponível em breve.">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 500 }}>
+          <ConstructionOutlinedIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+          <Typography variant="body2" color="text.disabled">
+            Esta seção estará disponível em breve
+          </Typography>
+        </Box>
+      </SettingCard>
+      {/* <SettingCard title="Status SEFAZ" subtitle="Conexão com a Secretaria da Fazenda">
         <Box sx={{ display: 'flex', gap: 2, p: 3 }}>
           <StatusCard
             variant="success"
@@ -181,7 +176,7 @@ export default function FiscalSection() {
             color="secondary"
           />
         </SettingRow>
-      </SettingCard>
+      </SettingCard> */}
     </Box>
   )
 }

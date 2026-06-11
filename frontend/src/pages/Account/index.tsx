@@ -17,7 +17,9 @@ import ProfileSection from './components/ProfileSection'
 import SecuritySection from './components/SecuritySection'
 import SessionsSection from './components/SessionsSection'
 import SubscriptionSection from './components/SubscriptionSection'
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import type { AccountTab } from './types'
+import AppearanceSection from './components/AppearanceSection'
 
 interface NavItem {
   id: AccountTab
@@ -27,6 +29,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineOutlined },
+  { id: 'aparencia', label: 'Aparência', icon: TuneOutlinedIcon },
   { id: 'assinatura', label: 'Assinatura', icon: WorkspacePremiumOutlinedIcon },
   //{ id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
   //{ id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
@@ -39,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
 
 function renderSection(tab: AccountTab) {
   switch (tab) {
+    case 'aparencia': return <AppearanceSection/>
     case 'perfil': return <ProfileSection />
     case 'assinatura': return <SubscriptionSection />
     case 'pagamentos': return <BillingPaymentsSection />

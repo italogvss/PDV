@@ -1,20 +1,16 @@
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import CheckIcon from '@mui/icons-material/Check'
 import CreditCardIcon from '@mui/icons-material/CreditCard'
 import PixIcon from '@mui/icons-material/Pix'
 import {
   Box,
-  Chip,
-  FormControl,
-  MenuItem,
-  Select,
+  InputAdornment,
   Switch,
   TextField,
   Typography
 } from '@mui/material'
 import { useState } from 'react'
+import FieldLabel from '../../../../components/FieldLabel'
 import SettingCard from '../../../../components/SettingCard'
-import SettingRow from '../../../../components/SettingRow'
 
 interface PaymentMethod {
   id: string
@@ -41,11 +37,35 @@ export default function PaymentsSection() {
     voucher: false,
     payment_link: false,
   })
-  const [pixKeyType, setPixKeyType] = useState('cnpj')
-  const [pixKey, setPixKey] = useState('12.345.678/0001-90')
+
+  const [methodFees, setMethodFees] = useState<Record<string, string>>({
+    pix: '',
+    card_credit: '',
+    card_debit: '',
+    cash: '',
+  })
 
   const toggleMethod = (id: string) => {
     setEnabledMethods((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const handleFeeChange = (id: string, value: string) => {
+    // Remove tudo que não é número ou vírgula/ponto
+    let normalized = value.replace(/[^\d.,]/g, '')
+    // Converte vírgula para ponto para processamento
+    normalized = normalized.replace(',', '.')
+    // Valida decimal - máx 2 casas
+    const parts = normalized.split('.')
+    if (parts.length > 2) return
+    if (parts[1] && parts[1].length > 2) return
+    setMethodFees((prev) => ({ ...prev, [id]: normalized }))
+  }
+
+  const formatFeeDisplay = (value: string) => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return ''
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   return (
@@ -68,44 +88,66 @@ export default function PaymentsSection() {
                   borderColor: enabled ? 'success.soft' : 'border.subtle',
                   bgcolor: enabled ? 'success.soft' : 'transparent',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  cursor: 'pointer',
+                  flexDirection: 'column',
+                  gap: 2,
                   transition: 'all 0.15s',
                 }}
-                onClick={() => toggleMethod(method.id)}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Icon
-                    sx={{
-                      fontSize: 20,
-                      color: enabled ? 'success.main' : 'text.tertiary',
-                    }}
-                  />
-                  <Box>
-                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
-                      {method.label}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {method.subtitle}
-                    </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => toggleMethod(method.id)}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Icon
+                      sx={{
+                        fontSize: 20,
+                        color: enabled ? 'success.main' : 'text.tertiary',
+                      }}
+                    />
+                    <Box>
+                      <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
+                        {method.label}
+                      </Typography>
+                    </Box>
                   </Box>
+                  <Switch
+                    checked={enabled}
+                    onChange={() => toggleMethod(method.id)}
+                    color="secondary"
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </Box>
-                <Switch
-                  checked={enabled}
-                  onChange={() => toggleMethod(method.id)}
-                  color="secondary"
-                  size="small"
-                  onClick={(e) => e.stopPropagation()}
-                />
+
+                {enabled && (
+                  <>
+                    <FieldLabel label="Taxa por venda" />
+                    <TextField
+                      type="text"
+                      placeholder="0,00"
+                      value={formatFeeDisplay(methodFees[method.id] || '')}
+                      onChange={(e) => handleFeeChange(method.id, e.target.value)}
+                      slotProps={{
+                        input: {
+                          endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                        },
+                      }}
+                      sx={{maxWidth: 100}}
+                    />
+                  </>
+                )}
               </Box>
             )
           })}
         </Box>
       </SettingCard>
 
-      <SettingCard
+      {/* <SettingCard
         title="Conta para recebimentos Pix"
         subtitle="Chave usada na geração dos QR Codes"
       >
@@ -142,7 +184,7 @@ export default function PaymentsSection() {
             />
           </Box>
         </SettingRow>
-      </SettingCard>
+      </SettingCard> */}
     </Box>
   )
 }
