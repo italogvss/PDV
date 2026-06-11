@@ -50,13 +50,15 @@ public class UserService(
 
         user.Name = request.Name;
         user.Phone = request.Phone;
+        user.Document = request.Document;
+        user.BirthDate = request.BirthDate;
         user.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
         return await ToResponse(user);
     }
 
     private async Task<UserResponse> ToResponse(PDV.Domain.Entities.User u) =>
-        new(u.Id, u.Name, u.Email, u.Phone,
+        new(u.Id, u.Name, u.Email, u.Phone, u.Document, u.BirthDate,
             await storage.ResolveReadUrlAsync(u.ImageUrl, MediaCategory.Profile, u.UpdatedAt),
             u.CreatedAt);
 }

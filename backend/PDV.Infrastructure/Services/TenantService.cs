@@ -139,14 +139,8 @@ public class TenantService(
         var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
             ?? throw new NotFoundException("Configurações do tenant não encontradas.");
 
-        settings.AutoOpen              = request.AutoOpen;
-        settings.RequireOperator       = request.RequireOperator;
-        settings.CashFundAmount        = request.CashFundAmount;
-        settings.InactivityLockMinutes = request.InactivityLockMinutes;
         settings.AllowDiscounts        = request.AllowDiscounts;
         settings.DiscountLimitPercent  = request.DiscountLimitPercent;
-        settings.RequireManagerCancel  = request.RequireManagerCancel;
-        settings.BarcodeReader         = request.BarcodeReader;
 
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
@@ -197,14 +191,8 @@ public class TenantService(
                     ? null
                     : JsonSerializer.Deserialize<Dictionary<string, BusinessHoursDayDto>>(s.BusinessHoursJson, JsonOptions)),
             new OperationSettingsDto(
-                s.AutoOpen,
-                s.RequireOperator,
-                s.CashFundAmount,
-                s.InactivityLockMinutes,
                 s.AllowDiscounts,
-                s.DiscountLimitPercent,
-                s.RequireManagerCancel,
-                s.BarcodeReader),
+                s.DiscountLimitPercent),
             new PaymentsSettingsDto(
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),
                 new PaymentMethodDto(s.PaymentCardCreditEnabled, s.PaymentCardCreditFee),

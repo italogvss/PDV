@@ -7,6 +7,8 @@ public record MeResponse(
     string Name,
     string Email,
     string? Phone,
+    string? Document,
+    DateOnly? BirthDate,
     string? AvatarUrl,
     Guid? LastTenantId,
     string Role,

@@ -176,8 +176,8 @@ public class AuthService(
 
         var imageUrl = await storage.ResolveReadUrlAsync(user.ImageUrl, MediaCategory.Profile, user.UpdatedAt);
 
-        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, imageUrl, user.LastTenantId,
-            user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
+        return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.Document, user.BirthDate,
+            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)

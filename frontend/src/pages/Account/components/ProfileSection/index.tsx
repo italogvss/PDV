@@ -15,7 +15,7 @@ import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { useAppSelector } from '../../../../store'
 import { useUpdateUser } from '../../../../hooks/useUser'
-import { formatPhone, maskCPF } from '../../../../utils/masks'
+import { formatPhone, maskDocument } from '../../../../utils/masks'
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -25,22 +25,24 @@ function getInitials(name: string): string {
 }
 
 export default function ProfileSection() {
-  const { userId, name: authName, email, phone: authPhone, role: roletype } = useAppSelector((s) => s.auth)
+  const { userId, name: authName, email, phone: authPhone, document: authDocument, birthDate: authBirthDate, role: roletype } = useAppSelector((s) => s.auth)
   const updateUser = useUpdateUser()
 
   const [name, setName] = useState(authName ?? '')
   const [phone, setPhone] = useState(formatPhone(authPhone ?? ''))
-  const [cpf] = useState(maskCPF('12345678900'))
-  const [role] = useState('Proprietário')
-  // const [language, setLanguage] = useState('pt-BR')
+  const [document, setDocument] = useState(maskDocument(authDocument ?? ''))
+  const [birthDate, setBirthDate] = useState(authBirthDate ?? '')
+  const [role] = useState(roletype === "Owner" ? "Proprietário" : "Funcionário")
   const [hasChanges, setHasChanges] = useState(false)
 
   // Sincroniza o formulário com a sessão (carga inicial e após salvar).
   useEffect(() => {
     setName(authName ?? '')
     setPhone(formatPhone(authPhone ?? ''))
+    setDocument(maskDocument(authDocument ?? ''))
+    setBirthDate(authBirthDate ?? '')
     setHasChanges(false)
-  }, [authName, authPhone])
+  }, [authName, authPhone, authDocument, authBirthDate])
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value)
@@ -52,17 +54,35 @@ export default function ProfileSection() {
     setHasChanges(true)
   }
 
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDocument(maskDocument(e.target.value))
+    setHasChanges(true)
+  }
+
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBirthDate(e.target.value)
+    setHasChanges(true)
+  }
+
   const handleCancel = () => {
     setName(authName ?? '')
     setPhone(formatPhone(authPhone ?? ''))
+    setDocument(maskDocument(authDocument ?? ''))
+    setBirthDate(authBirthDate ?? '')
     setHasChanges(false)
   }
 
   const handleSave = () => {
     if (!userId) return
+    const rawDocument = document.replace(/\D/g, '') || null
     updateUser.mutate({
       id: userId,
-      payload: { name: name.trim(), phone: phone.trim() || null },
+      payload: {
+        name: name.trim(),
+        phone: phone.trim() || null,
+        document: rawDocument,
+        birthDate: birthDate || null,
+      },
     })
   }
 
@@ -183,12 +203,24 @@ export default function ProfileSection() {
           />
         </SettingRow>
 
-        <SettingRow label="CPF">
+        <SettingRow label="CPF / CNPJ">
           <TextField
             size="small"
-            value={cpf}
-            disabled
+            value={document}
+            onChange={handleDocumentChange}
+            placeholder="000.000.000-00"
             sx={{ width: 340 }}
+          />
+        </SettingRow>
+
+        <SettingRow label="Data de nascimento">
+          <TextField
+            size="small"
+            type="date"
+            value={birthDate}
+            onChange={handleBirthDateChange}
+            sx={{ width: 340 }}
+            slotProps={{ htmlInput: { max: new Date().toISOString().split('T')[0] } }}
           />
         </SettingRow>
 

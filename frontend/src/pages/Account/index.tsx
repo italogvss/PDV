@@ -10,12 +10,9 @@ import { useAppDispatch } from '../../store'
 import { clearAuth } from '../../store/slices/auth.slice'
 import BillingPaymentsSection from './components/BillingPaymentsSection'
 import BusinessesSection from './components/BusinessesSection'
-import IntegrationsSection from './components/IntegrationsSection'
-import InvoicesSection from './components/InvoicesSection'
 import NotificationsSection from './components/NotificationsSection'
 import ProfileSection from './components/ProfileSection'
 import SecuritySection from './components/SecuritySection'
-import SessionsSection from './components/SessionsSection'
 import SubscriptionSection from './components/SubscriptionSection'
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import type { AccountTab } from './types'
@@ -31,13 +28,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'perfil', label: 'Meu perfil', icon: PersonOutlineOutlined },
   { id: 'aparencia', label: 'Aparência', icon: TuneOutlinedIcon },
   { id: 'assinatura', label: 'Assinatura', icon: WorkspacePremiumOutlinedIcon },
-  //{ id: 'pagamentos', label: 'Pagamentos', icon: CreditCardOutlinedIcon },
-  //{ id: 'faturas', label: 'Faturas', icon: DescriptionOutlinedIcon },
   { id: 'negocios', label: 'Meus negócios', icon: StorefrontOutlinedIcon },
   { id: 'seguranca', label: 'Segurança', icon: SecurityOutlinedIcon },
   { id: 'notificacoes', label: 'Notificações', icon: NotificationsNoneOutlinedIcon },
-  //{ id: 'sessoes', label: 'Sessões', icon: VisibilityOutlinedIcon },
-  //{ id: 'integracoes', label: 'Integrações', icon: SyncAltOutlinedIcon },
 ]
 
 function renderSection(tab: AccountTab) {
@@ -46,12 +39,9 @@ function renderSection(tab: AccountTab) {
     case 'perfil': return <ProfileSection />
     case 'assinatura': return <SubscriptionSection />
     case 'pagamentos': return <BillingPaymentsSection />
-    case 'faturas': return <InvoicesSection />
     case 'negocios': return <BusinessesSection />
     case 'seguranca': return <SecuritySection />
     case 'notificacoes': return <NotificationsSection />
-    case 'sessoes': return <SessionsSection />
-    case 'integracoes': return <IntegrationsSection />
   }
 }
 

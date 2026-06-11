@@ -10,6 +10,8 @@ export interface AuthState {
   name: string | null
   email: string | null
   phone: string | null
+  document: string | null
+  birthDate: string | null
   avatarUrl: string | null
   isAuthenticated: boolean
   isLoading: boolean
@@ -25,6 +27,8 @@ const initialState: AuthState = {
   name: null,
   email: null,
   phone: null,
+  document: null,
+  birthDate: null,
   avatarUrl: null,
   isAuthenticated: false,
   isLoading: true,
@@ -45,6 +49,8 @@ export const authSlice = createSlice({
       name: action.payload.name,
       email: action.payload.email,
       phone: action.payload.phone,
+      document: action.payload.document,
+      birthDate: action.payload.birthDate,
       avatarUrl: action.payload.avatarUrl,
       isAuthenticated: true,
       isLoading: false,
@@ -59,6 +65,8 @@ export const authSlice = createSlice({
       name: null,
       email: null,
       phone: null,
+      document: null,
+      birthDate: null,
       avatarUrl: null,
       isAuthenticated: false,
       isLoading: false,
@@ -66,10 +74,12 @@ export const authSlice = createSlice({
       tenants: [],
       permissions: [],
     }),
-    setProfile: (state, action: PayloadAction<{ name: string; phone: string | null }>) => ({
+    setProfile: (state, action: PayloadAction<{ name: string; phone: string | null; document: string | null; birthDate: string | null }>) => ({
       ...state,
       name: action.payload.name,
       phone: action.payload.phone,
+      document: action.payload.document,
+      birthDate: action.payload.birthDate,
     }),
     setLoading: (state, action: PayloadAction<boolean>) => ({
       ...state,

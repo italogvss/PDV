@@ -30,14 +30,8 @@ public record SettingsAddressDto(
 
 // Seção "Operação / PDV" — também é o corpo do PUT /api/tenants/settings/operation.
 public record OperationSettingsDto(
-    bool AutoOpen,
-    bool RequireOperator,
-    decimal CashFundAmount,
-    int InactivityLockMinutes,
     bool AllowDiscounts,
-    decimal DiscountLimitPercent,
-    bool RequireManagerCancel,
-    bool BarcodeReader);
+    decimal DiscountLimitPercent);
 
 // Seção "Pagamentos" — também é o corpo do PUT /api/tenants/settings/payments.
 public record PaymentMethodDto(bool Enabled, decimal Fee);

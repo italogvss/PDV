@@ -10,6 +10,8 @@ export interface AuthUser {
   name: string
   email: string
   phone: string | null
+  document: string | null
+  birthDate: string | null
   avatarUrl: string | null
   role: UserRole
   settings: UserSettingsDTO | null

@@ -30,14 +30,8 @@ public class TenantSettings : BaseEntity
     public string TaxRegime { get; set; } = "simples";
 
     // Operação / PDV
-    public bool AutoOpen { get; set; }
-    public bool RequireOperator { get; set; }
-    public decimal CashFundAmount { get; set; }
-    public int InactivityLockMinutes { get; set; }
     public bool AllowDiscounts { get; set; } = true;
     public decimal DiscountLimitPercent { get; set; }
-    public bool RequireManagerCancel { get; set; } = true;
-    public bool BarcodeReader { get; set; } = true;
 
     // Pagamentos — métodos aceitos e taxa por venda (%)
     public bool PaymentPixEnabled { get; set; } = true;

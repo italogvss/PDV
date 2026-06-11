@@ -8,6 +8,8 @@ interface MeApiResponse {
   name: string
   email: string
   phone: string | null
+  document: string | null
+  birthDate: string | null
   avatarUrl: string | null
   lastTenantId: string | null
   role: UserRole
@@ -26,6 +28,8 @@ export const authService = {
       name: data.name,
       email: data.email,
       phone: data.phone,
+      document: data.document,
+      birthDate: data.birthDate,
       avatarUrl: data.avatarUrl,
       role: data.role ?? 'Owner',
       settings: data.settings ? { theme: data.settings.theme } : null,

@@ -14,7 +14,12 @@ export function useUpdateUser() {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
       userService.update(id, payload),
     onSuccess: (user) => {
-      dispatch(setProfile({ name: user.name, phone: user.phone ?? null }))
+      dispatch(setProfile({
+        name: user.name,
+        phone: user.phone ?? null,
+        document: user.document ?? null,
+        birthDate: user.birthDate ?? null,
+      }))
       showToast('Perfil atualizado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao atualizar perfil.'),

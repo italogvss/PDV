@@ -14,10 +14,8 @@ export type SettingsTab =
   | 'operacao'
   | 'pagamentos'
   | 'fiscal'
-  | 'impressao'
   | 'aparencia'
   | 'backup'
-  | 'integracoes'
   | 'avancado'
 
   // Payment Section

@@ -17,6 +17,7 @@ import SettingRow from '../../../../components/SettingRow'
 import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
 import { useTenantSettings, useUpdateBusinessSettings } from '../../../../hooks/useTenantSettings'
 import { useAppSelector } from '../../../../store'
+import { viacepService } from '../../../../services/viacep.service'
 import type { BusinessAddress, BusinessSettings } from '../../../../types/settings.types'
 import { formatPhone, maskCEP, maskCNPJ } from '../../../../utils/masks'
 
@@ -28,6 +29,8 @@ export default function BusinessSection() {
   const { tenantId } = useAppSelector((s) => s.auth)
   const [form, setForm] = useState<BusinessSettings | null>(null)
   const initialized = useRef(false)
+  const [cepLoading, setCepLoading] = useState(false)
+  const [cepError, setCepError] = useState('')
 
   const uploadLogo = useUploadImage('Tenant', TENANT_QUERY_KEY)
   const removeLogo = useRemoveImage('Tenant', TENANT_QUERY_KEY)
@@ -96,6 +99,25 @@ export default function BusinessSection() {
       phone: formatPhone(data.business.phone),
       address: { ...data.business.address, cep: maskCEP(data.business.address.cep) },
     })
+  }
+
+  const handleCepSearch = async () => {
+    if (!form) return
+    setCepLoading(true)
+    setCepError('')
+    try {
+      const address = await viacepService.lookup(form.address.cep)
+      setAddress({
+        street: address.street,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.stateCode,
+      })
+    } catch (err) {
+      setCepError(err instanceof Error ? err.message : 'Erro ao buscar CEP.')
+    } finally {
+      setCepLoading(false)
+    }
   }
 
   const handleLogoUpload = (file: File) => {
@@ -222,21 +244,34 @@ export default function BusinessSection() {
 
       <SettingCard title="Endereço">
         <SettingRow label="CEP">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
             <TextField
               size="small"
               value={form.address.cep}
-              onChange={(e) => setAddress({ cep: maskCEP(e.target.value) })}
+              onChange={(e) => {
+                setCepError('')
+                setAddress({ cep: maskCEP(e.target.value) })
+              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCepSearch() }}
               placeholder="00000-000"
+              error={!!cepError}
+              helperText={cepError || ' '}
               sx={{ width: 140 }}
             />
-            <Button variant="outlined" size="small" startIcon={<SearchIcon />}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={cepLoading ? <CircularProgress size={14} /> : <SearchIcon />}
+              onClick={handleCepSearch}
+              disabled={cepLoading}
+              sx={{ mt: '4px' }}
+            >
               Buscar
             </Button>
           </Box>
         </SettingRow>
 
-        <SettingRow label="Rua">
+        <SettingRow label="Logradouro">
           <TextField
             size="small"
             value={form.address.street}

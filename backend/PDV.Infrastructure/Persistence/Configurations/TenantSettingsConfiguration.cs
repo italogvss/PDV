@@ -27,7 +27,6 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
         builder.Property(ts => ts.BusinessHoursJson).HasColumnType("longtext");
         builder.Property(ts => ts.TaxRegime).IsRequired().HasMaxLength(20).HasDefaultValue("simples");
 
-        builder.Property(ts => ts.CashFundAmount).HasColumnType("decimal(10,2)");
         builder.Property(ts => ts.DiscountLimitPercent).HasColumnType("decimal(5,2)");
 
         builder.Property(ts => ts.PaymentPixEnabled).HasDefaultValue(true);

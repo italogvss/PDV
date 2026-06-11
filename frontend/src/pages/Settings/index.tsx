@@ -1,18 +1,13 @@
-import { BackupOutlined, FiberManualRecordOutlined, HelpOutlined, PrintOutlined, ReceiptLongOutlined, ShoppingCartOutlined, StorefrontOutlined, SyncAltOutlined, type SvgIconComponent } from '@mui/icons-material'
-import {FileDownloadOutlined, CreditCardOutlined } from '@mui/icons-material'
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
-import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import { BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, ReceiptLongOutlined, ShoppingCartOutlined, StorefrontOutlined, type SvgIconComponent } from '@mui/icons-material'
 import { Box, Button, Typography } from '@mui/material'
 import { useState } from 'react'
-import AdvancedSection from './components/AdvancedSection'
 import AppearanceSection from '../Account/components/AppearanceSection'
+import AdvancedSection from './components/AdvancedSection'
 import BackupSection from './components/BackupSection'
 import BusinessSection from './components/BusinessSection'
 import FiscalSection from './components/FiscalSection'
-import IntegrationsSection from './components/IntegrationsSection'
 import OperationSection from './components/OperationSection'
 import PaymentsSection from './components/PaymentsSection'
-import PrintingSection from './components/PrintingSection'
 import { type SettingsTab } from './types'
 
 interface NavItem {
@@ -27,9 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'operacao', label: 'Operação', subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined },
   { id: 'pagamentos', label: 'Pagamentos', subtitle: 'Maquininhas e métodos', icon: CreditCardOutlined },
   { id: 'fiscal', label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ', icon: ReceiptLongOutlined },
-  //{ id: 'impressao', label: 'Impressão', subtitle: 'Recibos e cupons', icon: PrintOutlined },
   { id: 'backup', label: 'Backup & dados', subtitle: 'Exportação e retenção', icon: BackupOutlined },
-  //{ id: 'integracoes', label: 'Integrações', subtitle: 'Conectar serviços externos', icon: SyncAltOutlined },
   { id: 'avancado', label: 'Avançado', subtitle: 'Desenvolvedor e API', icon: FiberManualRecordOutlined },
 ]
 
@@ -39,10 +32,8 @@ function renderSection(tab: SettingsTab) {
     case 'operacao': return <OperationSection />
     case 'pagamentos': return <PaymentsSection />
     case 'fiscal': return <FiscalSection />
-    case 'impressao': return <PrintingSection />
     case 'aparencia': return <AppearanceSection />
     case 'backup': return <BackupSection />
-    case 'integracoes': return <IntegrationsSection />
     case 'avancado': return <AdvancedSection />
   }
 }

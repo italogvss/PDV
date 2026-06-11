@@ -5,5 +5,7 @@ public record UserResponse(
     string Name,
     string Email,
     string? Phone,
+    string? Document,
+    DateOnly? BirthDate,
     string? ImageUrl,
     DateTime CreatedAt);

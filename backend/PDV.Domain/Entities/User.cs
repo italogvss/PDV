@@ -8,6 +8,9 @@ public class User : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Phone { get; set; }
     public string? ImageUrl { get; set; }
+
+    public string? Document { get; set; }
+    public DateOnly? BirthDate { get; set; }
     public Guid? LastTenantId { get; set; }
     public Tenant? LastTenant { get; set; }
     public UserRole Role { get; set; }

@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import type { CreateTenantFormData, FormErrors } from '../types'
+import { viacepService } from '../../../services/viacep.service'
 import { maskCEP } from '../../../utils/masks'
 
 interface StepEnderecoProps {
@@ -27,41 +28,23 @@ const STATES = [
 ]
 
 
-interface ViaCepResponse {
-  logradouro: string
-  bairro: string
-  localidade: string
-  uf: string
-  erro?: boolean
-}
-
 export default function StepEndereco({ data, onChange, errors }: StepEnderecoProps) {
   const [searching, setSearching] = useState(false)
   const [cepError, setCepError] = useState('')
 
   async function handleCepSearch() {
-    const digits = data.cep.replace(/\D/g, '')
-    if (digits.length !== 8) {
-      setCepError('CEP deve ter 8 dígitos')
-      return
-    }
     setCepError('')
     setSearching(true)
     try {
-      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
-      const json = (await res.json()) as ViaCepResponse
-      if (json.erro) {
-        setCepError('CEP não encontrado')
-        return
-      }
+      const address = await viacepService.lookup(data.cep)
       onChange({
-        street:       json.logradouro,
-        neighborhood: json.bairro,
-        city:         json.localidade,
-        state:        json.uf,
+        street: address.street,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.stateCode,
       })
-    } catch {
-      setCepError('Erro ao buscar CEP. Tente novamente.')
+    } catch (err) {
+      setCepError(err instanceof Error ? err.message : 'Erro ao buscar CEP. Tente novamente.')
     } finally {
       setSearching(false)
     }
