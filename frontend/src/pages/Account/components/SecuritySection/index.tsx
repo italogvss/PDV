@@ -5,11 +5,14 @@ import {
   Button,
   IconButton,
   InputAdornment,
-  TextField
+  TextField,
+  Typography
 } from '@mui/material'
 import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import { useAppSelector } from '../../../../store'
+import { Google } from '@mui/icons-material'
 
 export default function SecuritySection() {
   const [showCurrent, setShowCurrent] = useState(false)
@@ -18,10 +21,20 @@ export default function SecuritySection() {
   const [currentPassword, setCurrentPassword] = useState('••••••••')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const { role } = useAppSelector((s) => s.auth)
+  const [isOwner] = useState(role === "Owner")
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Senha" subtitle="Recomendamos trocar a cada 6 meses">
+      <SettingCard title="Alterar senha" subtitle={isOwner ? "" : "Recomendamos trocar a cada 6 meses"}>
+        {isOwner ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 300 }}>
+          <Google sx={{ fontSize: 48, color: 'text.disabled' }} />
+          <Typography variant="body2" color="text.disabled">
+            Você fez login com o Google, não é possível alterar a senha por enquanto.
+          </Typography>
+        </Box>) : (
+          <>
         <SettingRow label="Senha atual">
           <TextField
             size="small"
@@ -93,6 +106,8 @@ export default function SecuritySection() {
             </Button>
           </Box>
         </SettingRow>
+        </>
+        )}
       </SettingCard>
 
       {/* <SettingCard

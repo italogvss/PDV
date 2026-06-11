@@ -1,14 +1,14 @@
 import { RouterProvider } from 'react-router-dom'
 import { Provider as ReduxProvider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ThemeProvider, CssBaseline } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import 'dayjs/locale/pt-br'
-import { zeloTheme, loadGeistFont } from './theme'
+import { loadGeistFont } from './theme'
 import { router } from './router'
 import { store } from './store'
 import AuthProvider from './components/AuthProvider'
+import { ThemeModeProvider } from './context/ThemeModeContext'
 import { ToastProvider } from './context/ToastContext'
 
 loadGeistFont()
@@ -26,16 +26,15 @@ export default function App() {
   return (
     <ReduxProvider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={zeloTheme}>
+        <ThemeModeProvider>
           <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
-            <CssBaseline />
             <AuthProvider>
               <ToastProvider>
                 <RouterProvider router={router} />
               </ToastProvider>
             </AuthProvider>
           </LocalizationProvider>
-        </ThemeProvider>
+        </ThemeModeProvider>
       </QueryClientProvider>
     </ReduxProvider>
   )

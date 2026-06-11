@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { userSettingsService } from '../services/userSettings.service'
 import type { AppearancePrefs, NotificationPrefs } from '../types/usersettings.type'
+import { useAppDispatch } from '../store'
+import { setAppearance } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 
@@ -15,13 +17,16 @@ export function useUserSettings() {
 
 export function useUpdateAppearanceSettings() {
   const queryClient = useQueryClient()
+  const dispatch = useAppDispatch()
   const showToast = useToast()
   const handleError = useApiError()
 
   return useMutation({
     mutationFn: (payload: AppearancePrefs) => userSettingsService.updateAppearance(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      // Mantém o tema aplicado em sincronia (evita flash no próximo reload).
+      dispatch(setAppearance({ theme: data.theme, textSize: data.textSize }))
       showToast('Preferências salvas!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao salvar preferências.'),

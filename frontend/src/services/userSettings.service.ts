@@ -10,6 +10,7 @@ import type {
 interface BackendAppearance {
   theme: 'Light' | 'Dark'
   accentColor: AppearancePrefs['accentColor']
+  textSize: number
 }
 
 interface BackendUserSettings {
@@ -25,6 +26,7 @@ const themeToBackend = (t: AppTheme): BackendAppearance['theme'] =>
 const mapAppearance = (a: BackendAppearance): AppearancePrefs => ({
   theme: themeFromBackend(a.theme),
   accentColor: a.accentColor,
+  textSize: a.textSize,
 })
 
 export const userSettingsService = {
@@ -37,6 +39,7 @@ export const userSettingsService = {
     const { data } = await api.put<BackendAppearance>('/account/settings/appearance', {
       theme: themeToBackend(payload.theme),
       accentColor: payload.accentColor,
+      textSize: payload.textSize,
     })
     return mapAppearance(data)
   },

@@ -112,7 +112,7 @@ export default function ProfileSection() {
                 onClick={handleSave}
                 disabled={updateUser.isPending || !name.trim()}
               >
-                Salvar
+                Salvar alterações
               </Button>
             </Box>
           ) : undefined

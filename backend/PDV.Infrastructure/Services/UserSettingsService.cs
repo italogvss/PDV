@@ -27,6 +27,7 @@ public class UserSettingsService(
         var settings = await GetOrCreateAsync(userId);
         settings.Theme = Enum.Parse<Theme>(request.Theme);
         settings.AccentColor = request.AccentColor;
+        settings.TextSize = request.TextSize;
         settings.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
@@ -68,7 +69,7 @@ public class UserSettingsService(
 
     private static UserSettingsResponse Map(UserSettings s) =>
         new(
-            new AppearanceSettingsDto(s.Theme.ToString(), s.AccentColor),
+            new AppearanceSettingsDto(s.Theme.ToString(), s.AccentColor, s.TextSize),
             new NotificationSettingsDto(
                 s.NotifyNewSales, s.NotifyStockAlerts, s.NotifyInvoices, s.NotifyTeamActivity));
 }

@@ -39,35 +39,50 @@ export function loadGeistFont() {
   document.head.appendChild(link);
 }
 
-export const typography: TypographyVariantsOptions = {
-  fontFamily,
-  fontSize: 15,
-  htmlFontSize: 16,
-  fontWeightLight: 300,
-  fontWeightRegular: 400,
-  fontWeightMedium: 500,
-  fontWeightBold: 600,
+/** Tamanho base padrão do texto (px). Referência para o fator de escala. */
+export const BASE_FONT_SIZE = 15;
 
-  h1: { fontSize: '2rem',     fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.2 },  // 32
-  h2: { fontSize: '1.625rem', fontWeight: 600, letterSpacing: '-0.02em',  lineHeight: 1.25 }, // 26
-  h3: { fontSize: '1.25rem',  fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.3 },  // 20
-  h4: { fontSize: '1.125rem', fontWeight: 600, letterSpacing: '-0.01em',  lineHeight: 1.35 }, // 18
-  h5: { fontSize: '1rem',     fontWeight: 600, letterSpacing: '-0.01em',  lineHeight: 1.4 },  // 16
-  h6: { fontSize: '0.9375rem',fontWeight: 600, letterSpacing: '-0.005em', lineHeight: 1.4 },  // 15
+/**
+ * Constrói a tipografia escalando todos os tamanhos pelo fator `baseFontSize / 15`.
+ * `baseFontSize` é o "Tamanho do texto" configurável pelo usuário (14–20).
+ */
+export function buildTypography(baseFontSize: number = BASE_FONT_SIZE): TypographyVariantsOptions {
+  const scale = baseFontSize / BASE_FONT_SIZE;
+  const rem = (value: number) => `${value * scale}rem`;
 
-  subtitle1: { fontSize: '0.9375rem', fontWeight: 500, lineHeight: 1.45 },
-  subtitle2: { fontSize: '0.875rem',  fontWeight: 500, lineHeight: 1.45, color: 'inherit' },
+  return {
+    fontFamily,
+    fontSize: baseFontSize,
+    htmlFontSize: 16,
+    fontWeightLight: 300,
+    fontWeightRegular: 400,
+    fontWeightMedium: 500,
+    fontWeightBold: 600,
 
-  body1: { fontSize: '0.9375rem', fontWeight: 400, lineHeight: 1.5 },
-  body2: { fontSize: '0.875rem',  fontWeight: 400, lineHeight: 1.5 },
+    h1: { fontSize: rem(2),      fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.2 },  // 32
+    h2: { fontSize: rem(1.625),  fontWeight: 600, letterSpacing: '-0.02em',  lineHeight: 1.25 }, // 26
+    h3: { fontSize: rem(1.25),   fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.3 },  // 20
+    h4: { fontSize: rem(1.125),  fontWeight: 600, letterSpacing: '-0.01em',  lineHeight: 1.35 }, // 18
+    h5: { fontSize: rem(1),      fontWeight: 600, letterSpacing: '-0.01em',  lineHeight: 1.4 },  // 16
+    h6: { fontSize: rem(0.9375), fontWeight: 600, letterSpacing: '-0.005em', lineHeight: 1.4 },  // 15
 
-  button: { fontSize: '0.875rem',  fontWeight: 500, letterSpacing: 0, textTransform: 'none' },
-  caption: { fontSize: '0.8125rem',fontWeight: 400, lineHeight: 1.4, letterSpacing: 0 },
-  overline: {
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    lineHeight: 1.4,
-  },
-};
+    subtitle1: { fontSize: rem(0.9375), fontWeight: 500, lineHeight: 1.45 },
+    subtitle2: { fontSize: rem(0.875),  fontWeight: 500, lineHeight: 1.45, color: 'inherit' },
+
+    body1: { fontSize: rem(0.9375), fontWeight: 400, lineHeight: 1.5 },
+    body2: { fontSize: rem(0.875),  fontWeight: 400, lineHeight: 1.5 },
+
+    button: { fontSize: rem(0.875),  fontWeight: 500, letterSpacing: 0, textTransform: 'none' },
+    caption: { fontSize: rem(0.8125),fontWeight: 400, lineHeight: 1.4, letterSpacing: 0 },
+    overline: {
+      fontSize: rem(0.75),
+      fontWeight: 500,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      lineHeight: 1.4,
+    },
+  };
+}
+
+/** Tipografia padrão (tamanho base 15) — mantida para compatibilidade. */
+export const typography: TypographyVariantsOptions = buildTypography();

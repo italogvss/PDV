@@ -1,3 +1,3 @@
 namespace PDV.Application.DTOs.Users;
 
-public record UserSettingsDTO(string Theme);
+public record UserSettingsDTO(string Theme, int TextSize);

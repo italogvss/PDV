@@ -17,95 +17,107 @@ import { createTheme, type ThemeOptions } from '@mui/material/styles';
 import { ptBR } from '@mui/material/locale';
 
 import './augment'; // module augmentation
-import { colors } from './palette';
-import { typography, fontFamily, fontFamilyMono, loadGeistFont } from './typography';
+import { colors, getColors, type AppThemeMode } from './palette';
+import { buildTypography, BASE_FONT_SIZE, fontFamily, fontFamilyMono, loadGeistFont } from './typography';
 import { shadows, customShadows, radius } from './shape';
 import { components } from './components';
 
-const baseOptions: ThemeOptions = {
+/**
+ * Constrói o tema do app para o modo (light/dark) e o tamanho de texto escolhidos.
+ * `textSize` é o tamanho base configurável pelo usuário (14–20).
+ */
+export function createAppTheme(mode: AppThemeMode = 'light', textSize: number = BASE_FONT_SIZE) {
+  const c = getColors(mode);
+  const scale = textSize / BASE_FONT_SIZE;
+
+  const baseOptions: ThemeOptions = {
   palette: {
-    mode: 'light',
+    mode,
     primary: {
-      main: colors.neutral[900],
-      light: colors.neutral[700],
-      dark: '#000000',
-      contrastText: colors.surface.paper,
+      main: c.neutral[900],
+      light: c.neutral[700],
+      dark: mode === 'dark' ? c.neutral[800] : '#000000',
+      contrastText: c.surface.paper,
     },
     secondary: {
-      main: colors.accent[600],
-      light: colors.accent[400],
-      dark: colors.accent[800],
+      main: c.accent[600],
+      light: c.accent[400],
+      dark: c.accent[800],
       contrastText: '#ffffff',
     },
     success: {
-      main: colors.semantic.success.main,
-      light: colors.semantic.success.light,
-      dark: colors.semantic.success.dark,
-      contrastText: colors.semantic.success.contrastText,
-      soft: colors.semantic.success.soft,
-      ink: colors.semantic.success.ink,
+      main: c.semantic.success.main,
+      light: c.semantic.success.light,
+      dark: c.semantic.success.dark,
+      contrastText: c.semantic.success.contrastText,
+      soft: c.semantic.success.soft,
+      ink: c.semantic.success.ink,
     },
     warning: {
-      main: colors.semantic.warning.main,
-      contrastText: colors.semantic.warning.contrastText,
-      soft: colors.semantic.warning.soft,
-      ink: colors.semantic.warning.ink,
+      main: c.semantic.warning.main,
+      contrastText: c.semantic.warning.contrastText,
+      soft: c.semantic.warning.soft,
+      ink: c.semantic.warning.ink,
     },
     error: {
-      main: colors.semantic.error.main,
-      contrastText: colors.semantic.error.contrastText,
-      soft: colors.semantic.error.soft,
-      ink: colors.semantic.error.ink,
+      main: c.semantic.error.main,
+      contrastText: c.semantic.error.contrastText,
+      soft: c.semantic.error.soft,
+      ink: c.semantic.error.ink,
     },
     info: {
-      main: colors.semantic.info.main,
-      contrastText: colors.semantic.info.contrastText,
-      soft: colors.semantic.info.soft,
-      ink: colors.semantic.info.ink,
+      main: c.semantic.info.main,
+      contrastText: c.semantic.info.contrastText,
+      soft: c.semantic.info.soft,
+      ink: c.semantic.info.ink,
     },
     text: {
-      primary: colors.text.primary,
-      secondary: colors.text.secondary,
-      tertiary: colors.text.tertiary,
-      disabled: colors.text.disabled,
+      primary: c.text.primary,
+      secondary: c.text.secondary,
+      tertiary: c.text.tertiary,
+      disabled: c.text.disabled,
     },
     background: {
-      default: colors.surface.default,
-      paper: colors.surface.paper,
+      default: c.surface.default,
+      paper: c.surface.paper,
     },
-    divider: colors.border.subtle,
+    divider: c.border.subtle,
     action: {
-      hover: colors.surface.sunken,
-      selected: colors.surface.raised,
-      disabled: colors.text.disabled,
-      disabledBackground: colors.surface.raised,
-      focus: colors.accent[100],
+      hover: c.surface.sunken,
+      selected: c.surface.raised,
+      disabled: c.text.disabled,
+      disabledBackground: c.surface.raised,
+      focus: c.accent[100],
     },
     // Tokens customizados
-    neutral: colors.neutral,
-    accent: colors.accent,
-    premium: colors.premium,
-    surface: colors.surface,
-    border: colors.border,
-    data: colors.data,
+    neutral: c.neutral,
+    accent: c.accent,
+    premium: c.premium,
+    surface: c.surface,
+    border: c.border,
+    data: c.data,
   },
   shape: { borderRadius: radius.md },
   shadows,
   customShadows,
-  typography,
+  typography: buildTypography(textSize),
   spacing: 5, // base 5px — folga leve em cima do grid 4 original
   breakpoints: {
     values: { xs: 0, sm: 540, md: 760, lg: 900, xl: 1280 },
   },
-};
+  };
 
-// Cria o tema sem overrides primeiro, depois injeta os component overrides com
-// acesso ao próprio theme (necessário para usar tokens dentro deles).
-const baseTheme = createTheme(baseOptions, ptBR);
+  // Cria o tema sem overrides primeiro, depois injeta os component overrides com
+  // acesso ao próprio theme (necessário para usar tokens dentro deles).
+  const baseTheme = createTheme(baseOptions, ptBR);
 
-export const zeloTheme = createTheme(baseTheme, {
-  components: components(baseTheme),
-});
+  return createTheme(baseTheme, {
+    components: components(baseTheme, scale),
+  });
+}
+
+/** Tema padrão (light, tamanho base) — mantido para imports existentes. */
+export const zeloTheme = createAppTheme('light', BASE_FONT_SIZE);
 
 export { colors, customShadows, radius, fontFamily, fontFamilyMono, loadGeistFont };
 export type { AppColors } from './palette';

@@ -10,6 +10,7 @@ public class UserSettings : BaseEntity
     // Aparência
     public Theme Theme { get; set; } = Theme.Light;
     public string AccentColor { get; set; } = "green";
+    public int TextSize { get; set; } = 15;
 
     // Notificações no app
     public bool NotifyNewSales { get; set; } = true;

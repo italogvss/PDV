@@ -7,7 +7,11 @@ import type { Components, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { radius } from './shape';
 
-export const components = (theme: Theme): Components<Theme> => ({
+export const components = (theme: Theme, scale = 1): Components<Theme> => {
+  // Escala os poucos fontSize fixos (em px) de controles que leem/exibem conteúdo,
+  // para que o "Tamanho do texto" também valha em inputs, botões, tabelas e menus.
+  const fs = (px: number) => Math.round(px * scale * 10) / 10;
+  return ({
   // ------------------------------------------------------------------
   // Reset / baseline
   // ------------------------------------------------------------------
@@ -47,7 +51,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         borderRadius: radius.control,
         textTransform: 'none',
         fontWeight: 500,
-        fontSize: 13,
+        fontSize: fs(13),
         lineHeight: 1.2,
         padding: '6px 12px',
         minHeight: 32,
@@ -55,8 +59,8 @@ export const components = (theme: Theme): Components<Theme> => ({
         '& .MuiButton-startIcon': { marginRight: 4 },
         '& .MuiButton-startIcon > svg, & .MuiButton-endIcon > svg': { fontSize: 22 },
       },
-      sizeSmall: { minHeight: 28, padding: '4px 10px', fontSize: 12 },
-      sizeLarge: { minHeight: 40, padding: '8px 16px', fontSize: 14 },
+      sizeSmall: { minHeight: 28, padding: '4px 10px', fontSize: fs(12) },
+      sizeLarge: { minHeight: 40, padding: '8px 16px', fontSize: fs(14) },
 
       outlined: {
         borderColor: theme.palette.border.subtle,
@@ -252,7 +256,7 @@ export const components = (theme: Theme): Components<Theme> => ({
         padding: '6px 8px',
         gap: 9,
         color: theme.palette.text.secondary,
-        fontSize: 13.5,
+        fontSize: fs(13.5),
         '&:hover': {
           backgroundColor: theme.palette.surface.raised,
           color: theme.palette.text.primary,
@@ -276,7 +280,7 @@ export const components = (theme: Theme): Components<Theme> => ({
   },
   MuiListItemText: {
     styleOverrides: {
-      primary: { fontSize: 13.5, fontWeight: 'inherit' },
+      primary: { fontSize: fs(13.5), fontWeight: 'inherit' },
     },
   },
 
@@ -291,7 +295,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       root: {
         borderRadius: radius.control,
         backgroundColor: theme.palette.surface.paper,
-        fontSize: 15,
+        fontSize: fs(15),
         '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.border.subtle },
         '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.border.strong },
         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -307,7 +311,7 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiInputLabel: {
     styleOverrides: {
       root: {
-        fontSize: 15,
+        fontSize: fs(15),
         color: theme.palette.text.secondary,
         '&.Mui-focused': { color: theme.palette.accent[700] },
       },
@@ -332,7 +336,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       root: {
         borderRadius: radius.control,
         backgroundColor: theme.palette.surface.paper,
-        fontSize: 15,
+        fontSize: fs(15),
         '& .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.subtle },
         '&:hover .MuiPickersOutlinedInput-notchedOutline': { borderColor: theme.palette.border.strong },
         '&.Mui-focused .MuiPickersOutlinedInput-notchedOutline': {
@@ -346,7 +350,7 @@ export const components = (theme: Theme): Components<Theme> => ({
   MuiPickersInputLabel: {
     styleOverrides: {
       root: {
-        fontSize: 15,
+        fontSize: fs(15),
         color: theme.palette.text.secondary,
         '&.Mui-focused': { color: theme.palette.accent[700] },
       },
@@ -447,7 +451,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       root: {
         borderBottom: `1px solid ${theme.palette.border.subtle}`,
         padding: '10px 16px',
-        fontSize: 13,
+        fontSize: fs(13),
       },
     },
   },
@@ -603,7 +607,7 @@ export const components = (theme: Theme): Components<Theme> => ({
       root: {
         borderRadius: radius.sm,
         padding: '7px 10px',
-        fontSize: 13,
+        fontSize: fs(13),
         color: theme.palette.text.secondary,
         gap: 10,
         '&:hover': {
@@ -692,4 +696,5 @@ export const components = (theme: Theme): Components<Theme> => ({
       },
     },
   },
-});
+  });
+};

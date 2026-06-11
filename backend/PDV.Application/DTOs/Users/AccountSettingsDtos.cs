@@ -8,7 +8,8 @@ public record UserSettingsResponse(
 // Seção "Aparência" — também é o corpo do PUT /api/account/settings/appearance.
 public record AppearanceSettingsDto(
     string Theme,
-    string AccentColor);
+    string AccentColor,
+    int TextSize);
 
 // Seção "Notificações" — também é o corpo do PUT /api/account/settings/notifications.
 public record NotificationSettingsDto(

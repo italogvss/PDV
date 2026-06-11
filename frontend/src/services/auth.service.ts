@@ -13,7 +13,7 @@ interface MeApiResponse {
   avatarUrl: string | null
   lastTenantId: string | null
   role: UserRole
-  settings: { theme: Theme } | null
+  settings: { theme: Theme; textSize: number } | null
   tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee' }>
   mustChangePassword?: boolean
   permissions?: string[]
@@ -32,7 +32,9 @@ export const authService = {
       birthDate: data.birthDate,
       avatarUrl: data.avatarUrl,
       role: data.role ?? 'Owner',
-      settings: data.settings ? { theme: data.settings.theme } : null,
+      settings: data.settings
+        ? { theme: data.settings.theme, textSize: data.settings.textSize ?? 15 }
+        : null,
       tenants: data.tenants ?? [],
       mustChangePassword: data.mustChangePassword ?? false,
       permissions: (data.permissions ?? []) as Permission[],

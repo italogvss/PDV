@@ -18,5 +18,9 @@ public class AppearanceSettingsDtoValidator : AbstractValidator<AppearanceSettin
         RuleFor(x => x.AccentColor)
             .Must(c => AccentColors.Contains(c))
             .WithMessage("Cor de destaque inválida.");
+
+        RuleFor(x => x.TextSize)
+            .InclusiveBetween(14, 20)
+            .WithMessage("Tamanho do texto deve estar entre 14 e 20.");
     }
 }

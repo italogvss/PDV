@@ -141,3 +141,88 @@ export const colors = {
 } as const;
 
 export type AppColors = typeof colors;
+
+// ---------------------------------------------------------------------------
+// Variante DARK (pragmática) — derivada dos mesmos tokens.
+// Estratégia: escala de cinzas invertida (neutral[900] vira claro, para que
+// `primary` continue sendo o tom de maior contraste), surfaces/text/border
+// escuros e quentes, e tons semânticos `soft/ink` adaptados para fundo escuro.
+// `accent`, `premium` e `data` permanecem (são cores de marca/identidade).
+// ---------------------------------------------------------------------------
+
+// Escala neutra invertida: 50 = mais escuro, 900 = mais claro.
+const neutralDark: ColorScale = {
+  50:  neutral[900],
+  100: neutral[800],
+  200: neutral[700],
+  300: neutral[600],
+  400: neutral[500],
+  500: neutral[400],
+  600: neutral[300],
+  700: neutral[200],
+  800: neutral[100],
+  900: neutral[50],
+};
+
+export const darkColors = {
+  neutral: neutralDark,
+  accent: accentGreen,
+  premium: premiumGold,
+
+  surface: {
+    default: '#1a1916',   // body
+    paper:   '#242320',   // cards
+    sunken:  '#141310',   // topbar/sidebar bg
+    raised:  '#2d2b27',   // hover suave
+  },
+
+  text: {
+    primary:   '#f4f3ef',
+    secondary: '#cbc8c0',
+    tertiary:  '#9a978f',
+    disabled:  '#6e6b64',
+  },
+
+  border: {
+    subtle: '#34322e',
+    strong: '#4a4843',
+  },
+
+  semantic: {
+    success: {
+      main:  '#1f9d57',
+      light: '#4cbb7f',
+      dark:  '#177a43',
+      contrastText: '#ffffff',
+      soft: 'rgba(31,157,87,0.18)',
+      ink:  '#6fe0a3',
+    } as SemanticTone,
+    warning: {
+      main: '#d49a2c',
+      contrastText: '#ffffff',
+      soft: 'rgba(212,154,44,0.18)',
+      ink:  '#f0c873',
+    } as SemanticTone,
+    error: {
+      main: '#d9433a',
+      contrastText: '#ffffff',
+      soft: 'rgba(217,67,58,0.18)',
+      ink:  '#f0a39d',
+    } as SemanticTone,
+    info: {
+      main: '#2d6cc9',
+      contrastText: '#ffffff',
+      soft: 'rgba(45,108,201,0.20)',
+      ink:  '#9dc0f0',
+    } as SemanticTone,
+  },
+
+  data: colors.data,
+} as const;
+
+export type AppThemeMode = 'light' | 'dark';
+
+/** Retorna o conjunto de tokens de cor para o modo escolhido. */
+export function getColors(mode: AppThemeMode): AppColors {
+  return mode === 'dark' ? (darkColors as unknown as AppColors) : colors;
+}
