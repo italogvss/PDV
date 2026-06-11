@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class SupplierRepository(AppDbContext context) : ISupplierRepository
+public class SupplierRepository(AppDbContext context, ITenantContext tenantContext) : ISupplierRepository
 {
     public async Task<Supplier?> GetByIdAsync(Guid id) =>
         await context.Suppliers.FirstOrDefaultAsync(s => s.Id == id);
@@ -44,4 +45,12 @@ public class SupplierRepository(AppDbContext context) : ISupplierRepository
         context.Suppliers.Update(supplier);
         await context.SaveChangesAsync();
     }
+
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    public Task<int> PurgeAllAsync() =>
+        context.Suppliers
+            .IgnoreQueryFilters()
+            .Where(s => s.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
 }

@@ -105,6 +105,8 @@ public class ProductService(
         await repository.UpdateAsync(product);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     public async Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request)
     {
         var product = await repository.GetByIdAsync(id)

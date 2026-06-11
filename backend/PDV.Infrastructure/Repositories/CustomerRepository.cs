@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class CustomerRepository(AppDbContext context) : ICustomerRepository
+public class CustomerRepository(AppDbContext context, ITenantContext tenantContext) : ICustomerRepository
 {
     public async Task<Customer?> GetByIdAsync(Guid id) =>
         await context.Customers.FirstOrDefaultAsync(c => c.Id == id);
@@ -46,4 +47,12 @@ public class CustomerRepository(AppDbContext context) : ICustomerRepository
         context.Customers.Update(customer);
         await context.SaveChangesAsync();
     }
+
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    public Task<int> PurgeAllAsync() =>
+        context.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
 }

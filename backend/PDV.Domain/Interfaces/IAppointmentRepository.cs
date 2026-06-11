@@ -10,4 +10,5 @@ public interface IAppointmentRepository
     Task UpdateAsync(Appointment appointment);
     Task ReplaceServiceItemsAsync(Guid appointmentId, IEnumerable<AppointmentServiceItem> newItems);
     Task DeleteAsync(Appointment appointment);
+    Task<int> PurgeAllAsync();
 }

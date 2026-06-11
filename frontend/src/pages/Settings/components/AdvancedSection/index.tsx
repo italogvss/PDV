@@ -15,6 +15,7 @@ import type { SvgIconComponent } from '@mui/icons-material'
 import {
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -24,11 +25,11 @@ import {
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import ModalHeader from '../../../../components/ModalHeader'
-import { useToast } from '../../../../hooks/useToast'
+import { usePurgeEntity } from '../../../../hooks/usePurgeEntity'
+import type { EntityKey } from '../../../../services/tenantData.service'
 
 interface DeletableEntity {
-  key: string
-  /** Rótulo plural usado na frase de confirmação. */
+  key: EntityKey
   label: string
   sublabel: string
   icon: SvgIconComponent
@@ -42,7 +43,7 @@ const DELETABLE_ENTITIES: DeletableEntity[] = [
   { key: 'appointments', label: 'Agendamentos', sublabel: 'Apaga todos os agendamentos', icon: CalendarMonthOutlined },
   { key: 'expenses', label: 'Despesas', sublabel: 'Remove o histórico de despesas', icon: PaidOutlined },
   { key: 'customers', label: 'Clientes', sublabel: 'Apaga a base de clientes', icon: PeopleAltOutlined },
-  { key: 'supplies', label: 'Fornecedores', sublabel: 'Remove os fornecedores cadastrados', icon: LocalShippingOutlined },
+  { key: 'suppliers', label: 'Fornecedores', sublabel: 'Remove os fornecedores cadastrados', icon: LocalShippingOutlined },
 ]
 
 function confirmationPhrase(label: string) {
@@ -50,7 +51,7 @@ function confirmationPhrase(label: string) {
 }
 
 export default function AdvancedSection() {
-  const showToast = useToast()
+  const purge = usePurgeEntity()
   const [target, setTarget] = useState<DeletableEntity | null>(null)
   const [typed, setTyped] = useState('')
 
@@ -62,13 +63,16 @@ export default function AdvancedSection() {
   const expectedPhrase = target ? confirmationPhrase(target.label) : ''
   const phraseMatches = typed === expectedPhrase // case sensitive
 
-  const handleClose = () => setTarget(null)
+  const handleClose = () => {
+    if (purge.isPending) return
+    setTarget(null)
+  }
 
   const handleConfirm = () => {
     if (!target || !phraseMatches) return
-    // TODO: integrar com o backend (DELETE definitivo, ignorando soft delete).
-    showToast(`Todos os ${target.label} foram excluídos permanentemente.`, 'success')
-    handleClose()
+    purge.mutate(target.key, {
+      onSuccess: () => handleClose(),
+    })
   }
 
   return (
@@ -119,6 +123,7 @@ export default function AdvancedSection() {
               title={`Excluir todos os ${target.label}`}
               subtitle="Esta ação é irreversível."
               onClose={handleClose}
+              disabled={purge.isPending}
             />
             <DialogContent>
               <Box
@@ -162,6 +167,7 @@ export default function AdvancedSection() {
                 placeholder={expectedPhrase}
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
+                disabled={purge.isPending}
                 error={typed.length > 0 && !phraseMatches}
                 helperText={
                   typed.length > 0 && !phraseMatches
@@ -171,17 +177,21 @@ export default function AdvancedSection() {
               />
             </DialogContent>
             <DialogActions>
-              <Button variant="ghost" onClick={handleClose}>
+              <Button variant="ghost" onClick={handleClose} disabled={purge.isPending}>
                 Cancelar
               </Button>
               <Button
                 variant="contained"
                 color="error"
-                startIcon={<DeleteForeverOutlined />}
-                disabled={!phraseMatches}
+                startIcon={
+                  purge.isPending
+                    ? <CircularProgress size={16} color="inherit" />
+                    : <DeleteForeverOutlined />
+                }
+                disabled={!phraseMatches || purge.isPending}
                 onClick={handleConfirm}
               >
-                Excluir para sempre
+                {purge.isPending ? 'Excluindo...' : 'Excluir para sempre'}
               </Button>
             </DialogActions>
           </>

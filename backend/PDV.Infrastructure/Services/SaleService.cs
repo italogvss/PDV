@@ -214,6 +214,15 @@ public class SaleService(
         await transaction.CommitAsync();
     }
 
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados.
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    // SaleItems são removidos por cascade de FK configurado no banco.
+    public Task<int> PurgeAllAsync() =>
+        context.Sales
+            .IgnoreQueryFilters()
+            .Where(s => s.TenantId == TenantId)
+            .ExecuteDeleteAsync();
+
     private static SaleResponse MapToResponse(Sale s) =>
         new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,

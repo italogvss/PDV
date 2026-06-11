@@ -15,4 +15,5 @@ public interface IProductService
     Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request);
     Task DeleteAsync(Guid id);
     Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request);
+    Task<int> PurgeAllAsync();
 }

@@ -157,6 +157,8 @@ public class ExpenseService(
         await repository.DeleteAsync(expense);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     private static ExpenseResponse Map(Expense e) =>
         new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
 

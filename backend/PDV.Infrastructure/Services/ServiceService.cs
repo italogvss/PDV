@@ -89,6 +89,8 @@ public class ServiceService(
         await repository.UpdateAsync(service);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     private static ServiceCategoryResponse? MapCategory(ServiceCategory? c) =>
         c is null ? null : new(c.Id, c.Name, c.Color);
 

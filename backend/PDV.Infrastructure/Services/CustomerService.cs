@@ -84,6 +84,8 @@ public class CustomerService(
         await repository.UpdateAsync(customer);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     private static CustomerResponse Map(Customer c)
     {
         var hasAddress = c.AddressStreet != null

@@ -56,4 +56,12 @@ public class SalesController(ISaleService service) : ControllerBase
         await service.CancelAsync(id, adminId);
         return NoContent();
     }
+
+    [HttpDelete("all")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> PurgeAll()
+    {
+        var deleted = await service.PurgeAllAsync();
+        return Ok(new { deleted });
+    }
 }

@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class ProductRepository(AppDbContext context) : IProductRepository
+public class ProductRepository(AppDbContext context, ITenantContext tenantContext) : IProductRepository
 {
     public async Task<Product?> GetByIdAsync(Guid id) =>
         await context.Products
@@ -69,4 +70,12 @@ public class ProductRepository(AppDbContext context) : IProductRepository
             query = query.Where(p => p.Id != excludeId.Value);
         return await query.AnyAsync();
     }
+
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    public Task<int> PurgeAllAsync() =>
+        context.Products
+            .IgnoreQueryFilters()
+            .Where(p => p.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
 }

@@ -68,6 +68,8 @@ public class SupplierService(
         await repository.UpdateAsync(supplier);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     private static SupplierResponse Map(Supplier s) =>
         new(s.Id, s.Name, s.Phone, s.CreatedAt);
 

@@ -11,4 +11,5 @@ public interface IExpenseRepository
     Task AddAsync(Expense expense);
     Task UpdateAsync(Expense expense);
     Task DeleteAsync(Expense expense);
+    Task<int> PurgeAllAsync();
 }

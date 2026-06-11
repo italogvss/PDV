@@ -10,4 +10,5 @@ public interface ISupplierService
     Task<SupplierResponse> CreateAsync(CreateSupplierRequest request);
     Task<SupplierResponse> UpdateAsync(Guid id, UpdateSupplierRequest request);
     Task DeleteAsync(Guid id);
+    Task<int> PurgeAllAsync();
 }

@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class AppointmentRepository(AppDbContext context) : IAppointmentRepository
+public class AppointmentRepository(AppDbContext context, ITenantContext tenantContext) : IAppointmentRepository
 {
     public async Task<Appointment?> GetByIdAsync(Guid id) =>
         await context.Appointments
@@ -59,4 +60,13 @@ public class AppointmentRepository(AppDbContext context) : IAppointmentRepositor
         context.Appointments.Update(appointment);
         await context.SaveChangesAsync();
     }
+
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    // AppointmentServiceItems são removidos por cascade de FK configurado no banco.
+    public Task<int> PurgeAllAsync() =>
+        context.Appointments
+            .IgnoreQueryFilters()
+            .Where(a => a.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
 }

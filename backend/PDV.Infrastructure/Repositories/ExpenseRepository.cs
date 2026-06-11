@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class ExpenseRepository(AppDbContext context) : IExpenseRepository
+public class ExpenseRepository(AppDbContext context, ITenantContext tenantContext) : IExpenseRepository
 {
     public async Task<Expense?> GetByIdAsync(Guid id) =>
         await context.Expenses.FirstOrDefaultAsync(e => e.Id == id);
@@ -62,4 +63,12 @@ public class ExpenseRepository(AppDbContext context) : IExpenseRepository
         context.Expenses.Remove(expense);
         await context.SaveChangesAsync();
     }
+
+    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
+    public Task<int> PurgeAllAsync() =>
+        context.Expenses
+            .IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
 }

@@ -114,6 +114,8 @@ public class AppointmentService(
         await repository.DeleteAsync(appointment);
     }
 
+    public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
     private async Task<List<AppointmentServiceItem>> BuildServiceItemsAsync(
         IEnumerable<Guid> serviceIds, Guid? appointmentId = null)
     {

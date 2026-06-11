@@ -10,4 +10,5 @@ public interface ICustomerService
     Task<CustomerResponse> CreateAsync(CreateCustomerRequest request);
     Task<CustomerResponse> UpdateAsync(Guid id, UpdateCustomerRequest request);
     Task DeleteAsync(Guid id);
+    Task<int> PurgeAllAsync();
 }

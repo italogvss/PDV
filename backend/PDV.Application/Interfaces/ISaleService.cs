@@ -14,4 +14,5 @@ public interface ISaleService
     Task<SaleDetailResponse> GetByIdAsync(Guid id);
     Task<SaleDetailResponse> CreateAsync(CreateSaleRequest request, Guid operatorId);
     Task CancelAsync(Guid id, Guid adminId);
+    Task<int> PurgeAllAsync();
 }

@@ -8,4 +8,5 @@ public interface ISupplierRepository
     Task<(IEnumerable<Supplier> Data, int TotalCount)> GetAllAsync(int page, int pageSize, string? search);
     Task AddAsync(Supplier supplier);
     Task UpdateAsync(Supplier supplier);
+    Task<int> PurgeAllAsync();
 }

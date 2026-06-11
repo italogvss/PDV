@@ -12,4 +12,5 @@ public interface IServiceRepository
         string? sortBy = null, string? sortOrder = null);
     Task AddAsync(Service service);
     Task UpdateAsync(Service service);
+    Task<int> PurgeAllAsync();
 }

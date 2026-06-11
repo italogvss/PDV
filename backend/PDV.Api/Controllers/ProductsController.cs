@@ -59,6 +59,14 @@ public class ProductsController(IProductService service) : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("all")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> PurgeAll()
+    {
+        var deleted = await service.PurgeAllAsync();
+        return Ok(new { deleted });
+    }
+
     [HttpPatch("{id:guid}/stock")]
     [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> AdjustStock(Guid id, [FromBody] AdjustStockRequest request)

@@ -85,4 +85,12 @@ public class ExpensesController(IExpenseService service) : ControllerBase
         await service.DeleteAsync(id);
         return NoContent();
     }
+
+    [HttpDelete("all")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> PurgeAll()
+    {
+        var deleted = await service.PurgeAllAsync();
+        return Ok(new { deleted });
+    }
 }

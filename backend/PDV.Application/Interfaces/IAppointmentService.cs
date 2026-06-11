@@ -10,4 +10,5 @@ public interface IAppointmentService
     Task<AppointmentResponse> UpdateAsync(Guid id, UpdateAppointmentRequest request);
     Task<AppointmentResponse> ChangeStatusAsync(Guid id, ChangeAppointmentStatusRequest request);
     Task DeleteAsync(Guid id);
+    Task<int> PurgeAllAsync();
 }
