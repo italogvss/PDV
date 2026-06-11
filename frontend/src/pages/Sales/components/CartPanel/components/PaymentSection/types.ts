@@ -1,4 +1,5 @@
 import type { CardType, PaymentMethod } from '../../../../types'
+import type { PaymentsSettings } from '../../../../../../types/settings.types'
 
 export interface PaymentSectionProps {
   method: PaymentMethod
@@ -10,4 +11,5 @@ export interface PaymentSectionProps {
   total: number
   cashReceived: string
   onCashReceivedChange: (value: string) => void
+  payments: PaymentsSettings
 }

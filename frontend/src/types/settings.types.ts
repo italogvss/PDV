@@ -18,15 +18,19 @@ export type DayOfWeek =
   | 'saturday'
   | 'sunday'
 
+  // Configurações persistidas do tenant. Negócio, Operação e Pagamentos têm endpoint
+// (GET /api/tenants/settings + PUT por seção); as demais seções ainda são apenas UI.
+export interface TenantSettings {
+  business: BusinessSettings
+  operation: OperationSettings
+  payments: PaymentsSettings
+}
+
 export interface BusinessHoursDay {
   open: boolean
   openTime: string
   closeTime: string
 }
-
-export type BusinessHours = Record<DayOfWeek, BusinessHoursDay>
-
-export type HoursPreset = 'comercial' | 'estendido' | '24horas' | 'personalizado'
 
 export interface BusinessAddress {
   cep: string
@@ -51,8 +55,6 @@ export interface BusinessSettings {
   businessHours: BusinessHours | null
 }
 
-export type InactivityLockMinutes = 0 | 1 | 5 | 10 | 30
-
 export interface OperationSettings {
   autoOpen: boolean
   requireOperator: boolean
@@ -64,21 +66,25 @@ export interface OperationSettings {
   barcodeReader: boolean
 }
 
-export type PixKeyType = 'cnpj' | 'cpf' | 'email' | 'phone' | 'random'
-
-export interface PaymentMethods {
-  pix: boolean
-  cardCredit: boolean
-  cardDebit: boolean
-  cash: boolean
-  voucher: boolean
-  paymentLink: boolean
+// Pagamentos — cada método aceito tem um flag de habilitado e a taxa por venda (%).
+export interface PaymentMethodConfig {
+  enabled: boolean
+  fee: number
 }
 
 export interface PaymentsSettings {
-  enabledMethods: PaymentMethods
-  pixKeyType: PixKeyType
-  pixKey: string
+  pix: PaymentMethodConfig
+  cardCredit: PaymentMethodConfig
+  cardDebit: PaymentMethodConfig
+  cash: PaymentMethodConfig
+}
+
+export interface AppearanceSettings {
+  theme: AppTheme
+  accentColor: AccentColor
+  density: UiDensity
+  language: AppLanguage
+  currencyFormat: CurrencyFormat
 }
 
 export type TaxRegime = 'simples' | 'presumido' | 'real' | 'mei'
@@ -110,13 +116,16 @@ export type UiDensity = 'compact' | 'comfortable'
 export type AppLanguage = 'pt-BR' | 'en-US' | 'es'
 export type CurrencyFormat = 'brl' | 'usd'
 
-export interface AppearanceSettings {
-  theme: AppTheme
-  accentColor: AccentColor
-  density: UiDensity
-  language: AppLanguage
-  currencyFormat: CurrencyFormat
-}
+
+
+export type BusinessHours = Record<DayOfWeek, BusinessHoursDay>
+
+export type HoursPreset = 'comercial' | 'estendido' | '24horas' | 'personalizado'
+
+
+
+export type InactivityLockMinutes = 0 | 1 | 5 | 10 | 30
+
 
 export type BackupFrequency = 'daily' | 'weekly' | 'monthly'
 export type RetentionDays = 7 | 14 | 30 | 90
@@ -146,9 +155,4 @@ export interface AdvancedSettings {
   appVersion: string
 }
 
-// Configurações persistidas do tenant. Hoje só Negócio e Operação têm endpoint
-// (GET/PUT /api/tenants/settings); as demais seções ainda são apenas UI.
-export interface TenantSettings {
-  business: BusinessSettings
-  operation: OperationSettings
-}
+

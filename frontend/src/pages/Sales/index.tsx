@@ -13,6 +13,7 @@ import { useProductCategories } from '../../hooks/useProductCategories'
 import { useServices } from '../../hooks/useServices'
 import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useCreateSale } from '../../hooks/useSales'
+import { useTenantSettings } from '../../hooks/useTenantSettings'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
 import PageHeader from '../../components/PageHeader'
@@ -48,6 +49,17 @@ export default function SalesPage() {
   const { data: serviceCategories = [] } = useServiceCategories()
   const auth = useAppSelector((state) => state.auth)
   const createSale = useCreateSale()
+  const { data: tenantSettings } = useTenantSettings()
+  const allowDiscounts = tenantSettings?.operation.allowDiscounts ?? false
+  const discountLimitPercent = tenantSettings?.operation.discountLimitPercent ?? 0
+
+  // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
+  const payments = tenantSettings?.payments ?? {
+    pix: { enabled: true, fee: 0 },
+    cardCredit: { enabled: true, fee: 0 },
+    cardDebit: { enabled: true, fee: 0 },
+    cash: { enabled: true, fee: 0 },
+  }
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -58,6 +70,23 @@ export default function SalesPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [search])
+
+  // Garante que o método/tipo de cartão selecionado esteja habilitado nas configurações.
+  useEffect(() => {
+    const cardEnabled = payments.cardCredit.enabled || payments.cardDebit.enabled
+    const isEnabled = (m: PaymentMethod) =>
+      m === 'pix' ? payments.pix.enabled : m === 'cash' ? payments.cash.enabled : cardEnabled
+
+    if (!isEnabled(method)) {
+      const next = (['card', 'pix', 'cash'] as PaymentMethod[]).find(isEnabled)
+      if (next) setMethod(next)
+    }
+    if (cardType === 'credit' && !payments.cardCredit.enabled && payments.cardDebit.enabled) {
+      setCardType('debit')
+    } else if (cardType === 'debit' && !payments.cardDebit.enabled && payments.cardCredit.enabled) {
+      setCardType('credit')
+    }
+  }, [payments, method, cardType])
 
   const filteredProducts = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase()
@@ -259,6 +288,8 @@ export default function SalesPage() {
         subtotal={subtotal}
         discountAmount={discountAmount}
         onDiscountChange={setDiscountAmount}
+        allowDiscounts={allowDiscounts}
+        discountLimitPercent={discountLimitPercent}
         customer={customer}
         onCustomerChange={setCustomer}
         onOpenCustomerModal={() => setCustomerModalOpen(true)}
@@ -270,6 +301,7 @@ export default function SalesPage() {
         onInstallmentsChange={setInstallments}
         cashReceived={cashReceived}
         onCashReceivedChange={setCashReceived}
+        payments={payments}
         onFinalize={handleFinalize}
         isSubmitting={createSale.isPending}
       />

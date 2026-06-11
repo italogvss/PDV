@@ -1,27 +1,15 @@
-import { useState } from 'react'
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+import { Box, Button, CircularProgress, Typography } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import SettingCard from '../../../../components/SettingCard'
-import SettingRow from '../../../../components/SettingRow'
+import {
+  useUpdateAppearanceSettings,
+  useUserSettings,
+} from '../../../../hooks/useUserSettings'
+import type { AccentColor, AppearancePrefs, AppTheme } from '../../../../types/usersettings.type'
+import { ACCENT_COLORS } from '../../types'
 
-type ThemeOption = 'light' | 'dark' | 'auto'
 
-const ACCENT_COLORS = [
-  { id: 'green', label: 'Verde', hex: '#2fa040' },
-  { id: 'blue', label: 'Azul', hex: '#3a82d4' },
-  { id: 'orange', label: 'Laranja', hex: '#d97a1f' },
-  { id: 'purple', label: 'Roxo', hex: '#9152d4' },
-  { id: 'pink', label: 'Rosa', hex: '#d94576' },
-  { id: 'graphite', label: 'Grafite', hex: '#4b4b4b' },
-]
 
 function ThemeCard({
   label,
@@ -111,25 +99,72 @@ function ThemeCard({
 }
 
 export default function AppearanceSection() {
-  const [theme, setTheme] = useState<ThemeOption>('light')
-  const [accentColor, setAccentColor] = useState('green')
-  const [density, setDensity] = useState('comfortable')
-  const [language, setLanguage] = useState('pt-BR')
-  const [currencyFormat, setCurrencyFormat] = useState('brl')
+  const { data, isLoading } = useUserSettings()
+  const update = useUpdateAppearanceSettings()
+  const [form, setForm] = useState<AppearancePrefs | null>(null)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (data && !initialized.current) {
+      setForm(data.appearance)
+      initialized.current = true
+    }
+  }, [data])
+
+  if (isLoading || !form) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
+  }
+
+  const setTheme = (theme: AppTheme) => setForm((f) => (f ? { ...f, theme } : f))
+  const setAccent = (accentColor: AccentColor) => setForm((f) => (f ? { ...f, accentColor } : f))
+
+  const hasChanges =
+    !!data &&
+    (form.theme !== data.appearance.theme || form.accentColor !== data.appearance.accentColor)
+
+  const handleSave = () => {
+    if (form) update.mutate(form)
+  }
+
+  const handleCancel = () => {
+    if (data) setForm(data.appearance)
+  }
+
+  const saveAction = hasChanges ? (
+    <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+        Cancelar
+      </Button>
+      <Button
+        variant="contained"
+        size="small"
+        color="secondary"
+        startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+        onClick={handleSave}
+        disabled={update.isPending}
+      >
+        Salvar alterações
+      </Button>
+    </Box>
+  ) : undefined
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Tema">
+      <SettingCard title="Tema" action={saveAction}>
         <Box sx={{ display: 'flex', gap: 2, p: 3 }}>
           <ThemeCard
             label="Claro"
-            selected={theme === 'light'}
+            selected={form.theme === 'light'}
             onClick={() => setTheme('light')}
             preview="light"
           />
           <ThemeCard
             label="Escuro"
-            selected={theme === 'dark'}
+            selected={form.theme === 'dark'}
             onClick={() => setTheme('dark')}
             preview="dark"
           />
@@ -139,11 +174,11 @@ export default function AppearanceSection() {
       <SettingCard title="Cor de destaque" subtitle="Aplicada em botões, gráficos e indicadores">
         <Box sx={{ px: 4, py: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           {ACCENT_COLORS.map((color) => {
-            const selected = accentColor === color.id
+            const selected = form.accentColor === color.id
             return (
               <Box
                 key={color.id}
-                onClick={() => setAccentColor(color.id)}
+                onClick={() => setAccent(color.id)}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',

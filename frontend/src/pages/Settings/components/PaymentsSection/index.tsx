@@ -1,71 +1,109 @@
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import CreditCardIcon from '@mui/icons-material/CreditCard'
-import PixIcon from '@mui/icons-material/Pix'
+import CheckIcon from '@mui/icons-material/Check'
 import {
   Box,
+  Button,
+  CircularProgress,
   InputAdornment,
   Switch,
   TextField,
-  Typography
+  Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import FieldLabel from '../../../../components/FieldLabel'
 import SettingCard from '../../../../components/SettingCard'
+import { useToast } from '../../../../hooks/useToast'
+import { useTenantSettings, useUpdatePaymentsSettings } from '../../../../hooks/useTenantSettings'
+import type { PaymentMethodConfig, PaymentsSettings } from '../../../../types/settings.types'
+import { MethodKey, PAYMENT_METHODS } from '../../types'
 
-interface PaymentMethod {
-  id: string
-  label: string
-  subtitle: string
-  icon: React.ElementType
+
+
+// Estado de edição: a taxa fica como string (permite digitar vírgula/decimais parciais).
+interface MethodForm {
+  enabled: boolean
+  fee: string
+}
+type FormState = Record<MethodKey, MethodForm>
+
+const feeToInput = (fee: number): string => (fee ? String(fee).replace('.', ',') : '')
+const parseFee = (input: string): number => {
+  const n = parseFloat(input.replace(',', '.'))
+  return Number.isNaN(n) ? 0 : n
 }
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: 'pix', label: 'Pix', subtitle: 'Sem taxa', icon: PixIcon },
-  { id: 'card_credit', label: 'Cartão crédito', subtitle: 'Taxa média 3,2%', icon: CreditCardIcon },
-  { id: 'card_debit', label: 'Cartão débito', subtitle: 'Taxa 1,5%', icon: CreditCardIcon },
-  { id: 'cash', label: 'Dinheiro', subtitle: 'Sem taxa', icon: AttachMoneyIcon },
-  //{ id: 'voucher', label: 'Voucher / VR', subtitle: 'Taxa média 5,5%', icon: LocalOfferOutlinedIcon },
-  //{ id: 'payment_link', label: 'Link de pagamento', subtitle: 'Taxa 3,9%', icon: OpenInNewOutlinedIcon },
-]
+function toFormState(p: PaymentsSettings): FormState {
+  const m = (c: PaymentMethodConfig): MethodForm => ({ enabled: c.enabled, fee: feeToInput(c.fee) })
+  return { pix: m(p.pix), cardCredit: m(p.cardCredit), cardDebit: m(p.cardDebit), cash: m(p.cash) }
+}
+
+function toPayload(f: FormState): PaymentsSettings {
+  const m = (mf: MethodForm): PaymentMethodConfig => ({ enabled: mf.enabled, fee: parseFee(mf.fee) })
+  return { pix: m(f.pix), cardCredit: m(f.cardCredit), cardDebit: m(f.cardDebit), cash: m(f.cash) }
+}
 
 export default function PaymentsSection() {
-  const [enabledMethods, setEnabledMethods] = useState<Record<string, boolean>>({
-    pix: true,
-    card_credit: true,
-    card_debit: true,
-    cash: true,
-    voucher: false,
-    payment_link: false,
-  })
+  const { data, isLoading } = useTenantSettings()
+  const update = useUpdatePaymentsSettings()
+  const showToast = useToast()
+  const [form, setForm] = useState<FormState | null>(null)
+  const initialized = useRef(false)
 
-  const [methodFees, setMethodFees] = useState<Record<string, string>>({
-    pix: '',
-    card_credit: '',
-    card_debit: '',
-    cash: '',
-  })
+  useEffect(() => {
+    if (data && !initialized.current) {
+      setForm(toFormState(data.payments))
+      initialized.current = true
+    }
+  }, [data])
 
-  const toggleMethod = (id: string) => {
-    setEnabledMethods((prev) => ({ ...prev, [id]: !prev[id] }))
+  if (isLoading || !form) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
   }
 
-  const handleFeeChange = (id: string, value: string) => {
-    // Remove tudo que não é número ou vírgula/ponto
-    let normalized = value.replace(/[^\d.,]/g, '')
-    // Converte vírgula para ponto para processamento
-    normalized = normalized.replace(',', '.')
-    // Valida decimal - máx 2 casas
-    const parts = normalized.split('.')
+  const toggleMethod = (key: MethodKey) =>
+    setForm((f) => {
+      if (!f) return f
+      // Trava: deve sempre haver ao menos uma forma de pagamento habilitada.
+      const isDisabling = f[key].enabled
+      const enabledCount = Object.values(f).filter((m) => m.enabled).length
+      if (isDisabling && enabledCount <= 1) {
+        showToast('É necessário manter ao menos uma forma de pagamento ativa.', 'error')
+        return f
+      }
+      return { ...f, [key]: { ...f[key], enabled: !f[key].enabled } }
+    })
+
+  const handleFeeChange = (key: MethodKey, value: string) => {
+    let normalized = value.replace(/[^\d.,]/g, '').replace('.', ',')
+    const parts = normalized.split(',')
     if (parts.length > 2) return
     if (parts[1] && parts[1].length > 2) return
-    setMethodFees((prev) => ({ ...prev, [id]: normalized }))
+    setForm((f) => (f ? { ...f, [key]: { ...f[key], fee: normalized } } : f))
   }
 
-  const formatFeeDisplay = (value: string) => {
-    if (!value) return ''
-    const num = parseFloat(value)
-    if (isNaN(num)) return ''
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const hasChanges = (() => {
+    if (!form || !data) return false
+    const p = data.payments
+    const changed = (mf: MethodForm, orig: PaymentMethodConfig) =>
+      mf.enabled !== orig.enabled || parseFee(mf.fee) !== orig.fee
+    return (
+      changed(form.pix, p.pix) ||
+      changed(form.cardCredit, p.cardCredit) ||
+      changed(form.cardDebit, p.cardDebit) ||
+      changed(form.cash, p.cash)
+    )
+  })()
+
+  const handleSave = () => {
+    if (!form) return
+    update.mutate(toPayload(form))
+  }
+
+  const handleCancel = () => {
+    if (data) setForm(toFormState(data.payments))
   }
 
   return (
@@ -73,14 +111,34 @@ export default function PaymentsSection() {
       <SettingCard
         title="Métodos aceitos"
         subtitle="Aparecem como opções no fechamento da venda"
+        action={
+          hasChanges ? (
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="secondary"
+                startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                onClick={handleSave}
+                disabled={update.isPending}
+              >
+                Salvar alterações
+              </Button>
+            </Box>
+          ) : undefined
+        }
       >
         <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
           {PAYMENT_METHODS.map((method) => {
-            const enabled = enabledMethods[method.id]
+            const state = form[method.key]
+            const enabled = state.enabled
             const Icon = method.icon
             return (
               <Box
-                key={method.id}
+                key={method.key}
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
@@ -101,7 +159,7 @@ export default function PaymentsSection() {
                     gap: 1,
                     cursor: 'pointer',
                   }}
-                  onClick={() => toggleMethod(method.id)}
+                  onClick={() => toggleMethod(method.key)}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Icon
@@ -118,7 +176,7 @@ export default function PaymentsSection() {
                   </Box>
                   <Switch
                     checked={enabled}
-                    onChange={() => toggleMethod(method.id)}
+                    onChange={() => toggleMethod(method.key)}
                     color="secondary"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -130,14 +188,14 @@ export default function PaymentsSection() {
                     <TextField
                       type="text"
                       placeholder="0,00"
-                      value={formatFeeDisplay(methodFees[method.id] || '')}
-                      onChange={(e) => handleFeeChange(method.id, e.target.value)}
+                      value={state.fee}
+                      onChange={(e) => handleFeeChange(method.key, e.target.value)}
                       slotProps={{
                         input: {
                           endAdornment: <InputAdornment position="end">%</InputAdornment>,
                         },
                       }}
-                      sx={{maxWidth: 100}}
+                      sx={{ maxWidth: 100 }}
                     />
                   </>
                 )}
@@ -146,45 +204,6 @@ export default function PaymentsSection() {
           })}
         </Box>
       </SettingCard>
-
-      {/* <SettingCard
-        title="Conta para recebimentos Pix"
-        subtitle="Chave usada na geração dos QR Codes"
-      >
-        <SettingRow label="Tipo de chave">
-          <FormControl size="small" sx={{ width: 200 }}>
-            <Select value={pixKeyType} onChange={(e) => setPixKeyType(e.target.value)}>
-              <MenuItem value="cnpj">CNPJ</MenuItem>
-              <MenuItem value="cpf">CPF</MenuItem>
-              <MenuItem value="email">E-mail</MenuItem>
-              <MenuItem value="phone">Telefone</MenuItem>
-              <MenuItem value="random">Chave aleatória</MenuItem>
-            </Select>
-          </FormControl>
-        </SettingRow>
-
-        <SettingRow label="Chave">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <TextField
-              size="small"
-              value={pixKey}
-              onChange={(e) => setPixKey(e.target.value)}
-              sx={{ width: 220 }}
-            />
-            <Chip
-              label="Ativa"
-              size="small"
-              icon={<CheckIcon sx={{ fontSize: '14px !important' }} />}
-              sx={{
-                bgcolor: 'success.soft',
-                color: 'success.ink',
-                fontWeight: 600,
-                '& .MuiChip-icon': { color: 'success.ink' },
-              }}
-            />
-          </Box>
-        </SettingRow>
-      </SettingCard> */}
     </Box>
   )
 }

@@ -3,6 +3,7 @@ import type {
   BusinessSettings,
   BusinessHours,
   OperationSettings,
+  PaymentsSettings,
   TenantSettings,
 } from '../types/settings.types'
 
@@ -33,6 +34,7 @@ interface BackendBusiness {
 interface BackendSettings {
   business: BackendBusiness
   operation: OperationSettings
+  payments: PaymentsSettings
 }
 
 function mapBusiness(b: BackendBusiness): BusinessSettings {
@@ -61,7 +63,11 @@ function mapBusiness(b: BackendBusiness): BusinessSettings {
 export const tenantSettingsService = {
   get: async (): Promise<TenantSettings> => {
     const { data } = await api.get<BackendSettings>('/tenants/settings')
-    return { business: mapBusiness(data.business), operation: data.operation }
+    return {
+      business: mapBusiness(data.business),
+      operation: data.operation,
+      payments: data.payments,
+    }
   },
 
   // O shape de BusinessSettings já bate com o DTO do backend (camelCase) — envia direto.
@@ -72,6 +78,12 @@ export const tenantSettingsService = {
 
   updateOperation: async (payload: OperationSettings): Promise<OperationSettings> => {
     const { data } = await api.put<OperationSettings>('/tenants/settings/operation', payload)
+    return data
+  },
+
+  // PaymentsSettings já bate com o DTO do backend (camelCase) — envia direto.
+  updatePayments: async (payload: PaymentsSettings): Promise<PaymentsSettings> => {
+    const { data } = await api.put<PaymentsSettings>('/tenants/settings/payments', payload)
     return data
   },
 }

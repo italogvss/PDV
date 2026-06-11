@@ -10,4 +10,5 @@ public interface ITenantService
     Task<TenantSettingsResponse> GetSettingsAsync();
     Task<BusinessSettingsDto> UpdateBusinessAsync(BusinessSettingsDto request);
     Task<OperationSettingsDto> UpdateOperationAsync(OperationSettingsDto request);
+    Task<PaymentsSettingsDto> UpdatePaymentsAsync(PaymentsSettingsDto request);
 }

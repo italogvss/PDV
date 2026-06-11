@@ -30,6 +30,15 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
         builder.Property(ts => ts.CashFundAmount).HasColumnType("decimal(10,2)");
         builder.Property(ts => ts.DiscountLimitPercent).HasColumnType("decimal(5,2)");
 
+        builder.Property(ts => ts.PaymentPixEnabled).HasDefaultValue(true);
+        builder.Property(ts => ts.PaymentCardCreditEnabled).HasDefaultValue(true);
+        builder.Property(ts => ts.PaymentCardDebitEnabled).HasDefaultValue(true);
+        builder.Property(ts => ts.PaymentCashEnabled).HasDefaultValue(true);
+        builder.Property(ts => ts.PaymentPixFee).HasColumnType("decimal(5,2)");
+        builder.Property(ts => ts.PaymentCardCreditFee).HasColumnType("decimal(5,2)");
+        builder.Property(ts => ts.PaymentCardDebitFee).HasColumnType("decimal(5,2)");
+        builder.Property(ts => ts.PaymentCashFee).HasColumnType("decimal(5,2)");
+
         builder.HasOne(ts => ts.Tenant)
             .WithOne(t => t.Settings)
             .HasForeignKey<TenantSettings>(ts => ts.TenantId)

@@ -1,5 +1,6 @@
 import type { CardType, PaymentMethod, CustomerSelection } from '../../types'
 import type { EnrichedCartLine } from '../CartPanel/types'
+import type { PaymentsSettings } from '../../../../types/settings.types'
 
 export interface FinalizationModalProps {
   open: boolean
@@ -8,6 +9,8 @@ export interface FinalizationModalProps {
   subtotal: number
   discountAmount: number
   onDiscountChange: (value: number) => void
+  allowDiscounts: boolean
+  discountLimitPercent: number
   customer: CustomerSelection
   onCustomerChange: (c: CustomerSelection) => void
   onOpenCustomerModal: () => void
@@ -19,6 +22,7 @@ export interface FinalizationModalProps {
   onInstallmentsChange: (n: number) => void
   cashReceived: string
   onCashReceivedChange: (v: string) => void
+  payments: PaymentsSettings
   onFinalize: () => void
   isSubmitting: boolean
 }

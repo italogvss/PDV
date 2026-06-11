@@ -23,6 +23,7 @@ public class TenantService(
     IStorageService storage,
     IValidator<BusinessSettingsDto> businessValidator,
     IValidator<OperationSettingsDto> operationValidator,
+    IValidator<PaymentsSettingsDto> paymentsValidator,
     IConfiguration configuration) : ITenantService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -153,6 +154,28 @@ public class TenantService(
         return (await Map(settings)).Operation;
     }
 
+    public async Task<PaymentsSettingsDto> UpdatePaymentsAsync(PaymentsSettingsDto request)
+    {
+        await paymentsValidator.ValidateAndThrowAsync(request);
+
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
+            ?? throw new NotFoundException("Configurações do tenant não encontradas.");
+
+        settings.PaymentPixEnabled        = request.Pix.Enabled;
+        settings.PaymentPixFee            = request.Pix.Fee;
+        settings.PaymentCardCreditEnabled = request.CardCredit.Enabled;
+        settings.PaymentCardCreditFee     = request.CardCredit.Fee;
+        settings.PaymentCardDebitEnabled  = request.CardDebit.Enabled;
+        settings.PaymentCardDebitFee      = request.CardDebit.Fee;
+        settings.PaymentCashEnabled       = request.Cash.Enabled;
+        settings.PaymentCashFee           = request.Cash.Fee;
+
+        settings.UpdatedAt = DateTime.UtcNow;
+        await tenantRepository.UpdateSettingsAsync(settings);
+
+        return (await Map(settings)).Payments;
+    }
+
     private async Task<TenantSettingsResponse> Map(TenantSettings s)
     {
         var logoUrl = await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt);
@@ -181,7 +204,12 @@ public class TenantService(
                 s.AllowDiscounts,
                 s.DiscountLimitPercent,
                 s.RequireManagerCancel,
-                s.BarcodeReader));
+                s.BarcodeReader),
+            new PaymentsSettingsDto(
+                new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),
+                new PaymentMethodDto(s.PaymentCardCreditEnabled, s.PaymentCardCreditFee),
+                new PaymentMethodDto(s.PaymentCardDebitEnabled, s.PaymentCardDebitFee),
+                new PaymentMethodDto(s.PaymentCashEnabled, s.PaymentCashFee)));
     }
 
     private static IEnumerable<TenantRole> CreateDefaultRoles(Guid tenantId)

@@ -32,6 +32,8 @@ export default function FinalizationModal({
   subtotal,
   discountAmount,
   onDiscountChange,
+  allowDiscounts,
+  discountLimitPercent,
   customer,
   onCustomerChange,
   onOpenCustomerModal,
@@ -43,10 +45,13 @@ export default function FinalizationModal({
   onInstallmentsChange,
   cashReceived,
   onCashReceivedChange,
+  payments,
   onFinalize,
   isSubmitting,
 }: FinalizationModalProps) {
-  const clampedDiscount = Math.min(discountAmount, subtotal)
+  // Teto do desconto: limitado ao percentual configurado no tenant (0% = sem desconto permitido).
+  const maxDiscount = allowDiscounts ? (subtotal * discountLimitPercent) / 100 : 0
+  const clampedDiscount = Math.min(discountAmount, maxDiscount)
   const total = Math.max(0, subtotal - clampedDiscount)
   const discountPercent = subtotal > 0 ? (clampedDiscount / subtotal) * 100 : 0
   const theme = useTheme()
@@ -94,38 +99,45 @@ export default function FinalizationModal({
             </Box>
           </Box>
 
-          <Divider sx={{ borderColor: 'border.subtle' }} />
+          {allowDiscounts && (
+            <>
+              <Divider sx={{ borderColor: 'border.subtle' }} />
 
-          {/* Desconto */}
-          <Box>
-            <FieldLabel label="Desconto" />
-            <CurrencyField
-              value={discountAmount}
-              onChange={onDiscountChange}
-              fullWidth
-              size="small"
-              placeholder="0,00"
-            />
-            {clampedDiscount > 0 && (
-              <Box
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.75,
-                  px: 2,
-                  py: 0.75,
-                  mt: 1,
-                  borderRadius: '10px',
-                  bgcolor: 'warning.soft',
-                }}
-              >
-                <LocalOfferRounded sx={{ fontSize: 13, color: 'warning.main' }} />
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.ink' }}>
-                  Desconto -{discountPercent.toFixed(1)}%
+              {/* Desconto */}
+              <Box>
+                <FieldLabel label="Desconto" />
+                <CurrencyField
+                  value={discountAmount}
+                  onChange={(value) => onDiscountChange(Math.min(value, maxDiscount))}
+                  fullWidth
+                  size="small"
+                  placeholder="0,00"
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5}}>
+                  Limite de {discountLimitPercent}% — até {formatBRL(maxDiscount)}
                 </Typography>
+                {clampedDiscount > 0 && (
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      px: 2,
+                      py: 0.75,
+                      mt: 1,
+                      borderRadius: '10px',
+                      bgcolor: 'warning.soft',
+                    }}
+                  >
+                    <LocalOfferRounded sx={{ fontSize: 13, color: 'warning.main' }} />
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.ink' }}>
+                      Desconto -{discountPercent.toFixed(1)}%
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
+            </>
+          )}
 
           {/* Resumo financeiro */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -218,6 +230,7 @@ export default function FinalizationModal({
             total={total}
             cashReceived={cashReceived}
             onCashReceivedChange={onCashReceivedChange}
+            payments={payments}
           />
 
         </Box>

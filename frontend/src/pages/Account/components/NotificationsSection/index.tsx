@@ -1,44 +1,86 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Box, Button, CircularProgress, Divider, Paper, Switch, Typography } from '@mui/material'
+import CheckIcon from '@mui/icons-material/Check'
 import {
-  Box,
-  Typography,
-  Switch,
-  Paper,
-  Divider,
-} from '@mui/material'
+  useUpdateNotificationSettings,
+  useUserSettings,
+} from '../../../../hooks/useUserSettings'
+import type { NotificationPrefs } from '../../../../types/usersettings.type'
 
-interface NotificationEvent {
-  id: string
-  label: string
-  sublabel: string
-  inApp: boolean
-}
-
-const EVENTS: NotificationEvent[] = [
-  { id: 'new_sales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado', inApp: true },
-  { id: 'stock_alerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', inApp: true },
-  { id: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças', inApp: true },
-  { id: 'team_activity', label: 'Atividade da equipe', sublabel: 'Funcionários batem ponto, fechamento de caixa', inApp: true },
+const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string }[] = [
+  { key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado' },
+  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo' },
+  { key: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças' },
+  {
+    key: 'teamActivity',
+    label: 'Atividade da equipe',
+    sublabel: 'Funcionários batem ponto, fechamento de caixa',
+  },
 ]
 
 export default function NotificationsSection() {
-  const [prefs, setPrefs] = useState<Record<string, { inApp: boolean }>>(
-    Object.fromEntries(EVENTS.map((e) => [e.id, { inApp: e.inApp }]))
-  )
+  const { data, isLoading } = useUserSettings()
+  const update = useUpdateNotificationSettings()
+  const [form, setForm] = useState<NotificationPrefs | null>(null)
+  const initialized = useRef(false)
 
-  const toggle = (id: string) => {
-    setPrefs((prev) => ({ ...prev, [id]: { inApp: !prev[id].inApp } }))
+  useEffect(() => {
+    if (data && !initialized.current) {
+      setForm(data.notifications)
+      initialized.current = true
+    }
+  }, [data])
+
+  if (isLoading || !form) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
+  }
+
+  const toggle = (key: keyof NotificationPrefs) =>
+    setForm((f) => (f ? { ...f, [key]: !f[key] } : f))
+
+  const hasChanges =
+    !!data && EVENTS.some((e) => form[e.key] !== data.notifications[e.key])
+
+  const handleSave = () => {
+    if (form) update.mutate(form)
+  }
+
+  const handleCancel = () => {
+    if (data) setForm(data.notifications)
   }
 
   return (
     <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 4, py: 3 }}>
-        <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-          Preferências de notificação
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Escolha como deseja ser notificado em cada situação
-        </Typography>
+      <Box sx={{ px: 4, py: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
+            Preferências de notificação
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Escolha como deseja ser notificado em cada situação
+          </Typography>
+        </Box>
+        {hasChanges && (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="secondary"
+              startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+              onClick={handleSave}
+              disabled={update.isPending}
+            >
+              Salvar alterações
+            </Button>
+          </Box>
+        )}
       </Box>
       <Divider />
 
@@ -66,7 +108,7 @@ export default function NotificationsSection() {
       </Box>
 
       {EVENTS.map((event, idx) => (
-        <Box key={event.id}>
+        <Box key={event.key}>
           <Box
             sx={{
               display: 'grid',
@@ -87,8 +129,8 @@ export default function NotificationsSection() {
 
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Switch
-                checked={prefs[event.id].inApp}
-                onChange={() => toggle(event.id)}
+                checked={form[event.key]}
+                onChange={() => toggle(event.key)}
                 color="secondary"
               />
             </Box>

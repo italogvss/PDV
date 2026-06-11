@@ -1,32 +1,21 @@
+import CheckIcon from '@mui/icons-material/Check'
 import {
   Box,
+  Button,
   CircularProgress,
   InputAdornment,
   Switch,
   TextField,
   Typography
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { useTenantSettings, useUpdateOperationSettings } from '../../../../hooks/useTenantSettings'
 import type { OperationSettings } from '../../../../types/settings.types'
+import { SHORTCUTS } from '../../types'
 
-interface Shortcut {
-  label: string
-  keys: string[]
-}
 
-const SHORTCUTS: Shortcut[] = [
-  { label: 'Nova venda', keys: ['F2'] },
-  { label: 'Buscar produto', keys: ['F3'] },
-  { label: 'Aplicar desconto', keys: ['F6'] },
-  { label: 'Finalizar venda', keys: ['F8'] },
-  { label: 'Cancelar item', keys: ['Del'] },
-  { label: 'Pagamento Pix', keys: ['⌘', 'P'] },
-  { label: 'Pagamento Crédito', keys: ['⌘', 'C'] },
-  { label: 'Imprimir cupom', keys: ['⌘', 'I'] },
-]
 
 function KeyChip({ label }: { label: string }) {
   return (
@@ -56,9 +45,13 @@ export default function OperationSection() {
   const { data, isLoading } = useTenantSettings()
   const update = useUpdateOperationSettings()
   const [form, setForm] = useState<OperationSettings | null>(null)
+  const initialized = useRef(false)
 
   useEffect(() => {
-    if (data) setForm(data.operation)
+    if (data && !initialized.current) {
+      setForm(data.operation)
+      initialized.current = true
+    }
   }, [data])
 
   if (isLoading || !form) {
@@ -79,7 +72,28 @@ export default function OperationSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Vendas e descontos">
+      <SettingCard
+        title="Vendas e descontos"
+        action={
+          hasChanges ? (
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="secondary"
+                startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                onClick={handleSave}
+                disabled={update.isPending}
+              >
+                Salvar alterações
+              </Button>
+            </Box>
+          ) : undefined
+        }
+      >
         <SettingRow label="Permitir descontos no PDV">
           <Switch
             checked={form.allowDiscounts}
@@ -88,7 +102,7 @@ export default function OperationSection() {
           />
         </SettingRow>
 
-        <SettingRow label="Limite de desconto sem gerente" sublabel="Acima disso pede liberação">
+        <SettingRow label="Limite de desconto" sublabel="Limita o desconto maximo por venda">
           <TextField
             size="small"
             type="number"

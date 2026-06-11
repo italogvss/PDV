@@ -24,10 +24,19 @@ export default function PaymentSection({
   total,
   cashReceived,
   onCashReceivedChange,
+  payments,
 }: PaymentSectionProps) {
   const receivedNumber = Number(cashReceived.replace(',', '.'))
   const validReceived = !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
   const change = validReceived ? receivedNumber - total : 0
+
+  // Cada forma de pagamento só aparece se habilitada nas configurações do tenant.
+  // "Cartão" aparece se crédito OU débito estiver habilitado.
+  const availableMethods = METHODS.filter(({ value }) => {
+    if (value === 'pix') return payments.pix.enabled
+    if (value === 'cash') return payments.cash.enabled
+    return payments.cardCredit.enabled || payments.cardDebit.enabled
+  })
 
   function handleCardTypeChange(value: 'credit' | 'debit') {
     onCardTypeChange(value)
@@ -42,7 +51,7 @@ export default function PaymentSection({
         value={method}
         onChange={(_, value: PaymentMethod | null) => value && onMethodChange(value)}
       >
-        {METHODS.map(({ value, label, Icon }) => (
+        {availableMethods.map(({ value, label, Icon }) => (
           <ToggleButton
             key={value}
             value={value}
@@ -60,10 +69,10 @@ export default function PaymentSection({
             fullWidth
             value={cardType}
             onChange={(_, value: 'credit' | 'debit' | null) => value && handleCardTypeChange(value)}
-            size="small"           
+            size="small"
           >
-            <ToggleButton value="credit">Crédito</ToggleButton>
-            <ToggleButton value="debit">Débito</ToggleButton>
+            {payments.cardCredit.enabled && <ToggleButton value="credit">Crédito</ToggleButton>}
+            {payments.cardDebit.enabled && <ToggleButton value="debit">Débito</ToggleButton>}
           </ToggleButtonGroup>
 
           {cardType === 'credit' && (

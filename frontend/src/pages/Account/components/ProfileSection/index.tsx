@@ -25,7 +25,7 @@ function getInitials(name: string): string {
 }
 
 export default function ProfileSection() {
-  const { userId, name: authName, email, phone: authPhone } = useAppSelector((s) => s.auth)
+  const { userId, name: authName, email, phone: authPhone, role: roletype } = useAppSelector((s) => s.auth)
   const updateUser = useUpdateUser()
 
   const [name, setName] = useState(authName ?? '')
@@ -98,7 +98,8 @@ export default function ProfileSection() {
           ) : undefined
         }
       >
-        <SettingRow label="Foto de perfil" sublabel="JPG ou PNG até 2MB">
+        {roletype === "Employee" && (
+        <SettingRow label="Foto de perfil" sublabel="JPG ou PNG até 5MB">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box sx={{ position: 'relative' }}>
               <Avatar
@@ -140,7 +141,7 @@ export default function ProfileSection() {
             </Button>
           </Box>
         </SettingRow>
-
+)}
         <SettingRow label="Nome completo">
           <TextField
             size="small"

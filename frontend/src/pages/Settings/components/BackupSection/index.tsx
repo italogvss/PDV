@@ -1,49 +1,22 @@
+import DatasetOutlinedIcon from '@mui/icons-material/DatasetOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import {
   Box,
-  Typography,
-  Chip,
   Button,
-  Select,
-  MenuItem,
+  Chip,
   FormControl,
-  Switch,
   IconButton,
+  MenuItem,
+  Select,
+  Switch,
+  Typography,
 } from '@mui/material'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
-import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined'
-import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
-import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
-import DatasetOutlinedIcon from '@mui/icons-material/DatasetOutlined'
 import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import { BACKUPS, EXPORT_CATEGORIES } from '../../types'
 
-interface BackupEntry {
-  id: string
-  date: string
-  size: string
-  status: 'success' | 'failed'
-}
 
-const BACKUPS: BackupEntry[] = [
-  { id: '1', date: '14/05/2026 03:00', size: '24.8 MB', status: 'success' },
-  { id: '2', date: '13/05/2026 03:00', size: '24.6 MB', status: 'success' },
-  { id: '3', date: '12/05/2026 03:00', size: '24.4 MB', status: 'success' },
-  { id: '4', date: '11/05/2026 03:00', size: '—', status: 'failed' },
-  { id: '5', date: '10/05/2026 03:00', size: '23.9 MB', status: 'success' },
-]
-
-const EXPORT_CATEGORIES = [
-  { id: 'sales', label: 'Vendas', icon: ReceiptLongOutlinedIcon },
-  { id: 'products', label: 'Produtos', icon: Inventory2OutlinedIcon },
-  { id: 'customers', label: 'Clientes', icon: PeopleOutlinedIcon },
-  { id: 'expenses', label: 'Despesas', icon: AccountBalanceWalletOutlinedIcon },
-  { id: 'billing', label: 'Faturamento', icon: BarChartOutlinedIcon },
-  { id: 'team', label: 'Equipe', icon: GroupsOutlinedIcon },
-]
 
 export default function BackupSection() {
   const [autoBackup, setAutoBackup] = useState(true)

@@ -6,5 +6,14 @@ public class UserSettings : BaseEntity
 {
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+
+    // Aparência
     public Theme Theme { get; set; } = Theme.Light;
+    public string AccentColor { get; set; } = "green";
+
+    // Notificações no app
+    public bool NotifyNewSales { get; set; } = true;
+    public bool NotifyStockAlerts { get; set; } = true;
+    public bool NotifyInvoices { get; set; } = true;
+    public bool NotifyTeamActivity { get; set; } = true;
 }
