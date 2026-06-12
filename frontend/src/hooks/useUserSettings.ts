@@ -26,7 +26,7 @@ export function useUpdateAppearanceSettings() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       // Mantém o tema aplicado em sincronia (evita flash no próximo reload).
-      dispatch(setAppearance({ theme: data.theme, textSize: data.textSize }))
+      dispatch(setAppearance({ theme: data.theme, accentColor: data.accentColor, textSize: data.textSize }))
       showToast('Preferências salvas!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao salvar preferências.'),

@@ -246,7 +246,6 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
                       <Switch
                         checked={field.value}
                         onChange={(e) => field.onChange(e.target.checked)}
-                        color="success"
                         size="small"
                       />
                     }

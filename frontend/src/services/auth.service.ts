@@ -1,7 +1,7 @@
 import { api } from './api'
 import type { AuthUser, UserRole } from '../types/auth.types'
 import type { Permission } from '../types/employee.types'
-import type { Theme } from '../types/usersettings.type'
+import type { AccentColor, Theme } from '../types/usersettings.type'
 
 interface MeApiResponse {
   id: string
@@ -13,7 +13,7 @@ interface MeApiResponse {
   avatarUrl: string | null
   lastTenantId: string | null
   role: UserRole
-  settings: { theme: Theme; textSize: number } | null
+  settings: { theme: Theme; accentColor: AccentColor; textSize: number } | null
   tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee'; logoUrl: string | null }>
   mustChangePassword?: boolean
   permissions?: string[]
@@ -33,7 +33,11 @@ export const authService = {
       avatarUrl: data.avatarUrl,
       role: data.role ?? 'Owner',
       settings: data.settings
-        ? { theme: data.settings.theme, textSize: data.settings.textSize ?? 15 }
+        ? {
+            theme: data.settings.theme,
+            accentColor: data.settings.accentColor ?? 'green',
+            textSize: data.settings.textSize ?? 15,
+          }
         : null,
       tenants: (data.tenants ?? []).map((t) => ({ ...t, logoUrl: t.logoUrl ?? null })),
       mustChangePassword: data.mustChangePassword ?? false,

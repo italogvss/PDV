@@ -154,7 +154,7 @@ public class AuthService(
             ?? throw new NotFoundException("Usuário não encontrado.");
 
         var settings = user.Settings is not null
-            ? new UserSettingsDTO(user.Settings.Theme.ToString(), user.Settings.TextSize)
+            ? new UserSettingsDTO(user.Settings.Theme.ToString(), user.Settings.TextSize, user.Settings.AccentColor)
             : null;
 
         var tenantItems = new List<TenantListItem>();

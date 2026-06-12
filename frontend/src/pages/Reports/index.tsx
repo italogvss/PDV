@@ -151,7 +151,7 @@ export default function ReportsPage() {
           }}
           slotProps={{ textField: { sx: { width: 140 } } }}
         />
-        <Button variant="contained" color="success" startIcon={<FileDownloadOutlined />} onClick={handleExportPDF}>
+        <Button variant="contained" startIcon={<FileDownloadOutlined />} onClick={handleExportPDF}>
           Exportar PDF
         </Button>
       </PageHeader>

@@ -72,9 +72,9 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
         },
       },
       contained: {
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
-        '&:hover': { backgroundColor: theme.palette.neutral[800] },
+        backgroundColor: theme.palette.secondary.main,
+        color: theme.palette.secondary.contrastText,
+        '&:hover': { backgroundColor: theme.palette.secondary.dark },
       },
       text: {
         color: theme.palette.text.secondary,
@@ -89,6 +89,15 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
           backgroundColor: theme.palette.success.main,
           color: theme.palette.success.contrastText,
           '&:hover': { backgroundColor: theme.palette.success.dark },
+        },
+      },
+      {
+        // Secundário = cor de destaque (accent) escolhida pelo usuário
+        props: { color: 'secondary', variant: 'contained' },
+        style: {
+          backgroundColor: theme.palette.secondary.main,
+          color: theme.palette.secondary.contrastText,
+          '&:hover': { backgroundColor: theme.palette.secondary.dark },
         },
       },
       {

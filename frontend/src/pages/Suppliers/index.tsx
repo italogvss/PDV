@@ -81,7 +81,6 @@ export default function SuppliersPage() {
       
       <PageHeader title='Fornecedores' description={`Total de fornecedores: ${suppliers.length}`}><Button
           variant="contained"
-          color="success"
           size="small"
           startIcon={<AddRounded />}
           onClick={() => setFormOpen(true)}

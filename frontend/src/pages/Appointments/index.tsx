@@ -233,7 +233,7 @@ export default function AppointmentsPage() {
         <Button variant="ghost" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
           Hoje
         </Button>
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={openNew}>
+        <Button variant="contained" startIcon={<AddRounded />} onClick={openNew}>
           Novo agendamento
         </Button>
       </PageHeader>

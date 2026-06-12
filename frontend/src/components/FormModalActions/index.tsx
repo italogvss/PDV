@@ -45,7 +45,6 @@ export default function FormModalActions({
           form={formId}
           onClick={onSubmit}
           variant="contained"
-          color="success"
           disabled={isPending || submitDisabled}
           startIcon={
             isPending ? <CircularProgress size={14} color="inherit" /> : <CheckRounded />

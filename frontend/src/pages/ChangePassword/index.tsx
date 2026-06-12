@@ -173,7 +173,6 @@ export default function ChangePasswordPage() {
             <Button
               type="submit"
               variant="contained"
-              color="success"
               fullWidth
               disabled={isSubmitting}
               startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}

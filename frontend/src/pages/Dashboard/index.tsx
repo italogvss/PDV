@@ -84,7 +84,7 @@ export default function DashboardPage() {
         >
           {selectedDateRange.label}
         </Button>
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => navigate('/vendas')}>
+        <Button variant="contained" startIcon={<AddRounded />} onClick={() => navigate('/vendas')}>
           Nova venda
         </Button>
       </PageHeader>

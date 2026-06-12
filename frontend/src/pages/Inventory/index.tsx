@@ -270,7 +270,7 @@ export default function InventoryPage() {
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
       >
         {canManage && (
-          <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+          <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
             Novo produto
           </Button>
         )}

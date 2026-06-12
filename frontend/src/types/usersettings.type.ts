@@ -3,6 +3,7 @@ export type Theme = 'Light' | 'Dark'
 
 export interface UserSettingsDTO {
   theme: Theme
+  accentColor: AccentColor
   textSize: number
 }
 

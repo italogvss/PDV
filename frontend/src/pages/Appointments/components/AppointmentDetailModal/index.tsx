@@ -345,7 +345,6 @@ export default function AppointmentDetailModal({
                 {advance && (
                   <Button
                     variant="contained"
-                    color="success"
                     startIcon={advance.icon}
                     onClick={() => onChangeStatus(data.id, advance.next)}
                   >

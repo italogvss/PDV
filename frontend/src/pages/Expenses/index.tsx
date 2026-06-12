@@ -262,7 +262,7 @@ export default function ExpensesPage() {
           slotProps={{ textField: { sx: { width: 200 } } }}
         />
         {canManage && (
-          <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
+          <Button variant="contained" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
             Nova despesa
           </Button>
         )}

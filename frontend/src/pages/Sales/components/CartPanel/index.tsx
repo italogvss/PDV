@@ -105,7 +105,6 @@ export default function CartPanel({
 
         <Button
           variant="contained"
-          color="success"
           size="large"
           fullWidth
           disabled={isEmpty}

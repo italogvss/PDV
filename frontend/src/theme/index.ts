@@ -18,16 +18,22 @@ import { ptBR } from '@mui/material/locale';
 
 import './augment'; // module augmentation
 import { colors, getColors, type AppThemeMode } from './palette';
+import type { AccentColor } from '../types/usersettings.type';
 import { buildTypography, BASE_FONT_SIZE, fontFamily, fontFamilyMono, loadGeistFont } from './typography';
 import { shadows, customShadows, radius } from './shape';
 import { components } from './components';
 
 /**
- * Constrói o tema do app para o modo (light/dark) e o tamanho de texto escolhidos.
- * `textSize` é o tamanho base configurável pelo usuário (14–20).
+ * Constrói o tema do app para o modo (light/dark), o tamanho de texto e a cor de
+ * destaque escolhidos. `textSize` é o tamanho base configurável pelo usuário (14–20);
+ * `accent` define a escala que vira o `secondary` do tema.
  */
-export function createAppTheme(mode: AppThemeMode = 'light', textSize: number = BASE_FONT_SIZE) {
-  const c = getColors(mode);
+export function createAppTheme(
+  mode: AppThemeMode = 'light',
+  textSize: number = BASE_FONT_SIZE,
+  accent: AccentColor = 'green',
+) {
+  const c = getColors(mode, accent);
   const scale = textSize / BASE_FONT_SIZE;
 
   const baseOptions: ThemeOptions = {

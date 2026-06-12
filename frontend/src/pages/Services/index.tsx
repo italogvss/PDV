@@ -257,7 +257,7 @@ export default function ServicesPage() {
         title="Serviços"
         description={isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
       >
-        <Button variant="contained" color="success" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+        <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
           Novo serviço
         </Button>
       </PageHeader>

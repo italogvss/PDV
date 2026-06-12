@@ -10,6 +10,8 @@
  *   semantic = sucesso/erro/aviso/info já mapeados aos `success/warning/error/info` do MUI
  */
 
+import type { AccentColor } from '../types/usersettings.type';
+
 export type ColorScale = {
   50: string;
   100: string;
@@ -56,6 +58,71 @@ const accentGreen: ColorScale = {
   700: '#1c732e',
   800: '#1a5d27',
   900: '#174720',
+};
+
+const accentBlue: ColorScale = {
+  50:  '#ecf3fc',
+  100: '#d4e6f8',
+  200: '#a9cdf1',
+  300: '#74ade7',
+  400: '#4a93dd',
+  500: '#3a82d4',
+  600: '#2f6dbb',
+  700: '#285a9b',
+  800: '#224a7e',
+  900: '#1b3a63',
+};
+
+const accentOrange: ColorScale = {
+  50:  '#fcf3e7',
+  100: '#f9e1c4',
+  200: '#f2c489',
+  300: '#eaa451',
+  400: '#e08a2a',
+  500: '#d97a1f',
+  600: '#bd6817',
+  700: '#9c5415',
+  800: '#7e4416',
+  900: '#663815',
+};
+
+const accentPurple: ColorScale = {
+  50:  '#f4ecfb',
+  100: '#e7d6f6',
+  200: '#cfaeec',
+  300: '#b07fe1',
+  400: '#9e63d9',
+  500: '#9152d4',
+  600: '#7e3fc0',
+  700: '#69359f',
+  800: '#562d81',
+  900: '#432461',
+};
+
+const accentPink: ColorScale = {
+  50:  '#fceef3',
+  100: '#f9d6e2',
+  200: '#f2adc4',
+  300: '#e97fa0',
+  400: '#e25c84',
+  500: '#d94576',
+  600: '#c2335f',
+  700: '#a12a4f',
+  800: '#832442',
+  900: '#631b33',
+};
+
+const accentGraphite: ColorScale = {
+  50:  '#f3f3f3',
+  100: '#e2e2e2',
+  200: '#c6c6c6',
+  300: '#a0a0a0',
+  400: '#757575',
+  500: '#5c5c5c',
+  600: '#4b4b4b',
+  700: '#3d3d3d',
+  800: '#2e2e2e',
+  900: '#1f1f1f',
 };
 
 const premiumGold: ColorScale = {
@@ -222,7 +289,24 @@ export const darkColors = {
 
 export type AppThemeMode = 'light' | 'dark';
 
-/** Retorna o conjunto de tokens de cor para o modo escolhido. */
-export function getColors(mode: AppThemeMode): AppColors {
-  return mode === 'dark' ? (darkColors as unknown as AppColors) : colors;
+/**
+ * Escalas de cor de destaque (accent) disponíveis. A cor escolhida pelo usuário
+ * substitui o `accent` do tema — que por sua vez deriva o `secondary` do MUI.
+ */
+export const accentScales: Record<AccentColor, ColorScale> = {
+  green: accentGreen,
+  blue: accentBlue,
+  orange: accentOrange,
+  purple: accentPurple,
+  pink: accentPink,
+  graphite: accentGraphite,
+};
+
+/**
+ * Retorna os tokens de cor para o modo + accent escolhidos. O modo define
+ * surface/text/border/semantic; o accent substitui apenas a escala `accent`.
+ */
+export function getColors(mode: AppThemeMode, accent: AccentColor = 'green'): AppColors {
+  const base = mode === 'dark' ? (darkColors as unknown as AppColors) : colors;
+  return { ...base, accent: accentScales[accent] };
 }

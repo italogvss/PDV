@@ -83,7 +83,6 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
         <Switch
           checked={data.skipHours}
           onChange={(_, checked) => onChange({ skipHours: checked })}
-          color="success"
         />
       </Paper>
 
@@ -191,7 +190,6 @@ export default function StepHorario({ data, onChange }: StepHorarioProps) {
                 size="small"
                 checked={day.open}
                 onChange={(_, checked) => patchDay(key, { open: checked })}
-                color="success"
               />
               <Typography
                 variant="body2"

@@ -215,7 +215,6 @@ export default function OnboardingTenant() {
 
               <Button
                 variant="contained"
-                color="success"
                 endIcon={createTenant.isPending ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
                 onClick={handleNext}
                 disabled={createTenant.isPending}

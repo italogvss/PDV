@@ -64,7 +64,6 @@ export default function StepDocumentos({ data, onChange, errors }: StepDocumento
         <Switch
           checked={data.skipDocuments}
           onChange={(_, checked) => onChange({ skipDocuments: checked })}
-          color="success"
         />
       </Paper>
 

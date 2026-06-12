@@ -123,7 +123,10 @@ export default function AppearanceSection() {
     setForm((f) => (f ? { ...f, theme } : f))
     setPreview({ mode: theme })
   }
-  const setAccent = (accentColor: AccentColor) => setForm((f) => (f ? { ...f, accentColor } : f))
+  const setAccent = (accentColor: AccentColor) => {
+    setForm((f) => (f ? { ...f, accentColor } : f))
+    setPreview({ accent: accentColor })
+  }
   const setTextSize = (textSize: number) => {
     setForm((f) => (f ? { ...f, textSize } : f))
     setPreview({ textSize })

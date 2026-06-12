@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AuthUser, UserRole } from '../../types/auth.types'
 import type { Permission } from '../../types/employee.types'
 import type { TenantListItem } from '../../types/tenant.types'
-import { TEXT_SIZE_DEFAULT, type AppTheme } from '../../types/usersettings.type'
+import { TEXT_SIZE_DEFAULT, type AccentColor, type AppTheme } from '../../types/usersettings.type'
 
 export interface AuthState {
   userId: string | null
@@ -21,12 +21,16 @@ export interface AuthState {
   permissions: Permission[]
   // Aparência aplicada (vinda de /auth/me; alimenta o ThemeModeProvider)
   theme: AppTheme
+  accentColor: AccentColor
   textSize: number
 }
 
 // Normaliza o tema do backend ('Light' | 'Dark') para o formato do app.
 const themeFromSettings = (settings: AuthUser['settings']): AppTheme =>
   settings?.theme === 'Dark' ? 'dark' : 'light'
+
+const accentFromSettings = (settings: AuthUser['settings']): AccentColor =>
+  settings?.accentColor ?? 'green'
 
 const initialState: AuthState = {
   userId: null,
@@ -44,6 +48,7 @@ const initialState: AuthState = {
   tenants: [],
   permissions: [],
   theme: 'light',
+  accentColor: 'green',
   textSize: TEXT_SIZE_DEFAULT,
 }
 
@@ -68,12 +73,14 @@ export const authSlice = createSlice({
       tenants: action.payload.tenants ?? [],
       permissions: action.payload.permissions ?? [],
       theme: themeFromSettings(action.payload.settings),
+      accentColor: accentFromSettings(action.payload.settings),
       textSize: action.payload.settings?.textSize ?? TEXT_SIZE_DEFAULT,
     }),
     clearAuth: (): AuthState => ({ ...initialState, isLoading: false }),
-    setAppearance: (state, action: PayloadAction<{ theme: AppTheme; textSize: number }>) => ({
+    setAppearance: (state, action: PayloadAction<{ theme: AppTheme; accentColor: AccentColor; textSize: number }>) => ({
       ...state,
       theme: action.payload.theme,
+      accentColor: action.payload.accentColor,
       textSize: action.payload.textSize,
     }),
     setProfile: (state, action: PayloadAction<{ name: string; phone: string | null; document: string | null; birthDate: string | null }>) => ({

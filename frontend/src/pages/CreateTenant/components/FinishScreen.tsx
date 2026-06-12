@@ -177,7 +177,6 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
           </Button>
           <Button
             variant="contained"
-            color="success"
             endIcon={<ArrowForwardIcon />}
             onClick={() => navigate('/')}
           >
