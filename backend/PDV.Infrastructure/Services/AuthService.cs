@@ -157,8 +157,15 @@ public class AuthService(
             ? new UserSettingsDTO(user.Settings.Theme.ToString(), user.Settings.TextSize)
             : null;
 
-        var tenants = user.UserTenants
-            .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
+        var tenantItems = new List<TenantListItem>();
+        foreach (var ut in user.UserTenants)
+        {
+            var s = ut.Tenant.Settings;
+            var logoUrl = s is not null
+                ? await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt)
+                : null;
+            tenantItems.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl));
+        }
 
         var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
 
@@ -177,7 +184,7 @@ public class AuthService(
         var imageUrl = await storage.ResolveReadUrlAsync(user.ImageUrl, MediaCategory.Profile, user.UpdatedAt);
 
         return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.Document, user.BirthDate,
-            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenants, mustChangePassword, permissions);
+            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenantItems, mustChangePassword, permissions);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)
@@ -200,8 +207,16 @@ public class AuthService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
 
-        return user.UserTenants
-            .Select(ut => new TenantListItem(ut.TenantId, ut.Tenant.Settings?.FantasyName ?? "", ut.Role.ToString()));
+        var items = new List<TenantListItem>();
+        foreach (var ut in user.UserTenants)
+        {
+            var s = ut.Tenant.Settings;
+            var logoUrl = s is not null
+                ? await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt)
+                : null;
+            items.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl));
+        }
+        return items;
     }
 
     public async Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string email, string password)

@@ -48,7 +48,7 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
     if (!file) return
     const reader = new FileReader()
     reader.onload = (ev) => {
-      onChange({ logoPreview: ev.target?.result as string })
+      onChange({ logoPreview: ev.target?.result as string, logoFile: file })
     }
     reader.readAsDataURL(file)
   }

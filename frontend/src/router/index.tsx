@@ -53,7 +53,7 @@ export const router = createBrowserRouter([
           {
             path: 'historico',
             element: (
-              <PermissionGuard permission="SellProducts">
+              <PermissionGuard permission="ViewSalesHistory">
                 <SalesHistoryPage />
               </PermissionGuard>
             ),
@@ -67,7 +67,14 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'servicos', element: <ServicesPage /> },
-          { path: 'agendamentos', element: <AppointmentsPage /> },
+          {
+            path: 'agendamentos',
+            element: (
+              <PermissionGuard permission="ViewAppointments">
+                <AppointmentsPage />
+              </PermissionGuard>
+            ),
+          },
           {
             path: 'despesas',
             element: (
@@ -79,7 +86,7 @@ export const router = createBrowserRouter([
           {
             path: 'funcionarios',
             element: (
-              <PermissionGuard permission="ManageEmployees">
+              <PermissionGuard permission="ViewEmployees">
                 <EmployeesPage />
               </PermissionGuard>
             ),
@@ -92,8 +99,22 @@ export const router = createBrowserRouter([
               </PermissionGuard>
             ),
           },
-          { path: 'clientes', element: <CustomersPage /> },
-          { path: 'fornecedores', element: <SuppliersPage /> },
+          {
+            path: 'clientes',
+            element: (
+              <PermissionGuard permission="ViewCustomers">
+                <CustomersPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'fornecedores',
+            element: (
+              <PermissionGuard permission="ViewSuppliers">
+                <SuppliersPage />
+              </PermissionGuard>
+            ),
+          },
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'conta', element: <AccountPage /> },
           { path: 'ajuda', element: <HelpPage /> },

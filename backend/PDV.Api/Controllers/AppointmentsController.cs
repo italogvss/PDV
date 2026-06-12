@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Appointments;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
@@ -11,6 +13,7 @@ namespace PDV.Api.Controllers;
 public class AppointmentsController(IAppointmentService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.ViewAppointments)]
     public async Task<IActionResult> GetByDateRange(
         [FromQuery] DateOnly startDate,
         [FromQuery] DateOnly endDate)
@@ -20,6 +23,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewAppointments)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -27,7 +31,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageAppointments)]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -35,7 +39,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageAppointments)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAppointmentRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -43,7 +47,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/status")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageAppointments)]
     public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeAppointmentStatusRequest request)
     {
         var result = await service.ChangeStatusAsync(id, request);
@@ -51,7 +55,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageAppointments)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

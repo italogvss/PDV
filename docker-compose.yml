@@ -60,6 +60,7 @@ services:
       - "5000:8080"            # host 5000 -> container 8080
     volumes:
       - ./backend:/src         # codigo-fonte para hot reload
+      - nuget_cache:/root/.nuget/packages  # persiste cache entre recreacoes do container
       # Volumes anonimos mascaram bin/obj do host Windows (evita conflito
       # com os artefatos compilados dentro do container Linux).
       - /src/PDV.Api/bin
@@ -104,3 +105,4 @@ services:
 volumes:
   mysql_data:
   minio_data:
+  nuget_cache:

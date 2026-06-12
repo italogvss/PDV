@@ -45,6 +45,7 @@ function TenantRow({
     >
       <Avatar
         variant="rounded"
+        src={tenant.logoUrl ?? undefined}
         sx={{
           width: 28,
           height: 28,

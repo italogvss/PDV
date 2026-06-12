@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Suppliers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
@@ -11,6 +13,7 @@ namespace PDV.Api.Controllers;
 public class SuppliersController(ISupplierService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.ViewSuppliers)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
@@ -21,6 +24,7 @@ public class SuppliersController(ISupplierService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewSuppliers)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -28,7 +32,7 @@ public class SuppliersController(ISupplierService service) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageSuppliers)]
     public async Task<IActionResult> Create([FromBody] CreateSupplierRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -36,7 +40,7 @@ public class SuppliersController(ISupplierService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageSuppliers)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSupplierRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -44,7 +48,7 @@ public class SuppliersController(ISupplierService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [RequirePermission(Permission.ManageSuppliers)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

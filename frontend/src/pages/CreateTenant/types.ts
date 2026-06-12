@@ -35,6 +35,7 @@ export interface CreateTenantFormData {
   phone: string
   segment: BusinessSegment | ''
   logoPreview: string | null
+  logoFile: File | null
   skipDocuments: boolean
   skipHours: boolean
   cnpj: string
@@ -57,6 +58,7 @@ export const INITIAL_FORM_DATA: CreateTenantFormData = {
   phone: '',
   segment: '',
   logoPreview: null,
+  logoFile: null,
   skipDocuments: false,
   skipHours: false,
   cnpj: '',

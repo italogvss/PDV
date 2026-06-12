@@ -14,7 +14,7 @@ namespace PDV.Api.Controllers;
 public class SalesController(ISaleService service) : ControllerBase
 {
     [HttpGet]
-    [RequirePermission(Permission.SellProducts)]
+    [RequirePermission(Permission.ViewSalesHistory)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -32,7 +32,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [RequirePermission(Permission.SellProducts)]
+    [RequirePermission(Permission.ViewSalesHistory)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);

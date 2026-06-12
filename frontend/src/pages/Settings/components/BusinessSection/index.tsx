@@ -220,8 +220,9 @@ export default function BusinessSection() {
           <FormControl size="small" sx={{ width: 340 }}>
             <Select value={form.segment} onChange={(e) => set({ segment: e.target.value })}>
               <MenuItem value="cafeteria">Cafeteria / Padaria</MenuItem>
-              <MenuItem value="restaurante">Restaurante</MenuItem>
+              <MenuItem value="restaurante">Restaurante / Bar</MenuItem>
               <MenuItem value="mercado">Mercado / Mercearia</MenuItem>
+              <MenuItem value="varejo">Varejo / Loja</MenuItem>
               <MenuItem value="farmacia">Farmácia</MenuItem>
               <MenuItem value="vestuario">Vestuário</MenuItem>
               <MenuItem value="eletronicos">Eletrônicos</MenuItem>

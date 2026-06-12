@@ -215,12 +215,19 @@ public class TenantService(
                 [
                     new() { Permission = Permission.SellProducts },
                     new() { Permission = Permission.CancelSales },
+                    new() { Permission = Permission.ViewSalesHistory },
                     new() { Permission = Permission.ViewStock },
                     new() { Permission = Permission.ManageStock },
                     new() { Permission = Permission.ViewExpenses },
                     new() { Permission = Permission.ManageExpenses },
                     new() { Permission = Permission.ViewReports },
+                    new() { Permission = Permission.ViewEmployees },
                     new() { Permission = Permission.ManageEmployees },
+                    new() { Permission = Permission.ViewCustomers },
+                    new() { Permission = Permission.ManageCustomers },
+                    new() { Permission = Permission.ViewSuppliers },
+                    new() { Permission = Permission.ViewAppointments },
+                    new() { Permission = Permission.ManageAppointments },
                 ],
             },
             new TenantRole
@@ -233,7 +240,10 @@ public class TenantService(
                 Permissions =
                 [
                     new() { Permission = Permission.SellProducts },
+                    new() { Permission = Permission.ViewSalesHistory },
                     new() { Permission = Permission.ViewStock },
+                    new() { Permission = Permission.ViewCustomers },
+                    new() { Permission = Permission.ViewAppointments },
                 ],
             },
             new TenantRole
@@ -247,6 +257,7 @@ public class TenantService(
                 [
                     new() { Permission = Permission.ViewStock },
                     new() { Permission = Permission.ManageStock },
+                    new() { Permission = Permission.ViewSuppliers },
                 ],
             },
         ];

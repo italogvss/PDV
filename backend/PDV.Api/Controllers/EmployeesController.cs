@@ -10,10 +10,10 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/employees")]
 [Authorize]
-[RequirePermission(Permission.ManageEmployees)]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permission.ViewEmployees)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
@@ -23,6 +23,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewEmployees)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -30,6 +31,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission(Permission.ManageEmployees)]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -37,6 +39,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(Permission.ManageEmployees)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -44,6 +47,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequirePermission(Permission.ManageEmployees)]
     public async Task<IActionResult> Deactivate(Guid id)
     {
         await service.DeactivateAsync(id);
@@ -51,6 +55,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/reactivate")]
+    [RequirePermission(Permission.ManageEmployees)]
     public async Task<IActionResult> Reactivate(Guid id)
     {
         await service.ReactivateAsync(id);
