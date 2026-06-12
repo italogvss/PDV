@@ -4,9 +4,7 @@ import {
   Box,
   TextField,
   Typography,
-  Chip,
   InputAdornment,
-  Skeleton,
   Switch,
   FormControlLabel,
   useMediaQuery,
@@ -23,6 +21,7 @@ import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
 import FormModalActions from '../../../../components/FormModalActions'
+import ChipSelect from '../../../../components/ChipSelect'
 import type { ServiceModalProps } from './types'
 
 const schema = z.object({
@@ -217,53 +216,22 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
           {/* Categoria */}
           <Box>
             <FieldLabel label="Categoria" />
-            {isLoadingCategories ? (
-              <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} variant="rounded" width={80} height={28} />
-                ))}
-              </Box>
-            ) : (
-              <Controller
-                name="categoryId"
-                control={control}
-                render={({ field }) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                    {categories.length === 0 && (
-                      <Typography variant="caption" color="text.disabled">
-                        Nenhuma categoria cadastrada. Adicione na tela de serviços.
-                      </Typography>
-                    )}
-                    {categories.map((cat) => (
-                      <Chip
-                        key={cat.id}
-                        label={
-                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: cat.color }} />
-                            {cat.name}
-                          </Box>
-                        }
-                        size="medium"
-                        onClick={() => field.onChange(field.value === cat.id ? null : cat.id)}
-                        variant={field.value === cat.id ? 'filled' : 'outlined'}
-                        sx={
-                          field.value === cat.id
-                            ? {
-                                cursor: 'pointer',
-                                bgcolor: 'text.primary',
-                                color: 'background.paper',
-                                borderColor: 'text.primary',
-                                fontWeight: 600,
-                                '&:hover': { bgcolor: 'text.primary' },
-                              }
-                            : { cursor: 'pointer', borderColor: 'border.subtle', color: 'text.secondary' }
-                        }
-                      />
-                    ))}
-                  </Box>
-                )}
-              />
-            )}
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field }) => (
+                <ChipSelect
+                  options={categories.map((cat) => ({ id: cat.id, label: cat.name, color: cat.color }))}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  loading={isLoadingCategories}
+                  emptyMessage="Nenhuma categoria cadastrada. Adicione na tela de serviços."
+                  size="medium"
+                  colorMode="fill"
+                  nullable
+                />
+              )}
+            />
           </Box>
 
           {/* Status */}

@@ -5,41 +5,17 @@ import {
   CircularProgress,
   InputAdornment,
   Switch,
-  TextField,
-  Typography
+  TextField
 } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { useTenantSettings, useUpdateOperationSettings } from '../../../../hooks/useTenantSettings'
 import type { OperationSettings } from '../../../../types/settings.types'
-import { SHORTCUTS } from '../../types'
 
 
 
-function KeyChip({ label }: { label: string }) {
-  return (
-    <Box
-      sx={{
-        px: 1,
-        py: 0.25,
-        borderRadius: 1,
-        bgcolor: 'surface.raised',
-        border: 1,
-        borderColor: 'border.subtle',
-        fontFamily: 'monospace',
-        fontSize: 12,
-        fontWeight: 500,
-        color: 'text.secondary',
-        minWidth: 28,
-        textAlign: 'center',
-        lineHeight: '20px',
-      }}
-    >
-      {label}
-    </Box>
-  )
-}
+
 
 export default function OperationSection() {
   const { data, isLoading } = useTenantSettings()
@@ -115,30 +91,6 @@ export default function OperationSection() {
             }}
           />
         </SettingRow>
-      </SettingCard>
-
-      <SettingCard title="Atalhos de teclado" subtitle="Personalize as combinações no PDV">
-        {SHORTCUTS.map((shortcut) => (
-          <Box
-            key={shortcut.label}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 4,
-              py: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.primary">
-              {shortcut.label}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {shortcut.keys.map((key) => (
-                <KeyChip key={key} label={key} />
-              ))}
-            </Box>
-          </Box>
-        ))}
       </SettingCard>
     </Box>
   )

@@ -23,16 +23,17 @@ export type MethodKey = keyof PaymentsSettings
 
 export interface MethodMeta {
   key: MethodKey
+  showFees: boolean
   label: string
   subtitle: string
   icon: React.ElementType
 }
 
 export const PAYMENT_METHODS: MethodMeta[] = [
-  { key: 'pix', label: 'Pix', subtitle: 'Sem taxa', icon: Pix },
-  { key: 'cardCredit', label: 'Cartão crédito', subtitle: 'Taxa média 3,2%', icon: CreditCard },
-  { key: 'cardDebit', label: 'Cartão débito', subtitle: 'Taxa 1,5%', icon: CreditCard },
-  { key: 'cash', label: 'Dinheiro', subtitle: 'Sem taxa', icon: AttachMoney },
+  { key: 'pix', showFees: false,label: 'Pix', subtitle: 'Sem taxa', icon: Pix },
+  { key: 'cardCredit', showFees: true,label: 'Cartão crédito', subtitle: 'Taxa média 3,2%', icon: CreditCard },
+  { key: 'cardDebit', showFees: true,label: 'Cartão débito', subtitle: 'Taxa 1,5%', icon: CreditCard },
+  { key: 'cash', showFees: false,label: 'Dinheiro', subtitle: 'Sem taxa', icon: AttachMoney },
 ]
 
 

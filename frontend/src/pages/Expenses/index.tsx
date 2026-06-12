@@ -310,9 +310,8 @@ export default function ExpensesPage() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2,
-              pt: 1.5,
+              gap: 1,
+              p: 1.5,
               borderBottom: '1px solid',
               borderColor: 'divider',
             }}
@@ -320,9 +319,9 @@ export default function ExpensesPage() {
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Histórico de despesas
             </Typography>
+            <Box sx={{ flex: 1 }} />
             <Button
               variant="outlined"
-              size="small"
               startIcon={<FilterListRounded />}
               onClick={(e) => setFilterAnchor(e.currentTarget)}
             >

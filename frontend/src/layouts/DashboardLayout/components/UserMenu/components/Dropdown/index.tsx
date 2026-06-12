@@ -1,3 +1,14 @@
+import type { SvgIconComponent } from '@mui/icons-material'
+import {
+  ArrowForwardOutlined,
+  AutoAwesomeOutlined,
+  HelpOutlineOutlined,
+  NotificationsNoneOutlined,
+  PersonOutlined,
+  SecurityOutlined,
+  WorkspacePremiumOutlined
+} from '@mui/icons-material'
+import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
 import {
   Avatar,
   Box,
@@ -7,19 +18,8 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material'
-import {
-  WorkspacePremiumOutlined,
-  DescriptionOutlined,
-  SecurityOutlined,
-  NotificationsNoneOutlined,
-  HelpOutlineOutlined,
-  AutoAwesomeOutlined,
-  ArrowForwardOutlined,
-  PersonOutlined,
-} from '@mui/icons-material'
-import type { SvgIconComponent } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-import { useAppSelector, useAppDispatch } from '../../../../../../store'
+import { useAppDispatch, useAppSelector } from '../../../../../../store'
 import { clearAuth } from '../../../../../../store/slices/auth.slice'
 import { DropdownProps } from './types'
 
@@ -34,17 +34,16 @@ interface AccountItem {
 const ACCOUNT_ITEMS: AccountItem[] = [
   { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil', shortcut: 'G P' },
   { label: 'Assinatura', icon: WorkspacePremiumOutlined, tab: 'assinatura', badge: { label: 'Premium', tone: 'premium' } },
-  { label: 'Faturas e recibos', icon: DescriptionOutlined, tab: 'faturas' },
+  { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios' },
 ]
 
 const SECURITY_ITEMS: AccountItem[] = [
-  { label: 'Segurança e senha', icon: SecurityOutlined, tab: 'seguranca' },
+  { label: 'Segurança', icon: SecurityOutlined, tab: 'seguranca' },
   { label: 'Notificações', icon: NotificationsNoneOutlined, tab: 'notificacoes' },
 ]
 
 const HELP_ITEMS: AccountItem[] = [
   { label: 'Central de ajuda', icon: HelpOutlineOutlined, tab: '' },
-  { label: 'Novidades', icon: AutoAwesomeOutlined, tab: '', badge: { label: '3', tone: 'count' } },
 ]
 
 function ShortcutBadge({ keys }: { keys: string[] }) {
@@ -145,7 +144,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
             overflow: 'auto',
           },
         },
-        list:{ disablePadding: true}
+        list: { disablePadding: true }
       }}
     >
       {/* Profile header — clica e vai para Meu perfil */}

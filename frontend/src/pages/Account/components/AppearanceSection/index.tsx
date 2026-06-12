@@ -22,7 +22,7 @@ function ThemeCard({
   label: string
   selected: boolean
   onClick: () => void
-  preview: 'light' | 'dark' | 'split'
+  preview: 'light' | 'dark'
 }) {
   return (
     <Box
@@ -45,12 +45,7 @@ function ThemeCard({
           overflow: 'hidden',
         }}
       >
-        {preview === 'split' ? (
-          <>
-            <Box sx={{ flex: 1, bgcolor: '#f4f3ef' }} />
-            <Box sx={{ flex: 1, bgcolor: '#1a1a1a' }} />
-          </>
-        ) : (
+        
           <Box
             sx={{
               flex: 1,
@@ -79,7 +74,6 @@ function ThemeCard({
               }}
             />
           </Box>
-        )}
       </Box>
       <Box
         sx={{

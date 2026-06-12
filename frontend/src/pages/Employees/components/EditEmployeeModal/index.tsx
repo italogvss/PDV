@@ -3,10 +3,6 @@ import {
   DialogContent,
   Box,
   TextField,
-  FormControl,
-  Select,
-  MenuItem,
-  FormHelperText,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
@@ -20,6 +16,7 @@ import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
+import ChipSelect from '../../../../components/ChipSelect'
 import type { EditEmployeeModalProps } from './types'
 
 const schema = z.object({
@@ -98,17 +95,15 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
               name="roleId"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.roleId}>
-                  <Select {...field} displayEmpty disabled={rolesLoading}>
-                    <MenuItem value="" disabled>Selecione...</MenuItem>
-                    {roles?.map((r) => (
-                      <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                    ))}
-                  </Select>
-                  {errors.roleId && (
-                    <FormHelperText>{errors.roleId.message}</FormHelperText>
-                  )}
-                </FormControl>
+                <ChipSelect
+                  options={(roles ?? []).map((r) => ({ id: r.id, label: r.name, color: r.color }))}
+                  value={field.value || null}
+                  onChange={(v) => field.onChange(v ?? '')}
+                  loading={rolesLoading}
+                  error={errors.roleId?.message}
+                  size="large"
+                  colorMode="fill"
+                />
               )}
             />
           </Box>

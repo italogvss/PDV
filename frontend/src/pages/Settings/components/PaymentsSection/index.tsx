@@ -172,6 +172,9 @@ export default function PaymentsSection() {
                       <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
                         {method.label}
                       </Typography>
+                      <Typography variant="caption" color={enabled ? 'success.dark' : 'text.tertiary'}>
+                        {state.fee && parseFee(state.fee) > 0 ? `Taxa ${state.fee}%` : 'Sem taxa'}
+                      </Typography>
                     </Box>
                   </Box>
                   <Switch
@@ -182,7 +185,7 @@ export default function PaymentsSection() {
                   />
                 </Box>
 
-                {enabled && (
+                {enabled && (method.showFees) && (
                   <>
                     <FieldLabel label="Taxa por venda" />
                     <TextField

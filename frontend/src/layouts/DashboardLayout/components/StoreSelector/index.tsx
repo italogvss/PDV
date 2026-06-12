@@ -201,20 +201,18 @@ export default function StoreSelector() {
             onClick={() => handleSwitch(tenant.tenantId)}
           />
         ))}
-        {singleTenant && (
-          <>
-            <Divider sx={{ mx: 0.5 }} />
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddBusiness sx={{ fontSize: 16 }} />}
-              onClick={handleCreateStore}
-              sx={{ mx: 0.5, mb: 0.5 }}
-            >
-              Criar nova loja
-            </Button>
-          </>
-        )}
+        <>
+          <Divider sx={{ mx: 0.5 }} />
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddBusiness sx={{ fontSize: 16 }} />}
+            onClick={handleCreateStore}
+            sx={{ mx: 0.5, mb: 0.5 }}
+          >
+            Criar nova loja
+          </Button>
+        </>
       </Popover>
     </Box>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Autocomplete,
   Box,
@@ -19,6 +20,9 @@ import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
 import PaletteRounded from '@mui/icons-material/PaletteRounded'
+import PeopleOutlined from '@mui/icons-material/PeopleOutlined'
+import ContentCutOutlined from '@mui/icons-material/ContentCutOutlined'
+import { MuiColorInput } from 'mui-color-input'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
@@ -107,6 +111,7 @@ export default function NewAppointmentModal({
   const [conflictData, setConflictData] = useState<FormValues | null>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const navigate = useNavigate()
 
   const {
     control,
@@ -301,42 +306,58 @@ export default function NewAppointmentModal({
                 gap: 1.5,
               }}
             >
-              {groups.map((group) => (
-                <Box key={group.name}>
-                  <Typography
-                    variant="caption"
-                    color="text.tertiary"
-                    sx={{ display: 'block', mb: 0.75, fontWeight: 600 }}
-                  >
-                    {group.name}
+              {groups.length === 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, py: 2 }}>
+                  <ContentCutOutlined sx={{ fontSize: 28, color: 'text.disabled' }} />
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                    Nenhum serviço cadastrado ainda.
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                    {group.items.map((service) => {
-                      const selected = selectedIds.includes(service.id)
-                      return (
-                        <Chip
-                          key={service.id}
-                          clickable
-                          size="large"
-                          onClick={() => toggleService(service.id)}
-                          variant={selected ? 'filled' : 'outlined'}
-                          label={`${service.name} · ${service.durationMinutes ?? 30}min`}
-                          sx={
-                            selected
-                              ? {
-                                  bgcolor: 'text.primary',
-                                  color: 'background.paper',
-                                  fontWeight: 600,
-                                  '&:hover': { bgcolor: 'text.primary' },
-                                }
-                              : { borderColor: 'border.subtle', color: 'text.secondary' }
-                          }
-                        />
-                      )
-                    })}
-                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => { onClose(); navigate('/servicos') }}
+                  >
+                    Ir para Serviços
+                  </Button>
                 </Box>
-              ))}
+              ) : (
+                groups.map((group) => (
+                  <Box key={group.name}>
+                    <Typography
+                      variant="caption"
+                      color="text.tertiary"
+                      sx={{ display: 'block', mb: 0.75, fontWeight: 600 }}
+                    >
+                      {group.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                      {group.items.map((service) => {
+                        const selected = selectedIds.includes(service.id)
+                        return (
+                          <Chip
+                            key={service.id}
+                            clickable
+                            size="large"
+                            onClick={() => toggleService(service.id)}
+                            variant={selected ? 'filled' : 'outlined'}
+                            label={`${service.name} · ${service.durationMinutes ?? 30}min`}
+                            sx={
+                              selected
+                                ? {
+                                    bgcolor: 'text.primary',
+                                    color: 'background.paper',
+                                    fontWeight: 600,
+                                    '&:hover': { bgcolor: 'text.primary' },
+                                  }
+                                : { borderColor: 'border.subtle', color: 'text.secondary' }
+                            }
+                          />
+                        )
+                      })}
+                    </Box>
+                  </Box>
+                ))
+              )}
             </Box>
             {errors.serviceIds && (
               <FormHelperText error sx={{ mt: 0.5 }}>
@@ -353,35 +374,64 @@ export default function NewAppointmentModal({
               control={control}
               render={({ field }) => (
                 <Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                    {professionals.map((pro) => {
-                      const selected = field.value === pro.id
-                      return (
-                        <Chip
-                          key={pro.id}
-                          clickable
-                          size="large"
-                          onClick={() => field.onChange(pro.id)}
-                          variant={selected ? 'filled' : 'outlined'}
-                          label={pro.name}
-                          sx={
-                            selected
-                              ? {
-                                  bgcolor: 'text.primary',
-                                  color: 'background.paper',
-                                  fontWeight: 600,
-                                  '&:hover': { bgcolor: 'text.primary' },
-                                }
-                              : { borderColor: 'border.subtle', color: 'text.secondary' }
-                          }
-                        />
-                      )
-                    })}
-                  </Box>
-                  {errors.employeeId && (
-                    <FormHelperText error sx={{ mt: 0.5 }}>
-                      {errors.employeeId.message}
-                    </FormHelperText>
+                  {professionals.length === 0 ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        py: 2,
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: 'border.subtle',
+                      }}
+                    >
+                      <PeopleOutlined sx={{ fontSize: 28, color: 'text.disabled' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                        Nenhum funcionário cadastrado ainda.
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => { onClose(); navigate('/funcionarios') }}
+                      >
+                        Ir para Funcionários
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {professionals.map((pro) => {
+                          const selected = field.value === pro.id
+                          return (
+                            <Chip
+                              key={pro.id}
+                              clickable
+                              size="large"
+                              onClick={() => field.onChange(pro.id)}
+                              variant={selected ? 'filled' : 'outlined'}
+                              label={pro.name}
+                              sx={
+                                selected
+                                  ? {
+                                      bgcolor: 'text.primary',
+                                      color: 'background.paper',
+                                      fontWeight: 600,
+                                      '&:hover': { bgcolor: 'text.primary' },
+                                    }
+                                  : { borderColor: 'border.subtle', color: 'text.secondary' }
+                              }
+                            />
+                          )
+                        })}
+                      </Box>
+                      {errors.employeeId && (
+                        <FormHelperText error sx={{ mt: 0.5 }}>
+                          {errors.employeeId.message}
+                        </FormHelperText>
+                      )}
+                    </>
                   )}
                 </Box>
               )}
@@ -551,91 +601,88 @@ export default function NewAppointmentModal({
             <Controller
               name="color"
               control={control}
-              render={({ field }) => (
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Box
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => field.onChange('')}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') field.onChange('') }}
-                    sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      border: '2px solid',
-                      borderColor: !field.value ? 'text.primary' : 'border.subtle',
-                      bgcolor: 'surface.sunken',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {!field.value && (
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', lineHeight: 1 }}>
-                        —
-                      </Typography>
-                    )}
-                  </Box>
-                  {APPOINTMENT_COLORS.map((c) => (
+              render={({ field }) => {
+                const isValidColor = /^#[0-9A-Fa-f]{6}$/.test(field.value)
+                const isCustom = isValidColor && !APPOINTMENT_COLORS.includes(field.value)
+                return (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                     <Box
-                      key={c}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => field.onChange(c)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') field.onChange(c) }}
+                      onClick={() => field.onChange('')}
                       sx={{
                         width: 28,
                         height: 28,
-                        borderRadius: '50%',
-                        bgcolor: c,
-                        cursor: 'pointer',
+                        borderRadius: 1,
                         border: '2px solid',
-                        borderColor: field.value === c ? 'text.primary' : 'transparent',
-                        outline: field.value === c ? `2px solid ${c}` : 'none',
-                        outlineOffset: '2px',
-                        transition: 'outline 0.15s',
+                        borderColor: !field.value ? 'text.primary' : 'transparent',
+                        bgcolor: 'surface.sunken',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'border-color 0.1s',
+                        '&:hover': { borderColor: 'text.primary' },
                       }}
-                    />
-                  ))}
-                  {(() => {
-                    const isCustom = !!field.value && !APPOINTMENT_COLORS.includes(field.value)
-                    return (
+                    >
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', lineHeight: 1 }}>
+                        —
+                      </Typography>
+                    </Box>
+                    {APPOINTMENT_COLORS.map((c) => (
                       <Box
-                        component="label"
-                        title="Cor personalizada"
+                        key={c}
+                        onClick={() => field.onChange(c)}
                         sx={{
                           width: 28,
                           height: 28,
-                          borderRadius: '50%',
+                          borderRadius: 1,
+                          bgcolor: c,
                           cursor: 'pointer',
                           border: '2px solid',
-                          borderColor: isCustom ? 'text.primary' : 'border.subtle',
-                          outline: isCustom ? `2px solid ${field.value}` : 'none',
-                          outlineOffset: '2px',
-                          bgcolor: isCustom ? field.value : 'surface.sunken',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          transition: 'outline 0.15s',
+                          borderColor: field.value === c ? 'text.primary' : 'transparent',
+                          transition: 'border-color 0.1s',
+                          '&:hover': { borderColor: 'text.primary' },
                         }}
-                      >
-                        <input
-                          type="color"
-                          value={field.value || '#000000'}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          style={{ position: 'absolute', opacity: 0, inset: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                        />
-                        {!isCustom && (
-                          <PaletteRounded sx={{ fontSize: 14, color: 'text.secondary', pointerEvents: 'none' }} />
-                        )}
-                      </Box>
-                    )
-                  })()}
-                </Box>
-              )}
+                      />
+                    ))}
+                    <Box
+                      title="Cor personalizada"
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 1,
+                        cursor: 'pointer',
+                        border: '2px solid',
+                        borderColor: isCustom ? 'text.primary' : 'border.subtle',
+                        bgcolor: isCustom ? field.value : 'surface.sunken',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'border-color 0.1s',
+                        '&:hover': { opacity: 0.85 },
+                      }}
+                    >
+                      <PaletteRounded sx={{ fontSize: 14, color: isCustom ? 'common.white' : 'text.secondary', pointerEvents: 'none', position: 'relative', zIndex: 1 }} />
+                      <MuiColorInput
+                        format="hex"
+                        value={isValidColor ? field.value : '#10128b'}
+                        onChange={(color) => field.onChange(color)}
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          opacity: 0,
+                          '& .MuiInputBase-root': { p: 0, height: '100%', minHeight: 0 },
+                          '& input': { display: 'none' },
+                          '& .MuiInputAdornment-root': { m: 0, height: '100%', maxHeight: 'none' },
+                          '& button': { position: 'absolute', inset: 0, width: '100%', height: '100%', minWidth: 0, p: 0 },
+                          '& fieldset': { display: 'none' },
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                )
+              }}
             />
           </Box>
 
