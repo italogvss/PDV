@@ -64,4 +64,17 @@ export const teamRolesService = {
     const { data } = await api.put<string[]>(`/team-roles/${id}/permissions`, { permissions })
     return data
   },
+
+  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendTenantRole[]>('/team-roles/inactive')
+    return data.map((r) => ({ id: r.id, name: r.name }))
+  },
+
+  restore: async (id: string): Promise<void> => {
+    await api.patch(`/team-roles/${id}/restore`)
+  },
+
+  hardDelete: async (id: string): Promise<void> => {
+    await api.delete(`/team-roles/${id}/permanent`)
+  },
 }

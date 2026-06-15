@@ -11,6 +11,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.TenantId).IsRequired();
         builder.Property(a => a.CustomerName).IsRequired().HasMaxLength(200);
         builder.Property(a => a.CustomerPhone).HasMaxLength(30);
+        builder.Property(a => a.EmployeeName).IsRequired().HasMaxLength(200);
         builder.Property(a => a.Price).HasColumnType("decimal(10,2)");
         builder.Property(a => a.Note).HasMaxLength(1000);
         builder.Property(a => a.Color).HasMaxLength(20);
@@ -27,7 +28,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.HasOne(a => a.Employee)
             .WithMany()
             .HasForeignKey(a => a.EmployeeId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(a => a.ServiceItems)
             .WithOne(i => i.Appointment)

@@ -13,5 +13,9 @@ public interface IProductRepository
     Task AddAsync(Product product);
     Task UpdateAsync(Product product);
     Task<bool> BarcodeExistsAsync(string barcode, Guid? excludeId = null);
+    Task<IEnumerable<Product>> GetAllInactiveAsync();
+    Task<Product?> GetInactiveByIdAsync(Guid id);
+    Task RestoreAsync(Product product);
+    Task HardDeleteAsync(Product product);
     Task<int> PurgeAllAsync();
 }

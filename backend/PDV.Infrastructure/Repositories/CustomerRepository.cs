@@ -48,6 +48,33 @@ public class CustomerRepository(AppDbContext context, ITenantContext tenantConte
         await context.SaveChangesAsync();
     }
 
+    // IgnoreQueryFilters: lista/acessa itens inativos do próprio tenant para gerenciamento da lixeira.
+    public async Task<IEnumerable<Customer>> GetAllInactiveAsync() =>
+        await context.Customers
+            .IgnoreQueryFilters()
+            .Where(c => c.TenantId == tenantContext.TenantId && !c.IsActive)
+            .OrderByDescending(c => c.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<Customer?> GetInactiveByIdAsync(Guid id) =>
+        await context.Customers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.TenantId == tenantContext.TenantId && c.Id == id && !c.IsActive);
+
+    public async Task RestoreAsync(Customer customer)
+    {
+        customer.IsActive = true;
+        customer.UpdatedAt = DateTime.UtcNow;
+        context.Customers.Update(customer);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task HardDeleteAsync(Customer customer)
+    {
+        context.Customers.Remove(customer);
+        await context.SaveChangesAsync();
+    }
+
     // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
     // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
     public Task<int> PurgeAllAsync() =>

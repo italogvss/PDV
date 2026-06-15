@@ -70,5 +70,25 @@ public class ServiceCategoryService(
         await repository.UpdateAsync(category);
     }
 
+    public async Task<IEnumerable<ServiceCategoryResponse>> GetAllInactiveAsync()
+    {
+        var data = await repository.GetAllInactiveAsync();
+        return data.Select(Map);
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Categoria de serviço não encontrada.");
+        await repository.RestoreAsync(entity);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Categoria de serviço não encontrada.");
+        await repository.HardDeleteAsync(entity);
+    }
+
     private static ServiceCategoryResponse Map(ServiceCategory c) => new(c.Id, c.Name, c.Color);
 }

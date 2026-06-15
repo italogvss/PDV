@@ -91,6 +91,26 @@ public class ServiceService(
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
+    public async Task<IEnumerable<ServiceResponse>> GetAllInactiveAsync()
+    {
+        var data = await repository.GetAllInactiveAsync();
+        return await Task.WhenAll(data.Select(Map));
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Serviço não encontrado.");
+        await repository.RestoreAsync(entity);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Serviço não encontrado.");
+        await repository.HardDeleteAsync(entity);
+    }
+
     private static ServiceCategoryResponse? MapCategory(ServiceCategory? c) =>
         c is null ? null : new(c.Id, c.Name, c.Color);
 

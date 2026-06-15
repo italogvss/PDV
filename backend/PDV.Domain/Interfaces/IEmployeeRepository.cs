@@ -10,4 +10,7 @@ public interface IEmployeeRepository
     Task<(IEnumerable<Employee> Data, int TotalCount)> GetAllAsync(int page, int pageSize);
     Task AddAsync(Employee employee);
     Task UpdateAsync(Employee employee);
+    Task<IEnumerable<Employee>> GetAllInactiveAsync();
+    Task<Employee?> GetInactiveByIdAsync(Guid id);
+    Task HardDeleteAsync(Employee employee);
 }

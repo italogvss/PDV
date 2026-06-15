@@ -94,4 +94,30 @@ export const productService = {
   deleteCategory: async (id: string): Promise<void> => {
     await api.delete(`/product-categories/${id}`)
   },
+
+  getInactiveProducts: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendProduct[]>('/products/inactive')
+    return data.map((p) => ({ id: p.id, name: p.name }))
+  },
+
+  restoreProduct: async (id: string): Promise<void> => {
+    await api.patch(`/products/${id}/restore`)
+  },
+
+  hardDeleteProduct: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}/permanent`)
+  },
+
+  getInactiveCategories: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; color?: string }[]>('/product-categories/inactive')
+    return data.map((c) => ({ id: c.id, name: c.name }))
+  },
+
+  restoreCategory: async (id: string): Promise<void> => {
+    await api.patch(`/product-categories/${id}/restore`)
+  },
+
+  hardDeleteCategory: async (id: string): Promise<void> => {
+    await api.delete(`/product-categories/${id}/permanent`)
+  },
 }

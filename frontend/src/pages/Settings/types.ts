@@ -18,6 +18,7 @@ export type SettingsTab =
   | 'aparencia'
   | 'backup'
   | 'avancado'
+  | 'desativados'
   | 'perfil'
   | 'assinatura'
   | 'faturas'

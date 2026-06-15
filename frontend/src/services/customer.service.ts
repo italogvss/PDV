@@ -70,4 +70,17 @@ export const customerService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/customers/${id}`)
   },
+
+  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendCustomer[]>('/customers/inactive')
+    return data.map((c) => ({ id: c.id, name: c.name }))
+  },
+
+  restore: async (id: string): Promise<void> => {
+    await api.patch(`/customers/${id}/restore`)
+  },
+
+  hardDelete: async (id: string): Promise<void> => {
+    await api.delete(`/customers/${id}/permanent`)
+  },
 }

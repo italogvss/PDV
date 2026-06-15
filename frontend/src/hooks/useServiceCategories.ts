@@ -58,3 +58,41 @@ export function useDeleteServiceCategory() {
     onError: (error) => handleError(error, 'Erro ao excluir categoria.'),
   })
 }
+
+const INACTIVE_SERVICE_CATEGORIES_KEY = ['service-categories', 'inactive'] as const
+
+export function useInactiveServiceCategories() {
+  return useQuery({
+    queryKey: INACTIVE_SERVICE_CATEGORIES_KEY,
+    queryFn: () => serviceService.getInactiveServiceCategories(),
+  })
+}
+
+export function useRestoreServiceCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => serviceService.restoreServiceCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SERVICE_CATEGORIES_KEY })
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      showToast('Categoria reativada com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar categoria.'),
+  })
+}
+
+export function useHardDeleteServiceCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => serviceService.hardDeleteServiceCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SERVICE_CATEGORIES_KEY })
+      showToast('Categoria excluída definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir categoria.'),
+  })
+}

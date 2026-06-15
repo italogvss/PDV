@@ -11,4 +11,6 @@ public interface IEmployeeService
     Task<EmployeeResponse> UpdateAsync(Guid id, UpdateEmployeeRequest request);
     Task DeactivateAsync(Guid id);
     Task ReactivateAsync(Guid id);
+    Task<IEnumerable<EmployeeResponse>> GetAllInactiveAsync();
+    Task HardDeleteAsync(Guid id);
 }

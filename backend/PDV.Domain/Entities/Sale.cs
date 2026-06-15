@@ -5,8 +5,9 @@ namespace PDV.Domain.Entities;
 public class Sale : BaseEntity
 {
     public Guid TenantId { get; set; }
-    public Guid OperatorId { get; set; }
-    public User Operator { get; set; } = null!;
+    public Guid? OperatorId { get; set; }
+    public User? Operator { get; set; }
+    public string OperatorName { get; set; } = string.Empty;
     public string? CustomerName { get; set; }
     public string? CustomerDocument { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
@@ -19,6 +20,7 @@ public class Sale : BaseEntity
     public SaleStatus Status { get; set; } = SaleStatus.Active;
     public Guid? CancelledById { get; set; }
     public User? CancelledBy { get; set; }
+    public string? CancelledByName { get; set; }
     public DateTime? CancelledAt { get; set; }
 
     public ICollection<SaleItem> Items { get; set; } = [];

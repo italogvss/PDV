@@ -10,5 +10,8 @@ public interface ICustomerService
     Task<CustomerResponse> CreateAsync(CreateCustomerRequest request);
     Task<CustomerResponse> UpdateAsync(Guid id, UpdateCustomerRequest request);
     Task DeleteAsync(Guid id);
+    Task<IEnumerable<CustomerResponse>> GetAllInactiveAsync();
+    Task RestoreAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
     Task<int> PurgeAllAsync();
 }

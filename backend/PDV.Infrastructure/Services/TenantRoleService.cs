@@ -116,6 +116,31 @@ public class TenantRoleService(
         return parsedPermissions.Select(p => p.ToString());
     }
 
+    public async Task<IEnumerable<TenantRoleResponse>> GetAllInactiveAsync()
+    {
+        var data = await roleRepository.GetAllInactiveAsync();
+        return data.Select(Map);
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var role = await roleRepository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Papel não encontrado.");
+        await roleRepository.RestoreAsync(role);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var role = await roleRepository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Papel não encontrado.");
+
+        // IgnoreQueryFilters: soft-deleted employees ainda têm FK para este cargo no banco.
+        if (await roleRepository.HasAnyEmployeesAsync(id))
+            throw new BusinessException("Não é possível excluir definitivamente um cargo com funcionários vinculados. Reatribua ou exclua os funcionários primeiro.");
+
+        await roleRepository.HardDeleteAsync(role);
+    }
+
     private static TenantRoleResponse Map(TenantRole r) =>
         new(r.Id, r.Name, r.Description, r.Color, r.IsDefault,
             r.Employees.Count(e => e.IsActive),

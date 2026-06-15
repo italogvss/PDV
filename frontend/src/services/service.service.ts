@@ -77,4 +77,30 @@ export const serviceService = {
   deleteCategory: async (id: string): Promise<void> => {
     await api.delete(`/service-categories/${id}`)
   },
+
+  getInactiveServices: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendService[]>('/services/inactive')
+    return data.map((s) => ({ id: s.id, name: s.name }))
+  },
+
+  restoreService: async (id: string): Promise<void> => {
+    await api.patch(`/services/${id}/restore`)
+  },
+
+  hardDeleteService: async (id: string): Promise<void> => {
+    await api.delete(`/services/${id}/permanent`)
+  },
+
+  getInactiveServiceCategories: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; color?: string }[]>('/service-categories/inactive')
+    return data.map((c) => ({ id: c.id, name: c.name }))
+  },
+
+  restoreServiceCategory: async (id: string): Promise<void> => {
+    await api.patch(`/service-categories/${id}/restore`)
+  },
+
+  hardDeleteServiceCategory: async (id: string): Promise<void> => {
+    await api.delete(`/service-categories/${id}/permanent`)
+  },
 }

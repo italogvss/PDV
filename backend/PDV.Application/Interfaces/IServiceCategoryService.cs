@@ -9,4 +9,7 @@ public interface IServiceCategoryService
     Task<ServiceCategoryResponse> CreateAsync(CreateServiceCategoryRequest request);
     Task<ServiceCategoryResponse> UpdateAsync(Guid id, UpdateServiceCategoryRequest request);
     Task DeleteAsync(Guid id);
+    Task<IEnumerable<ServiceCategoryResponse>> GetAllInactiveAsync();
+    Task RestoreAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
 }

@@ -70,6 +70,26 @@ public class SupplierService(
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
+    public async Task<IEnumerable<SupplierResponse>> GetAllInactiveAsync()
+    {
+        var data = await repository.GetAllInactiveAsync();
+        return data.Select(Map);
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Fornecedor não encontrado.");
+        await repository.RestoreAsync(entity);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Fornecedor não encontrado.");
+        await repository.HardDeleteAsync(entity);
+    }
+
     private static SupplierResponse Map(Supplier s) =>
         new(s.Id, s.Name, s.Phone, s.CreatedAt);
 

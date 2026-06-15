@@ -50,4 +50,17 @@ export const supplierService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/suppliers/${id}`)
   },
+
+  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendSupplier[]>('/suppliers/inactive')
+    return data.map((s) => ({ id: s.id, name: s.name }))
+  },
+
+  restore: async (id: string): Promise<void> => {
+    await api.patch(`/suppliers/${id}/restore`)
+  },
+
+  hardDelete: async (id: string): Promise<void> => {
+    await api.delete(`/suppliers/${id}/permanent`)
+  },
 }

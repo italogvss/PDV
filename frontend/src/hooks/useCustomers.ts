@@ -58,3 +58,41 @@ export function useDeleteCustomer() {
     onError: (error) => handleError(error, 'Erro ao remover cliente.'),
   })
 }
+
+const INACTIVE_CUSTOMERS_KEY = ['customers', 'inactive'] as const
+
+export function useInactiveCustomers() {
+  return useQuery({
+    queryKey: INACTIVE_CUSTOMERS_KEY,
+    queryFn: () => customerService.getInactive(),
+  })
+}
+
+export function useRestoreCustomer() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => customerService.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_CUSTOMERS_KEY })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Cliente reativado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar cliente.'),
+  })
+}
+
+export function useHardDeleteCustomer() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => customerService.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_CUSTOMERS_KEY })
+      showToast('Cliente excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir cliente.'),
+  })
+}

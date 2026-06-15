@@ -61,4 +61,20 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         await service.ReactivateAsync(id);
         return NoContent();
     }
+
+    [HttpGet("inactive")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> GetInactive()
+    {
+        var result = await service.GetAllInactiveAsync();
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}/permanent")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> HardDelete(Guid id)
+    {
+        await service.HardDeleteAsync(id);
+        return NoContent();
+    }
 }

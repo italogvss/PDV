@@ -9,8 +9,9 @@ public class Appointment : BaseEntity
     public Customer? Customer { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public string? CustomerPhone { get; set; }
-    public Guid EmployeeId { get; set; }
-    public Employee Employee { get; set; } = null!;
+    public Guid? EmployeeId { get; set; }
+    public Employee? Employee { get; set; }
+    public string EmployeeName { get; set; } = string.Empty;
     public DateTime Start { get; set; }
     public int DurationMinutes { get; set; }
     public decimal Price { get; set; }

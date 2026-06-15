@@ -2,7 +2,7 @@ namespace PDV.Application.DTOs.Employees;
 
 public record EmployeeResponse(
     Guid Id,
-    Guid UserId,
+    Guid? UserId,
     string Name,
     string Email,
     Guid RoleId,

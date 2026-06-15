@@ -55,3 +55,41 @@ export function useDeleteService() {
     onError: (error) => handleError(error, 'Erro ao excluir serviço.'),
   })
 }
+
+const INACTIVE_SERVICES_KEY = ['services', 'inactive'] as const
+
+export function useInactiveServices() {
+  return useQuery({
+    queryKey: INACTIVE_SERVICES_KEY,
+    queryFn: () => serviceService.getInactiveServices(),
+  })
+}
+
+export function useRestoreService() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => serviceService.restoreService(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SERVICES_KEY })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Serviço reativado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar serviço.'),
+  })
+}
+
+export function useHardDeleteService() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => serviceService.hardDeleteService(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SERVICES_KEY })
+      showToast('Serviço excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir serviço.'),
+  })
+}

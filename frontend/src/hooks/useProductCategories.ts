@@ -58,3 +58,41 @@ export function useDeleteProductCategory() {
     onError: (error) => handleError(error, 'Erro ao excluir categoria.'),
   })
 }
+
+const INACTIVE_CATEGORIES_KEY = ['product-categories', 'inactive'] as const
+
+export function useInactiveProductCategories() {
+  return useQuery({
+    queryKey: INACTIVE_CATEGORIES_KEY,
+    queryFn: () => productService.getInactiveCategories(),
+  })
+}
+
+export function useRestoreProductCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => productService.restoreCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_CATEGORIES_KEY })
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      showToast('Categoria reativada com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar categoria.'),
+  })
+}
+
+export function useHardDeleteProductCategory() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => productService.hardDeleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_CATEGORIES_KEY })
+      showToast('Categoria excluída definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir categoria.'),
+  })
+}

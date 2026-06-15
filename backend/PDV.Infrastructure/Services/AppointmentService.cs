@@ -46,6 +46,7 @@ public class AppointmentService(
             CustomerName = request.CustomerName,
             CustomerPhone = request.CustomerPhone,
             EmployeeId = employee.Id,
+            EmployeeName = employee.User?.Name ?? employee.UserName,
             Start = request.Start,
             DurationMinutes = request.DurationMinutes,
             Price = request.Price,
@@ -76,6 +77,7 @@ public class AppointmentService(
         appointment.CustomerName = request.CustomerName;
         appointment.CustomerPhone = request.CustomerPhone;
         appointment.EmployeeId = employee.Id;
+        appointment.EmployeeName = employee.User?.Name ?? employee.UserName;
         appointment.Start = request.Start;
         appointment.DurationMinutes = request.DurationMinutes;
         appointment.Price = request.Price;
@@ -159,6 +161,6 @@ public class AppointmentService(
 
     private static AppointmentResponse Map(Appointment a) =>
         new(a.Id, a.CustomerId, a.CustomerName, a.CustomerPhone,
-            a.EmployeeId, a.ServiceItems.Select(MapItem),
+            a.EmployeeId, a.EmployeeName, a.ServiceItems.Select(MapItem),
             a.Start, a.DurationMinutes, a.Price, MapStatus(a.Status), a.Note, a.Color, a.CreatedAt);
 }

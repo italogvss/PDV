@@ -9,4 +9,8 @@ public interface IServiceCategoryRepository
     Task AddAsync(ServiceCategory category);
     Task UpdateAsync(ServiceCategory category);
     Task<bool> NameExistsAsync(string name, Guid? excludeId = null);
+    Task<IEnumerable<ServiceCategory>> GetAllInactiveAsync();
+    Task<ServiceCategory?> GetInactiveByIdAsync(Guid id);
+    Task RestoreAsync(ServiceCategory category);
+    Task HardDeleteAsync(ServiceCategory category);
 }

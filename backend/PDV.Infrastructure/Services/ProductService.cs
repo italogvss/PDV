@@ -107,6 +107,26 @@ public class ProductService(
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
+    public async Task<IEnumerable<ProductResponse>> GetAllInactiveAsync()
+    {
+        var data = await repository.GetAllInactiveAsync();
+        return await Task.WhenAll(data.Select(Map));
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Produto não encontrado.");
+        await repository.RestoreAsync(entity);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Produto não encontrado.");
+        await repository.HardDeleteAsync(entity);
+    }
+
     public async Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request)
     {
         var product = await repository.GetByIdAsync(id)

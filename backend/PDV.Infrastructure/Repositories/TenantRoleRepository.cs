@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Interfaces;
@@ -6,7 +7,7 @@ using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Repositories;
 
-public class TenantRoleRepository(AppDbContext context) : ITenantRoleRepository
+public class TenantRoleRepository(AppDbContext context, ITenantContext tenantContext) : ITenantRoleRepository
 {
     public async Task<IEnumerable<TenantRole>> GetAllAsync() =>
         await context.TenantRoles
@@ -66,4 +67,37 @@ public class TenantRoleRepository(AppDbContext context) : ITenantRoleRepository
 
     public async Task<int> CountActiveEmployeesAsync(Guid roleId) =>
         await context.Employees.CountAsync(e => e.RoleId == roleId);
+
+    // IgnoreQueryFilters: verifica vínculos mesmo em Employees soft-deleted para garantir integridade antes do hard delete.
+    public async Task<bool> HasAnyEmployeesAsync(Guid roleId) =>
+        await context.Employees
+            .IgnoreQueryFilters()
+            .AnyAsync(e => e.RoleId == roleId);
+
+    // IgnoreQueryFilters: lista/acessa itens inativos do próprio tenant para gerenciamento da lixeira.
+    public async Task<IEnumerable<TenantRole>> GetAllInactiveAsync() =>
+        await context.TenantRoles
+            .IgnoreQueryFilters()
+            .Where(r => r.TenantId == tenantContext.TenantId && !r.IsActive)
+            .OrderByDescending(r => r.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<TenantRole?> GetInactiveByIdAsync(Guid id) =>
+        await context.TenantRoles
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.TenantId == tenantContext.TenantId && r.Id == id && !r.IsActive);
+
+    public async Task RestoreAsync(TenantRole role)
+    {
+        role.IsActive = true;
+        role.UpdatedAt = DateTime.UtcNow;
+        context.TenantRoles.Update(role);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task HardDeleteAsync(TenantRole role)
+    {
+        context.TenantRoles.Remove(role);
+        await context.SaveChangesAsync();
+    }
 }

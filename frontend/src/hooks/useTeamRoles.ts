@@ -73,3 +73,41 @@ export function useSetRolePermissions() {
     onError: (error) => handleError(error, 'Erro ao salvar permissões.'),
   })
 }
+
+const INACTIVE_ROLES_KEY = ['team-roles', 'inactive'] as const
+
+export function useInactiveRoles() {
+  return useQuery({
+    queryKey: INACTIVE_ROLES_KEY,
+    queryFn: () => teamRolesService.getInactive(),
+  })
+}
+
+export function useRestoreRole() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => teamRolesService.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_ROLES_KEY })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Cargo reativado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar cargo.'),
+  })
+}
+
+export function useHardDeleteRole() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => teamRolesService.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_ROLES_KEY })
+      showToast('Cargo excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir cargo.'),
+  })
+}

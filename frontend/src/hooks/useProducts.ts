@@ -70,3 +70,41 @@ export function useAdjustStock() {
     onError: (error) => handleError(error, 'Erro ao ajustar estoque.'),
   })
 }
+
+const INACTIVE_PRODUCTS_KEY = ['products', 'inactive'] as const
+
+export function useInactiveProducts() {
+  return useQuery({
+    queryKey: INACTIVE_PRODUCTS_KEY,
+    queryFn: () => productService.getInactiveProducts(),
+  })
+}
+
+export function useRestoreProduct() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => productService.restoreProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_PRODUCTS_KEY })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Produto reativado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar produto.'),
+  })
+}
+
+export function useHardDeleteProduct() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => productService.hardDeleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_PRODUCTS_KEY })
+      showToast('Produto excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir produto.'),
+  })
+}

@@ -73,3 +73,26 @@ export function useReactivateEmployee() {
     onError: (error) => handleError(error, 'Erro ao reativar funcionário.'),
   })
 }
+
+const INACTIVE_EMPLOYEES_KEY = ['employees', 'inactive'] as const
+
+export function useInactiveEmployees() {
+  return useQuery({
+    queryKey: INACTIVE_EMPLOYEES_KEY,
+    queryFn: () => employeeService.getInactive(),
+  })
+}
+
+export function useHardDeleteEmployee() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => employeeService.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_EMPLOYEES_KEY })
+      showToast('Funcionário excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir funcionário.'),
+  })
+}

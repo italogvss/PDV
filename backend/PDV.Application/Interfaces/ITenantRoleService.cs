@@ -11,4 +11,7 @@ public interface ITenantRoleService
     Task DeactivateAsync(Guid id);
     Task<IEnumerable<string>> GetPermissionsAsync(Guid id);
     Task<IEnumerable<string>> SetPermissionsAsync(Guid id, SetRolePermissionsRequest request);
+    Task<IEnumerable<TenantRoleResponse>> GetAllInactiveAsync();
+    Task RestoreAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
 }

@@ -12,6 +12,8 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.HasIndex(s => s.TenantId);
 
         builder.Property(s => s.PaymentMethod).HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(s => s.OperatorName).IsRequired().HasMaxLength(200);
+        builder.Property(s => s.CancelledByName).HasMaxLength(200);
         builder.Property(s => s.CustomerName).HasMaxLength(200);
         builder.Property(s => s.Total).HasColumnType("decimal(10,2)");
         builder.Property(s => s.AmountPaid).HasColumnType("decimal(10,2)");
@@ -21,11 +23,11 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.HasOne(s => s.Operator)
             .WithMany()
             .HasForeignKey(s => s.OperatorId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(s => s.CancelledBy)
             .WithMany()
             .HasForeignKey(s => s.CancelledById)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -71,6 +71,35 @@ public class ProductRepository(AppDbContext context, ITenantContext tenantContex
         return await query.AnyAsync();
     }
 
+    // IgnoreQueryFilters: lista/acessa itens inativos do próprio tenant para gerenciamento da lixeira.
+    // TenantId reaplicado manualmente para isolamento entre tenants.
+    public async Task<IEnumerable<Product>> GetAllInactiveAsync() =>
+        await context.Products
+            .IgnoreQueryFilters()
+            .Include(p => p.Category)
+            .Where(p => p.TenantId == tenantContext.TenantId && !p.IsActive)
+            .OrderByDescending(p => p.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<Product?> GetInactiveByIdAsync(Guid id) =>
+        await context.Products
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.TenantId == tenantContext.TenantId && p.Id == id && !p.IsActive);
+
+    public async Task RestoreAsync(Product product)
+    {
+        product.IsActive = true;
+        product.UpdatedAt = DateTime.UtcNow;
+        context.Products.Update(product);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task HardDeleteAsync(Product product)
+    {
+        context.Products.Remove(product);
+        await context.SaveChangesAsync();
+    }
+
     // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
     // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
     public Task<int> PurgeAllAsync() =>

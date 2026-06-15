@@ -14,5 +14,8 @@ public interface IServiceService
     Task<ServiceResponse> CreateAsync(CreateServiceRequest request);
     Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request);
     Task DeleteAsync(Guid id);
+    Task<IEnumerable<ServiceResponse>> GetAllInactiveAsync();
+    Task RestoreAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
     Task<int> PurgeAllAsync();
 }

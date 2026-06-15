@@ -86,6 +86,26 @@ public class CustomerService(
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
+    public async Task<IEnumerable<CustomerResponse>> GetAllInactiveAsync()
+    {
+        var data = await repository.GetAllInactiveAsync();
+        return data.Select(Map);
+    }
+
+    public async Task RestoreAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Cliente não encontrado.");
+        await repository.RestoreAsync(entity);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var entity = await repository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Cliente não encontrado.");
+        await repository.HardDeleteAsync(entity);
+    }
+
     private static CustomerResponse Map(Customer c)
     {
         var hasAddress = c.AddressStreet != null

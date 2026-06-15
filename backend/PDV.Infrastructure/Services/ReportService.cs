@@ -139,14 +139,14 @@ public class ReportService(AppDbContext context) : IReportService
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .Select(s => new { s.OperatorId, s.Operator.Name, s.Total })
+            .Select(s => new { s.OperatorId, s.OperatorName, s.Total })
             .ToListAsync();
 
         return rows
-            .GroupBy(s => new { s.OperatorId, s.Name })
+            .GroupBy(s => new { s.OperatorId, s.OperatorName })
             .Select(g => new SalesByOperatorResponse(
-                g.Key.OperatorId,
-                g.Key.Name,
+                g.Key.OperatorId ?? Guid.Empty,
+                g.Key.OperatorName,
                 g.Count(),
                 g.Sum(s => s.Total)))
             .OrderByDescending(r => r.TotalRevenue)
@@ -249,7 +249,7 @@ public class ReportService(AppDbContext context) : IReportService
             {
                 s.Id,
                 s.CreatedAt,
-                OperatorName = s.Operator.Name,
+                s.OperatorName,
                 s.CustomerName,
                 s.PaymentMethod,
                 s.Status,

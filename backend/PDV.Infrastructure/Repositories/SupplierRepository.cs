@@ -46,6 +46,33 @@ public class SupplierRepository(AppDbContext context, ITenantContext tenantConte
         await context.SaveChangesAsync();
     }
 
+    // IgnoreQueryFilters: lista/acessa itens inativos do próprio tenant para gerenciamento da lixeira.
+    public async Task<IEnumerable<Supplier>> GetAllInactiveAsync() =>
+        await context.Suppliers
+            .IgnoreQueryFilters()
+            .Where(s => s.TenantId == tenantContext.TenantId && !s.IsActive)
+            .OrderByDescending(s => s.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<Supplier?> GetInactiveByIdAsync(Guid id) =>
+        await context.Suppliers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.TenantId == tenantContext.TenantId && s.Id == id && !s.IsActive);
+
+    public async Task RestoreAsync(Supplier supplier)
+    {
+        supplier.IsActive = true;
+        supplier.UpdatedAt = DateTime.UtcNow;
+        context.Suppliers.Update(supplier);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task HardDeleteAsync(Supplier supplier)
+    {
+        context.Suppliers.Remove(supplier);
+        await context.SaveChangesAsync();
+    }
+
     // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
     // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
     public Task<int> PurgeAllAsync() =>

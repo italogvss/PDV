@@ -8,13 +8,15 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 {
     public void Configure(EntityTypeBuilder<Employee> builder)
     {
+        builder.Property(e => e.UserName).IsRequired().HasMaxLength(200);
+        builder.Property(e => e.UserEmail).IsRequired().HasMaxLength(300);
         builder.Property(e => e.Phone).HasMaxLength(20);
         builder.Property(e => e.ImageUrl).HasMaxLength(500);
 
         builder.HasOne(e => e.User)
             .WithMany()
             .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(e => e.Role)
             .WithMany(r => r.Employees)

@@ -58,6 +58,7 @@ public class ExpenseRepository(AppDbContext context, ITenantContext tenantContex
         await context.SaveChangesAsync();
     }
 
+//pode deletar, não precisa de historico
     public async Task DeleteAsync(Expense expense)
     {
         context.Expenses.Remove(expense);

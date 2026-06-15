@@ -85,6 +85,8 @@ public class EmployeeService(
         {
             TenantId = tenantContext.TenantId,
             UserId = user.Id,
+            UserName = user.Name,
+            UserEmail = user.Email,
             RoleId = role.Id,
             Phone = request.Phone,
         };
@@ -122,14 +124,17 @@ public class EmployeeService(
         var employee = await employeeRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
 
-        // Carrega o usuário com seus vínculos de tenant para revogar o acesso apenas
-        // a ESTE tenant — sem desativar a conta global (o usuário pode pertencer a outros).
-        var user = await userRepository.GetByIdAsync(employee.UserId)
-            ?? throw new NotFoundException("Usuário do funcionário não encontrado.");
-
         employee.IsActive = false;
         employee.UpdatedAt = DateTime.UtcNow;
         await employeeRepository.UpdateAsync(employee);
+
+        // UserId pode ser null se o User foi hard-deletado; nesse caso o acesso já foi revogado.
+        if (employee.UserId is null) return;
+
+        // Carrega o usuário com seus vínculos de tenant para revogar o acesso apenas
+        // a ESTE tenant — sem desativar a conta global (o usuário pode pertencer a outros).
+        var user = await userRepository.GetByIdAsync(employee.UserId.Value);
+        if (user is null) return;
 
         var membership = user.UserTenants.FirstOrDefault(ut => ut.TenantId == tenantContext.TenantId);
         if (membership is not null)
@@ -147,12 +152,15 @@ public class EmployeeService(
         var employee = await employeeRepository.GetByIdAnyStatusAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
 
-        var user = await userRepository.GetByIdAsync(employee.UserId)
-            ?? throw new NotFoundException("Usuário do funcionário não encontrado.");
-
         employee.IsActive = true;
         employee.UpdatedAt = DateTime.UtcNow;
         await employeeRepository.UpdateAsync(employee);
+
+        // UserId pode ser null se o User foi hard-deletado; reativar o employee sem restaurar acesso.
+        if (employee.UserId is null) return;
+
+        var user = await userRepository.GetByIdAsync(employee.UserId.Value);
+        if (user is null) return;
 
         // Restaura o vínculo do usuário com este tenant (removido na desativação).
         if (user.UserTenants.All(ut => ut.TenantId != tenantContext.TenantId))
@@ -171,8 +179,21 @@ public class EmployeeService(
         await userRepository.UpdateAsync(user);
     }
 
+    public async Task<IEnumerable<EmployeeResponse>> GetAllInactiveAsync()
+    {
+        var data = await employeeRepository.GetAllInactiveAsync();
+        return await Task.WhenAll(data.Select(Map));
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var employee = await employeeRepository.GetInactiveByIdAsync(id)
+            ?? throw new NotFoundException("Funcionário não encontrado.");
+        await employeeRepository.HardDeleteAsync(employee);
+    }
+
     private async Task<EmployeeResponse> Map(Employee e) =>
-        new(e.Id, e.UserId, e.User.Name, e.User.Email,
+        new(e.Id, e.UserId, e.UserName, e.UserEmail,
             e.RoleId, e.Role.Name,
             e.Phone,
             await storage.ResolveReadUrlAsync(e.ImageUrl, MediaCategory.Profile, e.UpdatedAt),

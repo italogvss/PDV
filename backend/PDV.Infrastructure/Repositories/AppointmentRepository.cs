@@ -11,7 +11,7 @@ public class AppointmentRepository(AppDbContext context, ITenantContext tenantCo
     public async Task<Appointment?> GetByIdAsync(Guid id) =>
         await context.Appointments
             .Include(a => a.ServiceItems)
-            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.Employee)
             .Include(a => a.Customer)
             .FirstOrDefaultAsync(a => a.Id == id);
 
@@ -22,7 +22,7 @@ public class AppointmentRepository(AppDbContext context, ITenantContext tenantCo
 
         return await context.Appointments
             .Include(a => a.ServiceItems)
-            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.Employee)
             .Include(a => a.Customer)
             .Where(a => a.Start >= startDt && a.Start < endDt)
             .OrderBy(a => a.Start)

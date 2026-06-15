@@ -67,4 +67,13 @@ export const employeeService = {
   reactivate: async (id: string): Promise<void> => {
     await api.patch(`/employees/${id}/reactivate`)
   },
+
+  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+    const { data } = await api.get<BackendEmployee[]>('/employees/inactive')
+    return data.map((e) => ({ id: e.id, name: e.name }))
+  },
+
+  hardDelete: async (id: string): Promise<void> => {
+    await api.delete(`/employees/${id}/permanent`)
+  },
 }

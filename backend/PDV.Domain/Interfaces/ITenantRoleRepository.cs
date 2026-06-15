@@ -13,4 +13,9 @@ public interface ITenantRoleRepository
     Task<bool> HasPermissionAsync(Guid roleId, Permission permission);
     Task ReplacePermissionsAsync(Guid roleId, IEnumerable<Permission> permissions);
     Task<int> CountActiveEmployeesAsync(Guid roleId);
+    Task<bool> HasAnyEmployeesAsync(Guid roleId);
+    Task<IEnumerable<TenantRole>> GetAllInactiveAsync();
+    Task<TenantRole?> GetInactiveByIdAsync(Guid id);
+    Task RestoreAsync(TenantRole role);
+    Task HardDeleteAsync(TenantRole role);
 }

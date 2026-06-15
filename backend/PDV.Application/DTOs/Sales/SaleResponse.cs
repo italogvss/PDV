@@ -2,7 +2,7 @@ namespace PDV.Application.DTOs.Sales;
 
 public record SaleResponse(
     Guid Id,
-    Guid OperatorId,
+    Guid? OperatorId,
     string OperatorName,
     string? CustomerName,
     string? CustomerDocument,
@@ -14,5 +14,6 @@ public record SaleResponse(
     decimal Discount,
     string Status,
     Guid? CancelledById,
+    string? CancelledByName,
     DateTime? CancelledAt,
     DateTime CreatedAt);

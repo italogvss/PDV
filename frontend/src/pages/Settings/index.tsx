@@ -1,9 +1,10 @@
-import { BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
+import { ArchiveOutlined, BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { Box, Button, Divider, Typography } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '../../store'
 import AdvancedSection from './components/AdvancedSection'
+import DisabledItemsSection from './components/DisabledItemsSection'
 import AppearanceSection from './components/AppearanceSection'
 import BackupSection from './components/BackupSection'
 import BillingPaymentsSection from './components/BillingPaymentsSection'
@@ -41,8 +42,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'operacao',   label: 'Operação',       subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined,      type: 'business' },
   { id: 'pagamentos', label: 'Pagamentos',     subtitle: 'Maquininhas e métodos',     icon: CreditCardOutlined,        type: 'business' },
   { id: 'fiscal',     label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ',            icon: ReceiptLongOutlined,       type: 'business' },
-  { id: 'backup',     label: 'Backup & dados', subtitle: 'Exportação e retenção',    icon: BackupOutlined,            type: 'business' },
-  { id: 'avancado',   label: 'Avançado',       subtitle: 'Desenvolvedor e API',      icon: FiberManualRecordOutlined, type: 'business' },
+  { id: 'backup',      label: 'Backup & dados',    subtitle: 'Exportação e retenção',         icon: BackupOutlined,            type: 'business' },
+  { id: 'desativados', label: 'Itens desativados', subtitle: 'Restaurar ou excluir itens',    icon: ArchiveOutlined,           type: 'business', ownerOnly: true },
+  { id: 'avancado',    label: 'Avançado',          subtitle: 'Desenvolvedor e API',           icon: FiberManualRecordOutlined, type: 'business' },
 ]
 
 function renderSection(tab: SettingsTab) {
@@ -53,6 +55,7 @@ function renderSection(tab: SettingsTab) {
     case 'fiscal':       return <FiscalSection />
     case 'aparencia':    return <AppearanceSection />
     case 'backup':       return <BackupSection />
+    case 'desativados':  return <DisabledItemsSection />
     case 'avancado':     return <AdvancedSection />
     case 'perfil':       return <ProfileSection />
     case 'assinatura':   return <SubscriptionSection />

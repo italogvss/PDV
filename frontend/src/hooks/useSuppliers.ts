@@ -58,3 +58,41 @@ export function useDeleteSupplier() {
     onError: (error) => handleError(error, 'Erro ao remover fornecedor.'),
   })
 }
+
+const INACTIVE_SUPPLIERS_KEY = ['suppliers', 'inactive'] as const
+
+export function useInactiveSuppliers() {
+  return useQuery({
+    queryKey: INACTIVE_SUPPLIERS_KEY,
+    queryFn: () => supplierService.getInactive(),
+  })
+}
+
+export function useRestoreSupplier() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => supplierService.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SUPPLIERS_KEY })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Fornecedor reativado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao reativar fornecedor.'),
+  })
+}
+
+export function useHardDeleteSupplier() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (id: string) => supplierService.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INACTIVE_SUPPLIERS_KEY })
+      showToast('Fornecedor excluído definitivamente.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir fornecedor.'),
+  })
+}

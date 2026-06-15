@@ -22,9 +22,7 @@ public class SaleService(
         DateTime? startDate, DateTime? endDate,
         Guid? operatorId, SaleStatus? status)
     {
-        var query = context.Sales
-            .Include(s => s.Operator)
-            .AsQueryable();
+        var query = context.Sales.AsQueryable();
 
         if (startDate.HasValue)
             query = query.Where(s => s.CreatedAt >= startDate.Value);
@@ -51,7 +49,6 @@ public class SaleService(
     public async Task<SaleDetailResponse> GetByIdAsync(Guid id)
     {
         var sale = await context.Sales
-            .Include(s => s.Operator)
             .Include(s => s.Items)
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException("Venda não encontrada.");
@@ -156,11 +153,15 @@ public class SaleService(
         if (request.IsInstallment && request.InstallmentCount.HasValue)
             installmentValue = total / request.InstallmentCount.Value;
 
+        var operatorUser = await context.Users.FindAsync(operatorId)
+            ?? throw new NotFoundException("Operador não encontrado.");
+
         var sale = new Sale
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             OperatorId = operatorId,
+            OperatorName = operatorUser.Name,
             CustomerName = customerName,
             CustomerDocument = customerDocument,
             PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),
@@ -179,9 +180,6 @@ public class SaleService(
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        var operatorUser = await context.Users.FindAsync(operatorId);
-        sale.Operator = operatorUser!;
-
         return MapToDetail(sale);
     }
 
@@ -197,8 +195,10 @@ public class SaleService(
 
         await using var transaction = await context.Database.BeginTransactionAsync();
 
+        var adminUser = await context.Users.FindAsync(adminId);
         sale.Status = SaleStatus.Cancelled;
         sale.CancelledById = adminId;
+        sale.CancelledByName = adminUser?.Name;
         sale.CancelledAt = DateTime.UtcNow;
 
         foreach (var item in sale.Items.Where(i => i.ProductId.HasValue))
@@ -224,16 +224,16 @@ public class SaleService(
             .ExecuteDeleteAsync();
 
     private static SaleResponse MapToResponse(Sale s) =>
-        new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
+        new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt);
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt);
 
     private static SaleDetailResponse MapToDetail(Sale s) =>
-        new(s.Id, s.OperatorId, s.Operator?.Name ?? string.Empty,
+        new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt,
             s.Items.Select(i => new SaleItemResponse(
                 i.Id, i.SaleId, i.ProductId, i.ServiceId,
                 i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),

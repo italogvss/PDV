@@ -35,7 +35,7 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
         var query = context.Employees
             .Include(e => e.User)
             .Include(e => e.Role)
-            .OrderBy(e => e.User.Name)
+            .OrderBy(e => e.UserName)
             .AsQueryable();
 
         var totalCount = await query.CountAsync();
@@ -56,6 +56,27 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
     public async Task UpdateAsync(Employee employee)
     {
         context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+    }
+
+    // IgnoreQueryFilters: lista/acessa itens inativos do próprio tenant para gerenciamento da lixeira.
+    public async Task<IEnumerable<Employee>> GetAllInactiveAsync() =>
+        await context.Employees
+            .IgnoreQueryFilters()
+            .Include(e => e.Role)
+            .Where(e => e.TenantId == tenantContext.TenantId && !e.IsActive)
+            .OrderByDescending(e => e.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<Employee?> GetInactiveByIdAsync(Guid id) =>
+        await context.Employees
+            .IgnoreQueryFilters()
+            .Include(e => e.Role)
+            .FirstOrDefaultAsync(e => e.TenantId == tenantContext.TenantId && e.Id == id && !e.IsActive);
+
+    public async Task HardDeleteAsync(Employee employee)
+    {
+        context.Employees.Remove(employee);
         await context.SaveChangesAsync();
     }
 }
