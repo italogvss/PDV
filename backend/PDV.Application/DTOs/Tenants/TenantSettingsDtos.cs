@@ -4,7 +4,8 @@ namespace PDV.Application.DTOs.Tenants;
 public record TenantSettingsResponse(
     BusinessSettingsDto Business,
     OperationSettingsDto Operation,
-    PaymentsSettingsDto Payments);
+    PaymentsSettingsDto Payments,
+    ModulesSettingsDto Modules);
 
 // Seção "Negócio" — também é o corpo do PUT /api/tenants/settings/business.
 public record BusinessSettingsDto(
@@ -32,6 +33,11 @@ public record SettingsAddressDto(
 public record OperationSettingsDto(
     bool AllowDiscounts,
     decimal DiscountLimitPercent);
+
+// Módulos da operação ativos — também é o corpo do PUT /api/tenants/settings/modules.
+// Strings lowercase: "sales", "inventory", "services", "appointments", "expenses",
+// "reports", "customers", "suppliers".
+public record ModulesSettingsDto(IReadOnlyList<string> Modules);
 
 // Seção "Pagamentos" — também é o corpo do PUT /api/tenants/settings/payments.
 public record PaymentMethodDto(bool Enabled, decimal Fee);

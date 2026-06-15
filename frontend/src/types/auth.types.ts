@@ -1,6 +1,7 @@
 import type { UserSettingsDTO } from './usersettings.type'
 import type { TenantListItem } from './tenant.types'
 import type { Permission } from './employee.types'
+import type { OperationModule } from '../constants/modules'
 
 export type UserRole = 'Owner' | 'Employee'
 
@@ -18,4 +19,5 @@ export interface AuthUser {
   tenants: TenantListItem[]
   mustChangePassword: boolean
   permissions: Permission[]
+  modules: OperationModule[]
 }

@@ -1,3 +1,5 @@
+using PDV.Domain.Enums;
+
 namespace PDV.Domain.Entities;
 
 public class TenantSettings : BaseEntity
@@ -10,7 +12,7 @@ public class TenantSettings : BaseEntity
     public string? CompanyName { get; set; }
     public string? Cnpj { get; set; }
     public string? StateRegistration { get; set; }
-    public string? Segment { get; set; }
+    public Segment Segment { get; set; } = Segment.Outro;
     public string? Phone { get; set; }
     public string? LogoUrl { get; set; }
 
@@ -25,6 +27,10 @@ public class TenantSettings : BaseEntity
 
     // Horário de funcionamento (JSON serializado)
     public string? BusinessHoursJson { get; set; }
+
+    // Operação — módulos ativos (JSON array de nomes de OperationModule).
+    // Nulo/vazio = todos os módulos ativos (retrocompatível com tenants antigos).
+    public string? EnabledModulesJson { get; set; }
 
     // Fiscal
     public string TaxRegime { get; set; } = "simples";

@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tenantSettingsService } from '../services/tenantSettings.service'
 import type { BusinessSettings, OperationSettings, PaymentsSettings } from '../types/settings.types'
+import type { OperationModule } from '../constants/modules'
+import { useAppDispatch } from '../store'
+import { setModules } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 
@@ -40,6 +43,24 @@ export function useUpdateOperationSettings() {
       showToast('Configurações salvas!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao salvar configurações.'),
+  })
+}
+
+export function useUpdateModulesSettings() {
+  const queryClient = useQueryClient()
+  const dispatch = useAppDispatch()
+  const showToast = useToast()
+  const handleError = useApiError()
+
+  return useMutation({
+    mutationFn: (payload: OperationModule[]) => tenantSettingsService.updateModules(payload),
+    onSuccess: (modules) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      // Reflete na hora o menu lateral e a matriz de permissões (que leem do auth slice).
+      dispatch(setModules(modules))
+      showToast('Módulos atualizados!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao salvar módulos.'),
   })
 }
 

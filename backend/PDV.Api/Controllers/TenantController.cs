@@ -53,4 +53,9 @@ public class TenantController(ITenantService tenantService) : ControllerBase
     [Authorize(Roles = "Owner")]
     public async Task<IActionResult> UpdatePayments([FromBody] PaymentsSettingsDto request)
         => Ok(await tenantService.UpdatePaymentsAsync(request));
+
+    [HttpPut("settings/modules")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> UpdateModules([FromBody] ModulesSettingsDto request)
+        => Ok(await tenantService.UpdateModulesAsync(request));
 }

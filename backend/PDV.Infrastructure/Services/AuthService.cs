@@ -183,8 +183,16 @@ public class AuthService(
 
         var imageUrl = await storage.ResolveReadUrlAsync(user.ImageUrl, MediaCategory.Profile, user.UpdatedAt);
 
+        // Módulos da operação ativos do tenant ativo (nulo/sem tenant → lista vazia).
+        var activeSettings = tenantId.HasValue
+            ? user.UserTenants.FirstOrDefault(ut => ut.TenantId == tenantId.Value)?.Tenant.Settings
+            : null;
+        var modules = activeSettings is not null
+            ? OperationModuleHelper.ReadEnabled(activeSettings.EnabledModulesJson)
+            : [];
+
         return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.Document, user.BirthDate,
-            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenantItems, mustChangePassword, permissions);
+            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenantItems, mustChangePassword, permissions, modules);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)

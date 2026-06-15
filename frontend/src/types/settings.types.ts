@@ -1,3 +1,5 @@
+import type { OperationModule } from '../constants/modules'
+
 export type BusinessSegment =
   | 'cafeteria'
   | 'restaurante'
@@ -24,6 +26,7 @@ export interface TenantSettings {
   business: BusinessSettings
   operation: OperationSettings
   payments: PaymentsSettings
+  modules: OperationModule[]
 }
 
 export interface BusinessHoursDay {

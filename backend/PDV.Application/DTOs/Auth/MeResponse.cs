@@ -15,4 +15,5 @@ public record MeResponse(
     UserSettingsDTO? Settings = null,
     IEnumerable<TenantListItem>? Tenants = null,
     bool MustChangePassword = false,
-    IEnumerable<string>? Permissions = null);
+    IEnumerable<string>? Permissions = null,
+    IEnumerable<string>? Modules = null);

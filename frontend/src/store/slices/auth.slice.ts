@@ -3,6 +3,7 @@ import type { AuthUser, UserRole } from '../../types/auth.types'
 import type { Permission } from '../../types/employee.types'
 import type { TenantListItem } from '../../types/tenant.types'
 import { TEXT_SIZE_DEFAULT, type AccentColor, type AppTheme } from '../../types/usersettings.type'
+import { ALL_MODULES, type OperationModule } from '../../constants/modules'
 
 export interface AuthState {
   userId: string | null
@@ -19,6 +20,8 @@ export interface AuthState {
   mustChangePassword: boolean
   tenants: TenantListItem[]
   permissions: Permission[]
+  // Módulos da operação ativos do tenant (vindo de /auth/me). Filtra nav e permissões.
+  modules: OperationModule[]
   // Aparência aplicada (vinda de /auth/me; alimenta o ThemeModeProvider)
   theme: AppTheme
   accentColor: AccentColor
@@ -47,6 +50,7 @@ const initialState: AuthState = {
   mustChangePassword: false,
   tenants: [],
   permissions: [],
+  modules: ALL_MODULES,
   theme: 'light',
   accentColor: 'green',
   textSize: TEXT_SIZE_DEFAULT,
@@ -72,6 +76,7 @@ export const authSlice = createSlice({
       mustChangePassword: action.payload.mustChangePassword ?? false,
       tenants: action.payload.tenants ?? [],
       permissions: action.payload.permissions ?? [],
+      modules: action.payload.modules ?? ALL_MODULES,
       theme: themeFromSettings(action.payload.settings),
       accentColor: accentFromSettings(action.payload.settings),
       textSize: action.payload.settings?.textSize ?? TEXT_SIZE_DEFAULT,
@@ -102,8 +107,12 @@ export const authSlice = createSlice({
       ...state,
       mustChangePassword: action.payload,
     }),
+    setModules: (state, action: PayloadAction<OperationModule[]>) => ({
+      ...state,
+      modules: action.payload,
+    }),
   },
 })
 
-export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword, setProfile, setAppearance } = authSlice.actions
+export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword, setProfile, setAppearance, setModules } = authSlice.actions
 export default authSlice.reducer

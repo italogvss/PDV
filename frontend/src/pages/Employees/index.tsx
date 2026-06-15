@@ -39,6 +39,8 @@ import RoleFormModal from './components/RoleFormModal'
 import SettingCard from '../../components/SettingCard'
 import type { Employee, TenantRole } from '../../types/employee.types'
 import { PERMISSIONS } from '../../types/employee.types'
+import { permissionToModule } from '../../constants/modules'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import type { AvatarColorKey } from './types'
 
 const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
@@ -69,6 +71,19 @@ export default function EmployeesPage() {
   const { data: rolesData, isLoading: rolesLoading } = useTeamRoles()
   const deactivateRole = useDeactivateRole()
   const setPermissions = useSetRolePermissions()
+
+  const { modules } = useUserPermissions()
+
+  // Mostra apenas permissões de módulos ativos. Permissões sem módulo (core, ex.:
+  // Funcionários) ficam sempre visíveis.
+  const visiblePermissions = useMemo(
+    () =>
+      (Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).filter((perm) => {
+        const module = permissionToModule[perm]
+        return !module || modules.includes(module)
+      }),
+    [modules],
+  )
 
   const [pendingPermissions, setPendingPermissions] = useState<Record<string, string[]>>({})
 
@@ -417,7 +432,7 @@ export default function EmployeesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {(Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).map((perm) => (
+            {visiblePermissions.map((perm) => (
               <TableRow key={perm} sx={{ '&:last-child td': { border: 0 } }}>
                 <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 4, borderColor: 'border.subtle' }}>
                   {PERMISSIONS[perm]}

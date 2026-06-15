@@ -12,7 +12,7 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
         builder.Property(ts => ts.CompanyName).HasMaxLength(300);
         builder.Property(ts => ts.Cnpj).HasMaxLength(14);
         builder.Property(ts => ts.StateRegistration).HasMaxLength(50);
-        builder.Property(ts => ts.Segment).HasMaxLength(50);
+        builder.Property(ts => ts.Segment).HasConversion<string>().HasMaxLength(50);
         builder.Property(ts => ts.Phone).HasMaxLength(20);
         builder.Property(ts => ts.LogoUrl).HasMaxLength(500);
 
@@ -25,6 +25,7 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
         builder.Property(ts => ts.AddressState).HasMaxLength(2);
 
         builder.Property(ts => ts.BusinessHoursJson).HasColumnType("longtext");
+        builder.Property(ts => ts.EnabledModulesJson).HasColumnType("longtext");
         builder.Property(ts => ts.TaxRegime).IsRequired().HasMaxLength(20).HasDefaultValue("simples");
 
         builder.Property(ts => ts.DiscountLimitPercent).HasColumnType("decimal(5,2)");

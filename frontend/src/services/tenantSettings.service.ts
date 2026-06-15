@@ -6,6 +6,7 @@ import type {
   PaymentsSettings,
   TenantSettings,
 } from '../types/settings.types'
+import type { OperationModule } from '../constants/modules'
 
 // Tipos do backend (campos opcionais chegam como null)
 interface BackendAddress {
@@ -35,6 +36,7 @@ interface BackendSettings {
   business: BackendBusiness
   operation: OperationSettings
   payments: PaymentsSettings
+  modules: { modules: OperationModule[] }
 }
 
 function mapBusiness(b: BackendBusiness): BusinessSettings {
@@ -67,6 +69,7 @@ export const tenantSettingsService = {
       business: mapBusiness(data.business),
       operation: data.operation,
       payments: data.payments,
+      modules: data.modules.modules,
     }
   },
 
@@ -85,5 +88,10 @@ export const tenantSettingsService = {
   updatePayments: async (payload: PaymentsSettings): Promise<PaymentsSettings> => {
     const { data } = await api.put<PaymentsSettings>('/tenants/settings/payments', payload)
     return data
+  },
+
+  updateModules: async (modules: OperationModule[]): Promise<OperationModule[]> => {
+    const { data } = await api.put<{ modules: OperationModule[] }>('/tenants/settings/modules', { modules })
+    return data.modules
   },
 }

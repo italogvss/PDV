@@ -1,7 +1,6 @@
 import type { SvgIconComponent } from '@mui/icons-material'
 import {
   ArrowForwardOutlined,
-  AutoAwesomeOutlined,
   HelpOutlineOutlined,
   NotificationsNoneOutlined,
   PersonOutlined,
@@ -27,12 +26,11 @@ interface AccountItem {
   label: string
   icon: SvgIconComponent
   tab: string
-  shortcut?: string
   badge?: { label: string; tone: 'premium' | 'count' | 'neutral' }
 }
 
 const ACCOUNT_ITEMS: AccountItem[] = [
-  { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil', shortcut: 'G P' },
+  { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil' },
   { label: 'Assinatura', icon: WorkspacePremiumOutlined, tab: 'assinatura', badge: { label: 'Premium', tone: 'premium' } },
   { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios' },
 ]
@@ -82,7 +80,6 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
       <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>
         {item.label}
       </Typography>
-      {item.shortcut && <ShortcutBadge keys={item.shortcut.split(' ')} />}
       {item.badge?.tone === 'premium' && (
         <Chip
           label={item.badge.label}

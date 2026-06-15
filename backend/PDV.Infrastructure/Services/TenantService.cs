@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Tenants;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -39,13 +40,16 @@ public class TenantService(
 
         var tenant = new Tenant();
 
+        var segment = ParseSegment(request.Segment);
+
         tenant.Settings = new TenantSettings
         {
             TenantId = tenant.Id,
 
             FantasyName        = request.FantasyName.Trim(),
             Phone              = request.Phone?.Trim(),
-            Segment            = request.Segment,
+            Segment            = segment,
+            EnabledModulesJson = OperationModuleHelper.Serialize(SegmentModuleDefaults.ForSegment(segment)),
             LogoUrl            = request.LogoUrl,
 
             CompanyName        = request.SkipDocuments ? null : request.CompanyName?.Trim(),
@@ -109,7 +113,7 @@ public class TenantService(
         settings.CompanyName       = request.CompanyName?.Trim();
         settings.Cnpj              = StripMask(request.Cnpj);
         settings.StateRegistration = request.StateRegistration?.Trim();
-        settings.Segment           = request.Segment?.Trim();
+        settings.Segment           = ParseSegment(request.Segment);
         settings.Phone             = request.Phone?.Trim();
         settings.LogoUrl           = request.LogoUrl;
         settings.TaxRegime         = request.TaxRegime;
@@ -170,6 +174,19 @@ public class TenantService(
         return (await Map(settings)).Payments;
     }
 
+    public async Task<ModulesSettingsDto> UpdateModulesAsync(ModulesSettingsDto request)
+    {
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
+            ?? throw new NotFoundException("Configurações do tenant não encontradas.");
+
+        settings.EnabledModulesJson = OperationModuleHelper.SerializeFromWire(request.Modules);
+
+        settings.UpdatedAt = DateTime.UtcNow;
+        await tenantRepository.UpdateSettingsAsync(settings);
+
+        return (await Map(settings)).Modules;
+    }
+
     private async Task<TenantSettingsResponse> Map(TenantSettings s)
     {
         var logoUrl = await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt);
@@ -181,7 +198,7 @@ public class TenantService(
                 s.CompanyName,
                 s.Cnpj,
                 s.StateRegistration,
-                s.Segment,
+                s.Segment.ToString().ToLowerInvariant(),
                 s.Phone,
                 s.TaxRegime,
                 new SettingsAddressDto(
@@ -197,8 +214,14 @@ public class TenantService(
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),
                 new PaymentMethodDto(s.PaymentCardCreditEnabled, s.PaymentCardCreditFee),
                 new PaymentMethodDto(s.PaymentCardDebitEnabled, s.PaymentCardDebitFee),
-                new PaymentMethodDto(s.PaymentCashEnabled, s.PaymentCashFee)));
+                new PaymentMethodDto(s.PaymentCashEnabled, s.PaymentCashFee)),
+            new ModulesSettingsDto(OperationModuleHelper.ReadEnabled(s.EnabledModulesJson)));
     }
+
+    // Converte a string do frontend (lowercase, ex.: "varejo") para o enum Segment.
+    // Valor ausente ou desconhecido cai em Outro (que habilita todos os módulos).
+    private static Segment ParseSegment(string? value) =>
+        Enum.TryParse<Segment>(value, ignoreCase: true, out var segment) ? segment : Segment.Outro;
 
     private static IEnumerable<TenantRole> CreateDefaultRoles(Guid tenantId)
     {

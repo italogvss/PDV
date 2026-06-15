@@ -2,6 +2,7 @@ import { api } from './api'
 import type { AuthUser, UserRole } from '../types/auth.types'
 import type { Permission } from '../types/employee.types'
 import type { AccentColor, Theme } from '../types/usersettings.type'
+import { ALL_MODULES, type OperationModule } from '../constants/modules'
 
 interface MeApiResponse {
   id: string
@@ -17,6 +18,7 @@ interface MeApiResponse {
   tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee'; logoUrl: string | null }>
   mustChangePassword?: boolean
   permissions?: string[]
+  modules?: string[]
 }
 
 export const authService = {
@@ -42,6 +44,7 @@ export const authService = {
       tenants: (data.tenants ?? []).map((t) => ({ ...t, logoUrl: t.logoUrl ?? null })),
       mustChangePassword: data.mustChangePassword ?? false,
       permissions: (data.permissions ?? []) as Permission[],
+      modules: (data.modules ?? ALL_MODULES) as OperationModule[],
     }
   },
 

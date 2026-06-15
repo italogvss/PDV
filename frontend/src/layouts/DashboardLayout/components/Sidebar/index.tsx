@@ -8,12 +8,14 @@ import { SidebarProps } from './types'
 import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 
 export default function Sidebar({ isMobile, mobileOpen, onClose }: SidebarProps) {
-  const { hasPermission } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
 
   const visibleSections = NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
-      (item) => !item.requiredPermission || hasPermission(item.requiredPermission),
+      (item) =>
+        (!item.module || isModuleEnabled(item.module)) &&
+        (!item.requiredPermission || hasPermission(item.requiredPermission)),
     ),
   }))
 
