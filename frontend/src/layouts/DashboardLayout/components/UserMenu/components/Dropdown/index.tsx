@@ -44,34 +44,6 @@ const HELP_ITEMS: AccountItem[] = [
   { label: 'Central de ajuda', icon: HelpOutlineOutlined, tab: '' },
 ]
 
-function ShortcutBadge({ keys }: { keys: string[] }) {
-  return (
-    <Box sx={{ display: 'flex', gap: 0.5 }}>
-      {keys.map((k) => (
-        <Box
-          key={k}
-          sx={{
-            minWidth: 20,
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 1,
-            border: 1,
-            borderColor: 'border.subtle',
-            bgcolor: 'surface.sunken',
-            fontSize: 11,
-            fontWeight: 500,
-            color: 'text.tertiary',
-            textAlign: 'center',
-            lineHeight: 1.2,
-          }}
-        >
-          {k}
-        </Box>
-      ))}
-    </Box>
-  )
-}
-
 function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) {
   const Icon = item.icon
   return (
@@ -103,6 +75,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
+  
   const initials = auth.name ?? "Usuário"
     .split(' ')
     .map((n) => n[0])
@@ -112,7 +85,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
 
   const goToTab = (tab: string) => {
     onClose()
-    navigate(tab ? `/conta?tab=${tab}` : '/ajuda')
+    navigate(tab ? `/configuracoes?tab=${tab}` : '/ajuda')
   }
 
   const handleLogout = () => {

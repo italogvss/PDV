@@ -8,6 +8,7 @@ import PeopleOutlined from "@mui/icons-material/PeopleOutlined"
 import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined"
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined"
 import GroupsOutlined from "@mui/icons-material/GroupsOutlined"
+import { AccentColor } from "../../types/usersettings.type"
 
 export type SettingsTab =
   | 'negocio'
@@ -17,6 +18,14 @@ export type SettingsTab =
   | 'aparencia'
   | 'backup'
   | 'avancado'
+  | 'perfil'
+  | 'assinatura'
+  | 'faturas'
+  | 'negocios'
+  | 'seguranca'
+  | 'notificacoes'
+  | 'sessoes'
+  | 'integracoes'
 
   // Payment Section
 export type MethodKey = keyof PaymentsSettings
@@ -42,6 +51,15 @@ export interface Shortcut {
   label: string
   keys: string[]
 }
+
+  export const ACCENT_COLORS: { id: AccentColor; label: string; hex: string }[] = [
+  { id: 'green', label: 'Verde', hex: '#2fa040' },
+  { id: 'blue', label: 'Azul', hex: '#3a82d4' },
+  { id: 'orange', label: 'Laranja', hex: '#d97a1f' },
+  { id: 'purple', label: 'Roxo', hex: '#9152d4' },
+  { id: 'pink', label: 'Rosa', hex: '#d94576' },
+  { id: 'graphite', label: 'Grafite', hex: '#4b4b4b' },
+]
 
 export const SHORTCUTS: Shortcut[] = [
   { label: 'Nova venda', keys: ['F2'] },
