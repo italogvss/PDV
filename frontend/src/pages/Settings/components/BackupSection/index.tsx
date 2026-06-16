@@ -30,8 +30,8 @@ export default function BackupSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SettingCard title="Implementação Futura" subtitle="Está pagina esta em construção e ficara disponível em breve.">
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 500 }}>
+      <SettingCard title="Backup de dados" subtitle="Está pagina esta em construção e ficara disponível em breve.">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 200 }}>
           <ConstructionOutlined sx={{ fontSize: 48, color: 'text.disabled' }} />
           <Typography variant="body2" color="text.disabled">
             Esta seção estará disponível em breve

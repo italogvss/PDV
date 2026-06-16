@@ -130,42 +130,41 @@ export default function SecuritySection() {
             </SettingRow>
 
             <SettingRow label="Confirmar nova senha">
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                <TextField
-                  {...register('confirmPassword')}
-                  size="small"
-                  type={showConfirm ? 'text' : 'password'}
-                  sx={{ width: 260 }}
-                  error={!!errors.confirmPassword}
-                  helperText={errors.confirmPassword?.message}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={() => setShowConfirm((v) => !v)} edge="end" tabIndex={-1}>
-                            {showConfirm
-                              ? <VisibilityOffOutlinedIcon fontSize="small" />
-                              : <VisibilityOutlinedIcon fontSize="small" />
-                            }
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="secondary"
-                  size="small"
-                  disabled={isSubmitting}
-                  startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : undefined}
-                  sx={{ mt: 0.5 }}
-                >
-                  {isSubmitting ? 'Salvando...' : 'Alterar senha'}
-                </Button>
-              </Box>
+              <TextField
+                {...register('confirmPassword')}
+                size="small"
+                type={showConfirm ? 'text' : 'password'}
+                sx={{ width: 340 }}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowConfirm((v) => !v)} edge="end" tabIndex={-1}>
+                          {showConfirm
+                            ? <VisibilityOffOutlinedIcon fontSize="small" />
+                            : <VisibilityOutlinedIcon fontSize="small" />
+                          }
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
             </SettingRow>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : undefined}
+              >
+                {isSubmitting ? 'Salvando...' : 'Alterar senha'}
+              </Button>
+            </Box>
           </Box>
         )}
       </SettingCard>

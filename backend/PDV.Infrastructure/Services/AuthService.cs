@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using FluentValidation;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -22,7 +23,8 @@ public class AuthService(
     IConfiguration configuration,
     IEmployeeRepository employeeRepository,
     ITenantRoleRepository roleRepository,
-    IStorageService storage) : IAuthService
+    IStorageService storage,
+    IValidator<ChangePasswordRequest> changePasswordValidator) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential)
@@ -259,6 +261,8 @@ public class AuthService(
 
     public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
+        await changePasswordValidator.ValidateAndThrowAsync(new ChangePasswordRequest(currentPassword, newPassword));
+
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
 
