@@ -8,7 +8,7 @@ import {
 import type { NotificationPrefs } from '../../../../types/usersettings.type'
 
 const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string }[] = [
-  { key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado' },
+  //{ key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado' },
   { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo' },
   { key: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças' },
   {

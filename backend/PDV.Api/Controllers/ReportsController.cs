@@ -90,6 +90,13 @@ public class ReportsController(IReportService service) : ControllerBase
         return File(csv, "text/csv", "vendas.csv");
     }
 
+    [HttpGet("sales/export/all")]
+    public async Task<IActionResult> ExportAllSalesCSV()
+    {
+        var csv = await service.ExportAllSalesCsvAsync();
+        return File(csv, "text/csv", "vendas.csv");
+    }
+
     [HttpGet("stock")]
     public async Task<IActionResult> GetStock()
     {
@@ -102,5 +109,40 @@ public class ReportsController(IReportService service) : ControllerBase
     {
         var csv = await service.ExportStockCsvAsync();
         return File(csv, "text/csv", "estoque.csv");
+    }
+
+    [HttpGet("customers/export")]
+    public async Task<IActionResult> ExportCustomersCSV()
+    {
+        var csv = await service.ExportCustomersCsvAsync();
+        return File(csv, "text/csv", "clientes.csv");
+    }
+
+    [HttpGet("services/export")]
+    public async Task<IActionResult> ExportServicesCSV()
+    {
+        var csv = await service.ExportServicesCsvAsync();
+        return File(csv, "text/csv", "servicos.csv");
+    }
+
+    [HttpGet("expenses/export")]
+    public async Task<IActionResult> ExportExpensesCSV()
+    {
+        var csv = await service.ExportExpensesCsvAsync();
+        return File(csv, "text/csv", "despesas.csv");
+    }
+
+    [HttpGet("billing/export")]
+    public async Task<IActionResult> ExportBillingCSV()
+    {
+        var csv = await service.ExportBillingCsvAsync();
+        return File(csv, "text/csv", "faturamento.csv");
+    }
+
+    [HttpGet("team/export")]
+    public async Task<IActionResult> ExportTeamCSV()
+    {
+        var csv = await service.ExportTeamCsvAsync();
+        return File(csv, "text/csv", "equipe.csv");
     }
 }

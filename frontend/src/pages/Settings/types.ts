@@ -9,6 +9,7 @@ import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWall
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined"
 import GroupsOutlined from "@mui/icons-material/GroupsOutlined"
 import { AccentColor } from "../../types/usersettings.type"
+import { MiscellaneousServicesOutlined } from "@mui/icons-material"
 
 export type SettingsTab =
   | 'negocio'
@@ -94,6 +95,7 @@ export const EXPORT_CATEGORIES = [
   { id: 'sales', label: 'Vendas', icon: ReceiptLongOutlined },
   { id: 'products', label: 'Produtos', icon: Inventory2Outlined },
   { id: 'customers', label: 'Clientes', icon: PeopleOutlined },
+  { id: 'services', label: 'Serviços', icon: MiscellaneousServicesOutlined },
   { id: 'expenses', label: 'Despesas', icon: AccountBalanceWalletOutlined },
   { id: 'billing', label: 'Faturamento', icon: BarChartOutlined },
   { id: 'team', label: 'Equipe', icon: GroupsOutlined },

@@ -30,5 +30,17 @@ public interface IReportService
     Task<byte[]> ExportSalesCsvAsync(
         string? period, DateTime? startDate, DateTime? endDate);
 
+    Task<byte[]> ExportAllSalesCsvAsync();
+
     Task<byte[]> ExportStockCsvAsync();
+
+    Task<byte[]> ExportCustomersCsvAsync();
+
+    Task<byte[]> ExportServicesCsvAsync();
+
+    Task<byte[]> ExportExpensesCsvAsync();
+
+    Task<byte[]> ExportBillingCsvAsync();
+
+    Task<byte[]> ExportTeamCsvAsync();
 }

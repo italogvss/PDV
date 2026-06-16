@@ -276,6 +276,41 @@ public class ReportService(AppDbContext context) : IReportService
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
+    public async Task<byte[]> ExportAllSalesCsvAsync()
+    {
+        var sales = await context.Sales
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new
+            {
+                s.Id,
+                s.CreatedAt,
+                s.OperatorName,
+                s.CustomerName,
+                s.PaymentMethod,
+                s.Status,
+                s.Total,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Status,Total");
+
+        foreach (var s in sales)
+        {
+            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
+            sb.AppendLine(
+                $"{s.Id}," +
+                $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
+                $"\"{s.OperatorName}\"," +
+                $"\"{s.CustomerName ?? ""}\"," +
+                $"{s.PaymentMethod}," +
+                $"{status}," +
+                $"{s.Total:F2}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
     public async Task<byte[]> ExportStockCsvAsync()
     {
         var products = await context.Products
@@ -296,6 +331,200 @@ public class ReportService(AppDbContext context) : IReportService
                 $"{p.Stock}," +
                 $"{p.Price:F2}," +
                 $"{ativo}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportCustomersCsvAsync()
+    {
+        var customers = await context.Customers
+            .OrderBy(c => c.Name)
+            .Select(c => new
+            {
+                c.Name,
+                c.Phone,
+                c.Email,
+                c.Document,
+                c.AddressStreet,
+                c.AddressNumber,
+                c.AddressCity,
+                c.AddressState,
+                c.AddressZipCode,
+                c.CreatedAt,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Nome,Telefone,E-mail,CPF/CNPJ,Rua,Número,Cidade,Estado,CEP,Cadastrado em");
+
+        foreach (var c in customers)
+        {
+            sb.AppendLine(
+                $"\"{c.Name}\"," +
+                $"{c.Phone ?? ""}," +
+                $"{c.Email ?? ""}," +
+                $"{c.Document ?? ""}," +
+                $"\"{c.AddressStreet ?? ""}\"," +
+                $"{c.AddressNumber ?? ""}," +
+                $"\"{c.AddressCity ?? ""}\"," +
+                $"{c.AddressState ?? ""}," +
+                $"{c.AddressZipCode ?? ""}," +
+                $"{c.CreatedAt:dd/MM/yyyy}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportServicesCsvAsync()
+    {
+        var services = await context.Services
+            .OrderBy(s => s.Name)
+            .Select(s => new
+            {
+                s.Name,
+                s.Description,
+                s.Price,
+                s.DurationMinutes,
+                CategoryName = s.Category != null ? s.Category.Name : "",
+                s.IsActive,
+                s.CreatedAt,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Nome,Descrição,Preço,Duração (min),Categoria,Ativo,Cadastrado em");
+
+        foreach (var s in services)
+        {
+            var ativo = s.IsActive ? "Sim" : "Não";
+            sb.AppendLine(
+                $"\"{s.Name}\"," +
+                $"\"{s.Description ?? ""}\"," +
+                $"{s.Price:F2}," +
+                $"{s.DurationMinutes?.ToString() ?? ""}," +
+                $"\"{s.CategoryName}\"," +
+                $"{ativo}," +
+                $"{s.CreatedAt:dd/MM/yyyy}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportExpensesCsvAsync()
+    {
+        var expenses = await context.Expenses
+            .OrderByDescending(e => e.DueDate)
+            .Select(e => new
+            {
+                e.Description,
+                e.Category,
+                e.Amount,
+                e.DueDate,
+                e.IsPaid,
+                e.PaidAt,
+                e.IsRecurring,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Descrição,Categoria,Valor,Vencimento,Pago,Data de Pagamento,Recorrente");
+
+        foreach (var e in expenses)
+        {
+            var pago = e.IsPaid ? "Sim" : "Não";
+            var recorrente = e.IsRecurring ? "Sim" : "Não";
+            sb.AppendLine(
+                $"\"{e.Description}\"," +
+                $"{e.Category}," +
+                $"{e.Amount:F2}," +
+                $"{e.DueDate:dd/MM/yyyy}," +
+                $"{pago}," +
+                $"{(e.PaidAt.HasValue ? e.PaidAt.Value.ToString("dd/MM/yyyy") : "")}," +
+                $"{recorrente}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportBillingCsvAsync()
+    {
+        var sales = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active)
+            .Select(s => new
+            {
+                s.CreatedAt,
+                s.Total,
+                Cost = s.Items.Sum(i => i.PurchasePriceSnapshot.HasValue
+                    ? i.PurchasePriceSnapshot.Value * i.Quantity
+                    : 0m),
+            })
+            .ToListAsync();
+
+        var expenses = await context.Expenses
+            .Select(e => new { e.DueDate, e.Amount })
+            .ToListAsync();
+
+        var salesByMonth = sales
+            .GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
+            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), Cost: g.Sum(s => s.Cost)));
+
+        var expensesByMonth = expenses
+            .GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
+            .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+
+        var allMonths = salesByMonth.Keys.Union(expensesByMonth.Keys).OrderBy(d => d).ToList();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Mês,Receita,Custo,Despesas,Lucro Bruto,Resultado Líquido");
+
+        foreach (var month in allMonths)
+        {
+            var (revenue, cost) = salesByMonth.GetValueOrDefault(month);
+            var expTotal = expensesByMonth.GetValueOrDefault(month);
+            var grossProfit = revenue - cost;
+            var netResult = grossProfit - expTotal;
+            sb.AppendLine(
+                $"{month:MM/yyyy}," +
+                $"{revenue:F2}," +
+                $"{cost:F2}," +
+                $"{expTotal:F2}," +
+                $"{grossProfit:F2}," +
+                $"{netResult:F2}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportTeamCsvAsync()
+    {
+        var employees = await context.Employees
+            .Include(e => e.Role)
+            .OrderBy(e => e.UserName)
+            .Select(e => new
+            {
+                e.UserName,
+                e.UserEmail,
+                e.Phone,
+                RoleName = e.Role != null ? e.Role.Name : "",
+                e.IsActive,
+                e.CreatedAt,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Nome,E-mail,Telefone,Cargo,Ativo,Cadastrado em");
+
+        foreach (var e in employees)
+        {
+            var ativo = e.IsActive ? "Sim" : "Não";
+            sb.AppendLine(
+                $"\"{e.UserName}\"," +
+                $"{e.UserEmail}," +
+                $"{e.Phone ?? ""}," +
+                $"\"{e.RoleName}\"," +
+                $"{ativo}," +
+                $"{e.CreatedAt:dd/MM/yyyy}");
         }
 
         return Encoding.UTF8.GetBytes(sb.ToString());

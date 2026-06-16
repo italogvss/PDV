@@ -1,14 +1,32 @@
 import ConstructionOutlined from '@mui/icons-material/ConstructionOutlined'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import {
   Box,
+  Button,
+  CircularProgress,
   Typography
 } from '@mui/material'
+import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
-
-
+import { useToast } from '../../../../hooks/useToast'
+import { reportService } from '../../../../services/report.service'
+import { EXPORT_CATEGORIES } from '../../types'
 
 export default function BackupSection() {
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const showToast = useToast()
 
+  const handleExport = async (categoryId: string) => {
+    if (loadingId) return
+    setLoadingId(categoryId)
+    try {
+      await reportService.exportCsv(categoryId)
+    } catch {
+      showToast('Erro ao exportar dados. Tente novamente.', 'error')
+    } finally {
+      setLoadingId(null)
+    }
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -18,6 +36,40 @@ export default function BackupSection() {
           <Typography variant="body2" color="text.disabled">
             Esta seção estará disponível em breve
           </Typography>
+        </Box>
+      </SettingCard>
+      <SettingCard title="Exportar dados" subtitle="Gera um arquivo com todos os registros em .csv">
+        <Box
+          sx={{
+            p: 3,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 2,
+          }}
+        >
+          {EXPORT_CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const isLoading = loadingId === cat.id
+            return (
+              <Button
+                key={cat.id}
+                variant="outlined"
+                startIcon={<Icon />}
+                endIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlined />}
+                disabled={!!loadingId}
+                onClick={() => handleExport(cat.id)}
+                sx={{
+                  justifyContent: 'space-between',
+                  px: 2,
+                  py: 1.5,
+                  fontWeight: 500,
+                  '& .MuiButton-endIcon': { marginLeft: 'auto' },
+                }}
+              >
+                {cat.label}
+              </Button>
+            )
+          })}
         </Box>
       </SettingCard>
     </Box>
@@ -125,37 +177,7 @@ export default function BackupSection() {
     //     ))}
     //   </SettingCard>
 
-    //   <SettingCard title="Exportar dados" subtitle="Gera um arquivo com todos os registros">
-    //     <Box
-    //       sx={{
-    //         p: 3,
-    //         display: 'grid',
-    //         gridTemplateColumns: 'repeat(4, 1fr)',
-    //         gap: 2,
-    //       }}
-    //     >
-    //       {EXPORT_CATEGORIES.map((cat) => {
-    //         const Icon = cat.icon
-    //         return (
-    //           <Button
-    //             key={cat.id}
-    //             variant="outlined"
-    //             startIcon={<Icon />}
-    //             endIcon={<FileDownloadOutlinedIcon />}
-    //             sx={{
-    //               justifyContent: 'space-between',
-    //               px: 2,
-    //               py: 1.5,
-    //               fontWeight: 500,
-    //               '& .MuiButton-endIcon': { marginLeft: 'auto' },
-    //             }}
-    //           >
-    //             {cat.label}
-    //           </Button>
-    //         )
-    //       })}
-    //     </Box>
-    //   </SettingCard>
+
     // </Box>
   )
 }

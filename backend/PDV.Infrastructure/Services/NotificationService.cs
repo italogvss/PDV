@@ -1,23 +1,48 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Notifications;
 using PDV.Application.Interfaces;
+using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Infrastructure.Persistence;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace PDV.Infrastructure.Services;
 
-public class NotificationService(AppDbContext context, ITenantContext tenantContext) : INotificationService
+public class NotificationService(
+    AppDbContext context,
+    ITenantContext tenantContext,
+    IHttpContextAccessor httpContextAccessor) : INotificationService
 {
     public async Task<NotificationResponse> GetNotificationsAsync()
     {
         var today = DateTime.UtcNow.Date;
+        var userSettings = await GetUserSettingsAsync();
 
-        var stock = await GetStockNotificationsAsync();
-        var financial = await GetFinancialNotificationsAsync(today);
+        var stock = userSettings?.NotifyStockAlerts == false
+            ? new StockNotifications(0, 0, 0, 0)
+            : await GetStockNotificationsAsync();
+
+        var financial = userSettings?.NotifyInvoices == false
+            ? new FinancialNotifications(0, 0)
+            : await GetFinancialNotificationsAsync(today);
+
         var appointments = await GetAppointmentNotificationsAsync(today);
 
         return new NotificationResponse(stock, financial, appointments);
+    }
+
+    private async Task<UserSettings?> GetUserSettingsAsync()
+    {
+        var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return null;
+
+        // UserSettings não tem HasQueryFilter — filtrar manualmente por UserId
+        return await context.UserSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.UserId == userId);
     }
 
     private async Task<StockNotifications> GetStockNotificationsAsync()
