@@ -28,6 +28,8 @@ export type SettingsTab =
   | 'notificacoes'
   | 'sessoes'
   | 'integracoes'
+  | 'privacy'
+  | 'useterms'
 
   // Payment Section
 export type MethodKey = keyof PaymentsSettings

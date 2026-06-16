@@ -9,8 +9,11 @@ import {
   DialogActions,
   CircularProgress,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import dayjs from 'dayjs'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
@@ -24,6 +27,8 @@ import FiltersPopover from './components/FiltersPopover'
 import RowActionsMenu from './components/RowActionsMenu'
 import SaleDetailModal from './components/SaleDetailModal'
 import { SaleListItem } from '../../types/sale.types'
+
+const DATE_RANGE_DAYS = [7, 14, 30, 90] as const
 
 const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
@@ -75,8 +80,15 @@ export default function SalesHistoryPage() {
   const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null)
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null)
   const [cancelId, setCancelId] = useState<string | null>(null)
+  const [selectedDays, setSelectedDays] = useState(30)
 
-  const { data: salesRaw = [], isLoading } = useSales()
+  const endDateStr = dayjs().format('YYYY-MM-DD')
+  const startDateStr = useMemo(
+    () => dayjs().subtract(selectedDays, 'day').format('YYYY-MM-DD'),
+    [selectedDays],
+  )
+
+  const { data: salesRaw = [], isLoading } = useSales(startDateStr, endDateStr)
   const cancelSale = useCancelSale()
   const { hasPermission } = useUserPermissions()
   const canCancel = hasPermission('CancelSales')
@@ -190,6 +202,18 @@ export default function SalesHistoryPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Vendas" description="Histórico completo de vendas realizadas para o período">
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={selectedDays}
+          onChange={(_, value) => value !== null && setSelectedDays(value)}
+        >
+          {DATE_RANGE_DAYS.map((days) => (
+            <ToggleButton key={days} value={days}>
+              {days} dias
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
         <Button
           variant="outlined"
           startIcon={<FilterListRounded />}

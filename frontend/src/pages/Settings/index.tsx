@@ -1,4 +1,4 @@
-import { ArchiveOutlined, BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
+import { ArchiveOutlined, Article, BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { Box, Button, Divider, Typography } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
@@ -18,6 +18,8 @@ import ProfileSection from './components/ProfileSection'
 import SecuritySection from './components/SecuritySection'
 import SubscriptionSection from './components/SubscriptionSection'
 import { type SettingsTab } from './types'
+import PrivacySection from './components/PrivacySection'
+import UseTermsSection from './components/UseTermsSection'
 
 interface NavItem {
   id: SettingsTab
@@ -37,6 +39,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'negocios',     label: 'Meus negócios',  subtitle: 'Gerenciamento de empresas',   icon: StorefrontOutlined,        type: 'user', ownerOnly: true  },
   { id: 'aparencia',    label: 'Aparência',      subtitle: 'Estilo e temas',              icon: TuneOutlined,              type: 'user' },
   { id: 'notificacoes', label: 'Notificações',   subtitle: 'Preferências de comunicação', icon: NotificationsNoneOutlined, type: 'user' },
+  { id: 'privacy', label: 'Privacidade',   subtitle: 'Preferências de privacidade', icon: Shield, type: 'user' },
+  { id: 'useterms', label: 'Termos de Uso',   subtitle: 'Termos de uso e contrato da aplicação', icon: Article, type: 'user' },
+
   // ── Negócio ──
   { id: 'negocio',    label: 'Negócio',        subtitle: 'Dados, endereço e horário', icon: StorefrontOutlined,        type: 'business' },
   { id: 'operacao',   label: 'Operação',       subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined,      type: 'business' },
@@ -63,6 +68,8 @@ function renderSection(tab: SettingsTab) {
     case 'negocios':     return <BusinessesSection />
     case 'seguranca':    return <SecuritySection />
     case 'notificacoes': return <NotificationsSection />
+    case 'privacy':      return <PrivacySection/>
+    case 'useterms':     return <UseTermsSection/>
     default:             return null
   }
 }

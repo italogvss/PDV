@@ -89,6 +89,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Fornecedores', path: '/fornecedores', icon: LocalShippingOutlined, module: 'suppliers' },
       { label: 'Configurações', path: '/configuracoes', icon: SettingsOutlined },
       { label: 'Ajuda', path: '/ajuda', icon: HelpOutlineOutlined },
+      
     ],
   },
 ]
