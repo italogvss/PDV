@@ -145,7 +145,9 @@ export default function SidePanel({
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {upcoming.map((appt) => {
-                const pro = proById(appt.employeeId)
+                const pro = appt.employeeId ? proById(appt.employeeId) : undefined
+                const proName = pro?.name ?? appt.employeeName
+                const accentColor = appt.employeeId ? proHex(theme, appt.employeeId) : theme.palette.text.disabled
                 const meta = STATUS_META[appt.status]
                 return (
                   <Box
@@ -177,7 +179,7 @@ export default function SidePanel({
                         width: 3,
                         alignSelf: 'stretch',
                         borderRadius: 2,
-                        bgcolor: proHex(theme, appt.employeeId),
+                        bgcolor: accentColor,
                       }}
                     />
                     <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -194,7 +196,7 @@ export default function SidePanel({
                       </Typography>
                       <Typography variant="caption" color="text.tertiary">
                         {firstName(appt.customerName)}
-                        {pro ? ` · ${firstName(pro.name)}` : ''}
+                        {proName ? ` · ${firstName(proName)}` : ''}
                       </Typography>
                     </Box>
                     <Box

@@ -126,6 +126,11 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
               <InfoRow label="Status">
                 {status && <StatusChip status={status} />}
               </InfoRow>
+              {sale.cancelledByName && (
+                <InfoRow label="Cancelado por">
+                  <Typography variant="body2">{sale.cancelledByName}</Typography>
+                </InfoRow>
+              )}
             </Box>
 
             <Divider />

@@ -17,7 +17,7 @@ export interface CreateSalePayload {
 
 export interface SaleListItem {
   id: string
-  operatorId: string
+  operatorId: string | null
   operatorName: string
   customerName: string | null
   customerDocument: string | null
@@ -29,6 +29,7 @@ export interface SaleListItem {
   discount: number
   status: string
   cancelledById: string | null
+  cancelledByName: string | null
   cancelledAt: string | null
   createdAt: string
 }

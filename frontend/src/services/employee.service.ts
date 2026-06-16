@@ -11,7 +11,7 @@ interface PaginatedResponse<T> {
 
 interface BackendEmployee {
   id: string
-  userId: string
+  userId: string | null
   name: string
   email: string
   roleId: string

@@ -7,14 +7,17 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  Divider,
   IconButton,
-  Tooltip,
+  Menu,
+  MenuItem,
   Typography,
 } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
 import DeleteForeverOutlined from '@mui/icons-material/DeleteForeverOutlined'
 import InboxOutlined from '@mui/icons-material/InboxOutlined'
+import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import RestoreOutlined from '@mui/icons-material/RestoreOutlined'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import SettingCard from '../../../../components/SettingCard'
@@ -53,6 +56,54 @@ function NoRowsOverlay() {
       <InboxOutlined sx={{ fontSize: 36 }} />
       <Typography variant="body2">Nenhum item desativado</Typography>
     </Box>
+  )
+}
+
+interface InactiveItemRowMenuProps {
+  onRestore: () => void
+  onRequestDelete: () => void
+  isPending: boolean
+}
+
+function InactiveItemRowMenu({ onRestore, onRequestDelete, isPending }: InactiveItemRowMenuProps) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+
+  const handleClose = () => setAnchor(null)
+
+  return (
+    <>
+      <IconButton
+        size="small"
+        disabled={isPending}
+        onClick={(e) => { e.stopPropagation(); setAnchor(e.currentTarget) }}
+        sx={{ color: 'text.disabled' }}
+      >
+        {isPending
+          ? <CircularProgress size={16} />
+          : <MoreHorizRounded sx={{ fontSize: 18 }} />}
+      </IconButton>
+
+      <Menu
+        anchorEl={anchor}
+        open={Boolean(anchor)}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={() => { handleClose(); onRestore() }}>
+          <RestoreOutlined />
+          Reativar
+        </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
+        <MenuItem
+          onClick={() => { handleClose(); onRequestDelete() }}
+          sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+        >
+          <DeleteForeverOutlined />
+          Excluir definitivamente
+        </MenuItem>
+      </Menu>
+    </>
   )
 }
 
@@ -213,58 +264,32 @@ export default function DisabledItemsSection() {
         <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
       ),
     },
+    
     {
-      field: 'actions',
+      field: 'rowActions',
       headerName: '',
-      width: 96,
+      width: 56,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: ({ row }) => {
-        const isRestoring = pendingRestoreIds.has(row.id)
-        const isDeleting = pendingDeleteIds.has(row.id)
-        const disabled = isRestoring || isDeleting
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-            <Tooltip title="Reativar">
-              <span>
-                <IconButton
-                  size="small"
-                  disabled={disabled}
-                  onClick={(e) => { e.stopPropagation(); currentTab.onRestore(row.id) }}
-                >
-                  {isRestoring ? <CircularProgress size={16} /> : <RestoreOutlined fontSize="small" />}
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Excluir definitivamente">
-              <span>
-                <IconButton
-                  size="small"
-                  color="error"
-                  disabled={disabled}
-                  onClick={(e) => { e.stopPropagation(); handleRequestDelete([row]) }}
-                >
-                  {isDeleting ? <CircularProgress size={16} color="inherit" /> : <DeleteForeverOutlined fontSize="small" />}
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
-        )
-      },
+      renderCell: ({ row }) => (
+        <InactiveItemRowMenu
+          onRestore={() => currentTab.onRestore(row.id)}
+          onRequestDelete={() => handleRequestDelete([row])}
+          isPending={pendingRestoreIds.has(row.id) || pendingDeleteIds.has(row.id)}
+        />
+      ),
     },
   ]
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3,}}>
       <SettingCard
         title="Itens desativados"
         subtitle="Restaure itens desativados ou exclua-os definitivamente."
       >
-        <Box sx={{ px: 4, pt: 3, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
+        <Box sx={{ px: 2, pt: 3, pb: 2, display: 'flex', flexDirection: 'column', gap: 2, }}>
+          <Box sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
             <ChipSelect
               size="large"
               options={TAB_OPTIONS}
@@ -303,9 +328,9 @@ export default function DisabledItemsSection() {
             rowSelectionModel={selection}
             onRowSelectionModelChange={setSelection}
             autoHeight
-            density="compact"
+            pageSizeOptions={[10, 25, 50]}
+            sx={{border: "1px solid", borderColor: "border.subtle",display: 'flex',}}
             slots={{ noRowsOverlay: NoRowsOverlay }}
-            sx={{ minHeight: 160 }}
           />
         </Box>
       </SettingCard>

@@ -197,12 +197,14 @@ export default function NewAppointmentModal({
     const serviceRefs = services
       .filter((s) => data.serviceIds.includes(s.id))
       .map(toServiceRef)
+    const employeeName = professionals.find((p) => p.id === data.employeeId)?.name ?? ''
     const appointment: Appointment = {
       id: crypto.randomUUID(),
       customerId,
       customerName: data.customerName,
       customerPhone: data.phone.trim() || undefined,
       employeeId: data.employeeId,
+      employeeName,
       services: serviceRefs,
       start,
       durationMinutes: data.duration,

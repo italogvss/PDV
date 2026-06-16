@@ -351,39 +351,7 @@ export default function ExpensesPage() {
               disableRowSelectionOnClick
               pageSizeOptions={[10, 25]}
               initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-              onRowDoubleClick={(params) => handleOpenEdit(params.row)}
-              sx={(t) => ({
-                border: 'none',
-                '& .MuiDataGrid-columnHeaders': {
-                  backgroundColor: t.palette.surface.sunken,
-                  borderBottom: `1px solid ${t.palette.border.subtle}`,
-                },
-                '& .MuiDataGrid-columnHeader': {
-                  '&:focus, &:focus-within': { outline: 'none' },
-                },
-                '& .MuiDataGrid-columnHeaderTitle': {
-                  fontSize: 11,
-                  fontWeight: 500,
-                  letterSpacing: '0.05em',
-                  color: t.palette.text.tertiary,
-                  textTransform: 'uppercase',
-                },
-                '& .MuiDataGrid-columnSeparator': { display: 'none' },
-                '& .MuiDataGrid-cell': {
-                  borderBottom: `1px solid ${t.palette.border.subtle}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  '&:focus, &:focus-within': { outline: 'none' },
-                },
-                '& .MuiDataGrid-row': { cursor: 'pointer' },
-                '& .MuiDataGrid-row:hover': { backgroundColor: t.palette.surface.sunken },
-                '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
-                '& .MuiDataGrid-footerContainer': {
-                  borderTop: `1px solid ${t.palette.border.subtle}`,
-                  minHeight: 48,
-                },
-                '& .MuiDataGrid-selectedRowCount': { display: 'none' },
-              })}
+              onRowDoubleClick={(params) => handleOpenEdit(params.row)}             
             />
           )}
         </Card>

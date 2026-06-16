@@ -193,39 +193,7 @@ export default function ProductCatalog({
             rowHeight={48}
             onRowClick={({ row }) =>
               mode === 'products' ? onAddProduct(row.id) : onAddService(row.id)
-            }
-            sx={(theme) => ({
-              border: `1px solid ${theme.palette.border.subtle}`,
-              borderRadius: 2,
-              cursor: 'pointer',
-              '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: theme.palette.surface.sunken,
-                borderBottom: `1px solid ${theme.palette.border.subtle}`,
-              },
-              '& .MuiDataGrid-columnHeader': {
-                '&:focus, &:focus-within': { outline: 'none' },
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-                color: theme.palette.text.tertiary,
-                textTransform: 'uppercase',
-              },
-              '& .MuiDataGrid-columnSeparator': { display: 'none' },
-              '& .MuiDataGrid-cell': {
-                borderBottom: `1px solid ${theme.palette.border.subtle}`,
-                display: 'flex',
-                alignItems: 'center',
-                '&:focus, &:focus-within': { outline: 'none' },
-              },
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: theme.palette.surface.sunken,
-              },
-              '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': {
-                borderBottom: 'none',
-              },
-            })}
+            }            
           />
         ) : mode === 'products' ? (
           <Grid container spacing={1}>

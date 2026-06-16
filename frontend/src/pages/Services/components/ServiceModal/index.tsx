@@ -226,7 +226,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
                   onChange={field.onChange}
                   loading={isLoadingCategories}
                   emptyMessage="Nenhuma categoria cadastrada. Adicione na tela de serviços."
-                  size="medium"
+                  size="large"
                   colorMode="fill"
                   nullable
                 />

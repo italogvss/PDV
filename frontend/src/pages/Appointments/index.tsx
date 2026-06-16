@@ -131,7 +131,7 @@ export default function AppointmentsPage() {
       customerId: appointment.customerId,
       customerName: appointment.customerName,
       customerPhone: appointment.customerPhone,
-      employeeId: appointment.employeeId,
+      employeeId: appointment.employeeId!,
       serviceIds: appointment.services.map((s) => s.id),
       start: appointment.start,
       durationMinutes: appointment.durationMinutes,
@@ -150,6 +150,7 @@ export default function AppointmentsPage() {
   const handleChangeColor = (id: string, color: string) => {
     const appt = appointments.find((a) => a.id === id)
     if (!appt) return
+    if (!appt.employeeId) return
     updateAppt.mutate({
       id,
       payload: {
@@ -182,7 +183,7 @@ export default function AppointmentsPage() {
 
       const newStart = event.start as string
       const newDuration = Math.max(5, dayjs(event.end as string).diff(dayjs(event.start as string), 'minute'))
-      const newEmployeeId = typeof event.resource === 'string' ? event.resource : a.employeeId
+      const newEmployeeId = typeof event.resource === 'string' ? event.resource : (a.employeeId ?? '')
 
       if (newStart !== a.start || newDuration !== a.durationMinutes || newEmployeeId !== a.employeeId) {
         updateAppt.mutate({

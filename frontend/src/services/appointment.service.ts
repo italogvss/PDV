@@ -20,7 +20,8 @@ interface BackendAppointment {
   customerId: string | null
   customerName: string
   customerPhone: string | null
-  employeeId: string
+  employeeId: string | null
+  employeeName: string
   services: BackendServiceRef[]
   start: string
   durationMinutes: number
@@ -48,6 +49,7 @@ function mapAppointment(a: BackendAppointment): Appointment {
     customerName: a.customerName,
     customerPhone: a.customerPhone ?? undefined,
     employeeId: a.employeeId,
+    employeeName: a.employeeName,
     services: a.services.map(mapServiceRef),
     start: a.start,
     durationMinutes: a.durationMinutes,

@@ -73,7 +73,7 @@ export default function AppointmentDetailModal({
   if (!data) return null
 
   const meta = STATUS_META[data.status]
-  const color = data.color || proHex(theme, data.employeeId)
+  const color = data.color || (data.employeeId ? proHex(theme, data.employeeId) : theme.palette.text.disabled)
   const start = dayjs(data.start)
   const isClosed = data.status === 'concluido' || data.status === 'cancelado'
   const waDigits = data.customerPhone?.replace(/\D/g, '')

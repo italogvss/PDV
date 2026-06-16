@@ -40,7 +40,8 @@ export interface Appointment {
   customerId: string | null
   customerName: string
   customerPhone?: string
-  employeeId: string
+  employeeId: string | null
+  employeeName: string
   services: AppointmentServiceRef[]
   /** Início — ISO 8601. */
   start: string

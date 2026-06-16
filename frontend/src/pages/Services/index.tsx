@@ -296,7 +296,7 @@ export default function ServicesPage() {
         isLoading={isLoadingCategories}
         onAdd={() => setAddCategoryOpen(true)}
         onEdit={(cat) => setEditingCategory(cat)}
-        onDelete={(id) => deleteCategory.mutate(id)}
+        onDelete={(id) => deleteCategory.mutate(id)}        
       />
 
       {/* Barra de busca e filtros */}
@@ -372,37 +372,6 @@ export default function ServicesPage() {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           onRowDoubleClick={(params) => setEditService(params.row)}
-          sx={(theme) => ({
-            flex: 1,
-            border: 'none',
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: theme.palette.surface.sunken,
-              borderBottom: `1px solid ${theme.palette.border.subtle}`,
-            },
-            '& .MuiDataGrid-columnHeader': { '&:focus, &:focus-within': { outline: 'none' } },
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              color: theme.palette.text.tertiary,
-              textTransform: 'uppercase',
-            },
-            '& .MuiDataGrid-columnSeparator': { display: 'none' },
-            '& .MuiDataGrid-cell': {
-              borderBottom: `1px solid ${theme.palette.border.subtle}`,
-              display: 'flex',
-              alignItems: 'center',
-              '&:focus, &:focus-within': { outline: 'none' },
-            },
-            '& .MuiDataGrid-row': { cursor: 'pointer' },
-            '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.surface.sunken },
-            '& .MuiDataGrid-row--lastVisible .MuiDataGrid-cell': { borderBottom: 'none' },
-            '& .MuiDataGrid-footerContainer': {
-              borderTop: `1px solid ${theme.palette.border.subtle}`,
-              minHeight: 48,
-            },
-            '& .MuiDataGrid-selectedRowCount': { display: 'none' },
-          })}
         />
       </Card>
 
