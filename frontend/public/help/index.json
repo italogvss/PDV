@@ -1,0 +1,119 @@
+[
+  {
+    "slug": "primeiros-passos",
+    "category": "Primeiros passos",
+    "icon": "RocketLaunch",
+    "articles": [
+      { "slug": "criar-conta", "title": "Como criar sua conta e configurar o negócio" },
+      { "slug": "convidar-funcionarios", "title": "Convidar funcionários" },
+      { "slug": "definir-permissoes", "title": "Definir permissões de acesso" },
+      { "slug": "visao-geral-painel", "title": "Visão geral do painel" }
+    ]
+  },
+  {
+    "slug": "vendas",
+    "category": "Vendas",
+    "icon": "ShoppingCart",
+    "articles": [
+      { "slug": "registrar-venda", "title": "Registrar uma venda" },
+      { "slug": "formas-de-pagamento", "title": "Formas de pagamento" },
+      { "slug": "aplicar-desconto", "title": "Aplicar desconto" },
+      { "slug": "cancelar-venda", "title": "Cancelar uma venda" },
+      { "slug": "venda-com-cliente", "title": "Venda com cliente vinculado" }
+    ]
+  },
+  {
+    "slug": "estoque",
+    "category": "Estoque",
+    "icon": "Inventory2",
+    "articles": [
+      { "slug": "cadastrar-produto", "title": "Cadastrar produto" },
+      { "slug": "cadastrar-categorias", "title": "Cadastrar categorias" },
+      { "slug": "ajustar-estoque", "title": "Ajustar estoque" },
+      { "slug": "alertas-estoque-minimo", "title": "Alertas de estoque mínimo" },
+      { "slug": "cadastrar-fornecedores", "title": "Cadastrar fornecedores" }
+    ]
+  },
+  {
+    "slug": "servicos",
+    "category": "Serviços",
+    "icon": "Build",
+    "articles": [
+      { "slug": "cadastrar-servico", "title": "Cadastrar serviço" },
+      { "slug": "cadastrar-categorias-servico", "title": "Cadastrar categorias de serviço" },
+      { "slug": "diferenca-produto-servico", "title": "Diferença entre produto e serviço" }
+    ]
+  },
+  {
+    "slug": "agendamentos",
+    "category": "Agendamentos",
+    "icon": "CalendarMonth",
+    "articles": [
+      { "slug": "criar-agendamento", "title": "Criar agendamento" },
+      { "slug": "reagendar-cancelar", "title": "Reagendar ou cancelar" },
+      { "slug": "visualizacao-por-funcionario", "title": "Visualização por funcionário" }
+    ]
+  },
+  {
+    "slug": "clientes",
+    "category": "Clientes",
+    "icon": "People",
+    "articles": [
+      { "slug": "cadastrar-cliente", "title": "Cadastrar cliente" },
+      { "slug": "vincular-cliente", "title": "Vincular cliente a uma venda" }
+    ]
+  },
+  {
+    "slug": "equipe",
+    "category": "Equipe",
+    "icon": "Badge",
+    "articles": [
+      { "slug": "convidar-funcionario", "title": "Convidar funcionário" },
+      { "slug": "criar-cargos-permissoes", "title": "Criar cargos e permissões" },
+      { "slug": "desativar-funcionario", "title": "Desativar funcionário" }
+    ]
+  },
+  {
+    "slug": "financeiro",
+    "category": "Financeiro",
+    "icon": "AccountBalance",
+    "articles": [
+      { "slug": "registrar-despesa", "title": "Registrar despesa" },
+      { "slug": "despesas-recorrentes", "title": "Despesas recorrentes" },
+      { "slug": "marcar-despesa-paga", "title": "Marcar despesa como paga" }
+    ]
+  },
+  {
+    "slug": "configuracoes-do-negocio",
+    "category": "Configurações do negócio",
+    "icon": "Business",
+    "articles": [
+      { "slug": "dados-da-empresa", "title": "Dados da empresa" },
+      { "slug": "horario-funcionamento", "title": "Horário de funcionamento" },
+      { "slug": "taxas-pagamento", "title": "Taxas de pagamento" },
+      { "slug": "ativar-modulos", "title": "Ativar módulos" },
+      { "slug": "trocar-logo", "title": "Trocar logo" }
+    ]
+  },
+  {
+    "slug": "conta-e-aparencia",
+    "category": "Conta e aparência",
+    "icon": "ManageAccounts",
+    "articles": [
+      { "slug": "alterar-perfil", "title": "Alterar perfil" },
+      { "slug": "tema-claro-escuro", "title": "Tema claro e escuro" },
+      { "slug": "cor-destaque-texto", "title": "Cor de destaque e texto" },
+      { "slug": "trocar-senha", "title": "Trocar senha" }
+    ]
+  },
+  {
+    "slug": "duvidas-frequentes",
+    "category": "Dúvidas frequentes",
+    "icon": "Help",
+    "articles": [
+      { "slug": "o-que-e-soft-delete", "title": "O que é soft delete?" },
+      { "slug": "multi-tenant", "title": "O que é multi-tenant?" },
+      { "slug": "limites-do-plano", "title": "Limites do plano" }
+    ]
+  }
+]
