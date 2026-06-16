@@ -2,6 +2,7 @@ import { Box, IconButton } from '@mui/material'
 import { SettingsOutlined, MenuRounded, LightModeOutlined, DarkModeOutlined } from '@mui/icons-material'
 import Breadcrumbs from '../Breadcrumbs'
 import UserMenu from '../UserMenu'
+import NotificationButton from './NotificationButton'
 import { TOPBAR_HEIGHT } from '../../constants'
 import { TopBarProps } from './types'
 import { useNavigate } from 'react-router-dom'
@@ -80,6 +81,7 @@ export default function TopBar({ isMobile, onMenuClick }: TopBarProps) {
             : <DarkModeOutlined sx={{ fontSize: 18 }} />
           }
         </IconButton>
+        <NotificationButton />
         <IconButton
           onClick={() => navigate('/configuracoes')}
           size="small"

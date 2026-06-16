@@ -97,7 +97,10 @@ public class SaleService(
         }
 
         foreach (var item in productItems)
+        {
             products[item.ProductId!.Value].Stock -= item.Quantity;
+            products[item.ProductId!.Value].TotalSold += item.Quantity;
+        }
 
         var saleItems = new List<SaleItem>();
 
@@ -207,7 +210,10 @@ public class SaleService(
                 .FirstOrDefaultAsync(p => p.Id == item.ProductId!.Value);
 
             if (product is { IsActive: true })
+            {
                 product.Stock += item.Quantity;
+                product.TotalSold -= item.Quantity;
+            }
         }
 
         await context.SaveChangesAsync();

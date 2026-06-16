@@ -150,7 +150,7 @@ public class ProductService(
 
     private async Task<ProductResponse> Map(Product p) =>
         new(p.Id, p.Name, p.Barcode, p.NCM, p.Price, p.PurchasePrice,
-            p.Stock, p.MinStock, p.MinCriticalStock, p.IsActive, p.CreatedAt,
+            p.Stock, p.TotalSold, p.MinStock, p.MinCriticalStock, p.IsActive, p.CreatedAt,
             MapCategory(p.Category),
             await storage.ResolveReadUrlAsync(p.ImageUrl, MediaCategory.Product, p.UpdatedAt));
 }

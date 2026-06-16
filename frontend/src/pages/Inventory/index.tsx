@@ -196,6 +196,18 @@ export default function InventoryPage() {
         ),
       },
       {
+        field: 'totalSold',
+        headerName: 'Qtd. Vendas',
+        width: 100,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: ({ row }) => (
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {row.totalSold}
+          </Typography>
+        ),
+      },
+      {
         field: 'stock',
         headerName: 'Estoque',
         width: 100,
@@ -206,7 +218,7 @@ export default function InventoryPage() {
             {row.stock}
           </Typography>
         ),
-      },
+      },     
       {
         field: 'level',
         headerName: 'Nível',

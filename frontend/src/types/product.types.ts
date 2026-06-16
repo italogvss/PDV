@@ -48,6 +48,7 @@ export interface Product {
   costPrice: number
   price: number
   stock: number
+  totalSold: number
   isActive: boolean
   minStock?: number
   criticalStock?: number

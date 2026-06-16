@@ -514,20 +514,13 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
   // ------------------------------------------------------------------
   MuiTabs: {
     styleOverrides: {
-      root: { minHeight: 32 },
+      root: { minHeight: 32, },
       indicator: {
         height: '100%',
         borderRadius: radius.sm,
         backgroundColor: theme.palette.surface.paper,
         boxShadow: theme.customShadows.xs,
         zIndex: 0,
-      },
-      flexContainer: {
-        backgroundColor: theme.palette.surface.sunken,
-        border: `none`,
-        borderRadius: radius.control,
-        padding: 3,
-        gap: 2,
       },
     },
   },
@@ -541,8 +534,8 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
         fontWeight: 500,
         color: theme.palette.text.secondary,
         zIndex: 1,
-        borderRadius: radius.sm,
-        '&.Mui-selected': { color: theme.palette.text.primary, bgcolor: theme.palette.primary.main },
+        borderRadius: 2,
+        '&.Mui-selected': { borderRadius: 2,color: theme.palette.text.primary, bgcolor: theme.palette.secondary.main },
       },
     },
   },

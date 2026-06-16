@@ -1,0 +1,148 @@
+
+Objetivo da tela:
+Ser a primeira tela após o login — um resumo executivo do dia
+e do mês do estabelecimento. Reúne os indicadores mais
+importantes (faturamento, estoque, despesas, lucro), gráficos
+de evolução, as últimas vendas e blocos de ação rápida para
+estoque, contas a pagar e equipe. É uma tela de leitura e
+navegação: cada bloco aponta para a seção detalhada
+correspondente.
+
+A tela é composta por:
+- Cabeçalho com saudação, data e ações (período, exportar, nova venda)
+- 4 cartões de métricas (KPIs) com sparkline
+- Linha de gráficos: "Faturamento" (área) + "Formas de pagamento" (donut)
+- Linha inferior: tabela "Últimas vendas" + "Produtos mais vendidos"
+- 3 cartões de ação rápida: "Alertas de estoque", "Contas a pagar", "Equipe ativa"
+
+Convenção de datas: a UI opera no dia atual; Valores monetários são
+exibidos em Real (R$) com separador de milhar "." e decimal ",".
+
+
+================================================================
+1. CABEÇALHO DA TELA
+================================================================
+
+1.1 Saudação
+- Título: "Olá, {username}👋".
+- Subtítulo: "Aqui está o resumo do seu negócio em 14 de maio",
+  com a data destacada.
+
+1.2 Ações (lado direito)
+- Seletor de período (segmented control) com 4 opções:
+  "7 dias", "14 dias", "30 dias", "90 dias".
+  Padrão selecionado: 14 dias.
+- Botão "Nova venda" (verde, ícone +) — leva ao PDV.
+
+
+================================================================
+2. CARTÕES DE MÉTRICAS (KPIs) — 4 cartões
+================================================================
+Cada cartão tem: ícone + rótulo, valor em destaque, um selo de
+variação (delta) e um mini-gráfico (sparkline) na base.
+
+2.1 Faturamento de hoje
+- Valor: R$ 2.640,00
+- Variação: +12,4% vs. ontem (positiva, verde)
+- Sparkline: evolução das vendas do dia.
+
+2.2 Estoque baixo
+- Valor: contagem de produtos com estoque <= 10 unidades.
+- Variação: "3 críticos" (selo de alerta/âmbar).
+- Sparkline em cor de alerta (amarelo/âmbar).
+
+2.3 Despesas do mês
+- Valor: R$ 13.103,50
+- Variação: −4,1% vs. abril (queda — exibida como positiva
+  de economia, seta para baixo).
+- Sparkline em cor de despesa (vermelho).
+
+2.4 Lucro estimado
+- Valor: R$ 13.800,00
+- Variação: +18,7% vs. mês anterior (positiva, verde).
+- Sparkline da evolução do lucro nos 14 dias.
+
+
+================================================================
+3. LINHA DE GRÁFICOS
+================================================================
+
+3.1 Cartão "Faturamento" (gráfico de área)
+- Subtítulo: "Últimos 14 dias • <total do período>".
+- Legenda: Vendas (verde) e Lucro (cinza).
+- Gráfico de área com as duas séries ao longo de 14 dias.
+
+3.2 Cartão "Formas de pagamento" (donut)
+- Donut central com total: <Valor total>.
+- Legenda com 4 formas disponiveis(verificar quais estão ativas no tenantsettings)
+    • Pix .............. R$ 17.050 — 48%
+    • Cartão crédito ... R$ 9.945  — 28%
+    • Dinheiro ......... R$ 5.683  — 16%
+    • Débito ........... R$ 2.841  — 8%
+
+
+================================================================
+4. LINHA INFERIOR (tabela + ranking)
+================================================================
+
+4.1 Cartão "Últimas vendas" (tabela)
+- Subtítulo: "<N> vendas hoje".
+- Ações no cabeçalho: "Ver todas" (vai p/ historico de Vendas).
+- Tabela com colunas:
+    • Cliente
+    • Itens — quantidade
+    • Pagamento — selo com ícone (Pix / Dinheiro / Cartão)
+    • Total — valor em R$ (alinhado à direita)
+- Exibe as 6 vendas mais recentes.
+
+4.2 Cartão "Produtos mais vendidos" (ranking) Utilizar TotalSold dos produtos
+- Rótulo: "Este mês".
+- Lista ordenada (01, 02, 03...) com, por item:
+    • Posição + nome do produto
+    • Valor faturado (R$)
+    • Barra de progresso proporcional à participação (share)
+    • "<qtd> unidades vendidas"
+
+
+================================================================
+5. CARTÕES DE AÇÃO RÁPIDA — 3 cartões(componentes reutilizaveis)
+================================================================
+
+5.1 "Alertas de estoque"
+- Selo no cabeçalho: "<qtd> itens" que é a soma dos estoque minimo com critico.
+- Lista os 3 produtos com estoque critico ou baixo:
+    • Miniatura (ícone pacote ou image do item se houver) + nome
+    • Selo de quantidade: vermelho se critico, caso critico, amarelo caso baixo.
+- Botão "Gerenciar estoque" (vai p/ Estoque).
+
+5.2 "Contas a pagar"
+- Selo no cabeçalho: "<qtd> pendentes".
+- Lista as 3 despesas pendentes mais próximas:
+    • Ícone recibo + descrição
+    • "Vence <data> • <categoria>"
+    • Valor em R$
+- Botão "Ver todas as despesas" (vai p/ Despesas).
+
+5.3 "Equipe ativa"
+- Cabeçalho com avatares empilhados dos funcionários online.
+- Lista 3 funcionários:
+    • Avatar (inicial) + nome
+    • "<função> • <N> vendas hoje"
+    • Selo de status: "Online" (verde), "Pausa" (âmbar) ou
+      "Offline".
+- Botão "Ver equipe" (vai p/ Funcionários).
+
+
+================================================================
+6. COMPORTAMENTO E NAVEGAÇÃO
+================================================================
+- A tela é de leitura/resumo; quase todos os blocos têm um
+  atalho para a seção detalhada (Vendas, Estoque, Despesas,
+  Funcionários, PDV).
+- O seletor de período (7/14/30/90 dias) controla o recorte
+  dos indicadores e gráficos.
+- Os valores e listas vêm de uma fonte de dados comum
+  (data.jsx): vendas, despesas, produtos, funcionários e a
+  série temporal de faturamento/lucro.
+- Animação de entrada "fade-up" nos cartões ao carregar a tela.
+================================================================

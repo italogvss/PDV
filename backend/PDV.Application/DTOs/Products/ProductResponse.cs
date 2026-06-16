@@ -10,6 +10,7 @@ public record ProductResponse(
     decimal Price,
     decimal? PurchasePrice,
     int Stock,
+    int TotalSold,
     int? MinStock,
     int? MinCriticalStock,
     bool IsActive,

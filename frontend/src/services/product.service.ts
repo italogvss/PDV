@@ -24,6 +24,7 @@ interface BackendProduct {
   price: number
   purchasePrice?: number | null
   stock: number
+  totalSold: number
   minStock?: number | null
   minCriticalStock?: number | null
   isActive: boolean
@@ -41,6 +42,7 @@ function mapProduct(p: BackendProduct): Product {
     costPrice: p.purchasePrice ?? 0,
     price: p.price,
     stock: p.stock,
+    totalSold: p.totalSold,
     isActive: p.isActive,
     minStock: p.minStock ?? undefined,
     criticalStock: p.minCriticalStock ?? undefined,

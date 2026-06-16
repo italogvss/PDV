@@ -9,6 +9,7 @@ public class Product : BaseEntity
     public decimal Price { get; set; }
     public decimal? PurchasePrice { get; set; }
     public int Stock { get; set; }
+    public int TotalSold { get; set; }
     public int? MinStock { get; set; }
     public int? MinCriticalStock { get; set; }
     public Guid? CategoryId { get; set; }
