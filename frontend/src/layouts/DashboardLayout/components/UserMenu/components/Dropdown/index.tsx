@@ -29,9 +29,8 @@ interface AccountItem {
   badge?: { label: string; tone: 'premium' | 'count' | 'neutral' }
 }
 
-const ACCOUNT_ITEMS: AccountItem[] = [
+const BASE_ACCOUNT_ITEMS: AccountItem[] = [
   { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil' },
-  { label: 'Assinatura', icon: WorkspacePremiumOutlined, tab: 'assinatura', badge: { label: 'Premium', tone: 'premium' } },
   { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios' },
 ]
 
@@ -70,13 +69,22 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
   )
 }
 
+const TIER_STYLE = {
+  Free:    { chipBg: 'action.hover',  chipColor: 'text.secondary', avatarOutlineColor: null as string | null },
+  Starter: { chipBg: 'info.soft',     chipColor: 'info.ink',       avatarOutlineColor: 'info.main' },
+  Pro:     { chipBg: 'premium.100',   chipColor: 'premium.900',    avatarOutlineColor: 'premium.400' },
+}
+
 export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const auth = useAppSelector((state) => state.auth)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
-  
-  const initials = auth.name ?? "Usuário"
+  const tier = auth.subscription?.tier ?? 'Free'
+  const isStarter = tier === 'Starter'
+  const ts = TIER_STYLE[tier]
+
+  const initials = (auth.name ?? 'Usuário')
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
@@ -123,20 +131,16 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
         onClick={() => goToTab('perfil')}
       >
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-          <Box sx={{ position: 'relative', flexShrink: 0 }}>
+          <Box sx={{ flexShrink: 0 }}>
             <Avatar
-              sx={{ width: 44, height: 44, bgcolor: 'data.orange.main', color: 'common.white', fontSize: 14, fontWeight: 600 }}
+              sx={{
+                width: 44, height: 44, bgcolor: 'data.orange.main', color: 'common.white', fontSize: 14, fontWeight: 600,
+                ...(ts.avatarOutlineColor && { outline: '2px solid', outlineColor: ts.avatarOutlineColor, outlineOffset: '2px' }),
+              }}
               src={auth.avatarUrl ?? undefined}
             >
               {initials}
             </Avatar>
-            <Box
-              sx={{
-                position: 'absolute', right: -2, bottom: -2,
-                width: 14, height: 14, borderRadius: '50%',
-                bgcolor: 'premium.400', border: 2, borderColor: 'background.paper',
-              }}
-            />
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }} noWrap>
@@ -147,12 +151,12 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
             </Typography>
             <Chip
               icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}
-              label="PLANO PREMIUM"
+              label={`PLANO ${tier.toUpperCase()}`}
               size="small"
               sx={{
                 height: 22, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
-                bgcolor: 'premium.100', color: 'premium.900',
-                '& .MuiChip-icon': { color: 'premium.700' },
+                bgcolor: ts.chipBg, color: ts.chipColor,
+                '& .MuiChip-icon': { color: ts.chipColor },
               }}
             />
           </Box>
@@ -162,10 +166,34 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
       <Divider sx={{ borderColor: 'border.subtle' }} />
 
       <Box sx={{ py: 1 }}>
-        {ACCOUNT_ITEMS.map((item) => (
+        <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
+          <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
+          <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
+          <Chip
+            label={tier}
+            size="small"
+            sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
+          />
+        </MenuItem>
+        {BASE_ACCOUNT_ITEMS.map((item) => (
           <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
         ))}
       </Box>
+
+      {isStarter && (
+        <>
+          <Divider sx={{ borderColor: 'border.subtle' }} />
+          <Box sx={{ py: 1 }}>
+            <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
+              <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'premium.600' }} />
+              <Typography variant="body2" sx={{ flex: 1, color: 'premium.800', fontWeight: 500 }}>
+                Evoluir para o Pro
+              </Typography>
+              <ArrowForwardOutlined sx={{ fontSize: 16, color: 'premium.600' }} />
+            </MenuItem>
+          </Box>
+        </>
+      )}
 
       <Divider sx={{ borderColor: 'border.subtle' }} />
 

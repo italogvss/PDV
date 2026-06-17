@@ -15,6 +15,7 @@ import ReportsPage from '../pages/Reports'
 import CustomersPage from '../pages/Customers'
 import SuppliersPage from '../pages/Suppliers'
 import SettingsPage from '../pages/Settings'
+import SubscriptionReturnPage from '../pages/SubscriptionReturn'
 import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
 import OnboardingTenant from '../pages/CreateTenant'
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'configuracoes', element: <SettingsPage /> },
+          { path: 'assinatura/retorno', element: <SubscriptionReturnPage /> },
           { path: 'ajuda', element: <HelpPage /> },
         ],
       },

@@ -4,6 +4,7 @@ import type { Permission } from '../../types/employee.types'
 import type { TenantListItem } from '../../types/tenant.types'
 import { TEXT_SIZE_DEFAULT, type AccentColor, type AppTheme } from '../../types/usersettings.type'
 import { ALL_MODULES, type OperationModule } from '../../constants/modules'
+import type { SubscriptionSummary } from '../../types/subscription.types'
 
 export interface AuthState {
   userId: string | null
@@ -26,6 +27,10 @@ export interface AuthState {
   theme: AppTheme
   accentColor: AccentColor
   textSize: number
+  // Resumo de assinatura espelhado do React Query (useSubscription) — NÃO é cache de API.
+  // Guarda só o entitlement de sessão (plano/status) para o banner e exibição global lerem
+  // de forma síncrona. A fonte de dados continua sendo o React Query.
+  subscription: SubscriptionSummary | null
 }
 
 // Normaliza o tema do backend ('Light' | 'Dark') para o formato do app.
@@ -54,6 +59,7 @@ const initialState: AuthState = {
   theme: 'light',
   accentColor: 'green',
   textSize: TEXT_SIZE_DEFAULT,
+  subscription: null,
 }
 
 export const authSlice = createSlice({
@@ -111,8 +117,12 @@ export const authSlice = createSlice({
       ...state,
       modules: action.payload,
     }),
+    setSubscription: (state, action: PayloadAction<SubscriptionSummary | null>) => ({
+      ...state,
+      subscription: action.payload,
+    }),
   },
 })
 
-export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword, setProfile, setAppearance, setModules } = authSlice.actions
+export const { setAuth, clearAuth, setLoading, setTenant, setMustChangePassword, setProfile, setAppearance, setModules, setSubscription } = authSlice.actions
 export default authSlice.reducer

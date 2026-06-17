@@ -34,6 +34,10 @@ O `AppDbContext` aplica `HasQueryFilter` global em todas as entidades:
 **Regra crítica:** `IgnoreQueryFilters()` só com comentário explicando o motivo. Qualquer uso sem justificativa é bug de segurança — dados de um tenant podem vazar para outro.
 
 ---
+## Gateway de pagamentos
+
+Utiliza o abacatePay. As skills estão em .claude/skills `skills/`
+
 
 ## Storage (MinIO)
 

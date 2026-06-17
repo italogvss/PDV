@@ -3,12 +3,16 @@ import { Box, useMediaQuery, useTheme } from '@mui/material'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
+import { useSyncSubscriptionToStore } from '../../hooks/useSubscription'
 
 export default function DashboardLayout() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const { pathname } = useLocation()
+
+  // Mantém o resumo da assinatura no auth slice sincronizado com o backend.
+  useSyncSubscriptionToStore()
 
   useEffect(() => {
     setMobileOpen(false)

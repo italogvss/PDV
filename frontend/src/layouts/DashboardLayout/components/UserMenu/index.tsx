@@ -6,6 +6,7 @@ import Dropdown from './components/Dropdown'
 
 export default function UserMenu() {
   const auth = useAppSelector((state) => state.auth)
+  const tier = auth.subscription?.tier ?? 'Free'
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
@@ -57,19 +58,9 @@ export default function UserMenu() {
           >
             {auth.name}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box
-              sx={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                bgcolor: 'premium.500',
-              }}
-            />
-            <Typography variant="caption" color="text.tertiary" sx={{ fontSize: 11 }}>
-              Premium
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.tertiary" sx={{ fontSize: 11 }}>
+            {tier}
+          </Typography>
         </Box>
         <KeyboardArrowDown sx={{ fontSize: 16, color: 'text.tertiary' }} />
       </Box>
