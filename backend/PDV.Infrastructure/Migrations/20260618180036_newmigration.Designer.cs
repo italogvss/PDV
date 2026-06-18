@@ -12,8 +12,8 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260602190526_AddCustomerDocumentToSale")]
-    partial class AddCustomerDocumentToSale
+    [Migration("20260618180036_newmigration")]
+    partial class newmigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,114 @@ namespace PDV.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("PDV.Domain.Entities.Appointment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("EmployeeName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime>("Start")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId", "EmployeeId", "Start");
+
+                    b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.AppointmentServiceItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CategoryColor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.ToTable("AppointmentServiceItems");
+                });
 
             modelBuilder.Entity("PDV.Domain.Entities.Customer", b =>
                 {
@@ -102,17 +210,12 @@ namespace PDV.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("EmployeeType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -121,13 +224,8 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.Property<string>("Position")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<decimal?>("Salary")
-                        .HasColumnType("decimal(10,2)");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
@@ -135,50 +233,26 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("Employees");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.EmployeeTypePermission", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("EmployeeType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("Permission")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "EmployeeType", "Permission")
-                        .IsUnique();
-
-                    b.ToTable("EmployeeTypePermissions");
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.Expense", b =>
@@ -303,6 +377,44 @@ namespace PDV.Infrastructure.Migrations
                     b.ToTable("LocalAuths");
                 });
 
+            modelBuilder.Entity("PDV.Domain.Entities.MediaFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Category", "EntityId");
+
+                    b.ToTable("MediaFiles");
+                });
+
             modelBuilder.Entity("PDV.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -318,6 +430,10 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -348,6 +464,9 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
+
+                    b.Property<int>("TotalSold")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -413,6 +532,10 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<Guid?>("CancelledById")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("CancelledByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -422,6 +545,9 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<string>("CustomerName")
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<int?>("InstallmentCount")
                         .HasColumnType("int");
@@ -435,8 +561,13 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<bool>("IsInstallment")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<Guid>("OperatorId")
+                    b.Property<Guid?>("OperatorId")
                         .HasColumnType("char(36)");
+
+                    b.Property<string>("OperatorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
@@ -491,6 +622,9 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<Guid>("SaleId")
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("ServiceId")
+                        .HasColumnType("char(36)");
+
                     b.Property<decimal>("Subtotal")
                         .HasColumnType("decimal(10,2)");
 
@@ -503,7 +637,128 @@ namespace PDV.Infrastructure.Migrations
 
                     b.HasIndex("SaleId");
 
+                    b.HasIndex("ServiceId");
+
                     b.ToTable("SaleItems");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.Service", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("Services");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.ServiceCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("ServiceCategories");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "Name");
+
+                    b.ToTable("Suppliers");
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.Tenant", b =>
@@ -524,6 +779,63 @@ namespace PDV.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.TenantRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasFilter("IsActive = 1");
+
+                    b.ToTable("TenantRoles");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.TenantRolePermission", b =>
+                {
+                    b.Property<Guid>("TenantRoleId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Permission")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("TenantRoleId", "Permission");
+
+                    b.ToTable("TenantRolePermissions");
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.TenantSettings", b =>
@@ -560,6 +872,9 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<bool>("AllowDiscounts")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("BusinessHoursJson")
                         .HasColumnType("longtext");
 
@@ -574,6 +889,12 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<decimal>("DiscountLimitPercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("EnabledModulesJson")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("FantasyName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -586,11 +907,44 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<bool>("PaymentCardCreditEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("PaymentCardCreditFee")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("PaymentCardDebitEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("PaymentCardDebitFee")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("PaymentCashEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("PaymentCashFee")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("PaymentPixEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("PaymentPixFee")
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
                     b.Property<string>("Segment")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
@@ -625,17 +979,24 @@ namespace PDV.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Document")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("varchar(254)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -647,6 +1008,10 @@ namespace PDV.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("RefreshToken")
                         .HasColumnType("longtext");
@@ -676,11 +1041,43 @@ namespace PDV.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("AccentColor")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("green");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("NotifyInvoices")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("NotifyNewSales")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("NotifyStockAlerts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("NotifyTeamActivity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("TextSize")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(15);
 
                     b.Property<string>("Theme")
                         .IsRequired()
@@ -724,13 +1121,48 @@ namespace PDV.Infrastructure.Migrations
                     b.ToTable("UserTenants");
                 });
 
+            modelBuilder.Entity("PDV.Domain.Entities.Appointment", b =>
+                {
+                    b.HasOne("PDV.Domain.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PDV.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.AppointmentServiceItem", b =>
+                {
+                    b.HasOne("PDV.Domain.Entities.Appointment", "Appointment")
+                        .WithMany("ServiceItems")
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
             modelBuilder.Entity("PDV.Domain.Entities.Employee", b =>
                 {
+                    b.HasOne("PDV.Domain.Entities.TenantRole", "Role")
+                        .WithMany("Employees")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PDV.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Role");
 
                     b.Navigation("User");
                 });
@@ -757,6 +1189,17 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PDV.Domain.Entities.MediaFile", b =>
+                {
+                    b.HasOne("PDV.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("PDV.Domain.Entities.Product", b =>
                 {
                     b.HasOne("PDV.Domain.Entities.ProductCategory", "Category")
@@ -772,13 +1215,12 @@ namespace PDV.Infrastructure.Migrations
                     b.HasOne("PDV.Domain.Entities.User", "CancelledBy")
                         .WithMany()
                         .HasForeignKey("CancelledById")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("PDV.Domain.Entities.User", "Operator")
                         .WithMany()
                         .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CancelledBy");
 
@@ -798,9 +1240,37 @@ namespace PDV.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PDV.Domain.Entities.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Product");
 
                     b.Navigation("Sale");
+
+                    b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.Service", b =>
+                {
+                    b.HasOne("PDV.Domain.Entities.ServiceCategory", "Category")
+                        .WithMany("Services")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.TenantRolePermission", b =>
+                {
+                    b.HasOne("PDV.Domain.Entities.TenantRole", "Role")
+                        .WithMany("Permissions")
+                        .HasForeignKey("TenantRoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.TenantSettings", b =>
@@ -854,6 +1324,11 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PDV.Domain.Entities.Appointment", b =>
+                {
+                    b.Navigation("ServiceItems");
+                });
+
             modelBuilder.Entity("PDV.Domain.Entities.ProductCategory", b =>
                 {
                     b.Navigation("Products");
@@ -864,11 +1339,23 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("PDV.Domain.Entities.ServiceCategory", b =>
+                {
+                    b.Navigation("Services");
+                });
+
             modelBuilder.Entity("PDV.Domain.Entities.Tenant", b =>
                 {
                     b.Navigation("Settings");
 
                     b.Navigation("UserTenants");
+                });
+
+            modelBuilder.Entity("PDV.Domain.Entities.TenantRole", b =>
+                {
+                    b.Navigation("Employees");
+
+                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.User", b =>
