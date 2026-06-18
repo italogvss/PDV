@@ -6,6 +6,8 @@ namespace PDV.Domain.Interfaces;
 public interface IMediaRepository
 {
     Task<MediaFile?> GetActiveAsync(MediaCategory category, Guid entityId);
+    // Total de arquivos de mídia ativos do tenant atual (para enforcement de limite de armazenamento).
+    Task<int> CountActiveAsync();
     Task AddAsync(MediaFile media);
     Task SoftDeleteAsync(MediaFile media);
 

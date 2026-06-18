@@ -11,8 +11,12 @@ using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 using PDV.Infrastructure.Repositories;
 using PDV.Infrastructure.Services;
+using PDV.Infrastructure.Services.Payments.AbacatePay;
 using PDV.Infrastructure.Storage;
+using PDV.Application.Interfaces.Payments;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 
@@ -112,6 +116,25 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IOAuthProvider, GoogleOAuthProvider>();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
+builder.Services.AddScoped<IUserContext, UserContext>();
+
+// Assinaturas / cobrança
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IEntitlementService, EntitlementService>();
+builder.Services.AddScoped<IBillingWebhookService, BillingWebhookService>();
+builder.Services.AddScoped<PlanSeeder>();
+
+// Gateway de pagamentos (AbacatePay)
+builder.Services.Configure<AbacatePayOptions>(builder.Configuration.GetSection(AbacatePayOptions.SectionName));
+builder.Services.AddScoped<IPaymentGateway, AbacatePayGateway>();
+builder.Services.AddScoped<IPaymentWebhookProcessor, AbacatePayWebhookProcessor>();
+builder.Services.AddHttpClient<IAbacatePayApiClient, AbacatePayApiClient>((sp, http) =>
+{
+    var options = sp.GetRequiredService<IOptions<AbacatePayOptions>>().Value;
+    var baseUrl = options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/";
+    http.BaseAddress = new Uri(baseUrl);
+    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiKey);
+});
 
 // Storage (MinIO em dev, S3 em prod) — AmazonS3Client é thread-safe, registrado como singleton.
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
@@ -131,6 +154,12 @@ builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+builder.Services.AddScoped<IPlanRepository, PlanRepository>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<IGatewayCustomerRepository, GatewayCustomerRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IUserTenantRepository, UserTenantRepository>();
+builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>();
 
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -145,6 +174,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<PlanSeeder>().SeedAsync();
 }
 
 if (app.Environment.IsDevelopment())

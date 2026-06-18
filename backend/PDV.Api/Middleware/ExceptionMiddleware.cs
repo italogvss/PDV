@@ -31,6 +31,7 @@ public class ExceptionMiddleware(
         int status;
         string title;
         string? detail;
+        string? code = null;
 
         switch (ex)
         {
@@ -45,6 +46,7 @@ public class ExceptionMiddleware(
                 status = appEx.HttpStatus;
                 title = appEx.Title;
                 detail = appEx.Detail;
+                code = appEx.Code;
                 logger.LogWarning(
                     "[{Status}] {Title}{Detail}",
                     status, title,
@@ -67,7 +69,7 @@ public class ExceptionMiddleware(
         context.Response.ContentType = "application/problem+json";
 
         var body = JsonSerializer.Serialize(
-            new { type = "https://tools.ietf.org/html/rfc7807", title, status, detail },
+            new { type = "https://tools.ietf.org/html/rfc7807", title, status, detail, code },
             JsonOptions);
 
         return context.Response.WriteAsync(body);

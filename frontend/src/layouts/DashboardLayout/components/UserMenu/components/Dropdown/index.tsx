@@ -69,20 +69,17 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
   )
 }
 
-const TIER_STYLE = {
-  Free:    { chipBg: 'action.hover',  chipColor: 'text.secondary', avatarOutlineColor: null as string | null },
-  Starter: { chipBg: 'info.soft',     chipColor: 'info.ink',       avatarOutlineColor: 'info.main' },
-  Pro:     { chipBg: 'premium.100',   chipColor: 'premium.900',    avatarOutlineColor: 'premium.400' },
-}
+const PAID_STYLE = { chipBg: 'premium.100', chipColor: 'premium.900', avatarOutlineColor: 'premium.400' as string | null }
+const FREE_STYLE = { chipBg: 'action.hover', chipColor: 'text.secondary', avatarOutlineColor: null as string | null }
 
 export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const auth = useAppSelector((state) => state.auth)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
-  const tier = auth.subscription?.tier ?? 'Free'
-  const isStarter = tier === 'Starter'
-  const ts = TIER_STYLE[tier]
+  const planName = auth.subscription?.planName ?? 'Gratuito'
+  const isPaid = (auth.subscription?.planId ?? null) !== null
+  const ts = isPaid ? PAID_STYLE : FREE_STYLE
 
   const initials = (auth.name ?? 'Usuário')
     .split(' ')
@@ -151,7 +148,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
             </Typography>
             <Chip
               icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}
-              label={`PLANO ${tier.toUpperCase()}`}
+              label={`PLANO ${planName.toUpperCase()}`}
               size="small"
               sx={{
                 height: 22, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
@@ -170,7 +167,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
           <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
           <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
           <Chip
-            label={tier}
+            label={planName}
             size="small"
             sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
           />
@@ -180,14 +177,14 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
         ))}
       </Box>
 
-      {isStarter && (
+      {!isPaid && (
         <>
           <Divider sx={{ borderColor: 'border.subtle' }} />
           <Box sx={{ py: 1 }}>
             <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
               <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'premium.600' }} />
               <Typography variant="body2" sx={{ flex: 1, color: 'premium.800', fontWeight: 500 }}>
-                Evoluir para o Pro
+                Conhecer os planos
               </Typography>
               <ArrowForwardOutlined sx={{ fontSize: 16, color: 'premium.600' }} />
             </MenuItem>

@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/customers")]
 [Authorize]
+[RequireModule(OperationModule.Customers)]
 public class CustomersController(ICustomerService service) : ControllerBase
 {
     [HttpGet]

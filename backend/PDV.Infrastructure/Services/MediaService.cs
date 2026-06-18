@@ -1,6 +1,7 @@
 using PDV.Application.DTOs.Media;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -11,13 +12,26 @@ namespace PDV.Infrastructure.Services;
 public class MediaService(
     IMediaRepository repository,
     IStorageService storage,
+    IEntitlementService entitlementService,
     ITenantContext tenantContext) : IMediaService
 {
+    // Sem coluna de tamanho por arquivo: cada imagem ocupa até o teto de upload (5MB). O limite
+    // de armazenamento do plano (maxStorageMb) é aplicado contra (nº de mídias ativas × 5MB).
+    private const int MaxFileMb = 5;
+
     public async Task<PresignedUrlResponse> GetUploadUrlAsync(MediaCategory category, Guid entityId)
     {
         ValidateCategory(category);
         if (entityId == Guid.Empty)
             throw new BusinessException("O identificador da entidade é obrigatório.");
+
+        // Só conta no upload de uma NOVA imagem (substituir a imagem de uma entidade não soma).
+        var current = await repository.GetActiveAsync(category, entityId);
+        if (current is null)
+        {
+            var usedMb = await repository.CountActiveAsync() * MaxFileMb;
+            await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxStorageMb, usedMb);
+        }
 
         var bucket = MediaPathHelper.GetBucket(category);
         var relativePath = MediaPathHelper.GetRelativePath(category, tenantContext.TenantId, entityId);

@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/expenses")]
 [Authorize]
+[RequireModule(OperationModule.Expenses)]
 public class ExpensesController(IExpenseService service) : ControllerBase
 {
     [HttpGet]

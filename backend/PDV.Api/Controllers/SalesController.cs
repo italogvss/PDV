@@ -11,6 +11,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/sales")]
 [Authorize]
+[RequireModule(OperationModule.Sales)]
 public class SalesController(ISaleService service) : ControllerBase
 {
     [HttpGet]

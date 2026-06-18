@@ -3,6 +3,7 @@ using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Employees;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -16,6 +17,7 @@ public class EmployeeService(
     IUserRepository userRepository,
     ITenantContext tenantContext,
     IStorageService storage,
+    IEntitlementService entitlementService,
     IValidator<CreateEmployeeRequest> createValidator,
     IValidator<UpdateEmployeeRequest> updateValidator) : IEmployeeService
 {
@@ -41,6 +43,9 @@ public class EmployeeService(
         var existing = await userRepository.GetByEmailAsync(request.Email);
         if (existing is not null)
             throw new BusinessException("Já existe um usuário com este e-mail.");
+
+        // Enforcement de limite do plano (402 se atingido).
+        await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxEmployees, await employeeRepository.CountAsync());
 
         var role = await roleRepository.GetByIdAsync(request.RoleId)
             ?? throw new BusinessException("Papel não encontrado.");

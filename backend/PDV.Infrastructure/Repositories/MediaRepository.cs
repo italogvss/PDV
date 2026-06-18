@@ -13,6 +13,9 @@ public class MediaRepository(AppDbContext context, ITenantContext tenantContext)
         await context.MediaFiles
             .FirstOrDefaultAsync(m => m.Category == category && m.EntityId == entityId);
 
+    // Query filter global já restringe ao tenant atual + IsActive.
+    public Task<int> CountActiveAsync() => context.MediaFiles.CountAsync();
+
     public async Task AddAsync(MediaFile media)
     {
         await context.MediaFiles.AddAsync(media);

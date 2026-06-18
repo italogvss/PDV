@@ -9,6 +9,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/reports")]
 [Authorize]
+[RequireModule(OperationModule.Reports)]
 [RequirePermission(Permission.ViewReports)]
 public class ReportsController(IReportService service) : ControllerBase
 {

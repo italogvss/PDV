@@ -13,6 +13,8 @@ public interface IProductRepository
     Task AddAsync(Product product);
     Task UpdateAsync(Product product);
     Task<bool> BarcodeExistsAsync(string barcode, Guid? excludeId = null);
+    // Total de produtos ativos do tenant atual (para enforcement de limite de plano).
+    Task<int> CountAsync();
     Task<IEnumerable<Product>> GetAllInactiveAsync();
     Task<Product?> GetInactiveByIdAsync(Guid id);
     Task RestoreAsync(Product product);

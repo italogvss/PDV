@@ -13,6 +13,9 @@ public class ProductRepository(AppDbContext context, ITenantContext tenantContex
             .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Id == id);
 
+    // Query filter global já restringe ao tenant atual + IsActive.
+    public Task<int> CountAsync() => context.Products.CountAsync();
+
     public async Task<(IEnumerable<Product> Data, int TotalCount)> GetAllAsync(
         int page, int pageSize,
         string? name = null, string? barcode = null,

@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.ServiceCategories;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/service-categories")]
 [Authorize]
+[RequireModule(OperationModule.Services)]
 public class ServiceCategoriesController(IServiceCategoryService service) : ControllerBase
 {
     [HttpGet]

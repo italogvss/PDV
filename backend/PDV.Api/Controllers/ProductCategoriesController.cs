@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/product-categories")]
 [Authorize]
+[RequireModule(OperationModule.Inventory)]
 public class ProductCategoriesController(IProductCategoryService service) : ControllerBase
 {
     [HttpGet]

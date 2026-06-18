@@ -10,7 +10,7 @@ export default function PremiumBanner() {
 
   const goToSubscription = () => navigate('/configuracoes?tab=assinatura')
 
-  const isPaid = subscription !== null && subscription.tier !== 'Free'
+  const isPaid = subscription !== null && subscription.planId !== null
 
   if (isPaid) return null
 

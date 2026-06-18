@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PDV.Api.Attributes;
 using PDV.Application.DTOs.Services;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/services")]
 [Authorize]
+[RequireModule(OperationModule.Services)]
 public class ServicesController(IServiceService service) : ControllerBase
 {
     [HttpGet]

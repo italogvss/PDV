@@ -4,6 +4,7 @@ using PDV.Application.DTOs.ProductCategories;
 using PDV.Application.DTOs.Products;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -15,6 +16,7 @@ public class ProductService(
     IProductRepository repository,
     ITenantContext tenantContext,
     IStorageService storage,
+    IEntitlementService entitlementService,
     IValidator<CreateProductRequest> createValidator,
     IValidator<UpdateProductRequest> updateValidator) : IProductService
 {
@@ -43,6 +45,9 @@ public class ProductService(
 
         if (request.Barcode is not null && await repository.BarcodeExistsAsync(request.Barcode))
             throw new BusinessException($"Já existe um produto com o código de barras '{request.Barcode}'.");
+
+        // Enforcement de limite do plano (402 se atingido).
+        await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxProducts, await repository.CountAsync());
 
         var product = new Product
         {

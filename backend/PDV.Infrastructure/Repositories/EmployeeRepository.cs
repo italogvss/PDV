@@ -47,6 +47,9 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
         return (data, totalCount);
     }
 
+    // Query filter global já restringe ao tenant atual + IsActive.
+    public Task<int> CountAsync() => context.Employees.CountAsync();
+
     public async Task AddAsync(Employee employee)
     {
         await context.Employees.AddAsync(employee);

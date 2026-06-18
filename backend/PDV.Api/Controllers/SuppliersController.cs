@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/suppliers")]
 [Authorize]
+[RequireModule(OperationModule.Suppliers)]
 public class SuppliersController(ISupplierService service) : ControllerBase
 {
     [HttpGet]

@@ -1,56 +1,92 @@
 import { api } from './api'
 import type {
+  BillingPeriod,
+  PaymentMethod,
   Plan,
-  PlanTier,
+  PixCharge,
   Subscription,
   SubscriptionStatus,
 } from '../types/subscription.types'
 
 // Tipos do backend (PDV.Application/DTOs/Subscriptions/SubscriptionDtos.cs).
 interface BackendSubscription {
-  tier: string
+  planId: string | null
+  planName: string | null
   status: string
+  method: string | null
+  isRenewable: boolean
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
   modules: string[]
   limits: Record<string, number>
-  pendingTier: string | null
+  pendingPlanId: string | null
   pendingPlanName: string | null
 }
 
 interface BackendPlan {
-  tier: string
+  id: string
   name: string
   description: string | null
   priceMonthly: number
+  priceAnnual: number | null
   modules: string[]
   limits: Record<string, number>
+  supportsCard: boolean
+  supportsPix: boolean
+  trialDays: number | null
+}
+
+interface BackendCheckout {
+  checkoutUrl: string | null
+  pix: PixCharge | null
 }
 
 function mapSubscription(s: BackendSubscription): Subscription {
   return {
-    tier: s.tier as PlanTier,
+    planId: s.planId ?? null,
+    planName: s.planName ?? null,
     status: s.status as SubscriptionStatus,
+    method: (s.method as PaymentMethod | null) ?? null,
+    isRenewable: s.isRenewable ?? false,
     trialEndsAt: s.trialEndsAt ?? null,
     currentPeriodEnd: s.currentPeriodEnd ?? null,
     canceledAt: s.canceledAt ?? null,
     modules: s.modules ?? [],
     limits: s.limits ?? {},
-    pendingTier: (s.pendingTier as PlanTier | null) ?? null,
+    pendingPlanId: s.pendingPlanId ?? null,
     pendingPlanName: s.pendingPlanName ?? null,
   }
 }
 
 function mapPlan(p: BackendPlan): Plan {
   return {
-    tier: p.tier as PlanTier,
+    id: p.id,
     name: p.name,
     description: p.description ?? null,
     priceMonthly: p.priceMonthly,
+    priceAnnual: p.priceAnnual ?? null,
     modules: p.modules ?? [],
     limits: p.limits ?? {},
+    supportsCard: p.supportsCard,
+    supportsPix: p.supportsPix,
+    trialDays: p.trialDays ?? null,
   }
+}
+
+export interface StartCheckoutPayload {
+  planId: string
+  method: PaymentMethod
+  period?: BillingPeriod
+  couponCode?: string
+  returnUrl: string
+  completionUrl: string
+}
+
+// Cartão → checkoutUrl preenchido (redirect). PIX → pix preenchido (QR embutido).
+export interface CheckoutResult {
+  checkoutUrl: string | null
+  pix: PixCharge | null
 }
 
 export const subscriptionService = {
@@ -64,19 +100,22 @@ export const subscriptionService = {
     return data.map(mapPlan)
   },
 
-  // Inicia o checkout do plano pago e devolve a URL do AbacatePay.
-  startCheckout: async (tier: PlanTier, returnUrl: string, completionUrl: string): Promise<string> => {
-    const { data } = await api.post<{ checkoutUrl: string }>('/subscriptions/checkout', {
-      plan: tier,
-      returnUrl,
-      completionUrl,
+  // Inicia o checkout do plano pago. O backend devolve a URL do AbacatePay (cartão) ou o PIX.
+  startCheckout: async (payload: StartCheckoutPayload): Promise<CheckoutResult> => {
+    const { data } = await api.post<BackendCheckout>('/subscriptions/checkout', {
+      planId: payload.planId,
+      method: payload.method === 'Pix' ? 'PIX' : 'CARD',
+      period: payload.period ?? null,
+      couponCode: payload.couponCode ?? null,
+      returnUrl: payload.returnUrl,
+      completionUrl: payload.completionUrl,
     })
-    return data.checkoutUrl
+    return { checkoutUrl: data.checkoutUrl ?? null, pix: data.pix ?? null }
   },
 
   // Troca de plano de uma assinatura ativa — aplicada no próximo ciclo de cobrança.
-  changePlan: async (tier: PlanTier): Promise<void> => {
-    await api.post('/subscriptions/change-plan', { plan: tier })
+  changePlan: async (planId: string): Promise<void> => {
+    await api.post('/subscriptions/change-plan', { planId })
   },
 
   cancel: async (): Promise<void> => {

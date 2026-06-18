@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/appointments")]
 [Authorize]
+[RequireModule(OperationModule.Appointments)]
 public class AppointmentsController(IAppointmentService service) : ControllerBase
 {
     [HttpGet]
