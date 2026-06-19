@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Appointments;
@@ -64,7 +64,7 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     }
 
     [HttpDelete("all")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PurgeAll()
     {
         var deleted = await service.PurgeAllAsync();

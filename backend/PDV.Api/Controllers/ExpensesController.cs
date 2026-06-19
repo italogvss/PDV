@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Expenses;
@@ -88,7 +88,7 @@ public class ExpensesController(IExpenseService service) : ControllerBase
     }
 
     [HttpDelete("all")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PurgeAll()
     {
         var deleted = await service.PurgeAllAsync();

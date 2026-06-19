@@ -12,6 +12,10 @@ import {
   HelpOutlineOutlined,
   MiscellaneousServicesOutlined,
   CalendarMonthOutlined,
+  WebhookOutlined,
+  SubscriptionsOutlined,
+  PaymentOutlined,
+  TuneOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import type { Permission } from '../../types/employee.types'
@@ -90,6 +94,18 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Configurações', path: '/configuracoes', icon: SettingsOutlined },
       { label: 'Ajuda', path: '/ajuda', icon: HelpOutlineOutlined },
       
+    ],
+  },
+]
+
+export const ADMIN_NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Admin',
+    items: [
+      { label: 'Webhook Events', path: '/admin/webhooks', icon: WebhookOutlined },
+      { label: 'Subscriptions', path: '/admin/subscriptions', icon: SubscriptionsOutlined },
+      { label: 'Pagamentos', path: '/admin/payments', icon: PaymentOutlined },
+      { label: 'Config AbacatePay', path: '/admin/config', icon: TuneOutlined },
     ],
   },
 ]

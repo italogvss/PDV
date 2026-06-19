@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Customers;
@@ -57,7 +57,7 @@ public class CustomersController(ICustomerService service) : ControllerBase
     }
 
     [HttpDelete("all")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PurgeAll()
     {
         var deleted = await service.PurgeAllAsync();
@@ -65,7 +65,7 @@ public class CustomersController(ICustomerService service) : ControllerBase
     }
 
     [HttpGet("inactive")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> GetInactive()
     {
         var result = await service.GetAllInactiveAsync();
@@ -73,7 +73,7 @@ public class CustomersController(ICustomerService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/restore")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Restore(Guid id)
     {
         await service.RestoreAsync(id);
@@ -81,7 +81,7 @@ public class CustomersController(ICustomerService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> HardDelete(Guid id)
     {
         await service.HardDeleteAsync(id);

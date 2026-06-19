@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.ServiceCategories;
@@ -28,7 +28,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateServiceCategoryRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -36,7 +36,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceCategoryRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -44,7 +44,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);
@@ -52,7 +52,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpGet("inactive")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> GetInactive()
     {
         var result = await service.GetAllInactiveAsync();
@@ -60,7 +60,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpPatch("{id:guid}/restore")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Restore(Guid id)
     {
         await service.RestoreAsync(id);
@@ -68,7 +68,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> HardDelete(Guid id)
     {
         await service.HardDeleteAsync(id);

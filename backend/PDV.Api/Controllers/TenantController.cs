@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Tenants;
@@ -40,22 +40,22 @@ public class TenantController(ITenantService tenantService) : ControllerBase
         => Ok(await tenantService.GetSettingsAsync());
 
     [HttpPut("settings/business")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> UpdateBusiness([FromBody] BusinessSettingsDto request)
         => Ok(await tenantService.UpdateBusinessAsync(request));
 
     [HttpPut("settings/operation")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> UpdateOperation([FromBody] OperationSettingsDto request)
         => Ok(await tenantService.UpdateOperationAsync(request));
 
     [HttpPut("settings/payments")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> UpdatePayments([FromBody] PaymentsSettingsDto request)
         => Ok(await tenantService.UpdatePaymentsAsync(request));
 
     [HttpPut("settings/modules")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> UpdateModules([FromBody] ModulesSettingsDto request)
         => Ok(await tenantService.UpdateModulesAsync(request));
 }

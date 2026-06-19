@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Sales;
@@ -59,7 +59,7 @@ public class SalesController(ISaleService service) : ControllerBase
     }
 
     [HttpDelete("all")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PurgeAll()
     {
         var deleted = await service.PurgeAllAsync();

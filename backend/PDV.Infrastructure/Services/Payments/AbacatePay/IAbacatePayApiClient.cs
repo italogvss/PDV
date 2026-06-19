@@ -12,4 +12,5 @@ public interface IAbacatePayApiClient
     Task<AbacateSubscription> CancelSubscriptionAsync(CancelSubscriptionBody body, CancellationToken ct = default);
     Task<AbacateChargeStatus> GetCheckoutAsync(string id, CancellationToken ct = default);
     Task<AbacateChargeStatus> CheckTransparentAsync(string id, CancellationToken ct = default);
+    Task<AbacateChargeStatus> SimulatePixPaymentAsync(string pixChargeId, CancellationToken ct = default);
 }

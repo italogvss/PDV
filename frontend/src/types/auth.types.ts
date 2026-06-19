@@ -3,7 +3,7 @@ import type { TenantListItem } from './tenant.types'
 import type { Permission } from './employee.types'
 import type { OperationModule } from '../constants/modules'
 
-export type UserRole = 'Owner' | 'Employee'
+export type UserRole = 'Owner' | 'Employee' | 'Admin'
 
 export interface AuthUser {
   userId: string

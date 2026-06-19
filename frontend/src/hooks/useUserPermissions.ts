@@ -4,7 +4,7 @@ import type { OperationModule } from '../constants/modules'
 
 export function useUserPermissions() {
   const { role, permissions, modules } = useAppSelector(s => s.auth)
-  const isOwner = role === 'Owner'
+  const isOwner = role === 'Owner' || role === 'Admin'
 
   const hasPermission = (permission: Permission): boolean =>
     isOwner || permissions.includes(permission)

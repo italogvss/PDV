@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Employees;
@@ -63,7 +63,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpGet("inactive")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> GetInactive()
     {
         var result = await service.GetAllInactiveAsync();
@@ -71,7 +71,7 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> HardDelete(Guid id)
     {
         await service.HardDeleteAsync(id);

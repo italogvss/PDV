@@ -160,6 +160,7 @@ builder.Services.AddScoped<IGatewayCustomerRepository, GatewayCustomerRepository
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IUserTenantRepository, UserTenantRepository>();
 builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>

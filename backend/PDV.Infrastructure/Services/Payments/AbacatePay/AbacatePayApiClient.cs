@@ -40,6 +40,9 @@ public class AbacatePayApiClient(HttpClient http) : IAbacatePayApiClient
     public Task<AbacateChargeStatus> CheckTransparentAsync(string id, CancellationToken ct = default) =>
         SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"transparents/check?id={Uri.EscapeDataString(id)}", null, ct);
 
+    public Task<AbacateChargeStatus> SimulatePixPaymentAsync(string pixChargeId, CancellationToken ct = default) =>
+        SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"pixQrCode/simulate?id={Uri.EscapeDataString(pixChargeId)}", null, ct);
+
     private async Task<TRes> SendAsync<TRes>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         for (var attempt = 1; ; attempt++)

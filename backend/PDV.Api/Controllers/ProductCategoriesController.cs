@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.ProductCategories;
@@ -54,7 +54,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpGet("inactive")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> GetInactive()
     {
         var result = await service.GetAllInactiveAsync();
@@ -62,7 +62,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpPatch("{id:guid}/restore")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Restore(Guid id)
     {
         await service.RestoreAsync(id);
@@ -70,7 +70,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> HardDelete(Guid id)
     {
         await service.HardDeleteAsync(id);

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Users;
 using PDV.Application.Interfaces;
@@ -7,7 +7,7 @@ namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "Owner")]
+[Authorize(Roles = "Owner,Admin")]
 public class UsersController(IUserService service) : ControllerBase
 {
     [HttpGet]

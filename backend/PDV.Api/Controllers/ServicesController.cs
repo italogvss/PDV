@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Services;
@@ -34,7 +34,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateServiceRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -42,7 +42,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -50,7 +50,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);
@@ -58,7 +58,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpDelete("all")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> PurgeAll()
     {
         var deleted = await service.PurgeAllAsync();
@@ -66,7 +66,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpGet("inactive")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> GetInactive()
     {
         var result = await service.GetAllInactiveAsync();
@@ -74,7 +74,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/restore")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Restore(Guid id)
     {
         await service.RestoreAsync(id);
@@ -82,7 +82,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> HardDelete(Guid id)
     {
         await service.HardDeleteAsync(id);

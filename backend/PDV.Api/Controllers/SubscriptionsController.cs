@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Subscriptions;
 using PDV.Application.Interfaces;
@@ -19,12 +19,12 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
 
     // Ações de gestão — apenas o Owner, sobre a própria assinatura.
     [HttpPost("checkout")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Checkout([FromBody] StartCheckoutRequest request) =>
         Ok(await service.StartCheckoutAsync(request));
 
     [HttpPost("change-plan")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> ChangePlan([FromBody] ChangePlanRequest request)
     {
         await service.ChangePlanAsync(request);
@@ -32,7 +32,7 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
     }
 
     [HttpPost("cancel")]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Cancel()
     {
         await service.CancelAsync();
