@@ -13,12 +13,12 @@ public static class PlanSeedData
     public static readonly IReadOnlyList<PlanSeed> Plans =
     [
         new PlanSeed(
-            Name: "Starter",
+            Name: "Plano Anual com 30 dias grátis",
             Description: "Para quem está começando a organizar o negócio.",
-            ExternalProductId: "prod_starter",
+            ExternalProductId: "prod_qeaFLaRHup6yCLMR2QEYgHEL",
             PriceMonthlyCents: 4990,
             PriceAnnualCents: 49900,
-            TrialDays: 7,
+            TrialDays: 30,
             Modules:
             [
                 OperationModule.Sales,
@@ -39,10 +39,10 @@ public static class PlanSeedData
         new PlanSeed(
             Name: "Pro",
             Description: "Operação completa, sem limites práticos.",
-            ExternalProductId: "prod_pro",
-            PriceMonthlyCents: 9990,
-            PriceAnnualCents: 99900,
-            TrialDays: 7,
+            ExternalProductId: "prod_GtbcNdqBgA3KQgbpyzDxys44",
+            PriceMonthlyCents: 4990,
+            PriceAnnualCents: 4990,
+            TrialDays: 30,
             Modules:
             [
                 OperationModule.Sales,

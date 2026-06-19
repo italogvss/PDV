@@ -81,9 +81,14 @@ public enum PaymentWebhookType
 // Evento de webhook já verificado e traduzido para o domínio.
 public record PaymentWebhookEvent(
     PaymentWebhookType Type,
+    string Provider,
     string RawEventType,
     string EventId,
     string? ChargeId,
+    // ExternalId definido por nós ao criar a cobrança (= Subscription.Id no banco). Chave primária
+    // de correlação para eventos checkout/transparent, que não carregam o id da assinatura.
+    string? ExternalId,
+    // Id da assinatura no gateway (subs_...) — vem de data.subscription.id nos eventos subscription.*.
     string? SubscriptionId,
     string? CustomerId,
     GatewayChargeStatus? Status,

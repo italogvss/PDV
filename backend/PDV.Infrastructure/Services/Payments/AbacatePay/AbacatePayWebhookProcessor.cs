@@ -25,12 +25,17 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
             Encoding.UTF8.GetBytes(_options.WebhookSecret));
     }
 
+    // Chave pública fixa do AbacatePay — igual para todos os usuários, documentada em
+    // https://abacatepay.com/docs/webhooks/security
+    private const string AbacatePayHmacKey =
+        "t9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9";
+
     public bool VerifySignature(string rawBody, string? signatureHeader)
     {
-        if (string.IsNullOrEmpty(signatureHeader) || string.IsNullOrEmpty(_options.PublicApiKey))
+        if (string.IsNullOrEmpty(signatureHeader))
             return false;
 
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_options.PublicApiKey));
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(AbacatePayHmacKey));
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawBody));
         var expected = Convert.ToBase64String(hash);
 
@@ -47,18 +52,50 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         var rawType = TryGetString(root, "event") ?? "unknown";
         var data = root.TryGetProperty("data", out var d) ? d : default;
 
+        // O nó da cobrança ("charge") tem o mesmo shape em checkout/transparent/payment; ele só muda
+        // de lugar conforme a família do evento. A identidade da assinatura (subs_) e o cliente (cust_)
+        // ficam sempre em data.subscription / data.customer.
+        var charge = SelectChargeNode(data, rawType);
+
         return new PaymentWebhookEvent(
             Type: MapType(rawType),
+            Provider: Provider,
             RawEventType: rawType,
-            EventId: ComputeEventId(rawBody),
-            ChargeId: TryGetString(data, "id"),
-            SubscriptionId: TryGetString(data, "subscriptionId") ?? TryGetString(data, "subscription"),
-            CustomerId: TryGetString(data, "customerId") ?? TryGetString(data, "customer"),
-            Status: AbacatePayGateway.MapStatus(TryGetString(data, "status")),
-            Metadata: ReadMetadata(data),
-            AmountCents: TryGetInt(data, "amount") ?? TryGetInt(data, "paidAmount"),
-            PaidAt: TryGetDate(data, "paidAt"),
-            ReceiptUrl: TryGetString(data, "receiptUrl"));
+            EventId: ComputeEventId(root, rawBody),
+            ChargeId: TryGetString(charge, "id"),
+            ExternalId: TryGetString(charge, "externalId"),
+            SubscriptionId: data.TryGetProperty("subscription", out var sub) ? TryGetString(sub, "id") : null,
+            CustomerId: TryGetString(charge, "customerId")
+                ?? (data.TryGetProperty("customer", out var cust) ? TryGetString(cust, "id") : null),
+            Status: AbacatePayGateway.MapStatus(TryGetString(charge, "status")),
+            Metadata: ReadMetadata(charge),
+            AmountCents: TryGetInt(charge, "amount") ?? TryGetInt(charge, "paidAmount"),
+            // Nenhum payload traz "paidAt"; usamos "updatedAt" (momento em que ficou PAID).
+            PaidAt: TryGetDate(charge, "paidAt") ?? TryGetDate(charge, "updatedAt"),
+            ReceiptUrl: TryGetString(charge, "receiptUrl"));
+    }
+
+    // checkout.*   → data.checkout (bill_)
+    // transparent.* → data.transparent (pix_char_)
+    // subscription.* → data.payment (char_) ou data.checkout — info de pagamento da cobrança recorrente
+    private static JsonElement SelectChargeNode(JsonElement data, string rawType)
+    {
+        if (data.ValueKind != JsonValueKind.Object) return data;
+
+        var family = rawType.Split('.', 2)[0];
+        var keys = family switch
+        {
+            "checkout" => new[] { "checkout" },
+            "transparent" => new[] { "transparent" },
+            "subscription" => new[] { "payment", "checkout" },
+            _ => new[] { "checkout", "transparent", "payment" },
+        };
+
+        foreach (var key in keys)
+            if (data.TryGetProperty(key, out var node) && node.ValueKind == JsonValueKind.Object)
+                return node;
+
+        return data;
     }
 
     private static PaymentWebhookType MapType(string e) => e switch
@@ -77,10 +114,11 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         _ => PaymentWebhookType.Unknown,
     };
 
-    // AbacatePay não garante um id de evento estável — usamos o hash do corpo raw. Retentativas
-    // enviam o mesmo corpo (mesmo hash) → idempotência; eventos diferentes têm corpos diferentes.
-    private static string ComputeEventId(string rawBody) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawBody)));
+    // Eventos subscription.* trazem um id estável no root ("log_..."); usamos ele para idempotência.
+    // Os demais (checkout/transparent) não têm id de evento — caímos no hash do corpo raw (retentativas
+    // com o mesmo corpo geram o mesmo hash; eventos diferentes têm corpos diferentes).
+    private static string ComputeEventId(JsonElement root, string rawBody) =>
+        TryGetString(root, "id") ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawBody)));
 
     private static IReadOnlyDictionary<string, string> ReadMetadata(JsonElement data)
     {

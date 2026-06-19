@@ -12,9 +12,9 @@ public interface IBillingWebhookRepository
     Task<Subscription?> GetSubscriptionByIdAsync(Guid id);
     Task<Subscription?> GetSubscriptionByGatewayIdAsync(string gatewaySubscriptionId);
     Task<Subscription?> GetLiveSubscriptionByUserIdAsync(Guid userId);
+    Task<Subscription?> GetLiveSubscriptionByGatewayCustomerIdAsync(string provider, string gatewayCustomerId);
 
     Task<Payment?> GetPaymentByGatewayChargeIdAsync(string chargeId);
-    Task<Payment?> GetLatestPendingPaymentBySubscriptionIdAsync(Guid subscriptionId);
     Task AddPaymentAsync(Payment payment);
 
     Task<User?> GetUserByIdAsync(Guid id);

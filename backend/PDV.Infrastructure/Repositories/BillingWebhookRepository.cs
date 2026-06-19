@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using PDV.Domain.Entities;
-using PDV.Domain.Enums;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
@@ -40,14 +39,20 @@ public class BillingWebhookRepository(AppDbContext context) : IBillingWebhookRep
             .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
 
+    // Resolve a assinatura viva a partir do cliente no gateway (cust_...): GatewayCustomer → UserId → sub.
+    // Usado nos eventos subscription.* (que não carregam externalId) e renovações sem externalId.
+    public async Task<Subscription?> GetLiveSubscriptionByGatewayCustomerIdAsync(string provider, string gatewayCustomerId)
+    {
+        var userId = await context.GatewayCustomers
+            .Where(c => c.Provider == provider && c.GatewayCustomerId == gatewayCustomerId)
+            .Select(c => (Guid?)c.UserId)
+            .FirstOrDefaultAsync();
+
+        return userId is null ? null : await GetLiveSubscriptionByUserIdAsync(userId.Value);
+    }
+
     public async Task<Payment?> GetPaymentByGatewayChargeIdAsync(string chargeId) =>
         await context.Payments.FirstOrDefaultAsync(p => p.GatewayChargeId == chargeId);
-
-    public async Task<Payment?> GetLatestPendingPaymentBySubscriptionIdAsync(Guid subscriptionId) =>
-        await context.Payments
-            .Where(p => p.SubscriptionId == subscriptionId && p.Status == PaymentStatus.Pending)
-            .OrderByDescending(p => p.CreatedAt)
-            .FirstOrDefaultAsync();
 
     public async Task AddPaymentAsync(Payment payment) =>
         await context.Payments.AddAsync(payment);

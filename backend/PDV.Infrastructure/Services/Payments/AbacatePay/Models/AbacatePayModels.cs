@@ -5,9 +5,8 @@ namespace PDV.Infrastructure.Services.Payments.AbacatePay.Models;
 // Envelope padrão da AbacatePay: { data, success, error }.
 public record AbacateEnvelope<T>(T? Data, bool Success, JsonElement? Error);
 
-// ---- customers/create : body { data:{...}, metadata } ----
-public record CreateCustomerBody(CreateCustomerData Data, Dictionary<string, string>? Metadata);
-public record CreateCustomerData(string Email, string? Name, string? TaxId, string? Cellphone);
+// ---- customers/create : body flat (sem wrapper data) ----
+public record CreateCustomerBody(string Email, string? Name, string? TaxId, string? Cellphone);
 public record AbacateCustomer(string Id, string? Email, string? Name, string? TaxId, string? Cellphone);
 
 // ---- checkouts comuns (subscriptions/create usa o mesmo shape, flat) ----

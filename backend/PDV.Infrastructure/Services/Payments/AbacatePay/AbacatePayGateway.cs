@@ -14,9 +14,7 @@ public class AbacatePayGateway(IAbacatePayApiClient api) : IPaymentGateway
 
     public async Task<GatewayCustomerResult> EnsureCustomerAsync(CustomerInfo info, CancellationToken ct = default)
     {
-        var body = new CreateCustomerBody(
-            new CreateCustomerData(info.Email, info.Name, info.TaxId, info.Cellphone),
-            info.Metadata?.ToDictionary(k => k.Key, v => v.Value));
+        var body = new CreateCustomerBody(info.Email, info.Name, info.TaxId, info.Cellphone);
 
         var customer = await api.CreateCustomerAsync(body, ct);
         return new GatewayCustomerResult(customer.Id, customer.Email ?? info.Email, customer.Name, customer.TaxId, customer.Cellphone);

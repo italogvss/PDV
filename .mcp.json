@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "abacate-pay": {
+      "type": "stdio",
+      "command": "C:\\Users\\Italo\\.bun\\bin\\bun.exe",
+      "args": [
+        "C:\\Users\\Italo\\Documents\\Projetos\\PDV-Ultra\\.claude\\abacatepay-mcp\\src\\index.ts"
+      ],
+      "env": {}
+    }
+  }
+}

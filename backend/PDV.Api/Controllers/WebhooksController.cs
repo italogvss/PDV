@@ -37,10 +37,12 @@ public class WebhooksController(
 
         var evt = processor.Parse(rawBody);
 
+        logger.LogWarning("Webhook recebido {Provider} {EventType} {EventId}", processor.Provider, evt.RawEventType, evt.EventId);
         // 4. Idempotência — evento já processado retorna 200 sem reprocessar.
-        if (await repository.ProcessedEventExistsAsync(processor.Provider, evt.EventId))
+        if (await repository.ProcessedEventExistsAsync(processor.Provider, evt.EventId)){
+            logger.LogWarning("Evento já processado");        
             return Ok();
-
+    }
         try
         {
             await billingService.ProcessAsync(evt);
