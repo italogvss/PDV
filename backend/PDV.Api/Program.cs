@@ -114,6 +114,7 @@ builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IOAuthProvider, GoogleOAuthProvider>();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
@@ -162,6 +163,7 @@ builder.Services.AddScoped<IGatewayCustomerRepository, GatewayCustomerRepository
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IUserTenantRepository, UserTenantRepository>();
 builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>();
+builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddControllers();

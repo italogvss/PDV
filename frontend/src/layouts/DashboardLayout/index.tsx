@@ -3,6 +3,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
+import AnnouncementCenter from '../../components/AnnouncementCenter'
 import { useSyncSubscriptionToStore } from '../../hooks/useSubscription'
 
 export default function DashboardLayout() {
@@ -54,6 +55,7 @@ export default function DashboardLayout() {
           <Outlet />
         </Box>
       </Box>
+      <AnnouncementCenter />
     </Box>
   )
 }

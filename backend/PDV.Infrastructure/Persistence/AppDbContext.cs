@@ -41,6 +41,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
+    // Avisos editoriais (Announcement) e marcadores de "visto" por usuário (UserSeenMarker).
+    // Ambos GLOBAIS — sem query filter de tenant (Announcement é compartilhado; UserSeenMarker
+    // é scoped por UserId e filtrado explicitamente nos repositórios).
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<UserSeenMarker> UserSeenMarkers => Set<UserSeenMarker>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
