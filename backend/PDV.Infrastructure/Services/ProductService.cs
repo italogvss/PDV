@@ -9,6 +9,7 @@ using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
+using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
@@ -17,6 +18,7 @@ public class ProductService(
     ITenantContext tenantContext,
     IStorageService storage,
     IEntitlementService entitlementService,
+    AppDbContext context,
     IValidator<CreateProductRequest> createValidator,
     IValidator<UpdateProductRequest> updateValidator) : IProductService
 {
@@ -74,7 +76,7 @@ public class ProductService(
         return await Map(created);
     }
 
-    public async Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request)
+    public async Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request, Guid changedByUserId)
     {
         await updateValidator.ValidateAndThrowAsync(request);
 
@@ -83,6 +85,21 @@ public class ProductService(
 
         if (request.Barcode is not null && await repository.BarcodeExistsAsync(request.Barcode, excludeId: id))
             throw new BusinessException($"Já existe um produto com o código de barras '{request.Barcode}'.");
+
+        if (request.Price != product.Price)
+        {
+            var user = await context.Users.FindAsync(changedByUserId);
+            await context.ProductPriceHistories.AddAsync(new ProductPriceHistory
+            {
+                TenantId = tenantContext.TenantId,
+                ProductId = id,
+                ProductName = product.Name,
+                OldPrice = product.Price,
+                NewPrice = request.Price,
+                ChangedByUserId = changedByUserId,
+                ChangedByName = user?.Name ?? string.Empty,
+            });
+        }
 
         product.Name = request.Name;
         product.Barcode = request.Barcode;
@@ -132,7 +149,7 @@ public class ProductService(
         await repository.HardDeleteAsync(entity);
     }
 
-    public async Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request)
+    public async Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request, Guid changedByUserId)
     {
         var product = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Produto não encontrado.");
@@ -141,6 +158,29 @@ public class ProductService(
         if (newStock < 0)
             throw new BusinessException(
                 $"Ajuste inválido: estoque não pode ficar negativo. Estoque atual: {product.Stock}.");
+
+        var user = await context.Users.FindAsync(changedByUserId);
+
+        string? supplierName = null;
+        if (request.SupplierId.HasValue)
+        {
+            var supplier = await context.Suppliers.FindAsync(request.SupplierId.Value);
+            supplierName = supplier?.Name;
+        }
+
+        await context.StockMovements.AddAsync(new StockMovement
+        {
+            TenantId = tenantContext.TenantId,
+            ProductId = id,
+            ProductName = product.Name,
+            Type = StockMovementType.ManualAdjust,
+            Quantity = request.Quantity,
+            SupplierId = request.SupplierId,
+            SupplierName = supplierName,
+            Note = request.Note,
+            CreatedByUserId = changedByUserId,
+            CreatedByName = user?.Name ?? string.Empty,
+        });
 
         product.Stock = newStock;
         await repository.UpdateAsync(product);

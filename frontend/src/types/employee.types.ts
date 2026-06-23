@@ -38,7 +38,7 @@ export const PERMISSIONS = {
   ViewCustomers: 'Visualizar Clientes',
   ManageSuppliers: 'Gerenciar Fornecedores',
   ViewSuppliers: 'Visualizar Fornecedores',
-  
+  ViewLogs: 'Visualizar logs',
 } as const satisfies Record<string, string>
 
 export type Permission = keyof typeof PERMISSIONS

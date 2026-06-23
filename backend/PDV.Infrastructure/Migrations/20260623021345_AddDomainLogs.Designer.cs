@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623021345_AddDomainLogs")]
+    partial class AddDomainLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -855,12 +858,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<decimal>("Discount")
                         .HasColumnType("decimal(65,30)");
 
-                    b.Property<decimal>("FeeAmount")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<decimal>("FeeRate")
-                        .HasColumnType("decimal(5,2)");
-
                     b.Property<int?>("InstallmentCount")
                         .HasColumnType("int");
 
@@ -872,9 +869,6 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<bool>("IsInstallment")
                         .HasColumnType("tinyint(1)");
-
-                    b.Property<decimal>("NetAmount")
-                        .HasColumnType("decimal(10,2)");
 
                     b.Property<Guid?>("OperatorId")
                         .HasColumnType("char(36)");
@@ -1438,11 +1432,6 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<decimal>("PaymentCashFee")
                         .HasColumnType("decimal(5,2)");
-
-                    b.Property<bool>("PaymentFeesEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false);
 
                     b.Property<bool>("PaymentPixEnabled")
                         .ValueGeneratedOnAdd()

@@ -30,6 +30,7 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
 
         builder.Property(ts => ts.DiscountLimitPercent).HasColumnType("decimal(5,2)");
 
+        builder.Property(ts => ts.PaymentFeesEnabled).HasDefaultValue(false);
         builder.Property(ts => ts.PaymentPixEnabled).HasDefaultValue(true);
         builder.Property(ts => ts.PaymentCardCreditEnabled).HasDefaultValue(true);
         builder.Property(ts => ts.PaymentCardDebitEnabled).HasDefaultValue(true);

@@ -4,6 +4,7 @@ using PDV.Api.Attributes;
 using PDV.Application.DTOs.Appointments;
 using PDV.Application.Interfaces;
 using PDV.Domain.Enums;
+using System.Security.Claims;
 
 namespace PDV.Api.Controllers;
 
@@ -51,7 +52,8 @@ public class AppointmentsController(IAppointmentService service) : ControllerBas
     [RequirePermission(Permission.ManageAppointments)]
     public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeAppointmentStatusRequest request)
     {
-        var result = await service.ChangeStatusAsync(id, request);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await service.ChangeStatusAsync(id, request, userId);
         return Ok(result);
     }
 

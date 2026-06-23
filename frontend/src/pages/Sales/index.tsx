@@ -55,6 +55,7 @@ export default function SalesPage() {
 
   // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
   const payments = tenantSettings?.payments ?? {
+    feesEnabled: false,
     pix: { enabled: true, fee: 0 },
     cardCredit: { enabled: true, fee: 0 },
     cardDebit: { enabled: true, fee: 0 },

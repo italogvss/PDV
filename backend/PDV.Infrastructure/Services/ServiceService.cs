@@ -8,6 +8,7 @@ using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
+using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
@@ -15,6 +16,7 @@ public class ServiceService(
     IServiceRepository repository,
     ITenantContext tenantContext,
     IStorageService storage,
+    AppDbContext context,
     IValidator<CreateServiceRequest> createValidator,
     IValidator<UpdateServiceRequest> updateValidator) : IServiceService
 {
@@ -59,12 +61,27 @@ public class ServiceService(
         return await Map(created);
     }
 
-    public async Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request)
+    public async Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request, Guid changedByUserId)
     {
         await updateValidator.ValidateAndThrowAsync(request);
 
         var service = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Serviço não encontrado.");
+
+        if (request.Price != service.Price)
+        {
+            var user = await context.Users.FindAsync(changedByUserId);
+            await context.ServicePriceHistories.AddAsync(new ServicePriceHistory
+            {
+                TenantId = tenantContext.TenantId,
+                ServiceId = id,
+                ServiceName = service.Name,
+                OldPrice = service.Price,
+                NewPrice = request.Price,
+                ChangedByUserId = changedByUserId,
+                ChangedByName = user?.Name ?? string.Empty,
+            });
+        }
 
         service.Name = request.Name;
         service.Description = request.Description;

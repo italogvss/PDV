@@ -159,6 +159,7 @@ public class TenantService(
         var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
             ?? throw new NotFoundException("Configurações do tenant não encontradas.");
 
+        settings.PaymentFeesEnabled       = request.FeesEnabled;
         settings.PaymentPixEnabled        = request.Pix.Enabled;
         settings.PaymentPixFee            = request.Pix.Fee;
         settings.PaymentCardCreditEnabled = request.CardCredit.Enabled;
@@ -211,6 +212,7 @@ public class TenantService(
                 s.AllowDiscounts,
                 s.DiscountLimitPercent),
             new PaymentsSettingsDto(
+                s.PaymentFeesEnabled,
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),
                 new PaymentMethodDto(s.PaymentCardCreditEnabled, s.PaymentCardCreditFee),
                 new PaymentMethodDto(s.PaymentCardDebitEnabled, s.PaymentCardDebitFee),

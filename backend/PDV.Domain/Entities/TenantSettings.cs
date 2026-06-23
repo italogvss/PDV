@@ -40,6 +40,7 @@ public class TenantSettings : BaseEntity
     public decimal DiscountLimitPercent { get; set; }
 
     // Pagamentos — métodos aceitos e taxa por venda (%)
+    public bool PaymentFeesEnabled { get; set; } = false;
     public bool PaymentPixEnabled { get; set; } = true;
     public bool PaymentCardCreditEnabled { get; set; } = true;
     public bool PaymentCardDebitEnabled { get; set; } = true;

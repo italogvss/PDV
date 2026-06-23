@@ -70,6 +70,7 @@ export interface PaymentMethodConfig {
 }
 
 export interface PaymentsSettings {
+  feesEnabled: boolean
   pix: PaymentMethodConfig
   cardCredit: PaymentMethodConfig
   cardDebit: PaymentMethodConfig

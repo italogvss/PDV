@@ -23,7 +23,13 @@ interface MethodForm {
   enabled: boolean
   fee: string
 }
-type FormState = Record<MethodKey, MethodForm>
+interface FormState {
+  feesEnabled: boolean
+  pix: MethodForm
+  cardCredit: MethodForm
+  cardDebit: MethodForm
+  cash: MethodForm
+}
 
 const feeToInput = (fee: number): string => (fee ? String(fee).replace('.', ',') : '')
 const parseFee = (input: string): number => {
@@ -33,12 +39,24 @@ const parseFee = (input: string): number => {
 
 function toFormState(p: PaymentsSettings): FormState {
   const m = (c: PaymentMethodConfig): MethodForm => ({ enabled: c.enabled, fee: feeToInput(c.fee) })
-  return { pix: m(p.pix), cardCredit: m(p.cardCredit), cardDebit: m(p.cardDebit), cash: m(p.cash) }
+  return {
+    feesEnabled: p.feesEnabled,
+    pix: m(p.pix),
+    cardCredit: m(p.cardCredit),
+    cardDebit: m(p.cardDebit),
+    cash: m(p.cash),
+  }
 }
 
 function toPayload(f: FormState): PaymentsSettings {
   const m = (mf: MethodForm): PaymentMethodConfig => ({ enabled: mf.enabled, fee: parseFee(mf.fee) })
-  return { pix: m(f.pix), cardCredit: m(f.cardCredit), cardDebit: m(f.cardDebit), cash: m(f.cash) }
+  return {
+    feesEnabled: f.feesEnabled,
+    pix: m(f.pix),
+    cardCredit: m(f.cardCredit),
+    cardDebit: m(f.cardDebit),
+    cash: m(f.cash),
+  }
 }
 
 export default function PaymentsSection() {
@@ -68,7 +86,7 @@ export default function PaymentsSection() {
       if (!f) return f
       // Trava: deve sempre haver ao menos uma forma de pagamento habilitada.
       const isDisabling = f[key].enabled
-      const enabledCount = Object.values(f).filter((m) => m.enabled).length
+      const enabledCount = (['pix', 'cardCredit', 'cardDebit', 'cash'] as MethodKey[]).filter((k) => f[k].enabled).length
       if (isDisabling && enabledCount <= 1) {
         showToast('É necessário manter ao menos uma forma de pagamento ativa.', 'error')
         return f
@@ -87,6 +105,7 @@ export default function PaymentsSection() {
   const hasChanges = (() => {
     if (!form || !data) return false
     const p = data.payments
+    if (form.feesEnabled !== p.feesEnabled) return true
     const changed = (mf: MethodForm, orig: PaymentMethodConfig) =>
       mf.enabled !== orig.enabled || parseFee(mf.fee) !== orig.fee
     return (
@@ -131,6 +150,22 @@ export default function PaymentsSection() {
           ) : undefined
         }
       >
+        <Box sx={{ px: 3, pb: 1, pt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Calcular taxas nas vendas
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Registra o custo da operadora por venda (não altera o valor cobrado do cliente)
+            </Typography>
+          </Box>
+          <Switch
+            checked={form.feesEnabled}
+            onChange={() => setForm((f) => (f ? { ...f, feesEnabled: !f.feesEnabled } : f))}
+            color="secondary"
+          />
+        </Box>
+
         <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
           {PAYMENT_METHODS.map((method) => {
             const state = form[method.key]
@@ -185,13 +220,14 @@ export default function PaymentsSection() {
                   />
                 </Box>
 
-                {enabled && (method.showFees) && (
+                {enabled && method.showFees && (
                   <>
                     <FieldLabel label="Taxa por venda" />
                     <TextField
                       type="text"
                       placeholder="0,00"
                       value={state.fee}
+                      disabled={!form.feesEnabled}
                       onChange={(e) => handleFeeChange(method.key, e.target.value)}
                       slotProps={{
                         input: {

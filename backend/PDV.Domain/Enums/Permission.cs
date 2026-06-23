@@ -18,4 +18,5 @@ public enum Permission
     ViewCustomers,
     ManageSuppliers,
     ViewSuppliers,
+    ViewLogs,
 }

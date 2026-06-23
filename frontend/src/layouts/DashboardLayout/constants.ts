@@ -16,6 +16,7 @@ import {
   SubscriptionsOutlined,
   PaymentOutlined,
   TuneOutlined,
+  HistoryOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import type { Permission } from '../../types/employee.types'
@@ -89,6 +90,13 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Conta',
     items: [
+      {
+        label: 'Logs',
+        path: '/logs',
+        icon: HistoryOutlined,
+        module: 'logs',
+        requiredPermission: 'ViewLogs',
+      },
       { label: 'Clientes', path: '/clientes', icon: PeopleAltOutlined, module: 'customers' },
       { label: 'Fornecedores', path: '/fornecedores', icon: LocalShippingOutlined, module: 'suppliers' },
       { label: 'Configurações', path: '/configuracoes', icon: SettingsOutlined },

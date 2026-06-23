@@ -12,4 +12,5 @@ public enum OperationModule
     Reports,
     Customers,
     Suppliers,
+    Logs,
 }

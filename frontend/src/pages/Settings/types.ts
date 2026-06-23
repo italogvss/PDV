@@ -1,7 +1,7 @@
 import AttachMoney from "@mui/icons-material/AttachMoney"
 import CreditCard from "@mui/icons-material/CreditCard"
 import Pix from "@mui/icons-material/Pix"
-import { PaymentsSettings } from "../../types/settings.types"
+
 import Inventory2Outlined from "@mui/icons-material/Inventory2Outlined"
 import ReceiptLongOutlined from "@mui/icons-material/ReceiptLongOutlined"
 import PeopleOutlined from "@mui/icons-material/PeopleOutlined"
@@ -32,7 +32,7 @@ export type SettingsTab =
   | 'useterms'
 
   // Payment Section
-export type MethodKey = keyof PaymentsSettings
+export type MethodKey = 'pix' | 'cardCredit' | 'cardDebit' | 'cash'
 
 export interface MethodMeta {
   key: MethodKey

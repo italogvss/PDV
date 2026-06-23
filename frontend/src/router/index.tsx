@@ -25,6 +25,7 @@ import AdminWebhooksPage from '../pages/Admin/Webhooks'
 import AdminSubscriptionsPage from '../pages/Admin/Subscriptions'
 import AdminPaymentsPage from '../pages/Admin/Payments'
 import AdminConfigPage from '../pages/Admin/Config'
+import LogsPage from '../pages/Logs'
 
 export const router = createBrowserRouter([
   {
@@ -117,6 +118,14 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission="ViewSuppliers">
                 <SuppliersPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'logs',
+            element: (
+              <PermissionGuard permission="ViewLogs">
+                <LogsPage />
               </PermissionGuard>
             ),
           },

@@ -195,6 +195,18 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
               <InfoRow label="Total">
                 <Typography variant="body1" sx={{ fontWeight: 700 }}>{formatBRL(sale.total)}</Typography>
               </InfoRow>
+              {sale.feeAmount > 0 && (
+                <>
+                  <InfoRow label={`Taxa operadora (${sale.feeRate}%)`}>
+                    <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                      -{formatBRL(sale.feeAmount)}
+                    </Typography>
+                  </InfoRow>
+                  <InfoRow label="Valor líquido recebido">
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatBRL(sale.netAmount)}</Typography>
+                  </InfoRow>
+                </>
+              )}
             </Box>
           </>
         )}

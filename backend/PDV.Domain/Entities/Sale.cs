@@ -17,6 +17,9 @@ public class Sale : BaseEntity
     public decimal Discount { get; set; } = 0;
     public decimal Total { get; set; }
     public decimal AmountPaid { get; set; }
+    public decimal FeeRate { get; set; }
+    public decimal FeeAmount { get; set; }
+    public decimal NetAmount { get; set; }
     public SaleStatus Status { get; set; } = SaleStatus.Active;
     public Guid? CancelledById { get; set; }
     public User? CancelledBy { get; set; }

@@ -50,4 +50,7 @@ export interface SaleDetail extends SaleListItem {
   items: SaleItemDetail[]
   amountPaid: number
   change: number
+  feeRate: number
+  feeAmount: number
+  netAmount: number
 }

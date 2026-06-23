@@ -4,6 +4,7 @@ using PDV.Api.Attributes;
 using PDV.Application.DTOs.Services;
 using PDV.Application.Interfaces;
 using PDV.Domain.Enums;
+using System.Security.Claims;
 
 namespace PDV.Api.Controllers;
 
@@ -45,7 +46,8 @@ public class ServicesController(IServiceService service) : ControllerBase
     [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceRequest request)
     {
-        var result = await service.UpdateAsync(id, request);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await service.UpdateAsync(id, request, userId);
         return Ok(result);
     }
 

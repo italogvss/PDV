@@ -19,4 +19,7 @@ public record SaleDetailResponse(
     DateTime CreatedAt,
     List<SaleItemResponse> Items,
     decimal AmountPaid,
-    decimal Change);
+    decimal Change,
+    decimal FeeRate,
+    decimal FeeAmount,
+    decimal NetAmount);

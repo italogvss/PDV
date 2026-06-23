@@ -12,6 +12,7 @@ export type OperationModule =
   | 'reports'
   | 'customers'
   | 'suppliers'
+  | 'logs'
 
 interface ModuleDefinition {
   label: string
@@ -59,6 +60,11 @@ export const OPERATION_MODULES: Record<OperationModule, ModuleDefinition> = {
     label: 'Fornecedores',
     description: 'Cadastro de fornecedores.',
     permissions: ['ManageSuppliers', 'ViewSuppliers'],
+  },
+  logs: {
+    label: 'Logs',
+    description: 'Histórico de movimentações, status e preços.',
+    permissions: ['ViewLogs'],
   },
 }
 

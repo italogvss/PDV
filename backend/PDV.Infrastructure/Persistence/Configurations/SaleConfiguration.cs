@@ -18,6 +18,9 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.Total).HasColumnType("decimal(10,2)");
         builder.Property(s => s.AmountPaid).HasColumnType("decimal(10,2)");
         builder.Property(s => s.InstallmentValue).HasColumnType("decimal(10,2)");
+        builder.Property(s => s.FeeRate).HasColumnType("decimal(5,2)");
+        builder.Property(s => s.FeeAmount).HasColumnType("decimal(10,2)");
+        builder.Property(s => s.NetAmount).HasColumnType("decimal(10,2)");
         builder.Property(s => s.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
 
         builder.HasOne(s => s.Operator)

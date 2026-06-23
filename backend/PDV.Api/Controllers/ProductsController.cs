@@ -4,6 +4,7 @@ using PDV.Api.Attributes;
 using PDV.Application.DTOs.Products;
 using PDV.Application.Interfaces;
 using PDV.Domain.Enums;
+using System.Security.Claims;
 
 namespace PDV.Api.Controllers;
 
@@ -48,7 +49,8 @@ public class ProductsController(IProductService service) : ControllerBase
     [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request)
     {
-        var result = await service.UpdateAsync(id, request);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await service.UpdateAsync(id, request, userId);
         return Ok(result);
     }
 
@@ -96,7 +98,8 @@ public class ProductsController(IProductService service) : ControllerBase
     [RequirePermission(Permission.ManageStock)]
     public async Task<IActionResult> AdjustStock(Guid id, [FromBody] AdjustStockRequest request)
     {
-        var result = await service.AdjustStockAsync(id, request);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await service.AdjustStockAsync(id, request, userId);
         return Ok(result);
     }
 }

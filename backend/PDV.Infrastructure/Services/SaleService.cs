@@ -6,6 +6,7 @@ using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
+using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
@@ -156,8 +157,44 @@ public class SaleService(
         if (request.IsInstallment && request.InstallmentCount.HasValue)
             installmentValue = total / request.InstallmentCount.Value;
 
+        var settings = await context.TenantSettings.FirstOrDefaultAsync();
+        var feeRate = 0m;
+        if (settings is { PaymentFeesEnabled: true })
+        {
+            feeRate = request.PaymentMethod switch
+            {
+                "CreditCard" => settings.PaymentCardCreditFee,
+                "DebitCard"  => settings.PaymentCardDebitFee,
+                "PIX"        => settings.PaymentPixFee,
+                "Cash"       => settings.PaymentCashFee,
+                _            => 0m
+            };
+        }
+        var feeAmount = Math.Round(total * (feeRate / 100m), 2);
+        var netAmount = total - feeAmount;
+
         var operatorUser = await context.Users.FindAsync(operatorId)
             ?? throw new NotFoundException("Operador não encontrado.");
+
+        if (productItems.Count > 0)
+        {
+            var saleMovements = productItems.Select(item =>
+            {
+                var product = products[item.ProductId!.Value];
+                return new StockMovement
+                {
+                    TenantId = tenantId,
+                    ProductId = item.ProductId,
+                    ProductName = product.Name,
+                    Type = StockMovementType.Sale,
+                    Quantity = item.Quantity,
+                    UnitCost = product.PurchasePrice,
+                    CreatedByUserId = operatorId,
+                    CreatedByName = operatorUser.Name,
+                };
+            });
+            await context.StockMovements.AddRangeAsync(saleMovements);
+        }
 
         var sale = new Sale
         {
@@ -174,6 +211,9 @@ public class SaleService(
             Discount = discount,
             Total = total,
             AmountPaid = request.AmountPaid,
+            FeeRate = feeRate,
+            FeeAmount = feeAmount,
+            NetAmount = netAmount,
             Status = SaleStatus.Active,
             CreatedAt = DateTime.UtcNow,
             Items = saleItems
@@ -204,6 +244,7 @@ public class SaleService(
         sale.CancelledByName = adminUser?.Name;
         sale.CancelledAt = DateTime.UtcNow;
 
+        var cancelMovements = new List<StockMovement>();
         foreach (var item in sale.Items.Where(i => i.ProductId.HasValue))
         {
             var product = await context.Products
@@ -213,8 +254,21 @@ public class SaleService(
             {
                 product.Stock += item.Quantity;
                 product.TotalSold -= item.Quantity;
+                cancelMovements.Add(new StockMovement
+                {
+                    TenantId = sale.TenantId,
+                    ProductId = item.ProductId,
+                    ProductName = item.ProductName,
+                    Type = StockMovementType.SaleCancel,
+                    Quantity = item.Quantity,
+                    CreatedByUserId = adminId,
+                    CreatedByName = adminUser?.Name ?? string.Empty,
+                });
             }
         }
+
+        if (cancelMovements.Count > 0)
+            await context.StockMovements.AddRangeAsync(cancelMovements);
 
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
@@ -244,5 +298,8 @@ public class SaleService(
                 i.Id, i.SaleId, i.ProductId, i.ServiceId,
                 i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),
             s.AmountPaid,
-            s.AmountPaid - s.Total);
+            s.AmountPaid - s.Total,
+            s.FeeRate,
+            s.FeeAmount,
+            s.NetAmount);
 }

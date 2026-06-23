@@ -12,9 +12,9 @@ public interface IProductService
         string? sortBy = null, string? sortOrder = null);
     Task<ProductResponse> GetByIdAsync(Guid id);
     Task<ProductResponse> CreateAsync(CreateProductRequest request);
-    Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request);
+    Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request, Guid changedByUserId);
     Task DeleteAsync(Guid id);
-    Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request);
+    Task<ProductResponse> AdjustStockAsync(Guid id, AdjustStockRequest request, Guid changedByUserId);
     Task<IEnumerable<ProductResponse>> GetAllInactiveAsync();
     Task RestoreAsync(Guid id);
     Task HardDeleteAsync(Guid id);

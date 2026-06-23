@@ -43,6 +43,7 @@ public record ModulesSettingsDto(IReadOnlyList<string> Modules);
 public record PaymentMethodDto(bool Enabled, decimal Fee);
 
 public record PaymentsSettingsDto(
+    bool FeesEnabled,
     PaymentMethodDto Pix,
     PaymentMethodDto CardCredit,
     PaymentMethodDto CardDebit,
