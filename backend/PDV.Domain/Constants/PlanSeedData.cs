@@ -17,6 +17,7 @@ public static class PlanSeedData
         OperationModule.Inventory,
         OperationModule.Customers,
         OperationModule.Expenses,
+        OperationModule.Logs,
     ];
 
     private static readonly IReadOnlyList<OperationModule> ProModules =
@@ -29,6 +30,7 @@ public static class PlanSeedData
         OperationModule.Reports,
         OperationModule.Customers,
         OperationModule.Suppliers,
+        OperationModule.Logs,
     ];
 
     private static readonly IReadOnlyDictionary<string, int> StarterLimits = new Dictionary<string, int>

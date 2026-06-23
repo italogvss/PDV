@@ -17,6 +17,7 @@ public static class SegmentModuleDefaults
         OperationModule.Reports,
         OperationModule.Customers,
         OperationModule.Suppliers,
+        OperationModule.Logs,
     ];
 
     private static readonly Dictionary<Segment, OperationModule[]> Map = new()
@@ -36,6 +37,7 @@ public static class SegmentModuleDefaults
             OperationModule.Expenses,
             OperationModule.Reports,
             OperationModule.Customers,
+            OperationModule.Logs,
         ],
         [Segment.Outro]       = All,
     };

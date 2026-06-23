@@ -7,14 +7,21 @@ import type {
 } from '../types/appointment.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['appointments'] as const
 
 export function useAppointments(startDate: string, endDate: string) {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, startDate, endDate],
     queryFn: () => appointmentService.getByDateRange(startDate, endDate),
-    enabled: !!startDate && !!endDate,
+    enabled:
+      hasActiveSubscription &&
+      !!startDate &&
+      !!endDate &&
+      isModuleEnabled('appointments') &&
+      (hasPermission('ViewAppointments') || hasPermission('ManageAppointments')),
   })
 }
 

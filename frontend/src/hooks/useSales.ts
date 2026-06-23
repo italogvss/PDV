@@ -3,22 +3,33 @@ import { saleService } from '../services/sale.service'
 import type { CreateSalePayload } from '../types/sale.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
 
 export function useSales() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: SALES_KEY,
     queryFn: () => saleService.getAll(),
+    enabled:
+      hasActiveSubscription &&
+      isModuleEnabled('sales') &&
+      (hasPermission('SellProducts') || hasPermission('ViewSalesHistory')),
   })
 }
 
 export function useSaleDetail(id: string | null) {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: [...SALES_KEY, id],
     queryFn: () => saleService.getById(id!),
-    enabled: id !== null,
+    enabled:
+      hasActiveSubscription &&
+      id !== null &&
+      isModuleEnabled('sales') &&
+      (hasPermission('SellProducts') || hasPermission('ViewSalesHistory')),
   })
 }
 

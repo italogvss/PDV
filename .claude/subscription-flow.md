@@ -3,6 +3,8 @@
 > Escopo: **somente o fluxo de cartão** (assinatura recorrente via AbacatePay). PIX (pagamento único) está fora deste documento.
 >
 > Gateway: **AbacatePay**. Cartão = `Subscription` recorrente no gateway (`subs_...`), renovação automática.
+>
+> _Atualizado em 2026-06-23 após revisão do código atual._
 
 ---
 
@@ -14,8 +16,8 @@
 |---|---|---|
 | Controller | `PDV.Api/Controllers/SubscriptionsController.cs` | Endpoints REST de gestão (Owner/Admin) |
 | Controller | `PDV.Api/Controllers/WebhooksController.cs` | Recebe webhooks do AbacatePay (`/api/webhooks/abacatepay`) |
-| Service | `PDV.Infrastructure/Services/SubscriptionService.cs` | Orquestra checkout/cancel/change-plan/agendamento |
-| Service | `PDV.Infrastructure/Services/BillingWebhookService.cs` | Aplica o evento de webhook ao estado da assinatura/pagamento |
+| Service | `PDV.Infrastructure/Services/SubscriptionService.cs` | Orquestra checkout/cancel/change-plan |
+| Service | `PDV.Infrastructure/Services/BillingWebhookService.cs` | Aplica evento de webhook ao estado da assinatura/pagamento |
 | Service | `PDV.Infrastructure/Services/EntitlementService.cs` | Resolve o plano efetivo do tenant e faz enforcement 402 |
 | Gateway | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayGateway.cs` | Traduz domínio ↔ AbacatePay |
 | Webhook | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayWebhookProcessor.cs` | Valida (secret + HMAC) e normaliza o payload para `PaymentWebhookEvent` |
@@ -28,11 +30,12 @@
 | `index.tsx` | Tela principal: banner do plano, recursos, grid de planos, ações |
 | `PlanCheckoutDialog/index.tsx` | Modal de checkout (método/cupom). Cartão → redireciona |
 | `helpers.ts` | `STATUS_CONFIG`, `getStatusLine`, `formatPrice/Date` |
-| `hooks/useSubscription.ts` | React Query: `useSubscription`, `usePlans`, `useStartCheckout`, `useChangePlan`, `useCancelSubscription`, `useScheduleRenewal`, `useCancelScheduledRenewal` |
+| `hooks/useSubscription.ts` | React Query: `useSubscription`, `usePlans`, `useStartCheckout`, `useChangePlan`, `useCancelSubscription` |
 | `services/subscription.service.ts` | HTTP + mapeamento backend↔frontend |
 | `pages/SubscriptionReturn/index.tsx` | Página de retorno pós-checkout (`/assinatura/retorno`), faz polling até ativar |
 
 > Obs.: `PixQrDialog` existe mas é exclusivo do PIX (fora de escopo).
+> `useScheduleRenewal` e `useCancelScheduledRenewal` foram removidos — funcionalidade de agendamento de renovação foi cortada.
 
 ---
 
@@ -54,8 +57,8 @@ Uma assinatura **viva por `User` (Owner)**. NÃO é tenant-scoped (sem query fil
 | `TrialEndsAt` | Fim do trial (se plano com trial) |
 | `CurrentPeriodEnd` | Fim do período pago/trial atual — base do entitlement |
 | `CanceledAt` | Quando foi cancelada |
-| `PendingPlanId` / `PendingChangeExternalId` (`subu_...`) | Troca de plano agendada para o próximo ciclo |
-| `IsRenewalScheduled` | Intenção de renovar ao fim do período (apenas flag, sem ação no gateway) |
+
+> Campos `PendingPlanId`, `PendingChangeExternalId` e `IsRenewalScheduled` existem na entidade mas não são mais usados pelo fluxo de cartão — a troca de plano é imediata.
 
 ### `Payment` (`PDV.Domain/Entities/Payment.cs`)
 Histórico de cobranças, scoped por `UserId`.
@@ -68,7 +71,7 @@ Histórico de cobranças, scoped por `UserId`.
 | `Status` | `Pending → Paid` (ou `Refunded`/`Disputed`) |
 | `AmountCents`, `PaidAt`, `ReceiptUrl` | Dados da cobrança |
 | `CardLastFour`, `CardBrand` | Capturados do webhook (`data.payerInformation.CARD`) |
-| `PeriodStart` / `PeriodEnd` | Preenchidos só no PIX hoje (ver problemas) |
+| `PeriodStart` / `PeriodEnd` | Preenchidos via `SetPeriod` em `CompleteChargeAsync` (cartão e PIX) |
 
 ### Enums
 - `SubscriptionStatus`: `Pending, Trialing, Active, PastDue, Canceled, Expired`
@@ -102,16 +105,16 @@ Enforcement: `RequireModuleAsync` (módulo fora do plano → **402** `MODULE_NOT
 | POST | `/api/subscriptions/checkout` | Owner,Admin | `StartCheckoutAsync` |
 | POST | `/api/subscriptions/change-plan` | Owner,Admin | `ChangePlanAsync` |
 | POST | `/api/subscriptions/cancel` | Owner,Admin | `CancelAsync` |
-| POST | `/api/subscriptions/schedule-renewal` | Owner,Admin | `ScheduleRenewalAsync` |
-| DELETE | `/api/subscriptions/schedule-renewal` | Owner,Admin | `CancelScheduledRenewalAsync` |
 | POST | `/api/webhooks/abacatepay` | Anônimo (validado por secret+HMAC) | `BillingWebhookService.ProcessAsync` |
+
+> Endpoints `schedule-renewal` e `DELETE schedule-renewal` foram removidos.
 
 ---
 
 ## 5. Cenário: CRIAR CHECKOUT (nova assinatura no cartão)
 
 ### Frontend
-1. Usuário clica **Assinar** no card do plano → `handlePlanAction` abre `PlanCheckoutDialog`.
+1. Usuário clica **Assinar** (ou **Reativar**, se cancelada) no card do plano → `handlePlanAction` abre `PlanCheckoutDialog`.
 2. No modal escolhe método **Cartão** e cupom (opcional) e confirma.
 3. `useStartCheckout` monta `returnUrl = /configuracoes?tab=assinatura` e `completionUrl = /assinatura/retorno` e chama `POST /subscriptions/checkout`.
 4. Backend devolve `checkoutUrl` → `window.location.href = checkoutUrl` (redireciona para o AbacatePay).
@@ -121,8 +124,8 @@ Enforcement: `RequireModuleAsync` (módulo fora do plano → **402** `MODULE_NOT
 Validações em ordem:
 - Plano existe localmente e no gateway (`CheckIfPlanExistsAsync`).
 - Se plano tem trial e `user.HasUsedTrial` → **`BusinessException`** (já usou trial).
-- Se já existe assinatura **entitled** (`IsCurrentlyEntitled`) → **bloqueia** (sugere "Agendar renovação").
-- Se havia agendamento (`IsRenewalScheduled`), limpa.
+- Se já existe assinatura com `Status Active` ou `Trialing` **e** entitled → **bloqueia** ("Sua assinatura está ativa até {data}").
+- Assinatura `Canceled` (mesmo dentro do período pago) **não é bloqueada** — pode reativar imediatamente.
 - Plano precisa de `SupportsCard`.
 
 Cria/reaproveita a `Subscription` (uma por usuário):
@@ -131,13 +134,13 @@ Cria/reaproveita a `Subscription` (uma por usuário):
 - `metadata = { userId, planId, subscriptionId }`.
 - `gateway.CreateSubscriptionCheckoutAsync` → cria assinatura no AbacatePay (`bill_...` + URL). `ExternalId = sub.Id`.
 - **Persiste** a `Subscription` (`AddAsync` se nova, `UpdateAsync` se reaproveitada).
-- Cria `Payment` `Pending` (`Kind=CardSubscription`, `GatewayChargeId = bill_...`, `AmountCents = plan.PriceMonthlyCents`, `CouponCode`).
+- Cria `Payment` `Pending` (`Kind=CardSubscription`, `GatewayChargeId = bill_...`, `AmountCents = plan.PriceCents`, `CouponCode`).
 
 **Dados gravados:** `Subscription` (Pending), `Payment` (Pending), possivelmente `GatewayCustomer` (novo) e `User` (Document/Phone).
 
 **Resposta:** `{ checkoutUrl, pix: null }`.
 
-### Ativação vem por webhook (ver §10), não pela resposta do checkout.
+### Ativação vem por webhook (ver §6), não pela resposta do checkout.
 
 ---
 
@@ -147,20 +150,20 @@ Dois sub-casos, dependendo de o plano ter trial:
 
 ### 6a. Plano SEM trial (cobrança imediata)
 Chega `checkout.completed` com `status = PAID`:
-- `ApplyCheckoutCompletedAsync` → `status == Paid` → `CompleteChargeAsync` marca o `Payment` (`bill_...`) como **`Paid`** (PaidAt, ReceiptUrl, cartão).
+- `ApplyCheckoutCompletedAsync` → `status == Paid` → `CompleteChargeAsync` marca o `Payment` (`bill_...`) como **`Paid`** (PaidAt, ReceiptUrl, cartão) e preenche `PeriodStart`/`PeriodEnd`.
 - Chega `subscription.completed` → `ApplySubscriptionActive`:
   - Captura `GatewaySubscriptionId` (`subs_...`).
-  - `Status = Active`, `CurrentPeriodEnd = now + 1 mês`.
+  - `Status = Active`, `CurrentPeriodEnd = NextPeriodEnd(now, plan)` — **mensal → +1 mês; anual → +1 ano**.
 
 ### 6b. Plano COM trial
 Chega `checkout.completed` com `status = PENDING` e `amount = 0`:
 - `ApplyCheckoutCompletedAsync` → status != Paid → `ApplyCard` apenas captura `CardLastFour`/`CardBrand` no `Payment` pendente (nenhuma baixa, nenhum dinheiro movido).
 - Chega `subscription.trial_started` → `ApplyTrialStarted`:
   - Captura `GatewaySubscriptionId`.
-  - `Status = Trialing`, `TrialEndsAt = now + Plan.TrialDays`, `CurrentPeriodEnd = TrialEndsAt`.
+  - `Status = Trialing`, `TrialEndsAt = evt.TrialEndsAt ?? now + Plan.TrialDays`, `CurrentPeriodEnd = TrialEndsAt`.
   - `MarkTrialUsedAsync(UserId)` → `User.HasUsedTrial = true`.
 
-Ao fim do trial, o gateway cobra e envia `checkout.completed (PAID)` → ver renovação (§8).
+Ao fim do trial, o gateway cobra e envia `checkout.completed (PAID)` + `subscription.renewed` → ver renovação (§8).
 
 **Frontend:** `SubscriptionReturnPage`/`useSubscription` faz polling de `/me` e detecta `Active`/`Trialing`.
 
@@ -170,22 +173,24 @@ Ao fim do trial, o gateway cobra e envia `checkout.completed (PAID)` → ver ren
 
 ### Frontend
 - Só quando a assinatura está **viva no cartão** (`isLive && method === 'Card'`). No grid, o botão do outro plano vira **"Trocar plano"**.
-- `handlePlanAction` → `useChangePlan.mutate(planId)` → `POST /change-plan`.
-- Toast: **"Mudança de plano agendada para o próximo ciclo."** + invalida `/me`.
-- O banner passa a exibir "Mudança para {plano} no próximo ciclo" (via `pendingPlanId`/`pendingPlanName`).
+- `handlePlanAction` → `useChangePlan.mutate(planId)` → `POST /change-plan` (sem modal de confirmação).
+- Toast: **"Plano alterado."** + invalida `/me`.
 
-### Backend — `ChangePlanAsync`
-- Exige assinatura viva, `Method == Card` e `GatewaySubscriptionId` presente, senão `BusinessException`.
-- `gateway.ChangeSubscriptionPlanAsync(subs_, novoProduto, qty=1)` → retorna `subu_...` (`PendingChangeId`, status PENDING).
-- Grava `sub.PendingPlanId = novoPlano.Id` e `sub.PendingChangeExternalId = subu_...`. **Não troca o plano ainda.**
+### Backend — `ChangePlanAsync` (troca imediata)
+- Exige assinatura `Active` ou `Trialing`, `Method == Card` e `GatewaySubscriptionId` presente, senão `BusinessException`.
+- **Fora de trial:** não pode trocar para plano com `TrialDays` (`BusinessException`).
+- `gateway.ChangeSubscriptionPlanAsync(subs_, novoProduto, qty=1)` — altera o produto no gateway.
+- `sub.PlanId = novoPlano.Id` — troca o plano **imediatamente** (sem `PendingPlanId`).
+- **Em trial:** se novo plano tem `TrialDays`, recalcula `TrialEndsAt = now + TrialDays` e `CurrentPeriodEnd = TrialEndsAt`.
+- Persiste com `UpdateAsync`.
 
-### Aplicação — webhook `subscription.plan_changed` → `ApplyPlanChangedAsync`
-- Determina novo plano: `PendingPlanId` (nosso) ou, em fallback, `productId` do evento → `GetPlanByExternalProductIdAsync`.
-- Aplica `sub.PlanId = novoPlano`, limpa `PendingPlanId`/`PendingChangeExternalId`.
-- Se a sub estava em **trial**: reinicia o trial com os `TrialDays` do novo plano (`TrialEndsAt = now + TrialDays`), **sem cobrar**.
-- Se **fora de trial**: `Status = Active`, `CurrentPeriodEnd = now + 1 mês` e, se `status == Paid`, registra a cobrança (`CompleteChargeAsync`).
+### Webhook `subscription.plan_changed` → `ApplyPlanChangedAsync` (confirmação idempotente)
+- Captura `GatewaySubscriptionId` se ainda ausente.
+- Reconcilia `PlanId` via `evt.ProductId` → `GetPlanByExternalProductIdAsync` (fallback caso o plano local tenha divergido).
+- **NÃO altera datas** — preserva o `CurrentPeriodEnd` do ciclo corrente.
+- Se `evt.Status == Paid`: registra a cobrança (`CompleteChargeAsync`).
 
-> ⚠️ Há divergência entre a mensagem "próximo ciclo" (frontend/`ChangePlanAsync`) e a aplicação **imediata** quando fora de trial (`ApplyPlanChangedAsync` ativa e estende na hora). Ver `subscription-problems.md`.
+> Não há mais divergência de "próximo ciclo vs imediato": a troca é aplicada em `ChangePlanAsync` e o webhook apenas confirma/reconcilia.
 
 ---
 
@@ -195,13 +200,12 @@ Renovação é **automática** no cartão — não há endpoint. No fim de cada 
 
 - Chega `checkout.completed (PAID)` (checkout gerado internamente pelo gateway, **sem `externalId` e sem metadata**):
   - `ResolveSubscriptionAsync` cai no fallback por **`CustomerId` (`cust_...`)** → `GatewayCustomer` → `UserId` → sub.
-  - `ResolvePaymentAsync` não encontra `Payment` pré-existente (o `bill_` da renovação é novo) → `CompleteChargeAsync` **cria um novo `Payment` já `Paid`** (idempotente pelo `GatewayChargeId`).
+  - `ResolvePaymentAsync` não encontra `Payment` pré-existente (o `bill_` da renovação é novo) → `CompleteChargeAsync` **cria um novo `Payment` já `Paid`** (idempotente pelo `GatewayChargeId`), com `PeriodStart`/`PeriodEnd` preenchidos.
 - Chega `subscription.renewed` → `ApplyRenewed`:
   - Captura `GatewaySubscriptionId`.
-  - **Aplica troca de plano agendada** (se `PendingPlanId` setado): `PlanId = PendingPlanId`, limpa pendências.
-  - `Status = Active`, `CurrentPeriodEnd = now + 1 mês`.
+  - `Status = Active`, `CurrentPeriodEnd = NextPeriodEnd(now, plan)` — mensal/anual correto.
 
-**Dados gravados:** novo `Payment` (Paid) + `Subscription` (período estendido, plano eventualmente trocado).
+**Dados gravados:** novo `Payment` (Paid, com período) + `Subscription` (período estendido).
 
 ---
 
@@ -212,18 +216,20 @@ Renovação é **automática** no cartão — não há endpoint. No fim de cada 
 - `window.confirm` → `useCancelSubscription.mutate()` → `POST /cancel`. Toast "Assinatura cancelada." + invalida `/me`.
 
 ### Backend — `CancelAsync`
-- Se `Method == Card` e `GatewaySubscriptionId` presente → `gateway.CancelSubscriptionAsync(subs_)`.
-- `sub.Status = Canceled`, `sub.CanceledAt = now`. **`CurrentPeriodEnd` é mantido** → o usuário continua com acesso até o fim do período (entitlement `Canceled` + período no futuro = entitled).
+- Se `Method == Card` e `GatewaySubscriptionId` presente → `gateway.CancelSubscriptionAsync(subs_)` **primeiro** (impede cobrança ao fim do trial/período).
+- **Em trial (`Status == Trialing`):** volta imediatamente ao Free com **remoção FÍSICA** (hard delete) da `Subscription` e dos `Payment` da sub — `paymentRepository.DeleteBySubscriptionIdAsync(sub.Id)` (FK: pagamentos antes) + `subscriptionRepository.DeleteAsync(sub)`. Exceção justificada à regra de soft delete (em trial não há cobrança paga). `User.HasUsedTrial` permanece `true` → novo checkout só aceita plano sem trial.
+- **Pós-trial (`Active`):** `sub.Status = Canceled`, `sub.CanceledAt = now`. **`CurrentPeriodEnd` é mantido** → o usuário continua com acesso até o fim do período (entitlement `Canceled` + período no futuro = entitled).
 
 ### Webhook `subscription.cancelled` → `ApplyCancelled`
 - `Status = Canceled`, `CanceledAt ??= now` (idempotente em relação ao cancel manual).
+- **Cancelamento em trial:** como a sub já foi removida fisicamente, `ResolveSubscriptionAsync` não a encontra → `ApplyCancelled` é no-op. O `WebhookEvent` ainda é gravado (200), preservando idempotência.
 
 **Comportamento do gateway (doc):** se em trial, mantém até `trialEndsAt` sem cobrar; se ativo, mantém até a data de renovação. Não há nova cobrança.
 
 ### Estado pós-cancelamento (dentro do período)
-O frontend detecta `isInActivePeriod` (`status === 'Canceled'` && `currentPeriodEnd > now`):
-- Bloqueia novo checkout dos planos ("Disponível em {data}").
-- Oferece **"Agendar renovação"** (§11).
+O frontend detecta `isCanceled` (`status === 'Canceled'`):
+- Grid de planos exibe botão **"Reativar"** (novo checkout imediato).
+- Não há mais fluxo de "Agendar renovação" — foi removido.
 
 ---
 
@@ -231,28 +237,14 @@ O frontend detecta `isInActivePeriod` (`status === 'Canceled'` && `currentPeriod
 
 Não existe endpoint dedicado de "reativar". A reativação acontece por **novo checkout** reaproveitando a `Subscription` existente:
 
-- **Dentro do período ativo (Canceled, período no futuro):** novo checkout é **bloqueado** em `StartCheckoutAsync` (`IsCurrentlyEntitled` ainda true). O caminho oferecido é "Agendar renovação".
-- **Após o período (Canceled vencido / Expired):** `IsCurrentlyEntitled` é false → `StartCheckoutAsync` permite. Reaproveita a sub (`existingSub`): reseta `Status = Pending`, `CanceledAt = null`, novo `bill_`/`Payment`. Volta ao fluxo de ativação (§6).
+- **Dentro do período ativo (Canceled, período no futuro):** `StartCheckoutAsync` **permite** — bloqueia apenas `Active`/`Trialing`. O usuário pode contratar novamente mesmo antes do término, gerando nova cobrança imediata. A sub é reaproveitada (reseta `Status = Pending`, `CanceledAt = null`, novo `bill_`/`Payment`).
+- **Após o período (Canceled vencido / Expired):** igualmente permitido. Mesmo fluxo.
+
+> Mudança em relação à versão anterior: a reativação **não é mais bloqueada** dentro do período ativo. O usuário pode "pagar duas vezes" se reativar antes do vencimento — considerar alerta de UX.
 
 ---
 
-## 11. Cenário: AGENDAR / CANCELAR AGENDAMENTO DE RENOVAÇÃO
-
-Apenas uma **marcação de intenção** — nenhuma ação no gateway.
-
-### Agendar — `ScheduleRenewalAsync`
-- Exige `Status == Canceled` **e** ainda entitled (dentro do período). Senão `BusinessException`.
-- `sub.IsRenewalScheduled = true`.
-- Frontend: `Alert` no topo "Renovação agendada para {data}. Você poderá escolher o plano ao confirmar." + botão "Cancelar agendamento".
-
-### Cancelar agendamento — `CancelScheduledRenewalAsync`
-- `sub.IsRenewalScheduled = false`.
-
-> A flag é **informativa**: nenhum job re-contrata automaticamente. Ao iniciar um novo checkout, `StartCheckoutAsync` limpa a flag. Ver problemas.
-
----
-
-## 12. Pipeline de webhook (entrada)
+## 11. Pipeline de webhook (entrada)
 
 `WebhooksController.AbacatePay`:
 1. Valida `webhookSecret` da query (`VerifySecret`, comparação tempo-constante). Falha → **401**.
@@ -260,8 +252,8 @@ Apenas uma **marcação de intenção** — nenhuma ação no gateway.
 3. Valida HMAC-SHA256 do corpo com a chave pública fixa do AbacatePay (header `X-Webhook-Signature`). Falha → **403**.
 4. `processor.Parse(rawBody)` → `PaymentWebhookEvent` normalizado.
 5. **Idempotência:** se `ProcessedEventExistsAsync(provider, eventId)` → retorna **200** sem reprocessar.
-6. `billingService.ProcessAsync(evt)` aplica e salva; depois `RecordEventAsync` grava `WebhookEvent` (Processed).
-7. Erro no processamento → **500** (NÃO grava Processed → permite retry do gateway).
+6. `billingService.ProcessAsync(evt)` aplica o estado **e** grava o `WebhookEvent` (Processed) **no mesmo `SaveChangesAsync`** — atômico.
+7. Erro no processamento → **500** (nada foi persistido → permite retry do gateway).
 
 ### Normalização (`AbacatePayWebhookProcessor.MapToEvent`) — pontos do cartão
 - **EventId:** `subscription.*` traz `log_...`; `checkout.*` não tem → usa **hash SHA256 do corpo**.
@@ -284,40 +276,46 @@ Estritamente por `GatewayChargeId` (`bill_...`). Sem fallback por "pendente mais
 
 ---
 
-## 13. Eventos × ações (resumo cartão)
+## 12. Eventos × ações (resumo cartão)
 
 | Evento | Handler | Subscription | Payment |
 |---|---|---|---|
-| `checkout.completed` (PAID) | `ApplyCheckoutCompletedAsync` | — | marca/cria `Paid` |
+| `checkout.completed` (PAID) | `ApplyCheckoutCompletedAsync` | — | marca/cria `Paid` + PeriodStart/End |
 | `checkout.completed` (PENDING, trial) | `ApplyCheckoutCompletedAsync` | — | captura cartão no pendente |
-| `subscription.completed` | `ApplySubscriptionActive` | `Active`, +1 mês, `subs_` | — |
+| `subscription.completed` | `ApplySubscriptionActive` | `Active`, `NextPeriodEnd`, `subs_` | — |
 | `subscription.trial_started` | `ApplyTrialStarted` | `Trialing`, `TrialEndsAt`, `subs_`, marca HasUsedTrial | — |
-| `subscription.renewed` | `ApplyRenewed` | `Active`, +1 mês, aplica troca pendente | (cobrança vem no checkout.completed) |
-| `subscription.plan_changed` | `ApplyPlanChangedAsync` | troca plano (imediato fora de trial / reinicia trial) | cria `Paid` se houve cobrança |
+| `subscription.renewed` | `ApplyRenewed` | `Active`, `NextPeriodEnd` | (cobrança vem no checkout.completed) |
+| `subscription.plan_changed` | `ApplyPlanChangedAsync` | reconcilia PlanId, **sem alterar datas** | cria `Paid` se houve cobrança |
 | `subscription.cancelled` | `ApplyCancelled` | `Canceled`, `CanceledAt` | — |
 | `checkout.refunded` / `checkout.disputed` | `ApplyReversed` | `Expired`, `CurrentPeriodEnd = now` | `Refunded`/`Disputed` |
 
+> `NextPeriodEnd(from, plan)` = `from.AddYears(1)` se `BillingPeriod.Annual`, senão `from.AddMonths(1)`.
+
 ---
 
-## 14. Estados (Subscription.Status) — ciclo de vida no cartão
+## 13. Estados (Subscription.Status) — ciclo de vida no cartão
 
 ```
                  checkout                   webhook
    (sem sub) ───────────────▶  Pending ──────────────▶  Trialing ──(fim trial, cobrança)──▶ Active
                                   │                          │                                  │
-                                  │                          └──────────── cancel ─────────────┤
+                                  │             cancel (hard delete) ──▶ (sem sub / Free)       │
+                                  │                                                             │
+                                  │                                                  cancel ────┤
                                   │                                                             ▼
-                                  │                                                          Canceled ──(período vence)──▶ (Free; status permanece Canceled*)
+                                  │                                                          Canceled ──(período vence)──▶ Expired (Free)
                                   └──(plano sem trial)──────────────────────▶ Active ◀── renewed
                                                                                  │
                                                                        refund/dispute ──▶ Expired
 ```
-\* não há transição automática para `Expired` por vencimento — ver problemas.
+\* Cancelar **em trial** remove a assinatura fisicamente (volta ao Free, `HasUsedTrial` permanece true). Cancelar **pós-trial** (`Active`) mantém `Canceled` com acesso até o período; depois o job `ExpireCanceledPastPeriodAsync` marca `Expired`.
 
 ---
 
-## 15. Resposta de `/me` (`GetMineAsync` → `SubscriptionResponse`)
+## 14. Resposta de `/me` (`GetMineAsync` → `SubscriptionResponse`)
 
-Campos consumidos pelo frontend: `planId/planName`, `status`, `method`, `isRenewable`, `trialEndsAt`, `currentPeriodEnd`, `canceledAt`, `modules`, `limits`, `pendingPlanId/pendingPlanName`, `hasUsedTrial`, `isRenewalScheduled`.
+Campos consumidos pelo frontend: `planId/planName`, `status`, `method`, `isRenewable`, `trialEndsAt`, `currentPeriodEnd`, `canceledAt`, `modules`, `limits`, `hasUsedTrial`.
+
+> Campos `pendingPlanId`, `pendingPlanName` e `isRenewalScheduled` foram removidos do contrato.
 
 O `useSyncSubscriptionToStore` espelha um resumo no `auth` slice (Redux) para banner global.

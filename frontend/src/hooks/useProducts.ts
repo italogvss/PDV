@@ -3,13 +3,18 @@ import { productService } from '../services/product.service'
 import type { CreateProductPayload, UpdateProductPayload } from '../types/product.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['products'] as const
 
 export function useProducts() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => productService.getAll(),
+    enabled:
+      hasActiveSubscription && isModuleEnabled('inventory') &&
+      (hasPermission('ViewStock') || hasPermission('ManageStock')),
   })
 }
 
@@ -74,9 +79,11 @@ export function useAdjustStock() {
 const INACTIVE_PRODUCTS_KEY = ['products', 'inactive'] as const
 
 export function useInactiveProducts() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_PRODUCTS_KEY,
     queryFn: () => productService.getInactiveProducts(),
+    enabled: hasActiveSubscription && isModuleEnabled('inventory') && hasPermission('ManageStock'),
   })
 }
 

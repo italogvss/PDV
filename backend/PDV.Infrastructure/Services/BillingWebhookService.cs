@@ -47,7 +47,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
                 break;
 
             case PaymentWebhookType.SubscriptionCancelled:
-                ApplyCancelled(sub);
+                ApplyCancelled(sub, payment);
                 break;
 
             case PaymentWebhookType.CheckoutRefunded:
@@ -262,12 +262,15 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         payment.PeriodEnd = sub?.CurrentPeriodEnd;
     }
 
-    private static void ApplyCancelled(Subscription? sub)
+    private static void ApplyCancelled(Subscription? sub, Payment? payment)
     {
-        if (sub is null) return;
+        if (sub is null ) return;
         sub.Status = SubscriptionStatus.Canceled;
         sub.CanceledAt ??= DateTime.UtcNow;
         sub.UpdatedAt = DateTime.UtcNow;
+
+        if(payment is null) return;
+        payment.Status = PaymentStatus.Cancelled;
     }
 
     private static void ApplyReversed(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)

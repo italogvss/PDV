@@ -3,14 +3,20 @@ import { productService } from '../services/product.service'
 import type { CreateCategoryPayload, UpdateCategoryPayload } from '../types/product.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const CATEGORIES_KEY = ['product-categories'] as const
 const PRODUCTS_KEY = ['products'] as const
 
 export function useProductCategories() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => productService.getAllCategories(),
+    enabled:
+      hasActiveSubscription &&
+      isModuleEnabled('inventory') &&
+      (hasPermission('ViewStock') || hasPermission('ManageStock')),
   })
 }
 
@@ -62,9 +68,11 @@ export function useDeleteProductCategory() {
 const INACTIVE_CATEGORIES_KEY = ['product-categories', 'inactive'] as const
 
 export function useInactiveProductCategories() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_CATEGORIES_KEY,
     queryFn: () => productService.getInactiveCategories(),
+    enabled: hasActiveSubscription && isModuleEnabled('inventory') && hasPermission('ManageStock'),
   })
 }
 

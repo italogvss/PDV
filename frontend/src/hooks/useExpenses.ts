@@ -3,21 +3,32 @@ import { expenseService } from '../services/expense.service'
 import type { CreateExpensePayload, UpdateExpensePayload } from '../types/expense.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['expenses'] as const
 const RECURRING_QUERY_KEY = ['expenses', 'recurring'] as const
 
 export function useExpenses(month?: number, year?: number) {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, month, year],
     queryFn: () => expenseService.getAll(month, year),
+    enabled:
+      hasActiveSubscription &&
+      isModuleEnabled('expenses') &&
+      (hasPermission('ViewExpenses') || hasPermission('ManageExpenses')),
   })
 }
 
 export function useRecurringExpenses() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: RECURRING_QUERY_KEY,
     queryFn: () => expenseService.getRecurring(),
+    enabled:
+      hasActiveSubscription &&
+      isModuleEnabled('expenses') &&
+      (hasPermission('ViewExpenses') || hasPermission('ManageExpenses')),
   })
 }
 

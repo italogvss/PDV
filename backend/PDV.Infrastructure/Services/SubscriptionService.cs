@@ -149,9 +149,22 @@ public class SubscriptionService(
         var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
             ?? throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
 
+        // Cancela no gateway primeiro (cartão com subs_) — impede a cobrança ao fim do trial/período.
         if (sub.Method == GatewayPaymentMethod.Card && !string.IsNullOrEmpty(sub.GatewaySubscriptionId))
             await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId!);
 
+        // Em trial: volta imediatamente ao Free com remoção FÍSICA da assinatura e dos pagamentos
+        // (exceção justificada à regra de soft delete — em trial não há cobrança paga, e o usuário
+        // não pode reativar em trial). User.HasUsedTrial permanece true, então um novo checkout só
+        // aceitará planos sem trial. Pagamentos antes da assinatura por causa da FK.
+        if (sub.Status == SubscriptionStatus.Trialing)
+        {
+            await paymentRepository.DeleteBySubscriptionIdAsync(sub.Id);
+            await subscriptionRepository.DeleteAsync(sub);
+            return;
+        }
+
+        // Pós-trial (Active): mantém acesso até o fim do período já pago (CurrentPeriodEnd preservado).
         sub.Status = SubscriptionStatus.Canceled;
         sub.CanceledAt = DateTime.UtcNow;
         await subscriptionRepository.UpdateAsync(sub);

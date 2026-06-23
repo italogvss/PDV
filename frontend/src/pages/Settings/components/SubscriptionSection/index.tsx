@@ -79,7 +79,12 @@ export default function SubscriptionSection() {
   }
 
   const handleCancel = () => {
-    if (window.confirm('Tem certeza que deseja cancelar sua assinatura?')) {
+    // Em trial o acesso encerra imediatamente; pós-trial mantém acesso até o fim do período.
+    const message =
+      subscription.status === 'Trialing'
+        ? 'Ao cancelar agora seu período de teste termina imediatamente e você volta ao plano gratuito. Tem certeza?'
+        : 'Tem certeza que deseja cancelar sua assinatura?'
+    if (window.confirm(message)) {
       cancel.mutate()
     }
   }

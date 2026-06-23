@@ -36,7 +36,7 @@ public record OperationSettingsDto(
 
 // Módulos da operação ativos — também é o corpo do PUT /api/tenants/settings/modules.
 // Strings lowercase: "sales", "inventory", "services", "appointments", "expenses",
-// "reports", "customers", "suppliers".
+// "reports", "customers", "suppliers", "logs".
 public record ModulesSettingsDto(IReadOnlyList<string> Modules);
 
 // Seção "Pagamentos" — também é o corpo do PUT /api/tenants/settings/payments.

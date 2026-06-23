@@ -3,14 +3,17 @@ import { serviceService } from '../services/service.service'
 import type { CreateServiceCategoryPayload, UpdateServiceCategoryPayload } from '../types/service.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const CATEGORIES_KEY = ['service-categories'] as const
 const SERVICES_KEY = ['services'] as const
 
 export function useServiceCategories() {
+  const { isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => serviceService.getAllCategories(),
+    enabled: hasActiveSubscription && isModuleEnabled('services'),
   })
 }
 
@@ -62,9 +65,11 @@ export function useDeleteServiceCategory() {
 const INACTIVE_SERVICE_CATEGORIES_KEY = ['service-categories', 'inactive'] as const
 
 export function useInactiveServiceCategories() {
+  const { isModuleEnabled, isOwner, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_SERVICE_CATEGORIES_KEY,
     queryFn: () => serviceService.getInactiveServiceCategories(),
+    enabled: hasActiveSubscription && isModuleEnabled('services') && isOwner,
   })
 }
 

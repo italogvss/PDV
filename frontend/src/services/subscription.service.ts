@@ -41,6 +41,20 @@ interface BackendCheckout {
 }
 
 function mapSubscription(s: BackendSubscription): Subscription {
+  console.log(s);
+  console.log({
+    planId: s.planId ?? null,
+    planName: s.planName ?? null,
+    status: s.status as SubscriptionStatus,
+    method: (s.method as PaymentMethod | null) ?? null,
+    isRenewable: s.isRenewable ?? false,
+    trialEndsAt: s.trialEndsAt ?? null,
+    currentPeriodEnd: s.currentPeriodEnd ?? null,
+    canceledAt: s.canceledAt ?? null,
+    modules: s.modules ?? [],
+    limits: s.limits ?? {},
+    hasUsedTrial: s.hasUsedTrial ?? false,
+  })
   return {
     planId: s.planId ?? null,
     planName: s.planName ?? null,

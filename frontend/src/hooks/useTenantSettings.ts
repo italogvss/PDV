@@ -6,13 +6,16 @@ import { useAppDispatch } from '../store'
 import { setModules } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['tenant-settings'] as const
 
 export function useTenantSettings() {
+  const { isOwner } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => tenantSettingsService.get(),
+    enabled: isOwner,
   })
 }
 

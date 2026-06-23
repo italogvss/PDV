@@ -2,92 +2,97 @@
 
 > Escopo: fluxo de **cartão** (recorrente). Itens marcados por severidade.
 > 🔴 bug/risco real · 🟠 inconsistência/lacuna funcional · 🟡 UX/limpeza · ⚪ observação
+> ✅ corrigido · 🗑️ removido (feature cortada)
+>
+> _Atualizado em 2026-06-23 após revisão do código atual._
 
 ---
 
-## 🔴 Bugs de lógica
+## ✅ Corrigidos / Removidos
 
-### 1. Extensão de período não-idempotente em reprocessamento de webhook
-`WebhooksController` chama `billingService.ProcessAsync` (que faz `SaveChangesAsync`) e **só depois** `RecordEventAsync` (outro `SaveChangesAsync`). Se o processamento salvar com sucesso mas o `RecordEventAsync` falhar, o evento **não é registrado como `Processed`** → o gateway reenvia → reprocessa.
+### ✅ 1. Extensão de período não-idempotente em reprocessamento de webhook
+`ProcessAsync` agora grava o estado da assinatura **e** registra o `WebhookEvent` (Processed) no **mesmo `SaveChangesAsync`** — atômico. Se o `SaveChanges` falhar, nada é persistido e o gateway pode reenviar com segurança. A janela de reprocessamento duplo foi eliminada.
+- `WebhooksController.cs:46-57`, `BillingWebhookService.cs:65-76`.
 
-Ao reprocessar `subscription.completed` / `subscription.renewed` / `subscription.plan_changed`, o handler faz `CurrentPeriodEnd = DateTime.UtcNow.AddMonths(1)` **a partir de agora**, empurrando o fim do período para frente a cada reprocessamento. Não é idempotente.
-- Arquivos: `WebhooksController.cs:46-63`, `BillingWebhookService.cs:116-160,199-238`.
-- Sugestão: registrar o `WebhookEvent` na **mesma transação** do processamento; e/ou calcular `CurrentPeriodEnd` a partir do período anterior, não de `now`.
+### ✅ 2. Período de planos anuais no cartão sempre virava +1 mês
+Introduzido `NextPeriodEnd(from, plan)` que usa `AddYears(1)` para `BillingPeriod.Annual` e `AddMonths(1)` para mensal. Usado em `ApplySubscriptionActive` e `ApplyRenewed`.
+- `BillingWebhookService.cs:139-140`.
 
-### 2. Período de planos ANUAIS no cartão sempre vira +1 mês
-Existem planos de cartão anuais no seed (`prod_*_annual_*`, `SupportsCard: true`). Mas todos os handlers de cartão fazem `CurrentPeriodEnd = now.AddMonths(1)` fixo:
-- `ApplySubscriptionActive` (`BillingWebhookService.cs:123`)
-- `ApplyRenewed` (`:158`)
-- `ApplyPlanChangedAsync` (`:230`)
+### ✅ 3. `change-plan` com plano de trial diferente podia reabrir trial já usado
+`ChangePlanAsync` agora bloqueia explicitamente: se a sub **não** está em trial, não é possível trocar para plano com `TrialDays` (`BusinessException`). Em trial, a troca para outro plano com trial recalcula o prazo — comportamento intencional (usuário ainda está no período de avaliação).
+- `SubscriptionService.cs:129-130`.
 
-Para uma assinatura **anual no cartão**, o `CurrentPeriodEnd` fica 1 mês em vez de 1 ano → entitlement expira cedo demais (embora o gateway só cobre/renove anualmente). O cartão não carrega o período (diferente do PIX, que lê `metadata["period"]`).
-- Sugestão: derivar a frequência do plano/produto (mensal vs anual) e estender o período corretamente.
+### ✅ 4. "Próximo ciclo" vs aplicação imediata na troca de plano
+`ChangePlanAsync` aplica a troca **imediatamente**: troca o produto no gateway e atualiza `PlanId` local na hora. `ApplyPlanChangedAsync` virou confirmação idempotente (reconcilia `PlanId` sem alterar datas). Frontend: toast "Plano alterado." e botão "Trocar plano" (sem promessa de "próximo ciclo").
+- `SubscriptionService.cs:108-145`, `BillingWebhookService.cs:200-220`.
 
-### 3. `change-plan` com plano de trial diferente pode reabrir trial já usado
-`ApplyPlanChangedAsync` (`:219-226`): se a sub está em trial e o **novo** plano tem `TrialDays`, faz `TrialEndsAt = now + TrialDays` — reinicia o trial. Como o gate de "já usou trial" só existe no `StartCheckoutAsync` (não no `change-plan`), um usuário em trial pode trocar para outro plano com trial e **esticar o período gratuito**. Verificar se é intencional.
+### 🗑️ 5. `IsRenewalScheduled` não disparava nada
+Feature de "Agendar renovação" removida inteiramente. Endpoints `POST /schedule-renewal` e `DELETE /schedule-renewal` não existem mais. Hooks `useScheduleRenewal`/`useCancelScheduledRenewal` removidos. O campo `IsRenewalScheduled` ainda existe na entidade mas não é mais escrito por nenhum fluxo ativo.
+
+### ✅ 12. Logs de fluxo normal em nível `Warning`
+`WebhooksController` e `BillingWebhookService` agora usam `LogInformation` para eventos do caminho feliz.
+- `WebhooksController.cs:39,43`, `BillingWebhookService.cs:19-22`.
+
+### ✅ 13. Duas gravações separadas no webhook (sem transação única)
+Resolvido junto com o item 1 — único `SaveChangesAsync` cobre estado + `WebhookEvent`.
+
+### ✅ 18. `PeriodStart`/`PeriodEnd` do `Payment` não preenchidos no cartão
+`SetPeriod` é chamado em `CompleteChargeAsync` para todos os pagamentos (cartão e PIX).
+- `BillingWebhookService.cs:259-263`.
 
 ---
 
-## 🟠 Inconsistências e lacunas funcionais
-
-### 4. "Próximo ciclo" vs aplicação imediata na troca de plano
-Frontend (`useChangePlan`) e `ChangePlanAsync` comunicam **"agendada para o próximo ciclo"** (`PendingPlanId`). Mas o webhook `subscription.plan_changed` (`ApplyPlanChangedAsync`), **fora de trial**, aplica a troca **imediatamente** e faz `Status=Active` + `CurrentPeriodEnd = now+1mês`. O próprio `fluxo-abacate-pay.md` é ambíguo (texto diz "próximo ciclo", mas o exemplo traz `checkout.status: PAID` com cobrança imediata).
-- Efeito: a UI promete uma coisa e o backend faz outra. Decidir e alinhar a expectativa (mensagem + comportamento).
-
-### 5. `IsRenewalScheduled` não dispara nada
-"Agendar renovação" (`ScheduleRenewalAsync`) apenas seta a flag. **Não há job/cron** que lembre o usuário nem que re-contrate ao fim do período. A flag é puramente visual e é apagada no próximo checkout. Ou se documenta como "lembrete visual", ou se implementa o agendador.
-- Arquivos: `SubscriptionService.cs:111-130`.
+## 🟠 Lacunas funcionais abertas
 
 ### 6. Sem transição para `Expired` por vencimento
-Quando uma assinatura `Canceled` ultrapassa `CurrentPeriodEnd`, ela continua com `Status = Canceled` para sempre (entitlement já cai para Free corretamente, mas o **status** não reflete o vencimento). O frontend continua exibindo o chip "CANCELADO" com "Acesso até {data passada}".
-- Não há rotina que marque `Expired` por tempo. `Expired` só é setado em refund/dispute (`ApplyReversed`).
-- Sugestão: job de varredura ou cálculo de status efetivo no `GetMineAsync`.
+Quando uma assinatura `Canceled` ultrapassa `CurrentPeriodEnd`, ela permanece com `Status = Canceled` para sempre (o entitlement cai corretamente para Free, mas o **status** não reflete o vencimento). O frontend exibe "CANCELADO / Acesso até {data passada}".
+- `Expired` só é setado em refund/dispute (`ApplyReversed`). Não há job/cron de varredura.
+- **Sugestão:** calcular o status efetivo em `GetMineAsync` (sem alterar banco) ou job periódico que marque `Expired`.
 
 ### 7. Status `PastDue` definido mas nunca usado
-`SubscriptionStatus.PastDue` existe no enum, no frontend (`STATUS_CONFIG`, `getStatusLine`) e no contrato, mas **nenhum handler de webhook o atribui**. Falhas de cobrança/retentativa do cartão (AbacatePay tem `retryPolicy`/`maxRetry`) não têm evento tratado — não há `subscription.payment_failed` mapeado. Uma cobrança recorrente que falha não muda o estado local.
+`SubscriptionStatus.PastDue` existe no enum e no frontend (`STATUS_CONFIG`), mas nenhum handler de webhook o atribui. Falhas de cobrança/retentativa do cartão não têm evento mapeado — uma renovação que falha não altera o estado local.
 - `AbacatePayWebhookProcessor.MapType` não cobre eventos de falha de pagamento.
+- **Sugestão:** mapear evento de falha do AbacatePay → `PastDue`.
 
 ### 8. Histórico de cobranças (`Payment`) nunca é exposto ao usuário
-Os webhooks gravam `Payment` com toda a info (valor, cartão, recibo, datas), e existe `PaymentRepository.GetByUserIdAsync(userId, page, pageSize)` paginado — mas **nenhum controller o chama**. A aba "Faturas" (`BillingPaymentsSection`) é **100% mockada** (cartões e dados de cobrança hardcoded). O histórico real é consumido só pelo `AdminService.GetAllPaymentsAsync` (visão admin).
-- Recurso construído e não utilizado: endpoint de histórico de faturas do próprio Owner.
-- Arquivos: `PaymentRepository.cs:22`, `BillingPaymentsSection/index.tsx` (dados fixos).
+`PaymentRepository.GetByUserIdAsync(userId, page, pageSize)` existe e é paginado, mas **nenhum controller o expõe**. A aba "Faturas" no frontend continua com dados hardcoded (ou inexistente). O histórico real é acessível apenas via admin.
+- `PaymentRepository.cs:22-33`.
+- **Sugestão:** `GET /subscriptions/payments?page=1&pageSize=20` → `SubscriptionsController`.
 
 ---
 
-## 🟡 UX / consistência
+## 🟡 UX / consistência abertos
 
 ### 9. Troca de plano sem confirmação
-`handlePlanAction` chama `changePlan.mutate(plan.id)` direto ao clicar "Trocar plano" — sem modal de confirmação nem aviso de cobrança/proração (diferente do cancelamento, que tem `window.confirm`). Risco de troca acidental.
-- `SubscriptionSection/index.tsx:78-85`.
+`handlePlanAction` chama `changePlan.mutate(plan.id)` direto ao clicar "Trocar plano" — sem modal de confirmação nem aviso de cobrança. Risco de troca acidental (diferente do cancelamento, que tem `window.confirm`).
+- `SubscriptionSection/index.tsx:73-79`.
 
 ### 10. `change-plan` durante trial sem `GatewaySubscriptionId`
-`isLive` inclui `Trialing`, então o botão "Trocar plano" aparece em trial. Mas se o webhook `subscription.trial_started` ainda não chegou (sem `GatewaySubscriptionId`), `ChangePlanAsync` lança `BusinessException`. Janela curta, mas possível erro ao usuário logo após assinar.
+`ChangePlanAsync` exige `GatewaySubscriptionId` (lança `BusinessException` se ausente). Se o webhook `subscription.trial_started` ainda não chegou logo após assinar, o botão "Trocar plano" aparece mas a ação falha. Janela curta mas visível ao usuário.
 
 ### 11. Banner mostra "CANCELADO / Acesso até {data}" com data no passado
-Decorre do item 6: enquanto não há transição para Free/Expired, o banner pode exibir uma data de acesso já vencida.
+Decorre do item 6: enquanto não há transição para `Expired`, o banner exibe a data de `CurrentPeriodEnd` mesmo após vencida.
 
-### 12. Logs de fluxo normal em nível `Warning`
-`BillingWebhookService` e `WebhooksController` usam `logger.LogWarning` para o caminho feliz ("Assinatura resolvida", "Webhook recebido", "Evento já processado"). Polui o canal de warnings/alertas. Deveria ser `LogInformation`/`LogDebug`.
-- `BillingWebhookService.cs:19-22`, `WebhooksController.cs:40-44`.
+### 🟡 19. Reativação dentro do período pago sem alerta
+`StartCheckoutAsync` agora **permite** novo checkout com `Status = Canceled` mesmo se `CurrentPeriodEnd` ainda está no futuro. O usuário pode pagar um novo ciclo antes de aproveitar o período restante sem aviso. Antes havia bloqueio nesse caso (mudança introduzida no refactor).
+- `SubscriptionService.cs:71-78`.
+- **Sugestão:** alert ou texto informativo no frontend ("Você ainda tem acesso até {data}. Deseja mesmo contratar agora?").
+
+### 🟡 20. `console.log(plans)` em produção
+`SubscriptionSection/index.tsx:37-39` tem um `console.log(plans)` de debug não removido.
 
 ---
 
 ## ⚪ Observações / pontos a validar
 
-### 13. Duas gravações separadas no webhook (sem transação única)
-Ver item 1 — `ProcessAsync` e `RecordEventAsync` salvam em chamadas distintas. Mesmo sem o cenário de erro, vale unificar em uma transação para consistência.
-
 ### 14. Idempotência de `checkout.*` por hash do corpo
-`EventId` de `checkout.completed` é o hash SHA256 do corpo. Funciona porque cada renovação tem corpo distinto (datas diferentes). Se o gateway reenviar o **mesmo** corpo, é idempotente. Mas note que isso acopla a idempotência ao formato exato do payload — qualquer reserialização/normalização pelo gateway quebraria a deduplicação. Validar com o comportamento real do AbacatePay.
+`EventId` de `checkout.completed` é o hash SHA256 do corpo. Funciona porque cada renovação tem corpo distinto. Se o gateway reenviar o **mesmo** corpo exato, é idempotente. Mas reserialização/normalização pelo gateway quebraria a deduplicação. Validar com o comportamento real do AbacatePay.
 
 ### 15. `ResolveSubscriptionAsync` por `CustomerId` assume 1 sub viva por cliente
-No fallback de renovação, resolve via `cust_` → `UserId` → `GetLiveSubscriptionByUserIdAsync` (a mais recente ativa). O design garante "uma assinatura viva por usuário", mas se essa invariante quebrar (ex.: duas subs ativas), a renovação pode cair na errada.
+No fallback de renovação, resolve via `cust_` → `UserId` → `GetLiveSubscriptionByUserIdAsync`. O design garante "uma assinatura viva por usuário", mas se a invariante quebrar, a renovação pode cair na errada.
 
 ### 16. `CancelAsync` chama o gateway antes de persistir o estado local
-Se `gateway.CancelSubscriptionAsync` lança, o estado local não muda (ok). Mas se o gateway cancela e a persistência local falha depois, fica dessincronizado até o webhook `subscription.cancelled` reconciliar. O webhook cobre isso (idempotente), então é aceitável — apenas registrar a dependência.
+Se o gateway cancela e a persistência local falha depois, fica dessincronizado até o webhook `subscription.cancelled` reconciliar. O webhook cobre isso (idempotente) — apenas registrar a dependência.
 
 ### 17. `GetLiveByUserIdAsync` ordena por `CreatedAt` desc com filtro `IsActive`
-Soft delete (`IsActive`) some com a sub do filtro. Como a sub é reaproveitada (uma por usuário), `IsActive=false` em sub de assinatura não parece ocorrer no fluxo — confirmar que nada faz soft delete de `Subscription` (senão o usuário perderia o histórico de entitlement).
-
-### 18. `PeriodStart`/`PeriodEnd` do `Payment` não preenchidos no cartão
-São setados apenas no fluxo PIX (`ApplyPixCompletedAsync`). No cartão, os `Payment` criados/marcados em `CompleteChargeAsync` ficam com `PeriodStart/End` nulos. Se a futura tela de faturas exibir o período coberto, faltará esse dado para cartão.
+Confirmar que nenhum fluxo faz soft delete de `Subscription` (IsActive = false), pois isso removeria a sub do filtro e o usuário perderia o histórico de entitlement.

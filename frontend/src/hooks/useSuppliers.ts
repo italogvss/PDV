@@ -3,13 +3,19 @@ import { supplierService } from '../services/supplier.service'
 import type { CreateSupplierPayload, UpdateSupplierPayload } from '../types/supplier.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['suppliers'] as const
 
 export function useSuppliers(page = 1, pageSize = 100, search?: string) {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, page, pageSize, search],
     queryFn: () => supplierService.getAll(page, pageSize, search),
+    enabled:
+      hasActiveSubscription &&
+      isModuleEnabled('suppliers') &&
+      (hasPermission('ViewSuppliers') || hasPermission('ManageSuppliers')),
   })
 }
 
@@ -62,9 +68,11 @@ export function useDeleteSupplier() {
 const INACTIVE_SUPPLIERS_KEY = ['suppliers', 'inactive'] as const
 
 export function useInactiveSuppliers() {
+  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_SUPPLIERS_KEY,
     queryFn: () => supplierService.getInactive(),
+    enabled: hasActiveSubscription && isModuleEnabled('suppliers') && hasPermission('ManageSuppliers'),
   })
 }
 

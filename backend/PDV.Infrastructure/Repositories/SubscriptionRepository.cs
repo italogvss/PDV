@@ -28,6 +28,14 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
         await context.SaveChangesAsync();
     }
 
+    // Remoção FÍSICA (não soft delete) — cancelamento em trial volta o usuário ao Free sem
+    // deixar assinatura para reativar em trial. Deletar os Payment da sub antes (FK).
+    public async Task DeleteAsync(Subscription subscription)
+    {
+        context.Subscriptions.Remove(subscription);
+        await context.SaveChangesAsync();
+    }
+
     // Expira assinaturas canceladas cujo período já terminou (varrido pelo BackgroundService).
     // Sem query filter de tenant — varre todos os usuários por design.
     public async Task<int> ExpireCanceledPastPeriodAsync(DateTime now)
