@@ -161,7 +161,8 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
             ReceiptUrl:     receiptUrl,
             CardLastFour:   card?.Number,
             CardBrand:      card?.Brand,
-            ProductId:      data?.ProductId);
+            ProductId:      data?.ProductId,
+            TrialEndsAt:    checkout?.TrialEndsAt);
     }
 
     // -----------------------------------------------------------------------

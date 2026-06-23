@@ -109,7 +109,7 @@ export const subscriptionService = {
     return { checkoutUrl: data.checkoutUrl ?? null, pix: data.pix ?? null }
   },
 
-  // Troca de plano de uma assinatura ativa — aplicada no próximo ciclo de cobrança.
+  // Troca de plano de uma assinatura ativa — aplicada imediatamente.
   changePlan: async (planId: string): Promise<void> => {
     await api.post('/subscriptions/change-plan', { planId })
   },

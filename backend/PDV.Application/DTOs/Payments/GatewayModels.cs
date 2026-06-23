@@ -100,4 +100,7 @@ public record PaymentWebhookEvent(
     string? CardLastFour = null,
     string? CardBrand = null,
     // Produto-alvo de uma troca de plano (data.productId, presente em subscription.plan_changed).
-    string? ProductId = null);
+    string? ProductId = null,
+    // Fim do período de trial informado pelo gateway (data.checkout.trialEndsAt).
+    // Presente em checkout.completed de fluxos trial; pode ser nulo em outros eventos.
+    DateTime? TrialEndsAt = null);

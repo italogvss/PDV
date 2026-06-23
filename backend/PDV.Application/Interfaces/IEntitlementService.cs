@@ -17,6 +17,9 @@ public interface IEntitlementService
 {
     Task<ResolvedEntitlement> ResolveForCurrentTenantAsync();
 
+    // Verifica se a assinatura dá direito no momento atual (sem consulta ao banco).
+    bool IsEntitled(Subscription s);
+
     // 402 se o módulo não estiver no plano efetivo.
     Task RequireModuleAsync(OperationModule module);
 

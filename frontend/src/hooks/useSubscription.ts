@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
-import type { BillingPeriod, PaymentMethod } from '../types/subscription.types'
+import type { BillingPeriod } from '../types/subscription.types'
 import { useAppDispatch, useAppSelector } from '../store'
 import { setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'

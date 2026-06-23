@@ -7,7 +7,6 @@ import {
   Paper,
   Divider,
   CircularProgress,
-  Tooltip,
 } from '@mui/material'
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
@@ -53,12 +52,8 @@ export default function SubscriptionSection() {
   // Assinatura "viva" (em vigor): troca de plano (cartão) usa change-plan; senão é nova contratação.
   const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
   const canCancel = isPaid && isLive
-
-  // Cancelado mas ainda dentro do período ativo → bloqueia novo checkout, exibe opções de agendamento.
-  const isInActivePeriod =
-    subscription.status === 'Canceled' &&
-    subscription.currentPeriodEnd !== null &&
-    new Date(subscription.currentPeriodEnd) > new Date()
+  // Cancelada → pode reativar a qualquer momento (novo checkout), mesmo dentro do período já pago.
+  const isCanceled = subscription.status === 'Canceled'
 
   const statusLine = getStatusLine(subscription)
 
@@ -72,13 +67,13 @@ export default function SubscriptionSection() {
     (p) => !(p.trialDays !== null && subscription.hasUsedTrial),
   )
 
-  // Cartão vivo → troca de plano no próximo ciclo; período ativo cancelado → bloqueado (agendar);
-  // demais estados → novo checkout.
+  // Cartão vivo → troca de plano imediata (change-plan); demais estados (cancelada, expirada,
+  // gratuito) → novo checkout, que reativa/contrata reaproveitando a mesma assinatura no backend.
   const handlePlanAction = (plan: Plan) => {
     if (isLive && subscription.method === 'Card') {
       if (plan.id === subscription.planId) return
       changePlan.mutate(plan.id)
-    } else if (!isInActivePeriod) {
+    } else {
       setCheckoutPlan(plan)
     }
   }
@@ -88,10 +83,6 @@ export default function SubscriptionSection() {
       cancel.mutate()
     }
   }
-
-  const periodEndFormatted = subscription.currentPeriodEnd
-    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')
-    : null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -221,17 +212,16 @@ export default function SubscriptionSection() {
             const isCurrentLive = isCurrent && isLive
             const pendingThis = changePlan.isPending && changePlan.variables === plan.id
 
-            const blockedByActivePeriod = isInActivePeriod && !isLive
-            const disabled = isCurrentLive || changePlan.isPending || blockedByActivePeriod
+            const disabled = isCurrentLive || changePlan.isPending
 
             const label = pendingThis
               ? 'Alterando...'
               : isCurrentLive
                 ? 'Plano atual'
-                : blockedByActivePeriod
-                  ? 'Disponível em ' + (periodEndFormatted ?? '...')
-                  : isLive
-                    ? 'Trocar plano'
+                : isLive
+                  ? 'Trocar plano'
+                  : isCanceled
+                    ? 'Reativar'
                     : 'Assinar'
 
             return (
@@ -296,11 +286,7 @@ export default function SubscriptionSection() {
                     ))}
                 </Box>
 
-                <Tooltip
-                  title={blockedByActivePeriod ? `Disponível após ${periodEndFormatted}` : ''}
-                  placement="top"
-                >
-                  <span style={{ marginTop: 'auto' }}>
+                <Box sx={{ mt: 'auto' }}>
                     <Button
                       variant={isCurrentLive ? 'outlined' : 'contained'}
                       color={isCurrentLive ? 'inherit' : 'secondary'}
@@ -311,8 +297,7 @@ export default function SubscriptionSection() {
                     >
                       {label}
                     </Button>
-                  </span>
-                </Tooltip>
+                </Box>
               </Box>
             )
           })}

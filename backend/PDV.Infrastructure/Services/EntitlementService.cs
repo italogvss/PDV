@@ -58,7 +58,7 @@ public class EntitlementService(
     }
 
     // Tem direito ao plano enquanto: em trial não expirado; ou ativo/cancelado dentro do período.
-    private static bool IsEntitled(Subscription s)
+    public bool IsEntitled(Subscription s)
     {
         var now = DateTime.UtcNow;
         return s.Status switch

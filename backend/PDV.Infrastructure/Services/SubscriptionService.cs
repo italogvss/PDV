@@ -65,7 +65,12 @@ public class SubscriptionService(
             throw new BusinessException("Você já utilizou o período de trial. Escolha um plano sem trial.");
 
         var existingSub = await subscriptionRepository.GetLiveByUserIdAsync(userId);
-        if (existingSub is not null && IsCurrentlyEntitled(existingSub))
+        // Bloqueia nova contratação apenas se já houver assinatura ativa/em trial vigente
+        // (evita pagar duas vezes). Uma assinatura cancelada pode ser reativada a qualquer
+        // momento — inclusive dentro do período já pago — reaproveitando a mesma linha.
+        if (existingSub is not null
+            && existingSub.Status is SubscriptionStatus.Active or SubscriptionStatus.Trialing
+            && entitlementService.IsEntitled(existingSub))
         {
             var until = (existingSub.TrialEndsAt ?? existingSub.CurrentPeriodEnd)?.ToString("dd/MM/yyyy") ?? "breve";
             throw new BusinessException(
@@ -104,6 +109,10 @@ public class SubscriptionService(
     {
         var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
             ?? throw new BusinessException("Nenhuma assinatura ativa para trocar.");
+
+        // Troca só vale para assinatura viva — uma cancelada deve reativar via novo checkout.
+        if (sub.Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing))
+            throw new BusinessException("Nenhuma assinatura ativa para trocar.");
 
         if (sub.Method != GatewayPaymentMethod.Card || string.IsNullOrEmpty(sub.GatewaySubscriptionId))
             throw new BusinessException("Troca de plano disponível apenas para assinaturas no cartão.");
@@ -278,19 +287,7 @@ public class SubscriptionService(
         p.SupportsPix,
         p.TrialDays);
 
-    private static bool IsCurrentlyEntitled(Subscription s)
-    {
-        var now = DateTime.UtcNow;
-        return s.Status switch
-        {
-            SubscriptionStatus.Trialing => s.TrialEndsAt is null || s.TrialEndsAt > now,
-            SubscriptionStatus.Active or SubscriptionStatus.Canceled =>
-                s.CurrentPeriodEnd is null || s.CurrentPeriodEnd > now,
-            _ => false,
-        };
-    }
-
-    private static GatewayPaymentMethod ParseMethod(string method) => method?.ToUpperInvariant() switch
+private static GatewayPaymentMethod ParseMethod(string method) => method?.ToUpperInvariant() switch
     {
         "CARD" => GatewayPaymentMethod.Card,
         "PIX" => GatewayPaymentMethod.Pix,

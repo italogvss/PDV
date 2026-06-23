@@ -146,7 +146,8 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
 
         sub.Status = SubscriptionStatus.Trialing;
-        sub.TrialEndsAt = sub.Plan?.TrialDays is int days ? DateTime.UtcNow.AddDays(days) : sub.TrialEndsAt;
+        sub.TrialEndsAt = evt.TrialEndsAt
+            ?? (sub.Plan?.TrialDays is int days ? DateTime.UtcNow.AddDays(days) : sub.TrialEndsAt);
         sub.CurrentPeriodEnd = sub.TrialEndsAt;
         sub.UpdatedAt = DateTime.UtcNow;
 
