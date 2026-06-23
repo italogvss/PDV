@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.Interfaces;
 using PDV.Application.Interfaces.Payments;
-using PDV.Domain.Entities;
 using PDV.Domain.Interfaces;
 
 namespace PDV.Api.Controllers;
@@ -37,28 +36,23 @@ public class WebhooksController(
 
         var evt = processor.Parse(rawBody);
 
-        logger.LogWarning("Webhook recebido {Provider} {EventType} {EventId}", processor.Provider, evt.RawEventType, evt.EventId);
+        logger.LogInformation("Webhook recebido {Provider} {EventType} {EventId}", processor.Provider, evt.RawEventType, evt.EventId);
         // 4. Idempotência — evento já processado retorna 200 sem reprocessar.
-        if (await repository.ProcessedEventExistsAsync(processor.Provider, evt.EventId)){
-            logger.LogWarning("Evento já processado");        
+        if (await repository.ProcessedEventExistsAsync(processor.Provider, evt.EventId))
+        {
+            logger.LogInformation("Evento já processado {EventId}", evt.EventId);
             return Ok();
-    }
+        }
+
         try
         {
+            // ProcessAsync aplica o estado E registra o WebhookEvent num único SaveChanges (atômico).
             await billingService.ProcessAsync(evt);
-            await repository.RecordEventAsync(new WebhookEvent
-            {
-                Provider = processor.Provider,
-                EventId = evt.EventId,
-                EventType = evt.RawEventType,
-                ProcessedAt = DateTime.UtcNow,
-                Status = "Processed",
-            });
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Falha ao processar webhook {EventType} {EventId}", evt.RawEventType, evt.EventId);
-            // Não registra como Processed → permite reprocessar numa retentativa do gateway.
+            // Nada foi persistido → permite reprocessar numa retentativa do gateway.
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 

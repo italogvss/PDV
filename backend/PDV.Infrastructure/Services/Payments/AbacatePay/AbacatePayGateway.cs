@@ -65,6 +65,12 @@ public class AbacatePayGateway(IAbacatePayApiClient api) : IPaymentGateway
     public Task CancelSubscriptionAsync(string gatewaySubscriptionId, CancellationToken ct = default) =>
         api.CancelSubscriptionAsync(new CancelSubscriptionBody(gatewaySubscriptionId), ct);
 
+    public async Task<bool> CheckIfPlanExistsAsync(string productExternalId, CancellationToken ct = default)
+    {
+        var product = await api.GetProductAsync(productExternalId, ct);
+        return product is not null;
+    }
+
     public async Task<GatewayChargeStatus> GetChargeStatusAsync(string chargeId, CancellationToken ct = default)
     {
         // pix_char_... usa transparents/check; bill_... usa checkouts/get.

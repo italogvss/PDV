@@ -49,3 +49,6 @@ public record AbacateSubscription(string Id, string? Status);
 
 // ---- status (checkouts/get, transparents/check) ----
 public record AbacateChargeStatus(string Id, string? Status);
+
+// ---- products/get ----
+public record AbacateProduct(string Id, string? ExternalId, string? Name, string? Description, int? Price, string? Status, string? Currency, bool DevMode, DateTime? CreatedAt, DateTime? UpdatedAt);

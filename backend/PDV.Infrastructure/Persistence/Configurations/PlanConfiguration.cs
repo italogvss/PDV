@@ -13,6 +13,7 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
         builder.Property(p => p.ExternalProductId).IsRequired().HasMaxLength(100);
         builder.Property(p => p.ModulesJson).HasColumnType("longtext");
         builder.Property(p => p.LimitsJson).HasColumnType("longtext");
+        builder.Property(p => p.BillingPeriod).HasConversion<string>().HasMaxLength(10);
 
         // Catálogo global — produto único por id do gateway (idempotência do seeder).
         builder.HasIndex(p => p.ExternalProductId).IsUnique();

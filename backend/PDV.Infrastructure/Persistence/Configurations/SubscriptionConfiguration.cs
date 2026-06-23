@@ -14,20 +14,15 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.Provider).IsRequired().HasMaxLength(50);
         builder.Property(s => s.GatewaySubscriptionId).HasMaxLength(100);
         builder.Property(s => s.GatewayCustomerId).HasMaxLength(100);
-        builder.Property(s => s.PendingChangeExternalId).HasMaxLength(100);
 
-        builder.HasIndex(s => s.UserId);
+        // Invariante: uma única assinatura por usuário (reaproveitada em reativação/troca de método).
+        builder.HasIndex(s => s.UserId).IsUnique();
         // NULLs são distintos no MySQL — múltiplas assinaturas PIX (sem subs_) coexistem.
         builder.HasIndex(s => s.GatewaySubscriptionId).IsUnique();
 
         builder.HasOne(s => s.Plan)
             .WithMany()
             .HasForeignKey(s => s.PlanId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(s => s.PendingPlan)
-            .WithMany()
-            .HasForeignKey(s => s.PendingPlanId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

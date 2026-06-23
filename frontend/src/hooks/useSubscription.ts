@@ -51,7 +51,6 @@ export function useSyncSubscriptionToStore() {
 
 export interface StartCheckoutInput {
   planId: string
-  method: PaymentMethod
   period?: BillingPeriod
   couponCode?: string
 }
@@ -65,7 +64,7 @@ export function useStartCheckout() {
       const base = window.location.origin
       return subscriptionService.startCheckout({
         planId: input.planId,
-        method: input.method,
+        method: "Card",
         period: input.period,
         couponCode: input.couponCode,
         returnUrl: `${base}/configuracoes?tab=assinatura`,
@@ -79,7 +78,7 @@ export function useStartCheckout() {
   })
 }
 
-// Troca de plano de uma assinatura ativa (upgrade/downgrade). Aplicada no próximo ciclo.
+// Troca de plano de uma assinatura ativa (upgrade/downgrade). Aplicada imediatamente.
 export function useChangePlan() {
   const queryClient = useQueryClient()
   const showToast = useToast()
@@ -88,7 +87,7 @@ export function useChangePlan() {
     mutationFn: (planId: string) => subscriptionService.changePlan(planId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
-      showToast('Mudança de plano agendada para o próximo ciclo.', 'success')
+      showToast('Plano alterado.', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao trocar de plano.'),
   })

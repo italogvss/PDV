@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Box,
   Typography,
@@ -7,12 +7,17 @@ import {
   Paper,
   Divider,
   CircularProgress,
+  Tooltip,
 } from '@mui/material'
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
-import AutorenewIcon from '@mui/icons-material/Autorenew'
 import CheckIcon from '@mui/icons-material/Check'
-import { useSubscription, usePlans, useCancelSubscription, useChangePlan } from '../../../../hooks/useSubscription'
+import {
+  useSubscription,
+  usePlans,
+  useCancelSubscription,
+  useChangePlan,
+} from '../../../../hooks/useSubscription'
 import { OPERATION_MODULES, type OperationModule } from '../../../../constants/modules'
 import type { PixCharge, Plan } from '../../../../types/subscription.types'
 import { STATUS_CONFIG, formatPrice, getStatusLine } from './helpers'
@@ -29,6 +34,11 @@ export default function SubscriptionSection() {
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null)
   const [pixCharge, setPixCharge] = useState<PixCharge | null>(null)
 
+  useEffect(() => {
+    console.log(plans)
+  
+  }, [plans])
+  
   if (loadingSub || loadingPlans || !subscription || !plans) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -43,7 +53,13 @@ export default function SubscriptionSection() {
   // Assinatura "viva" (em vigor): troca de plano (cartão) usa change-plan; senão é nova contratação.
   const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
   const canCancel = isPaid && isLive
-  const canReactivate = isPaid && subscription.status === 'Canceled'
+
+  // Cancelado mas ainda dentro do período ativo → bloqueia novo checkout, exibe opções de agendamento.
+  const isInActivePeriod =
+    subscription.status === 'Canceled' &&
+    subscription.currentPeriodEnd !== null &&
+    new Date(subscription.currentPeriodEnd) > new Date()
+
   const statusLine = getStatusLine(subscription)
 
   // Módulos liberados pelo plano → labels do registro central de módulos.
@@ -51,12 +67,18 @@ export default function SubscriptionSection() {
     .filter((m): m is OperationModule => m in OPERATION_MODULES)
     .map((m) => OPERATION_MODULES[m].label)
 
-  // Cartão vivo troca de plano (próximo ciclo); demais estados iniciam novo checkout (inclui reativar e PIX).
+  // Planos visíveis: oculta planos com trial para usuários que já usaram trial.
+  const visiblePlans = plans.filter(
+    (p) => !(p.trialDays !== null && subscription.hasUsedTrial),
+  )
+
+  // Cartão vivo → troca de plano no próximo ciclo; período ativo cancelado → bloqueado (agendar);
+  // demais estados → novo checkout.
   const handlePlanAction = (plan: Plan) => {
     if (isLive && subscription.method === 'Card') {
       if (plan.id === subscription.planId) return
       changePlan.mutate(plan.id)
-    } else {
+    } else if (!isInActivePeriod) {
       setCheckoutPlan(plan)
     }
   }
@@ -67,9 +89,9 @@ export default function SubscriptionSection() {
     }
   }
 
-  const handleReactivate = () => {
-    if (currentPlan) setCheckoutPlan(currentPlan)
-  }
+  const periodEndFormatted = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')
+    : null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -119,15 +141,11 @@ export default function SubscriptionSection() {
           </Box>
           <Typography variant="body2" color="text.secondary">
             {isPaid && statusLine
-              ? `${statusLine.label} ${statusLine.date}${currentPlan ? ` • R$ ${formatPrice(currentPlan.priceMonthly)}/mês` : ''}`
+              ? `${statusLine.label} ${statusLine.date}${currentPlan ? ` • R$ ${formatPrice(currentPlan.Price)}/mês` : ''}`
               : 'Plano gratuito — sem cobranças'}
           </Typography>
-          {subscription.pendingPlanId && (
-            <Typography variant="caption" color="premium.900" sx={{ fontWeight: 600 }}>
-              Mudança para {subscription.pendingPlanName ?? 'novo plano'} no próximo ciclo
-            </Typography>
-          )}
         </Box>
+
         {canCancel && (
           <Box sx={{ display: 'flex', gap: 1.5, flexShrink: 0 }}>
             <Button
@@ -139,19 +157,6 @@ export default function SubscriptionSection() {
               disabled={cancel.isPending}
             >
               Cancelar plano
-            </Button>
-          </Box>
-        )}
-        {canReactivate && (
-          <Box sx={{ display: 'flex', gap: 1.5, flexShrink: 0 }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AutorenewIcon />}
-              color="secondary"
-              onClick={handleReactivate}
-            >
-              Reativar plano
             </Button>
           </Box>
         )}
@@ -197,7 +202,9 @@ export default function SubscriptionSection() {
             Planos disponíveis
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Faça upgrade ou downgrade a qualquer momento
+            {subscription.hasUsedTrial
+              ? 'Planos com trial foram ocultados pois você já utilizou o período gratuito'
+              : 'Faça upgrade ou downgrade a qualquer momento'}
           </Typography>
         </Box>
         <Divider />
@@ -205,28 +212,27 @@ export default function SubscriptionSection() {
           sx={{
             p: 3,
             display: 'grid',
-            gridTemplateColumns: `repeat(${plans.length}, 1fr)`,
+            gridTemplateColumns: `repeat(${Math.min(visiblePlans.length, 4)}, 1fr)`,
             gap: 2,
           }}
         >
-          {plans.map((plan) => {
+          {visiblePlans.map((plan) => {
             const isCurrent = plan.id === subscription.planId
             const isCurrentLive = isCurrent && isLive
-            const isScheduledTarget = plan.id === subscription.pendingPlanId
             const pendingThis = changePlan.isPending && changePlan.variables === plan.id
 
-            const disabled = isScheduledTarget || isCurrentLive || changePlan.isPending
+            const blockedByActivePeriod = isInActivePeriod && !isLive
+            const disabled = isCurrentLive || changePlan.isPending || blockedByActivePeriod
+
             const label = pendingThis
-              ? 'Agendando...'
-              : isScheduledTarget
-                ? 'Agendado'
-                : isCurrentLive
-                  ? 'Plano atual'
-                  : isCurrent // cancelado, ainda no período
-                    ? 'Reativar'
-                    : isLive
-                      ? 'Trocar plano'
-                      : 'Assinar'
+              ? 'Alterando...'
+              : isCurrentLive
+                ? 'Plano atual'
+                : blockedByActivePeriod
+                  ? 'Disponível em ' + (periodEndFormatted ?? '...')
+                  : isLive
+                    ? 'Trocar plano'
+                    : 'Assinar'
 
             return (
               <Box
@@ -254,6 +260,9 @@ export default function SubscriptionSection() {
                       </Typography>
                     </Box>
                   )}
+                  {plan.trialDays !== null && (
+                    <Chip label={`${plan.trialDays} dias grátis`} size="small" color="info" variant="outlined" sx={{ fontSize: 10 }} />
+                  )}
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.25 }}>
@@ -261,7 +270,7 @@ export default function SubscriptionSection() {
                     R$
                   </Typography>
                   <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
-                    {formatPrice(plan.priceMonthly)}
+                    {formatPrice(plan.Price)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     /mês
@@ -287,17 +296,23 @@ export default function SubscriptionSection() {
                     ))}
                 </Box>
 
-                <Button
-                  variant={isCurrentLive ? 'outlined' : 'contained'}
-                  color={isCurrentLive ? 'inherit' : 'secondary'}
-                  size="small"
-                  fullWidth
-                  disabled={disabled}
-                  onClick={() => handlePlanAction(plan)}
-                  sx={{ mt: 'auto' }}
+                <Tooltip
+                  title={blockedByActivePeriod ? `Disponível após ${periodEndFormatted}` : ''}
+                  placement="top"
                 >
-                  {label}
-                </Button>
+                  <span style={{ marginTop: 'auto' }}>
+                    <Button
+                      variant={isCurrentLive ? 'outlined' : 'contained'}
+                      color={isCurrentLive ? 'inherit' : 'secondary'}
+                      size="small"
+                      fullWidth
+                      disabled={disabled}
+                      onClick={() => handlePlanAction(plan)}
+                    >
+                      {label}
+                    </Button>
+                  </span>
+                </Tooltip>
               </Box>
             )
           })}
@@ -308,7 +323,6 @@ export default function SubscriptionSection() {
         open={checkoutPlan !== null}
         plan={checkoutPlan}
         onClose={() => setCheckoutPlan(null)}
-        onPixGenerated={(pix) => setPixCharge(pix)}
       />
       <PixQrDialog open={pixCharge !== null} pix={pixCharge} onClose={() => setPixCharge(null)} />
     </Box>

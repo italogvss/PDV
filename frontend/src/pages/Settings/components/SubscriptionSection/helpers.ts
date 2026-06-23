@@ -12,13 +12,12 @@ export const STATUS_CONFIG: Record<SubscriptionStatus, StatusConfig> = {
   Pending: { label: 'PROCESSANDO', chipBg: 'warning.soft', chipColor: 'warning.ink' },
   Active: { label: 'ATIVO', chipBg: 'success.soft', chipColor: 'success.ink' },
   Trialing: { label: 'EM TESTE', chipBg: 'premium.100', chipColor: 'premium.900' },
-  PastDue: { label: 'PAGAMENTO PENDENTE', chipBg: 'warning.soft', chipColor: 'warning.ink' },
   Canceled: { label: 'CANCELADO', chipBg: 'surface.raised', chipColor: 'text.secondary' },
   Expired: { label: 'EXPIRADO', chipBg: 'error.soft', chipColor: 'error.ink' },
 }
 
 export function formatPrice(value: number): string {
-  if (value <= 0) return 'Grátis'
+  if (value == null || value <= 0) return 'Grátis'
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -41,8 +40,7 @@ export function getStatusLine(subscription: Subscription): { label: string; date
       const date = formatDate(subscription.currentPeriodEnd ?? subscription.trialEndsAt)
       return date ? { label: 'Acesso até', date } : null
     }
-    case 'Active':
-    case 'PastDue': {
+    case 'Active': {
       const date = formatDate(subscription.currentPeriodEnd)
       return date ? { label: 'Renovação em', date } : null
     }

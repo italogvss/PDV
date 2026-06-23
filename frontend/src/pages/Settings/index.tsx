@@ -76,7 +76,7 @@ function renderSection(tab: SettingsTab) {
 
 export default function SettingsPage() {
   const { role } = useAppSelector((s) => s.auth)
-  const isOwner = role === 'Owner'
+  const isOwner = (role === 'Owner' || role === 'Admin')
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (isOwner) return true

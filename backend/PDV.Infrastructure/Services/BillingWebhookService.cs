@@ -16,16 +16,16 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         var sub = await ResolveSubscriptionAsync(evt);
         var payment = await ResolvePaymentAsync(evt);
 
-        logger.LogWarning("Assinatura resolvida {SubscriptionId} (status {Status}) para evento {EventType}",
+        logger.LogInformation("Assinatura resolvida {SubscriptionId} (status {Status}) para evento {EventType}",
             sub?.Id, sub?.Status, evt.Type);
-        logger.LogWarning("Pagamento resolvido {PaymentId} (status {Status}) para evento {EventType}",
+        logger.LogInformation("Pagamento resolvido {PaymentId} (status {Status}) para evento {EventType}",
             payment?.Id, payment?.Status, evt.Type);
 
         switch (evt.Type)
         {
             // Baixa de pagamento (cartão) — o lifecycle da assinatura vem dos eventos subscription.*.
             case PaymentWebhookType.CheckoutCompleted:
-                await CompleteChargeAsync(sub, payment, evt, PaymentKind.CardSubscription, GatewayPaymentMethod.Card);
+                await ApplyCheckoutCompletedAsync(sub, payment, evt);
                 break;
 
             // PIX é pagamento único e não gera evento subscription.* → ativa a sub E dá baixa.
@@ -39,7 +39,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
                 break;
 
             case PaymentWebhookType.SubscriptionTrialStarted:
-                ApplyTrialStarted(sub, evt);
+                await ApplyTrialStarted(sub, evt);
                 break;
 
             case PaymentWebhookType.SubscriptionRenewed:
@@ -58,9 +58,20 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
                 break;
 
             case PaymentWebhookType.SubscriptionPlanChanged:
-                // A troca já foi registrada (PendingPlanId) ao solicitar; é aplicada no renewed.
+                await ApplyPlanChangedAsync(sub, payment, evt);
                 break;
         }
+
+        // Registra o evento como processado na MESMA transação do estado aplicado (idempotência atômica:
+        // se o SaveChanges falhar, nada é persistido e o gateway pode reenviar com segurança).
+        await repo.StageEventAsync(new WebhookEvent
+        {
+            Provider = evt.Provider,
+            EventId = evt.EventId,
+            EventType = evt.RawEventType,
+            ProcessedAt = DateTime.UtcNow,
+            Status = "Processed",
+        });
 
         await repo.SaveChangesAsync();
     }
@@ -120,11 +131,15 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
 
         sub.Status = SubscriptionStatus.Active;
-        sub.CurrentPeriodEnd = DateTime.UtcNow.AddMonths(1);
+        sub.CurrentPeriodEnd = NextPeriodEnd(DateTime.UtcNow, sub.Plan);
         sub.UpdatedAt = DateTime.UtcNow;
     }
 
-    private static void ApplyTrialStarted(Subscription? sub, PaymentWebhookEvent evt)
+    // Fim do próximo período conforme o ciclo do plano (cartão mensal/anual).
+    private static DateTime NextPeriodEnd(DateTime from, Plan? plan) =>
+        plan?.BillingPeriod == BillingPeriod.Annual ? from.AddYears(1) : from.AddMonths(1);
+
+    private async Task ApplyTrialStarted(Subscription? sub, PaymentWebhookEvent evt)
     {
         if (sub is null) return;
 
@@ -134,26 +149,20 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         sub.TrialEndsAt = sub.Plan?.TrialDays is int days ? DateTime.UtcNow.AddDays(days) : sub.TrialEndsAt;
         sub.CurrentPeriodEnd = sub.TrialEndsAt;
         sub.UpdatedAt = DateTime.UtcNow;
+
+        await repo.MarkTrialUsedAsync(sub.UserId);
     }
 
-    // subscription.renewed — só estende o ciclo e aplica a troca de plano agendada. O pagamento da
-    // renovação chega por checkout.completed/transparent.completed (não é registrado aqui).
+    // subscription.renewed — só estende o ciclo. O pagamento da renovação chega por
+    // checkout.completed/transparent.completed (não é registrado aqui).
     private static void ApplyRenewed(Subscription? sub, PaymentWebhookEvent evt)
     {
         if (sub is null) return;
 
         if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
 
-        // Aplica a troca de plano agendada (se houver) ao iniciar o novo ciclo.
-        if (sub.PendingPlanId is Guid pendingPlanId)
-        {
-            sub.PlanId = pendingPlanId;
-            sub.PendingPlanId = null;
-            sub.PendingChangeExternalId = null;
-        }
-
         sub.Status = SubscriptionStatus.Active;
-        sub.CurrentPeriodEnd = DateTime.UtcNow.AddMonths(1);
+        sub.CurrentPeriodEnd = NextPeriodEnd(DateTime.UtcNow, sub.Plan);
         sub.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -170,12 +179,43 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         sub.CurrentPeriodEnd = annual ? DateTime.UtcNow.AddYears(1) : DateTime.UtcNow.AddMonths(1);
         sub.UpdatedAt = DateTime.UtcNow;
 
-        var paid = await CompleteChargeAsync(sub, payment, evt, PaymentKind.PixSubscription, GatewayPaymentMethod.Pix);
-        if (paid is not null)
+        await CompleteChargeAsync(sub, payment, evt, PaymentKind.PixSubscription, GatewayPaymentMethod.Pix);
+    }
+
+    // checkout.completed reaproveitado para trial E cobrança real. No trial chega PENDING/amount 0 (sem
+    // cobrança) — só captura o cartão no Payment pendente; o lifecycle vem de subscription.trial_started.
+    // Numa cobrança real (PAID) dá a baixa normalmente.
+    private async Task ApplyCheckoutCompletedAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
+    {
+        if (evt.Status != GatewayChargeStatus.Paid)
         {
-            paid.PeriodStart = DateTime.UtcNow;
-            paid.PeriodEnd = sub.CurrentPeriodEnd;
+            ApplyCard(payment, evt);
+            return;
         }
+
+        await CompleteChargeAsync(sub, payment, evt, PaymentKind.CardSubscription, GatewayPaymentMethod.Card);
+    }
+
+    // subscription.plan_changed — a troca já foi aplicada de imediato no ChangePlanAsync. Aqui é apenas
+    // confirmação idempotente: captura o id da assinatura, garante o PlanId (mapeado pelo produto) e
+    // registra a cobrança aprovada do payload. NÃO altera datas (preserva o período do ciclo atual).
+    private async Task ApplyPlanChangedAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
+    {
+        if (sub is null) return;
+
+        if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
+
+        if (!string.IsNullOrEmpty(evt.ProductId))
+        {
+            var planId = (await repo.GetPlanByExternalProductIdAsync(evt.ProductId))?.Id;
+            if (planId is Guid pid && pid != sub.PlanId) sub.PlanId = pid;
+        }
+
+        sub.UpdatedAt = DateTime.UtcNow;
+
+        // Registra a cobrança da troca (presente só quando há cobrança real, fora de trial).
+        if (evt.Status == GatewayChargeStatus.Paid)
+            await CompleteChargeAsync(sub, payment, evt, PaymentKind.CardSubscription, GatewayPaymentMethod.Card);
     }
 
     // Dá baixa na cobrança: marca o Payment pré-existente como pago ou, se não houver (renovação),
@@ -186,6 +226,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         if (payment is not null)
         {
             MarkPaid(payment, evt);
+            SetPeriod(payment, sub);
             return payment;
         }
 
@@ -201,13 +242,23 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
             GatewayChargeId = evt.ChargeId,
             Kind = kind,
             Method = method,
-            AmountCents = evt.AmountCents ?? sub.Plan?.PriceMonthlyCents ?? 0,
+            AmountCents = evt.AmountCents ?? sub.Plan?.PriceCents ?? 0,
             Status = PaymentStatus.Paid,
             PaidAt = evt.PaidAt ?? DateTime.UtcNow,
             ReceiptUrl = evt.ReceiptUrl,
+            CardLastFour = evt.CardLastFour,
+            CardBrand = evt.CardBrand,
         };
+        SetPeriod(created, sub);
         await repo.AddPaymentAsync(created);
         return created;
+    }
+
+    // Registra o período coberto pela cobrança no histórico (fim = fim do período corrente da assinatura).
+    private static void SetPeriod(Payment payment, Subscription? sub)
+    {
+        payment.PeriodStart = DateTime.UtcNow;
+        payment.PeriodEnd = sub?.CurrentPeriodEnd;
     }
 
     private static void ApplyCancelled(Subscription? sub)
@@ -242,6 +293,17 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         payment.Status = PaymentStatus.Paid;
         payment.PaidAt = evt.PaidAt ?? DateTime.UtcNow;
         if (!string.IsNullOrEmpty(evt.ReceiptUrl)) payment.ReceiptUrl = evt.ReceiptUrl;
+        if (evt.AmountCents is int amount) payment.AmountCents = amount;
+        ApplyCard(payment, evt);
+        payment.UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Captura o cartão (últimos 4 + bandeira) no histórico de cobrança quando o webhook o traz.
+    private static void ApplyCard(Payment? payment, PaymentWebhookEvent evt)
+    {
+        if (payment is null) return;
+        if (!string.IsNullOrEmpty(evt.CardLastFour)) payment.CardLastFour = evt.CardLastFour;
+        if (!string.IsNullOrEmpty(evt.CardBrand)) payment.CardBrand = evt.CardBrand;
         payment.UpdatedAt = DateTime.UtcNow;
     }
 }

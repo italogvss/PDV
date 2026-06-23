@@ -27,6 +27,8 @@ public class SubscriptionService(
         var resolved = await entitlementService.ResolveForCurrentTenantAsync();
         var sub = resolved.Subscription;
 
+        var user = await userRepository.GetByIdAsync(userContext.UserId);
+
         return new SubscriptionResponse(
             PlanId: sub?.PlanId,
             PlanName: sub?.Plan.Name,
@@ -38,8 +40,7 @@ public class SubscriptionService(
             CanceledAt: sub?.CanceledAt,
             Modules: resolved.Modules,
             Limits: resolved.Limits,
-            PendingPlanId: sub?.PendingPlanId,
-            PendingPlanName: sub?.PendingPlan?.Name);
+            HasUsedTrial: user?.HasUsedTrial ?? false);
     }
 
     public async Task<IReadOnlyList<PlanResponse>> GetPlansAsync()
@@ -53,16 +54,31 @@ public class SubscriptionService(
         var userId = userContext.UserId;
         var plan = await planRepository.GetByIdAsync(request.PlanId)
             ?? throw new NotFoundException("Plano não encontrado.");
+
+        if (!await gateway.CheckIfPlanExistsAsync(plan.ExternalProductId))
+            throw new NotFoundException("Plano não encontrado.");
+
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
+
+        if (plan.TrialDays.HasValue && user.HasUsedTrial)
+            throw new BusinessException("Você já utilizou o período de trial. Escolha um plano sem trial.");
+
+        var existingSub = await subscriptionRepository.GetLiveByUserIdAsync(userId);
+        if (existingSub is not null && IsCurrentlyEntitled(existingSub))
+        {
+            var until = (existingSub.TrialEndsAt ?? existingSub.CurrentPeriodEnd)?.ToString("dd/MM/yyyy") ?? "breve";
+            throw new BusinessException(
+                $"Sua assinatura está ativa até {until}. " +
+                "Aguarde o fim desse período para contratar novamente.");
+        }
 
         var method = ParseMethod(request.Method);
         var customer = await EnsureCustomerAsync(userId, user);
 
         // Uma assinatura por usuário — reaproveita a existente (reativação/troca de método).
-        var sub = await subscriptionRepository.GetLiveByUserIdAsync(userId);
-        var isNew = sub is null;
-        sub ??= new Subscription { UserId = userId };
+        var sub = existingSub ?? new Subscription { UserId = userId };
+        var isNew = existingSub is null;
         sub.Provider = gateway.Provider;
         sub.PlanId = plan.Id;
         sub.Method = method;
@@ -82,6 +98,8 @@ public class SubscriptionService(
             : await StartPixCheckoutAsync(plan, sub, isNew, user, request, metadata, userId);
     }
 
+    // Troca de plano imediata (apenas cartão). Fora de trial: só troca o produto no gateway e o plano
+    // local, mantendo as datas de renovação/fim de período. Em trial: troca e recalcula o trial.
     public async Task ChangePlanAsync(ChangePlanRequest request)
     {
         var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
@@ -93,10 +111,27 @@ public class SubscriptionService(
         var newPlan = await planRepository.GetByIdAsync(request.PlanId)
             ?? throw new NotFoundException("Plano não encontrado.");
 
-        var result = await gateway.ChangeSubscriptionPlanAsync(sub.GatewaySubscriptionId!, newPlan.ExternalProductId, 1);
+        if (newPlan.Id == sub.PlanId)
+            throw new BusinessException("Você já está neste plano.");
 
-        sub.PendingPlanId = newPlan.Id;
-        sub.PendingChangeExternalId = result.PendingChangeId;
+        var inTrial = sub.Status == SubscriptionStatus.Trialing;
+
+        // Fora de trial não se pode migrar para um plano com período de trial.
+        if (!inTrial && newPlan.TrialDays.HasValue)
+            throw new BusinessException("Não é possível trocar para um plano com período de teste.");
+
+        await gateway.ChangeSubscriptionPlanAsync(sub.GatewaySubscriptionId, newPlan.ExternalProductId, 1);
+
+        sub.PlanId = newPlan.Id;
+
+        // Em trial: reinicia o prazo de trial/renovação com base no novo plano.
+        if (inTrial && newPlan.TrialDays is int trialDays)
+        {
+            sub.TrialEndsAt = DateTime.UtcNow.AddDays(trialDays);
+            sub.CurrentPeriodEnd = sub.TrialEndsAt;
+        }
+
+        sub.UpdatedAt = DateTime.UtcNow;
         await subscriptionRepository.UpdateAsync(sub);
     }
 
@@ -121,11 +156,12 @@ public class SubscriptionService(
             throw new BusinessException("Este plano não aceita pagamento por cartão.");
 
         sub.IsRenewable = true;
-        await PersistSubscriptionAsync(sub, isNew);
 
         var checkout = await gateway.CreateSubscriptionCheckoutAsync(new SubscriptionCheckoutRequest(
             plan.ExternalProductId, customer.GatewayCustomerId, sub.Id.ToString(),
             request.CouponCode, request.ReturnUrl, request.CompletionUrl, metadata));
+
+        await PersistSubscriptionAsync(sub, isNew);
 
         await paymentRepository.AddAsync(new Payment
         {
@@ -136,7 +172,7 @@ public class SubscriptionService(
             GatewayChargeId = checkout.CheckoutId,
             Kind = PaymentKind.CardSubscription,
             Method = GatewayPaymentMethod.Card,
-            AmountCents = plan.PriceMonthlyCents,
+            AmountCents = plan.PriceCents,
             Status = PaymentStatus.Pending,
             CouponCode = request.CouponCode,
         });
@@ -152,12 +188,9 @@ public class SubscriptionService(
             throw new BusinessException("Este plano não aceita pagamento por PIX.");
 
         var period = ParsePeriod(request.Period);
-        var amount = period == BillingPeriod.Annual
-            ? plan.PriceAnnualCents ?? throw new BusinessException("Período anual indisponível para este plano.")
-            : plan.PriceMonthlyCents;
+        var amount = plan.PriceCents;
 
         sub.IsRenewable = false;
-        await PersistSubscriptionAsync(sub, isNew);
 
         var pixMetadata = new Dictionary<string, string>(metadata) { ["period"] = period.ToString() };
 
@@ -168,6 +201,8 @@ public class SubscriptionService(
             new CustomerInfo(user.Email, user.Name, user.Document, user.Phone),
             sub.Id.ToString(),
             pixMetadata));
+
+        await PersistSubscriptionAsync(sub, isNew);
 
         await paymentRepository.AddAsync(new Payment
         {
@@ -236,13 +271,24 @@ public class SubscriptionService(
         p.Id,
         p.Name,
         p.Description,
-        p.PriceMonthlyCents / 100m,
-        p.PriceAnnualCents.HasValue ? p.PriceAnnualCents.Value / 100m : null,
+        p.PriceCents / 100m,
         OperationModuleHelper.ReadEnabled(p.ModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
         p.SupportsCard,
         p.SupportsPix,
         p.TrialDays);
+
+    private static bool IsCurrentlyEntitled(Subscription s)
+    {
+        var now = DateTime.UtcNow;
+        return s.Status switch
+        {
+            SubscriptionStatus.Trialing => s.TrialEndsAt is null || s.TrialEndsAt > now,
+            SubscriptionStatus.Active or SubscriptionStatus.Canceled =>
+                s.CurrentPeriodEnd is null || s.CurrentPeriodEnd > now,
+            _ => false,
+        };
+    }
 
     private static GatewayPaymentMethod ParseMethod(string method) => method?.ToUpperInvariant() switch
     {

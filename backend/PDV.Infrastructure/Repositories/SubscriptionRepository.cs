@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
@@ -11,7 +12,6 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
     public async Task<Subscription?> GetLiveByUserIdAsync(Guid userId) =>
         await context.Subscriptions
             .Include(s => s.Plan)
-            .Include(s => s.PendingPlan)
             .Where(s => s.UserId == userId && s.IsActive)
             .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
@@ -26,5 +26,26 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
     {
         context.Subscriptions.Update(subscription);
         await context.SaveChangesAsync();
+    }
+
+    // Expira assinaturas canceladas cujo período já terminou (varrido pelo BackgroundService).
+    // Sem query filter de tenant — varre todos os usuários por design.
+    public async Task<int> ExpireCanceledPastPeriodAsync(DateTime now)
+    {
+        var due = await context.Subscriptions
+            .Where(s => s.IsActive
+                && s.Status == SubscriptionStatus.Canceled
+                && s.CurrentPeriodEnd != null
+                && s.CurrentPeriodEnd < now)
+            .ToListAsync();
+
+        foreach (var sub in due)
+        {
+            sub.Status = SubscriptionStatus.Expired;
+            sub.UpdatedAt = now;
+        }
+
+        if (due.Count > 0) await context.SaveChangesAsync();
+        return due.Count;
     }
 }

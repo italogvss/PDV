@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619211924_AddCardInfoToPayment")]
+    partial class AddCardInfoToPayment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -536,6 +539,9 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<Guid?>("SubscriptionId")
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -556,11 +562,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
-
-                    b.Property<string>("BillingPeriod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -593,7 +594,10 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<int>("PriceCents")
+                    b.Property<int?>("PriceAnnualCents")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PriceMonthlyCents")
                         .HasColumnType("int");
 
                     b.Property<bool>("SupportsCard")
@@ -960,6 +964,13 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("varchar(10)");
 
+                    b.Property<string>("PendingChangeExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid?>("PendingPlanId")
+                        .HasColumnType("char(36)");
+
                     b.Property<Guid>("PlanId")
                         .HasColumnType("char(36)");
 
@@ -987,10 +998,11 @@ namespace PDV.Infrastructure.Migrations
                     b.HasIndex("GatewaySubscriptionId")
                         .IsUnique();
 
+                    b.HasIndex("PendingPlanId");
+
                     b.HasIndex("PlanId");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Subscriptions");
                 });
@@ -1263,9 +1275,6 @@ namespace PDV.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("varchar(254)");
-
-                    b.Property<bool>("HasUsedTrial")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
@@ -1589,11 +1598,18 @@ namespace PDV.Infrastructure.Migrations
 
             modelBuilder.Entity("PDV.Domain.Entities.Subscription", b =>
                 {
+                    b.HasOne("PDV.Domain.Entities.Plan", "PendingPlan")
+                        .WithMany()
+                        .HasForeignKey("PendingPlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("PDV.Domain.Entities.Plan", "Plan")
                         .WithMany()
                         .HasForeignKey("PlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("PendingPlan");
 
                     b.Navigation("Plan");
                 });

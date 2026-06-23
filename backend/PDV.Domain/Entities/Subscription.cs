@@ -24,9 +24,4 @@ public class Subscription : BaseEntity
     public DateTime? TrialEndsAt { get; set; }
     public DateTime? CurrentPeriodEnd { get; set; }
     public DateTime? CanceledAt { get; set; }
-
-    // Troca de plano agendada para o próximo ciclo (apenas cartão).
-    public Guid? PendingPlanId { get; set; }
-    public Plan? PendingPlan { get; set; }
-    public string? PendingChangeExternalId { get; set; } // subu_...
 }

@@ -20,16 +20,14 @@ interface BackendSubscription {
   canceledAt: string | null
   modules: string[]
   limits: Record<string, number>
-  pendingPlanId: string | null
-  pendingPlanName: string | null
+  hasUsedTrial: boolean
 }
 
 interface BackendPlan {
   id: string
   name: string
   description: string | null
-  priceMonthly: number
-  priceAnnual: number | null
+  Price: number
   modules: string[]
   limits: Record<string, number>
   supportsCard: boolean
@@ -54,8 +52,7 @@ function mapSubscription(s: BackendSubscription): Subscription {
     canceledAt: s.canceledAt ?? null,
     modules: s.modules ?? [],
     limits: s.limits ?? {},
-    pendingPlanId: s.pendingPlanId ?? null,
-    pendingPlanName: s.pendingPlanName ?? null,
+    hasUsedTrial: s.hasUsedTrial ?? false,
   }
 }
 
@@ -64,8 +61,7 @@ function mapPlan(p: BackendPlan): Plan {
     id: p.id,
     name: p.name,
     description: p.description ?? null,
-    priceMonthly: p.priceMonthly,
-    priceAnnual: p.priceAnnual ?? null,
+    Price: p.Price,
     modules: p.modules ?? [],
     limits: p.limits ?? {},
     supportsCard: p.supportsCard,

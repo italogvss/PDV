@@ -17,6 +17,8 @@ public class User : BaseEntity
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
 
+    public bool HasUsedTrial { get; set; }
+
     public LocalAuth? LocalAuth { get; set; }
     public ICollection<ExternalAuth> ExternalLogins { get; set; } = [];
     public ICollection<UserTenant> UserTenants { get; set; } = [];

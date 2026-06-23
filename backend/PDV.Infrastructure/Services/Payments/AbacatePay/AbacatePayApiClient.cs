@@ -43,6 +43,50 @@ public class AbacatePayApiClient(HttpClient http) : IAbacatePayApiClient
     public Task<AbacateChargeStatus> SimulatePixPaymentAsync(string pixChargeId, CancellationToken ct = default) =>
         SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"pixQrCode/simulate?id={Uri.EscapeDataString(pixChargeId)}", null, ct);
 
+    public async Task<AbacateProduct?> GetProductAsync(string externalId, CancellationToken ct = default)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var response = await http.GetAsync($"products/get?id={Uri.EscapeDataString(externalId)}", ct);
+                var raw = await response.Content.ReadAsStringAsync(ct);
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (IsTransient(response.StatusCode) && attempt < MaxAttempts)
+                    {
+                        await BackoffAsync(attempt, ct);
+                        continue;
+                    }
+
+                    throw new PaymentGatewayException(
+                        "Falha na comunicação com o gateway de pagamentos.",
+                        ExtractError(raw) ?? $"HTTP {(int)response.StatusCode}.");
+                }
+
+                var envelope = JsonSerializer.Deserialize<AbacateEnvelope<AbacateProduct>>(raw, Json);
+
+                // "error" preenchido = produto não encontrado mesmo com 2xx
+                if (envelope?.Error is not null || envelope?.Data is null)
+                    return null;
+
+                return envelope.Data;
+            }
+            catch (HttpRequestException) when (attempt < MaxAttempts)
+            {
+                await BackoffAsync(attempt, ct);
+            }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested && attempt < MaxAttempts)
+            {
+                await BackoffAsync(attempt, ct);
+            }
+        }
+    }
+
     private async Task<TRes> SendAsync<TRes>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         for (var attempt = 1; ; attempt++)

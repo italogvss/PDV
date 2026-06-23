@@ -5,7 +5,6 @@ export type SubscriptionStatus =
   | 'Pending' // checkout iniciado, aguardando confirmação do gateway
   | 'Trialing'
   | 'Active'
-  | 'PastDue'
   | 'Canceled'
   | 'Expired'
 
@@ -16,8 +15,7 @@ export interface Plan {
   id: string
   name: string
   description: string | null
-  priceMonthly: number
-  priceAnnual: number | null
+  Price: number
   modules: string[]
   limits: Record<string, number>
   supportsCard: boolean
@@ -36,9 +34,8 @@ export interface Subscription {
   canceledAt: string | null
   modules: string[]
   limits: Record<string, number>
-  // Troca de plano agendada para o próximo ciclo (null = sem mudança pendente).
-  pendingPlanId: string | null
-  pendingPlanName: string | null
+  // Controle de trial.
+  hasUsedTrial: boolean
 }
 
 // PIX transparente — QR embutido devolvido no checkout (sem redirecionar).

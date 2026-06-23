@@ -7,7 +7,8 @@ namespace PDV.Domain.Interfaces;
 public interface IBillingWebhookRepository
 {
     Task<bool> ProcessedEventExistsAsync(string provider, string eventId);
-    Task RecordEventAsync(WebhookEvent ev);
+    // Apenas estaciona o registro no contexto — a persistência ocorre no SaveChanges único do processamento.
+    Task StageEventAsync(WebhookEvent ev);
 
     Task<Subscription?> GetSubscriptionByIdAsync(Guid id);
     Task<Subscription?> GetSubscriptionByGatewayIdAsync(string gatewaySubscriptionId);
@@ -17,7 +18,11 @@ public interface IBillingWebhookRepository
     Task<Payment?> GetPaymentByGatewayChargeIdAsync(string chargeId);
     Task AddPaymentAsync(Payment payment);
 
+    // Mapeia o produto do gateway (prod_...) para o Plan — usado ao aplicar troca de plano via webhook.
+    Task<Plan?> GetPlanByExternalProductIdAsync(string externalProductId);
+
     Task<User?> GetUserByIdAsync(Guid id);
+    Task MarkTrialUsedAsync(Guid userId);
 
     Task SaveChangesAsync();
 }

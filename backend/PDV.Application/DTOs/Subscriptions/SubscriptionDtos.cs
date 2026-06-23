@@ -7,8 +7,7 @@ public record PlanResponse(
     Guid Id,
     string Name,
     string? Description,
-    decimal PriceMonthly,
-    decimal? PriceAnnual,
+    decimal Price,
     IReadOnlyList<string> Modules,
     IReadOnlyDictionary<string, int> Limits,
     bool SupportsCard,
@@ -26,8 +25,7 @@ public record SubscriptionResponse(
     DateTime? CanceledAt,
     IReadOnlyList<string> Modules,
     IReadOnlyDictionary<string, int> Limits,
-    Guid? PendingPlanId,
-    string? PendingPlanName);
+    bool HasUsedTrial);
 
 // Method: "CARD" (assinatura recorrente) | "PIX" (pagamento único). Period: "Monthly" | "Annual" (PIX).
 // ReturnUrl/CompletionUrl vêm do frontend — o backend não os conhece, apenas repassa ao gateway.

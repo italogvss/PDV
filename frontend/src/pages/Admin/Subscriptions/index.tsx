@@ -9,7 +9,6 @@ import type { SubscriptionRow } from '../../../services/admin.service'
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   Active: 'success',
   Trialing: 'warning',
-  PastDue: 'warning',
   Canceled: 'error',
   Expired: 'error',
   Pending: 'default',

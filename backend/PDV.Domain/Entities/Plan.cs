@@ -1,3 +1,5 @@
+using PDV.Domain.Enums;
+
 namespace PDV.Domain.Entities;
 
 // Catálogo de planos pagos. Entidade GLOBAL (sem TenantId/UserId, sem query filter) —
@@ -7,13 +9,15 @@ public class Plan : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    // Valores em centavos.
-    public int PriceMonthlyCents { get; set; }
-    public int? PriceAnnualCents { get; set; }
+    // Valor em centavos (preço para o ciclo definido em BillingPeriod).
+    public int PriceCents { get; set; }
 
-    // Produto correspondente no gateway (ciclo MONTHLY — usado na assinatura por cartão).
+    // Produto correspondente no gateway. O ciclo (mensal/anual) é definido por BillingPeriod.
     public string ExternalProductId { get; set; } = string.Empty;
     public int? TrialDays { get; set; }
+
+    // Ciclo de cobrança do produto no gateway — base para calcular o fim do período no cartão.
+    public BillingPeriod BillingPeriod { get; set; } = BillingPeriod.Monthly;
 
     // Lógica de negócio do plano (não vive no gateway).
     // ModulesJson: lista de OperationModule (nomes PascalCase). LimitsJson: dicionário chave→int.

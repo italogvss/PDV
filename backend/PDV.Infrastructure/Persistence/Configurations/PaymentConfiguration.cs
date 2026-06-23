@@ -16,6 +16,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.CouponCode).HasMaxLength(50);
         builder.Property(p => p.ReceiptUrl).HasMaxLength(500);
+        builder.Property(p => p.CardLastFour).HasMaxLength(4);
+        builder.Property(p => p.CardBrand).HasMaxLength(20);
 
         builder.HasIndex(p => p.UserId);
         builder.HasIndex(p => p.GatewayChargeId);

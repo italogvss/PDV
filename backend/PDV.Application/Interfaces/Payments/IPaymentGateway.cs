@@ -22,4 +22,6 @@ public interface IPaymentGateway
 
     // Fallback de polling (preferir webhook).
     Task<GatewayChargeStatus> GetChargeStatusAsync(string chargeId, CancellationToken ct = default);
+
+    Task<bool> CheckIfPlanExistsAsync(string productExternalId, CancellationToken ct = default);
 }

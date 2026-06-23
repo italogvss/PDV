@@ -95,4 +95,9 @@ public record PaymentWebhookEvent(
     IReadOnlyDictionary<string, string> Metadata,
     int? AmountCents,
     DateTime? PaidAt,
-    string? ReceiptUrl);
+    string? ReceiptUrl,
+    // Dados do cartão usado na cobrança (data.payerInformation.CARD) — gravados no histórico de Payment.
+    string? CardLastFour = null,
+    string? CardBrand = null,
+    // Produto-alvo de uma troca de plano (data.productId, presente em subscription.plan_changed).
+    string? ProductId = null);
