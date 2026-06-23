@@ -282,7 +282,7 @@ public class AuthService(
 
     // Resolve o tenant ativo e o papel (role) do token a partir dos vínculos do usuário.
     // O papel vem SEMPRE do UserTenant do tenant ativo — nunca de User.Role (global).
-    // Sem tenant ativo, o papel é vazio: nunca assumir "Owner" por padrão.
+    // Exceção: admins de plataforma (User.Role == Admin) não têm vínculo de tenant.
     private static (Guid? TenantId, string Role) ResolveActiveTenant(User user)
     {
         var tenants = user.UserTenants.ToList();
@@ -292,6 +292,9 @@ public class AuthService(
         var active = user.LastTenantId.HasValue
             ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
             : tenants[0];
+
+            if (user.Role == UserRole.Admin)
+                return (active.TenantId, user.Role.ToString());
 
         return (active.TenantId, active.Role.ToString());
     }

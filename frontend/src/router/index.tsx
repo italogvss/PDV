@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import RouterGuard from '../components/RouterGuard'
 import PermissionGuard from '../components/PermissionGuard'
-import AdminGuard from '../components/AdminGuard'
 import DashboardLayout from '../layouts/DashboardLayout'
 
 import DashboardPage from '../pages/Dashboard'
@@ -21,10 +20,6 @@ import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
 import OnboardingTenant from '../pages/CreateTenant'
 import ChangePasswordPage from '../pages/ChangePassword'
-import AdminWebhooksPage from '../pages/Admin/Webhooks'
-import AdminSubscriptionsPage from '../pages/Admin/Subscriptions'
-import AdminPaymentsPage from '../pages/Admin/Payments'
-import AdminConfigPage from '../pages/Admin/Config'
 import LogsPage from '../pages/Logs'
 
 export const router = createBrowserRouter([
@@ -132,17 +127,6 @@ export const router = createBrowserRouter([
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'assinatura/retorno', element: <SubscriptionReturnPage /> },
           { path: 'ajuda', element: <HelpPage /> },
-          {
-            path: 'admin',
-            element: <AdminGuard />,
-            children: [
-              { index: true, element: <Navigate to="webhooks" replace /> },
-              { path: 'webhooks', element: <AdminWebhooksPage /> },
-              { path: 'subscriptions', element: <AdminSubscriptionsPage /> },
-              { path: 'payments', element: <AdminPaymentsPage /> },
-              { path: 'config', element: <AdminConfigPage /> },
-            ],
-          },
         ],
       },
     ],

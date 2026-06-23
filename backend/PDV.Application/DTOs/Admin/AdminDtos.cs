@@ -50,3 +50,29 @@ public record AdminConfigDto(
     string? BackUrl);
 
 public record SimulatePixRequest(string PixChargeId);
+
+public record AdminPlanDto(
+    Guid Id,
+    string Name,
+    string? Description,
+    int PriceCents,
+    string BillingPeriod,
+    int? TrialDays,
+    bool SupportsCard,
+    bool SupportsPix,
+    bool IsActive,
+    int DisplayOrder,
+    string ExternalProductId,
+    IReadOnlyList<string> Modules,
+    IReadOnlyDictionary<string, int> Limits,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);
+
+public record UpdatePlanRequest(
+    string Name,
+    string? Description,
+    int PriceCents,
+    int? TrialDays,
+    bool SupportsCard,
+    bool SupportsPix,
+    int DisplayOrder);

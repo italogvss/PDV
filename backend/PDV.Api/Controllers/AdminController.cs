@@ -49,6 +49,25 @@ public class AdminController(
         return Ok(result);
     }
 
+    [HttpGet("plans")]
+    public async Task<IActionResult> GetPlans() =>
+        Ok(await adminService.GetAllPlansAsync());
+
+    [HttpGet("plans/{id:guid}")]
+    public async Task<IActionResult> GetPlan(Guid id) =>
+        Ok(await adminService.GetPlanByIdAsync(id));
+
+    [HttpPut("plans/{id:guid}")]
+    public async Task<IActionResult> UpdatePlan(Guid id, [FromBody] UpdatePlanRequest request) =>
+        Ok(await adminService.UpdatePlanAsync(id, request));
+
+    [HttpDelete("plans/{id:guid}")]
+    public async Task<IActionResult> DeactivatePlan(Guid id)
+    {
+        await adminService.DeactivatePlanAsync(id);
+        return NoContent();
+    }
+
     private static string MaskSecret(string value)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length <= 8) return "****";
