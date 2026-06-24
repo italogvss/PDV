@@ -37,10 +37,11 @@ import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
 import RoleFormModal from './components/RoleFormModal'
 import SettingCard from '../../components/SettingCard'
-import type { Employee, TenantRole } from '../../types/employee.types'
+import type { Employee, TenantRole, Permission } from '../../types/employee.types'
 import { PERMISSIONS } from '../../types/employee.types'
-import { permissionToModule } from '../../constants/modules'
+import { permissionToModule, type OperationModule } from '../../constants/modules'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
+import { useAccessMetadata } from '../../hooks/useAccessMetadata'
 import type { AvatarColorKey } from './types'
 
 const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
@@ -74,15 +75,27 @@ export default function EmployeesPage() {
 
   const { modules } = useUserPermissions()
 
+  // Relação permissão→módulo vinda do backend (fonte única). Enquanto os metadados carregam,
+  // usa o mapa local como fallback de renderização.
+  const { data: accessMeta } = useAccessMetadata()
+  const permToModule = useMemo<Partial<Record<Permission, OperationModule>>>(() => {
+    if (!accessMeta) return permissionToModule
+    const map: Partial<Record<Permission, OperationModule>> = {}
+    for (const [module, perms] of Object.entries(accessMeta.modulePermissions)) {
+      for (const perm of perms) map[perm] = module as OperationModule
+    }
+    return map
+  }, [accessMeta])
+
   // Mostra apenas permissões de módulos ativos. Permissões sem módulo (core, ex.:
   // Funcionários) ficam sempre visíveis.
   const visiblePermissions = useMemo(
     () =>
       (Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).filter((perm) => {
-        const module = permissionToModule[perm]
+        const module = permToModule[perm]
         return !module || modules.includes(module)
       }),
-    [modules],
+    [permToModule, modules],
   )
 
   const [pendingPermissions, setPendingPermissions] = useState<Record<string, string[]>>({})

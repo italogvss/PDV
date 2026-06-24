@@ -19,9 +19,10 @@ public class Plan : BaseEntity
     // Ciclo de cobrança do produto no gateway — base para calcular o fim do período no cartão.
     public BillingPeriod BillingPeriod { get; set; } = BillingPeriod.Monthly;
 
-    // Lógica de negócio do plano (não vive no gateway).
-    // ModulesJson: lista de OperationModule (nomes PascalCase). LimitsJson: dicionário chave→int.
-    public string ModulesJson { get; set; } = "[]";
+    // Entitlements do plano (eixo de billing — NÃO confundir com TenantSettings.EnabledModulesJson,
+    // que é o eixo de UI/Access Control). EntitledModulesJson: lista de OperationModule incluídos no
+    // plano (nomes PascalCase); vazio = nenhum. LimitsJson: dicionário chave→int (-1 = ilimitado).
+    public string EntitledModulesJson { get; set; } = "[]";
     public string LimitsJson { get; set; } = "{}";
 
     public int DisplayOrder { get; set; }

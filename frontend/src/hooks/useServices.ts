@@ -8,11 +8,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['services'] as const
 
 export function useServices() {
-  const { isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => serviceService.getAll(),
-    enabled: hasActiveSubscription && isModuleEnabled('services'),
+    enabled: isModuleEnabled('services'),
   })
 }
 
@@ -62,11 +62,11 @@ export function useDeleteService() {
 const INACTIVE_SERVICES_KEY = ['services', 'inactive'] as const
 
 export function useInactiveServices() {
-  const { isModuleEnabled, isOwner, hasActiveSubscription } = useUserPermissions()
+  const { isModuleEnabled, isOwner } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_SERVICES_KEY,
     queryFn: () => serviceService.getInactiveServices(),
-    enabled: hasActiveSubscription && isModuleEnabled('services') && isOwner,
+    enabled: isModuleEnabled('services') && isOwner,
   })
 }
 

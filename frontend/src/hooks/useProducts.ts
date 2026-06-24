@@ -8,12 +8,12 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['products'] as const
 
 export function useProducts() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => productService.getAll(),
     enabled:
-      hasActiveSubscription && isModuleEnabled('inventory') &&
+      isModuleEnabled('inventory') &&
       (hasPermission('ViewStock') || hasPermission('ManageStock')),
   })
 }
@@ -79,11 +79,11 @@ export function useAdjustStock() {
 const INACTIVE_PRODUCTS_KEY = ['products', 'inactive'] as const
 
 export function useInactiveProducts() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_PRODUCTS_KEY,
     queryFn: () => productService.getInactiveProducts(),
-    enabled: hasActiveSubscription && isModuleEnabled('inventory') && hasPermission('ManageStock'),
+    enabled: isModuleEnabled('inventory') && hasPermission('ManageStock'),
   })
 }
 

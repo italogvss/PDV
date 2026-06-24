@@ -43,9 +43,12 @@ public class TenantRoleRepository(AppDbContext context, ITenantContext tenantCon
     }
 
     public async Task<bool> HasPermissionAsync(Guid roleId, Permission permission) =>
-        // Query direto em TenantRolePermissions — sem query filter (join entity sem TenantId)
-        await context.TenantRolePermissions
-            .AnyAsync(p => p.TenantRoleId == roleId && p.Permission == permission);
+        // Passa pelo TenantRole (que tem query filter por TenantId + IsActive) antes de checar a
+        // permissão — garante que o role pertence ao tenant atual (defesa em profundidade).
+        await context.TenantRoles
+            .Where(r => r.Id == roleId)
+            .SelectMany(r => r.Permissions)
+            .AnyAsync(p => p.Permission == permission);
 
     public async Task ReplacePermissionsAsync(Guid roleId, IEnumerable<Permission> permissions)
     {

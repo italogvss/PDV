@@ -134,9 +134,9 @@ public class AdminService(AppDbContext context) : IAdminService
 
     private static AdminPlanDto MapPlan(PDV.Domain.Entities.Plan p)
     {
-        var modules = string.IsNullOrWhiteSpace(p.ModulesJson)
+        var modules = string.IsNullOrWhiteSpace(p.EntitledModulesJson)
             ? []
-            : JsonSerializer.Deserialize<List<string>>(p.ModulesJson) ?? [];
+            : JsonSerializer.Deserialize<List<string>>(p.EntitledModulesJson) ?? [];
 
         var limits = string.IsNullOrWhiteSpace(p.LimitsJson)
             ? new Dictionary<string, int>()

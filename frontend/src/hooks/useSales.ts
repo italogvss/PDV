@@ -9,24 +9,22 @@ const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
 
 export function useSales() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: SALES_KEY,
     queryFn: () => saleService.getAll(),
     enabled:
-      hasActiveSubscription &&
       isModuleEnabled('sales') &&
       (hasPermission('SellProducts') || hasPermission('ViewSalesHistory')),
   })
 }
 
 export function useSaleDetail(id: string | null) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...SALES_KEY, id],
     queryFn: () => saleService.getById(id!),
     enabled:
-      hasActiveSubscription &&
       id !== null &&
       isModuleEnabled('sales') &&
       (hasPermission('SellProducts') || hasPermission('ViewSalesHistory')),

@@ -9,11 +9,11 @@ const CATEGORIES_KEY = ['service-categories'] as const
 const SERVICES_KEY = ['services'] as const
 
 export function useServiceCategories() {
-  const { isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => serviceService.getAllCategories(),
-    enabled: hasActiveSubscription && isModuleEnabled('services'),
+    enabled: isModuleEnabled('services'),
   })
 }
 
@@ -65,11 +65,11 @@ export function useDeleteServiceCategory() {
 const INACTIVE_SERVICE_CATEGORIES_KEY = ['service-categories', 'inactive'] as const
 
 export function useInactiveServiceCategories() {
-  const { isModuleEnabled, isOwner, hasActiveSubscription } = useUserPermissions()
+  const { isModuleEnabled, isOwner } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_SERVICE_CATEGORIES_KEY,
     queryFn: () => serviceService.getInactiveServiceCategories(),
-    enabled: hasActiveSubscription && isModuleEnabled('services') && isOwner,
+    enabled: isModuleEnabled('services') && isOwner,
   })
 }
 

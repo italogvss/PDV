@@ -21,7 +21,7 @@ public class EntitlementService(
 
         if (subscription is not null && IsEntitled(subscription))
         {
-            var modules = OperationModuleHelper.ReadEnabled(subscription.Plan.ModulesJson);
+            var modules = PlanJson.ReadModules(subscription.Plan.EntitledModulesJson);
             var limits = PlanJson.ReadLimits(subscription.Plan.LimitsJson);
             return new ResolvedEntitlement(subscription, subscription.Plan, modules, limits);
         }

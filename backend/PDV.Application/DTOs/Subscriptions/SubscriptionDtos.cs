@@ -8,7 +8,7 @@ public record PlanResponse(
     string Name,
     string? Description,
     decimal Price,
-    IReadOnlyList<string> Modules,
+    IReadOnlyList<string> EntitledModules,
     IReadOnlyDictionary<string, int> Limits,
     bool SupportsCard,
     bool SupportsPix,
@@ -23,7 +23,9 @@ public record SubscriptionResponse(
     DateTime? TrialEndsAt,
     DateTime? CurrentPeriodEnd,
     DateTime? CanceledAt,
-    IReadOnlyList<string> Modules,
+    // Módulos incluídos no PLANO (eixo de billing). Informativo no frontend — NÃO esconde UI;
+    // o bloqueio acontece via 402 no backend. Não confundir com os módulos do tenant (/auth/me).
+    IReadOnlyList<string> EntitledModules,
     IReadOnlyDictionary<string, int> Limits,
     bool HasUsedTrial);
 

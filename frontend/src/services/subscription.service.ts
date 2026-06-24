@@ -18,7 +18,7 @@ interface BackendSubscription {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
-  modules: string[]
+  entitledModules: string[]
   limits: Record<string, number>
   hasUsedTrial: boolean
 }
@@ -28,7 +28,7 @@ interface BackendPlan {
   name: string
   description: string | null
   Price: number
-  modules: string[]
+  entitledModules: string[]
   limits: Record<string, number>
   supportsCard: boolean
   supportsPix: boolean
@@ -41,20 +41,6 @@ interface BackendCheckout {
 }
 
 function mapSubscription(s: BackendSubscription): Subscription {
-  console.log(s);
-  console.log({
-    planId: s.planId ?? null,
-    planName: s.planName ?? null,
-    status: s.status as SubscriptionStatus,
-    method: (s.method as PaymentMethod | null) ?? null,
-    isRenewable: s.isRenewable ?? false,
-    trialEndsAt: s.trialEndsAt ?? null,
-    currentPeriodEnd: s.currentPeriodEnd ?? null,
-    canceledAt: s.canceledAt ?? null,
-    modules: s.modules ?? [],
-    limits: s.limits ?? {},
-    hasUsedTrial: s.hasUsedTrial ?? false,
-  })
   return {
     planId: s.planId ?? null,
     planName: s.planName ?? null,
@@ -64,7 +50,7 @@ function mapSubscription(s: BackendSubscription): Subscription {
     trialEndsAt: s.trialEndsAt ?? null,
     currentPeriodEnd: s.currentPeriodEnd ?? null,
     canceledAt: s.canceledAt ?? null,
-    modules: s.modules ?? [],
+    entitledModules: s.entitledModules ?? [],
     limits: s.limits ?? {},
     hasUsedTrial: s.hasUsedTrial ?? false,
   }
@@ -76,7 +62,7 @@ function mapPlan(p: BackendPlan): Plan {
     name: p.name,
     description: p.description ?? null,
     Price: p.Price,
-    modules: p.modules ?? [],
+    entitledModules: p.entitledModules ?? [],
     limits: p.limits ?? {},
     supportsCard: p.supportsCard,
     supportsPix: p.supportsPix,

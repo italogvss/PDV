@@ -16,7 +16,8 @@ export interface Plan {
   name: string
   description: string | null
   Price: number
-  modules: string[]
+  // Módulos incluídos no plano (eixo de billing). Informativo — não esconde UI.
+  entitledModules: string[]
   limits: Record<string, number>
   supportsCard: boolean
   supportsPix: boolean
@@ -32,7 +33,9 @@ export interface Subscription {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
-  modules: string[]
+  // Módulos incluídos no plano ativo (eixo de billing). Informativo (futuro upsell) — não
+  // esconde UI; o bloqueio acontece via 402. Não confundir com os módulos do tenant (auth).
+  entitledModules: string[]
   limits: Record<string, number>
   // Controle de trial.
   hasUsedTrial: boolean

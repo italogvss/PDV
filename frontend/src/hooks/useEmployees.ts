@@ -8,12 +8,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['employees'] as const
 
 export function useEmployees(page = 1, pageSize = 50) {
-  const { hasPermission, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, page, pageSize],
     queryFn: () => employeeService.getAll(page, pageSize),
     enabled:
-      hasActiveSubscription &&
       (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
   })
 }
@@ -82,11 +81,11 @@ export function useReactivateEmployee() {
 const INACTIVE_EMPLOYEES_KEY = ['employees', 'inactive'] as const
 
 export function useInactiveEmployees() {
-  const { hasPermission, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_EMPLOYEES_KEY,
     queryFn: () => employeeService.getInactive(),
-    enabled: hasActiveSubscription && hasPermission('ManageEmployees'),
+    enabled: hasPermission('ManageEmployees'),
   })
 }
 

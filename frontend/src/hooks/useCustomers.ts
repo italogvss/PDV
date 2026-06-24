@@ -8,12 +8,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['customers'] as const
 
 export function useCustomers(page = 1, pageSize = 50, search?: string) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, page, pageSize, search],
     queryFn: () => customerService.getAll(page, pageSize, search),
     enabled:
-      hasActiveSubscription &&
       isModuleEnabled('customers') &&
       (hasPermission('ViewCustomers') || hasPermission('ManageCustomers')),
   })
@@ -68,11 +67,11 @@ export function useDeleteCustomer() {
 const INACTIVE_CUSTOMERS_KEY = ['customers', 'inactive'] as const
 
 export function useInactiveCustomers() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_CUSTOMERS_KEY,
     queryFn: () => customerService.getInactive(),
-    enabled: hasActiveSubscription && isModuleEnabled('customers') && hasPermission('ManageCustomers'),
+    enabled: isModuleEnabled('customers') && hasPermission('ManageCustomers'),
   })
 }
 

@@ -12,12 +12,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['appointments'] as const
 
 export function useAppointments(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, startDate, endDate],
     queryFn: () => appointmentService.getByDateRange(startDate, endDate),
     enabled:
-      hasActiveSubscription &&
       !!startDate &&
       !!endDate &&
       isModuleEnabled('appointments') &&

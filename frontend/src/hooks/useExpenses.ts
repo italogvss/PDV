@@ -9,24 +9,22 @@ const QUERY_KEY = ['expenses'] as const
 const RECURRING_QUERY_KEY = ['expenses', 'recurring'] as const
 
 export function useExpenses(month?: number, year?: number) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, month, year],
     queryFn: () => expenseService.getAll(month, year),
     enabled:
-      hasActiveSubscription &&
       isModuleEnabled('expenses') &&
       (hasPermission('ViewExpenses') || hasPermission('ManageExpenses')),
   })
 }
 
 export function useRecurringExpenses() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: RECURRING_QUERY_KEY,
     queryFn: () => expenseService.getRecurring(),
     enabled:
-      hasActiveSubscription &&
       isModuleEnabled('expenses') &&
       (hasPermission('ViewExpenses') || hasPermission('ManageExpenses')),
   })

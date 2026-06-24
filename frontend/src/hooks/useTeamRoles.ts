@@ -7,11 +7,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['team-roles'] as const
 
 export function useTeamRoles() {
-  const { hasPermission, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => teamRolesService.getAll(),
-    enabled: hasActiveSubscription && hasPermission('ManageEmployees'),
+    enabled: hasPermission('ManageEmployees'),
   })
 }
 
@@ -80,11 +80,11 @@ export function useSetRolePermissions() {
 const INACTIVE_ROLES_KEY = ['team-roles', 'inactive'] as const
 
 export function useInactiveRoles() {
-  const { hasPermission, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_ROLES_KEY,
     queryFn: () => teamRolesService.getInactive(),
-    enabled: hasActiveSubscription && hasPermission('ManageEmployees'),
+    enabled: hasPermission('ManageEmployees'),
   })
 }
 

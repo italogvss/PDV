@@ -40,7 +40,7 @@ public class PlanSeeder(IPlanRepository planRepository)
         plan.Description = seed.Description;
         plan.PriceCents = seed.PriceCents;
         plan.TrialDays = seed.TrialDays;
-        plan.ModulesJson = OperationModuleHelper.Serialize(seed.Modules);
+        plan.EntitledModulesJson = PlanJson.SerializeModules(seed.Modules);
         plan.LimitsJson = PlanJson.SerializeLimits(seed.Limits);
         plan.DisplayOrder = seed.DisplayOrder;
         plan.SupportsCard = seed.SupportsCard;

@@ -30,23 +30,25 @@ export function usePlans() {
 }
 
 // Espelha o resumo da assinatura (React Query) no auth slice para o banner/exibição global.
+// Só despacha quando algum campo do resumo muda — evita churn a cada refetch/polling (o `data`
+// do React Query troca de referência mesmo sem mudança de conteúdo).
 export function useSyncSubscriptionToStore() {
   const dispatch = useAppDispatch()
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const { data } = useSubscription()
 
+  const planId = data?.planId ?? null
+  const planName = data?.planName ?? null
+  const status = data?.status ?? null
+  const currentPeriodEnd = data?.currentPeriodEnd ?? null
+  const trialEndsAt = data?.trialEndsAt ?? null
+
   useEffect(() => {
     if (!isAuthenticated || !data) return
-    dispatch(
-      setSubscription({
-        planId: data.planId,
-        planName: data.planName,
-        status: data.status,
-        currentPeriodEnd: data.currentPeriodEnd,
-        trialEndsAt: data.trialEndsAt,
-      }),
-    )
-  }, [dispatch, isAuthenticated, data])
+    dispatch(setSubscription({ planId, planName, status: data.status, currentPeriodEnd, trialEndsAt }))
+    // Dependências primitivas: só refaz o dispatch quando um campo do resumo realmente muda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt])
 }
 
 export interface StartCheckoutInput {

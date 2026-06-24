@@ -9,12 +9,11 @@ const CATEGORIES_KEY = ['product-categories'] as const
 const PRODUCTS_KEY = ['products'] as const
 
 export function useProductCategories() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => productService.getAllCategories(),
     enabled:
-      hasActiveSubscription &&
       isModuleEnabled('inventory') &&
       (hasPermission('ViewStock') || hasPermission('ManageStock')),
   })
@@ -68,11 +67,11 @@ export function useDeleteProductCategory() {
 const INACTIVE_CATEGORIES_KEY = ['product-categories', 'inactive'] as const
 
 export function useInactiveProductCategories() {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: INACTIVE_CATEGORIES_KEY,
     queryFn: () => productService.getInactiveCategories(),
-    enabled: hasActiveSubscription && isModuleEnabled('inventory') && hasPermission('ManageStock'),
+    enabled: isModuleEnabled('inventory') && hasPermission('ManageStock'),
   })
 }
 
