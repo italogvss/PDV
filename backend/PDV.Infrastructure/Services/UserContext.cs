@@ -18,4 +18,14 @@ public class UserContext(IHttpContextAccessor accessor) : IUserContext
             return Guid.Parse(claim.Value);
         }
     }
+
+    public string UserName
+    {
+        get
+        {
+            return accessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value
+                ?? accessor.HttpContext?.User?.FindFirst("name")?.Value
+                ?? throw new UnauthorizedException("Nome não encontrado no token.");
+        }
+    }
 }

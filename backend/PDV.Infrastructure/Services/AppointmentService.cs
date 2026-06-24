@@ -13,6 +13,7 @@ public class AppointmentService(
     IEmployeeRepository employeeRepository,
     IServiceRepository serviceRepository,
     ITenantContext tenantContext,
+    IUserContext userContext,
     IAuditLogger auditLogger,
     IValidator<CreateAppointmentRequest> createValidator,
     IValidator<UpdateAppointmentRequest> updateValidator) : IAppointmentService
@@ -34,8 +35,10 @@ public class AppointmentService(
     {
         await createValidator.ValidateAndThrowAsync(request);
 
-        var employee = await employeeRepository.GetByIdAsync(request.EmployeeId)
-            ?? throw new NotFoundException("Profissional não encontrado.");
+        var (resolvedEmployeeId, resolvedEmployeeName) = await ResolveProfessionalAsync(request.EmployeeId);
+
+        if (await repository.HasConflictAsync(resolvedEmployeeId, request.Start, request.DurationMinutes))
+            throw new BusinessException("Já existe um agendamento para este profissional neste horário.");
 
         var serviceIds = request.ServiceIds.ToList();
         var serviceItems = await BuildServiceItemsAsync(serviceIds);
@@ -46,8 +49,8 @@ public class AppointmentService(
             CustomerId = request.CustomerId,
             CustomerName = request.CustomerName,
             CustomerPhone = request.CustomerPhone,
-            EmployeeId = employee.Id,
-            EmployeeName = employee.User?.Name ?? employee.UserName,
+            EmployeeId = resolvedEmployeeId,
+            EmployeeName = resolvedEmployeeName,
             Start = request.Start,
             DurationMinutes = request.DurationMinutes,
             Price = request.Price,
@@ -71,14 +74,16 @@ public class AppointmentService(
         var appointment = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Agendamento não encontrado.");
 
-        var employee = await employeeRepository.GetByIdAsync(request.EmployeeId)
-            ?? throw new NotFoundException("Profissional não encontrado.");
+        var (resolvedEmployeeId, resolvedEmployeeName) = await ResolveProfessionalAsync(request.EmployeeId);
+
+        if (await repository.HasConflictAsync(resolvedEmployeeId, request.Start, request.DurationMinutes, id))
+            throw new BusinessException("Já existe um agendamento para este profissional neste horário.");
 
         appointment.CustomerId = request.CustomerId;
         appointment.CustomerName = request.CustomerName;
         appointment.CustomerPhone = request.CustomerPhone;
-        appointment.EmployeeId = employee.Id;
-        appointment.EmployeeName = employee.User?.Name ?? employee.UserName;
+        appointment.EmployeeId = resolvedEmployeeId;
+        appointment.EmployeeName = resolvedEmployeeName;
         appointment.Start = request.Start;
         appointment.DurationMinutes = request.DurationMinutes;
         appointment.Price = request.Price;
@@ -123,6 +128,21 @@ public class AppointmentService(
     }
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
+
+    // Resolve o profissional a partir do ID enviado pelo frontend.
+    // O owner usa seu próprio UserId (não tem registro em employees); nesse caso EmployeeId
+    // fica null no agendamento e o nome vem do JWT.
+    private async Task<(Guid? EmployeeId, string EmployeeName)> ResolveProfessionalAsync(Guid requestedId)
+    {
+        var employee = await employeeRepository.GetByIdAsync(requestedId);
+        if (employee is not null)
+            return (employee.Id, employee.User?.Name ?? employee.UserName);
+
+        if (requestedId == userContext.UserId)
+            return (null, userContext.UserName);
+
+        throw new NotFoundException("Profissional não encontrado.");
+    }
 
     private async Task<List<AppointmentServiceItem>> BuildServiceItemsAsync(
         IEnumerable<Guid> serviceIds, Guid? appointmentId = null)

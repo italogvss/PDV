@@ -35,6 +35,21 @@ export default function AppointmentScheduler({
   const events = useMemo(() => toSchedulerEvents(appointments), [appointments])
   const resources = useMemo(() => toSchedulerResources(professionals), [professionals])
 
+  // Injeta cor hex customizada via CSS scoped ao wrapper, pois o MUI X Scheduler
+  // só aceita SchedulerEventColor (nomes fixos) — o hex não pode ir pelo model.
+  const customColorSx = useMemo(() => {
+    const styles: Record<string, object> = {}
+    for (const a of appointments) {
+      if (a.color) {
+        styles[`& .appt-${a.id}`] = {
+          backgroundColor: `${a.color} !important`,
+          borderColor: `${a.color} !important`,
+        }
+      }
+    }
+    return styles
+  }, [appointments])
+
   const handleClickCapture = (e: React.MouseEvent) => {
     let node: HTMLElement | null = e.target as HTMLElement
     while (node && node !== e.currentTarget) {
@@ -49,8 +64,8 @@ export default function AppointmentScheduler({
   }
 
   return (
-    <Box onClickCapture={handleClickCapture}>
-    <Box sx={{ height: 660, minHeight: 0 }}>
+    <Box onClickCapture={handleClickCapture} sx={customColorSx}>
+    <Box sx={{ height: 660, minHeight: 0, border: "none"}}>
       <EventCalendar
         events={events}
         resources={resources}

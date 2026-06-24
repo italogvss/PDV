@@ -1,4 +1,4 @@
-import { Inventory2Outlined } from '@mui/icons-material'
+import { Inventory2Outlined, Widgets } from '@mui/icons-material'
 import { Box, SxProps, Typography } from '@mui/material'
 import { formatBRL } from '../../../../utils/currency'
 import { ProductCardProps } from './types'
@@ -51,7 +51,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         <Box
           sx={imagesx}
         >
-          <Inventory2Outlined sx={{ fontSize: 28 }} />
+          <Widgets sx={{ fontSize: 28, color: "common.white" }} />
         </Box>
 
       )}

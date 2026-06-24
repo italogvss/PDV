@@ -133,15 +133,12 @@ export interface DayKpis {
   confirmados: number
   confirmedPct: number
   revenue: number
-  occupancy: number
   bookedMin: number
-  availMin: number
 }
 
 /** KPIs do DIA SELECIONADO (R7). Cancelados ficam de fora (R6). */
 export function computeKpis(
   appts: Appointment[],
-  professionals: Professional[],
   day: Dayjs,
 ): DayKpis {
   const selAppts = appointmentsOfDay(appts, day)
@@ -152,7 +149,6 @@ export function computeKpis(
   const pendentes = selAppts.filter((a) => a.status === 'pendente')
   const revenue = active.reduce((sum, a) => sum + a.price, 0)
   const bookedMin = active.reduce((sum, a) => sum + a.durationMinutes, 0)
-  const availMin = professionals.length * EXPEDIENTE_MIN
   return {
     count: active.length,
     pendentes: pendentes.length,
@@ -160,8 +156,6 @@ export function computeKpis(
     confirmedPct: active.length ? Math.round((confirmados.length / active.length) * 100) : 0,
     revenue,
     bookedMin,
-    availMin,
-    occupancy: availMin ? Math.round((bookedMin / availMin) * 100) : 0,
   }
 }
 

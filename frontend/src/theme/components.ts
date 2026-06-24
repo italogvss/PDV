@@ -6,6 +6,7 @@
 import type { Components, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { radius } from './shape';
+import { fontSize } from '@mui/system';
 
 export const components = (theme: Theme, scale = 1): Components<Theme> => {
   // Escala os poucos fontSize fixos (em px) de controles que leem/exibem conteúdo,
@@ -312,9 +313,10 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
           borderWidth: 1,
         },
         '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.accent[100]}` },
+      '&.MuiInputBase-adornedStart': { paddingLeft: 8 },
+      '&.MuiInputBase-adornedStart .MuiOutlinedInput-input': { paddingLeft: 6 },
       },
       input: { padding: '8px 12px', height: 'auto' },
-      inputSizeSmall: { padding: '8px 12px' },
     },
   },
   MuiInputLabel: {

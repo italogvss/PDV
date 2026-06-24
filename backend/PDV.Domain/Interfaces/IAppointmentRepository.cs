@@ -10,5 +10,6 @@ public interface IAppointmentRepository
     Task UpdateAsync(Appointment appointment);
     Task ReplaceServiceItemsAsync(Guid appointmentId, IEnumerable<AppointmentServiceItem> newItems);
     Task DeleteAsync(Appointment appointment);
+    Task<bool> HasConflictAsync(Guid? employeeId, DateTime start, int durationMinutes, Guid? excludeId = null);
     Task<int> PurgeAllAsync();
 }

@@ -281,7 +281,6 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                 <Switch
                   checked={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
-                  size="small"
                 />
               </Box>
             )}

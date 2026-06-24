@@ -27,7 +27,9 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
   }, [open])
 
   const newStock = product.stock + quantity
-  const isInvalid = newStock < 0 || quantity === 0
+  const decrementDisabled = newStock <= 0
+  const incrementDisabled = newStock >= 9999
+  const isInvalid = quantity === 0
 
   const handleSubmit = async () => {
     await adjustStock.mutateAsync({ id: product.id, quantity })
@@ -67,7 +69,7 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
             </Typography>
           </Box>
 
-          <Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Typography
               variant="caption"
               sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 0.75 }}
@@ -76,26 +78,29 @@ export default function AdjustStockModal({ open, onClose, product }: AdjustStock
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <IconButton
-                size="small"
                 onClick={() => setQuantity((q) => q - 1)}
+                disabled={decrementDisabled}
                 sx={{ border: '1px solid', borderColor: 'border.subtle', borderRadius: 1.5 }}
               >
-                <RemoveRounded sx={{ fontSize: 16 }} />
+                <RemoveRounded sx={{ fontSize: 20 }} />
               </IconButton>
               <TextField
                 size="small"
                 type="number"
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0
+                  setQuantity(Math.max(-product.stock, Math.min(9999 - product.stock, val)))
+                }}
                 sx={{ width: 100 }}
                 slotProps={{ htmlInput: { style: { textAlign: 'center' } } }}
               />
               <IconButton
-                size="small"
                 onClick={() => setQuantity((q) => q + 1)}
+                disabled={incrementDisabled}
                 sx={{ border: '1px solid', borderColor: 'border.subtle', borderRadius: 1.5 }}
               >
-                <AddRounded sx={{ fontSize: 16 }} />
+                <AddRounded sx={{ fontSize: 20 }} />
               </IconButton>
             </Box>
           </Box>

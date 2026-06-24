@@ -1,16 +1,20 @@
 import AddRounded from '@mui/icons-material/AddRounded'
+import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
 import PaidOutlined from '@mui/icons-material/PaidOutlined'
+import TableRowsRounded from '@mui/icons-material/TableRowsRounded'
 import TodayOutlined from '@mui/icons-material/TodayOutlined'
 import {
   Box,
   Button,
+  Chip,
   ToggleButton,
   ToggleButtonGroup,
   Typography
 } from '@mui/material'
+import { DataGrid } from '@mui/x-data-grid'
+import type { GridColDef } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers'
 import type { SchedulerEvent } from '@mui/x-scheduler/models'
 import dayjs from 'dayjs'
@@ -23,7 +27,9 @@ import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useD
 import { useCustomers } from '../../hooks/useCustomers'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useServices } from '../../hooks/useServices'
+import { useAppSelector } from '../../store'
 import type { Appointment, AppointmentStatus, Professional } from '../../types/appointment.types'
+import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
 import { formatBRL } from '../../utils/currency'
 import AppointmentDetailModal from './components/AppointmentDetailModal'
 import { computeKpis } from './components/appointmentHelpers'
@@ -32,6 +38,16 @@ import NewAppointmentModal from './components/NewAppointmentModal'
 import SidePanel from './components/SidePanel'
 import WeekStrip from './components/WeekStrip'
 import type { AgendaView, NewAppointmentPrefill } from './types'
+
+type ViewMode = 'scheduler' | 'list'
+
+const STATUS_COLOR: Record<AppointmentStatus, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
+  pendente: 'warning',
+  confirmado: 'info',
+  em_atendimento: 'info',
+  concluido: 'success',
+  cancelado: 'error',
+}
 
 const DOW_FULL = [
   'Domingo',
@@ -60,16 +76,17 @@ const MONTHS = [
 export default function AppointmentsPage() {
   // ─── Data da API ────────────────────────────────────────────────────────────
 
+  const { userId: ownerUserId, name: ownerName, role } = useAppSelector((s) => s.auth)
   const { data: employeesPage } = useEmployees(1, 100)
-  const professionals = useMemo<Professional[]>(
-    () =>
-      (employeesPage?.data ?? []).map((e) => ({
-        id: e.id,
-        name: e.name,
-        specialty: e.position,
-      })),
-    [employeesPage],
-  )
+  const professionals = useMemo<Professional[]>(() => {
+    const employees: Professional[] = (employeesPage?.data ?? [])
+      .filter((e) => e.userId !== ownerUserId)
+      .map((e) => ({ id: e.id, name: e.name }))
+    if (role === 'Owner' && ownerUserId && ownerName) {
+      return [{ id: ownerUserId, name: ownerName }, ...employees]
+    }
+    return employees
+  }, [employeesPage, ownerUserId, ownerName, role])
 
   const { data: services = [] } = useServices()
   const { data: customersPage } = useCustomers(1, 500)
@@ -79,6 +96,7 @@ export default function AppointmentsPage() {
 
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [view, setView] = useState<AgendaView>('day')
+  const [viewMode, setViewMode] = useState<ViewMode>('scheduler')
   const [proFilter, setProFilter] = useState<string>('todos')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [newOpen, setNewOpen] = useState(false)
@@ -102,7 +120,7 @@ export default function AppointmentsPage() {
 
   const isToday = selectedDate.isSame(dayjs(), 'day')
   const kpis = useMemo(
-    () => computeKpis(appointments, professionals, selectedDate),
+    () => computeKpis(appointments, selectedDate),
     [appointments, professionals, selectedDate],
   )
 
@@ -118,6 +136,52 @@ export default function AppointmentsPage() {
     if (proFilter === 'todos') return {}
     return Object.fromEntries(professionals.map((p) => [p.id, p.id === proFilter]))
   }, [proFilter, professionals])
+
+  const listAppointments = useMemo(() => {
+    let filtered = appointments
+    if (view === 'day') {
+      filtered = filtered.filter((a) => dayjs(a.start).isSame(selectedDate, 'day'))
+    }
+    if (proFilter !== 'todos') {
+      filtered = filtered.filter((a) => a.employeeId === proFilter)
+    }
+    return [...filtered].sort((a, b) => a.start.localeCompare(b.start))
+  }, [appointments, view, selectedDate, proFilter])
+
+  const listColumns = useMemo<GridColDef<Appointment>[]>(() => [
+    {
+      field: 'start',
+      headerName: 'Hora',
+      width: 80,
+      valueFormatter: (value: string) => dayjs(value).format('HH:mm'),
+    },
+    ...(view === 'week' ? [{
+      field: 'startDate',
+      headerName: 'Data',
+      width: 110,
+      valueGetter: (_: unknown, row: Appointment) => dayjs(row.start).format('DD/MM/YYYY'),
+    }] : []),
+    { field: 'customerName', headerName: 'Cliente', flex: 1, minWidth: 140 },
+    { field: 'employeeName', headerName: 'Profissional', width: 160 },
+    {
+      field: 'services',
+      headerName: 'Serviços',
+      flex: 1,
+      minWidth: 160,
+      valueGetter: (_: unknown, row: Appointment) => row.services.map((s) => s.name).join(' + '),
+    },
+    { field: 'durationMinutes', headerName: 'Duração', width: 90, valueFormatter: (v: number) => `${v} min` },
+    { field: 'price', headerName: 'Valor', width: 110, valueFormatter: (v: number) => formatBRL(v) },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 140,
+      renderCell: (params) => {
+        const value = params.value as AppointmentStatus
+        return <Chip label={APPOINTMENT_STATUS_LABELS[value]} color={STATUS_COLOR[value]} size="small" />
+      },
+    },
+  ], [view])
 
   const detailAppointment = detailId
     ? (appointments.find((a) => a.id === detailId) ?? null)
@@ -212,7 +276,6 @@ export default function AppointmentsPage() {
   }
 
   const headerTitle = `${DOW_FULL[selectedDate.day()]}, ${selectedDate.date()} de ${MONTHS[selectedDate.month()]}`
-  const hours = (min: number) => (min / 60).toFixed(min % 60 === 0 ? 0 : 1)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -226,7 +289,7 @@ export default function AppointmentsPage() {
         <ToggleButtonGroup
           exclusive
           value={view}
-          onChange={(_, next: AgendaView | null) => next && setView(next)}         
+          onChange={(_, next: AgendaView | null) => next && setView(next)}
         >
           <ToggleButton value="day">Dia</ToggleButton>
           <ToggleButton value="week">Semana</ToggleButton>
@@ -257,12 +320,6 @@ export default function AppointmentsPage() {
           label="Receita prevista"
           value={formatBRL(kpis.revenue)}
           badge={{ label: 'serviços do dia', color: 'default' }}
-        />
-        <PageKpiCard
-          icon={DonutLargeOutlined}
-          label="Taxa de ocupação"
-          value={`${kpis.occupancy}%`}
-          badge={{ label: `${hours(kpis.bookedMin)}h de ${hours(kpis.availMin)}h`, color: kpis.occupancy > 70 ? 'success' : 'warning' }}
         />
       </PageKpiGrid>
 
@@ -298,7 +355,7 @@ export default function AppointmentsPage() {
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
-          {/* Filtro por profissional */}
+          {/* Filtro por profissional + toggle de visualização */}
           <Typography
             variant="caption"
             sx={{
@@ -311,23 +368,45 @@ export default function AppointmentsPage() {
           >
             Filtrar por profissional
           </Typography>
-          <FilterTabs
-            value={proFilter}
-            onChange={setProFilter}
-            options={proTabs}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <FilterTabs value={proFilter} onChange={setProFilter} options={proTabs} />
+            </Box>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, v: ViewMode | null) => v && setViewMode(v)}
+              size="small"
+              sx={{ flexShrink: 0 }}
+            >
+              <ToggleButton value="scheduler"><CalendarMonthRounded sx={{ fontSize: 18 }} /></ToggleButton>
+              <ToggleButton value="list"><TableRowsRounded sx={{ fontSize: 18 }} /></ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
 
-          <AppointmentScheduler
-            appointments={appointments}
-            professionals={professionals}
-            view={view}
-            visibleDate={selectedDate.toDate()}
-            visibleResources={visibleResources}
-            onViewChange={setView}
-            onVisibleDateChange={(date) => setSelectedDate(dayjs(date))}
-            onEventsChange={handleEventsChange}
-            onEventClick={(id) => setDetailId(id)}
-          />
+          {viewMode === 'scheduler' ? (
+            <AppointmentScheduler
+              appointments={appointments}
+              professionals={professionals}
+              view={view}
+              visibleDate={selectedDate.toDate()}
+              visibleResources={visibleResources}
+              onViewChange={setView}
+              onVisibleDateChange={(date) => setSelectedDate(dayjs(date))}
+              onEventsChange={handleEventsChange}
+              onEventClick={(id) => setDetailId(id)}
+            />
+          ) : (
+            <DataGrid
+              rows={listAppointments}
+              columns={listColumns}
+              onRowClick={({ id }) => setDetailId(String(id))}
+              hideFooter={listAppointments.length <= 100}
+              disableColumnFilter
+              disableColumnMenu
+              sx={{ cursor: 'pointer' }}
+            />
+          )}
         </Box>
 
         <SidePanel

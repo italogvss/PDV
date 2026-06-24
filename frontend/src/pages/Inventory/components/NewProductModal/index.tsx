@@ -38,21 +38,34 @@ const schema = z.object({
   stock: z.coerce
     .number({ invalid_type_error: 'Informe um número' })
     .int()
+    .max(9999)
     .min(0, 'Não pode ser negativo'),
   minStock: z.coerce
     .number({ invalid_type_error: 'Informe um número' })
     .int()
     .min(0)
+    .max(9999)
     .optional()
     .or(z.literal('')),
   criticalStock: z.coerce
     .number({ invalid_type_error: 'Informe um número' })
     .int()
     .min(0)
+    .max(9999)
     .optional()
     .or(z.literal('')),
-  barcode: z.string().optional(),
+  barcode: z.string().max(100).optional(),
   categoryId: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  const min = typeof data.minStock === 'number' ? data.minStock : undefined
+  const critical = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
+  if (min !== undefined && critical !== undefined && critical > min) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Deve ser menor ou igual ao estoque mínimo',
+      path: ['criticalStock'],
+    })
+  }
 })
 
 type ProductForm = z.infer<typeof schema>

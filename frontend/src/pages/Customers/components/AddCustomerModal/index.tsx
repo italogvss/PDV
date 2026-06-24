@@ -1,27 +1,27 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
+  Box,
   Dialog,
   DialogContent,
-  Box,
   TextField,
   Typography,
   useMediaQuery,
-  useTheme,
+  useTheme
 } from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { useCreateCustomer } from '../../../../hooks/useCustomers'
-import { formatPhone, maskDocument, maskCEP } from '../../../../utils/masks'
-import ModalHeader from '../../../../components/ModalHeader'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
+import ModalHeader from '../../../../components/ModalHeader'
+import { useCreateCustomer } from '../../../../hooks/useCustomers'
+import { formatPhone, maskCEP, maskDocument } from '../../../../utils/masks'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
     .optional().or(z.literal('')),
-  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  email: z.string().email('E-mail inválido').max(50).optional().or(z.literal('')),
   document: z.string()
     .refine(v => !v || [11, 14].includes(v.replace(/\D/g, '').length), 'CPF ou CNPJ inválido')
     .optional().or(z.literal('')),
@@ -82,12 +82,12 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
       note: data.note ?? '',
       address: hasAddress
         ? {
-            street: data.street || null,
-            number: data.number || null,
-            city: data.city || null,
-            state: data.state || null,
-            zipCode: data.zipCode || null,
-          }
+          street: data.street || null,
+          number: data.number || null,
+          city: data.city || null,
+          state: data.state || null,
+          zipCode: data.zipCode || null,
+        }
         : null,
     })
     reset(defaultValues)

@@ -36,6 +36,7 @@ import AdjustStockModal from './components/AdjustStockModal'
 import { useProducts, useDeleteProduct } from '../../hooks/useProducts'
 import { useProductCategories, useDeleteProductCategory, useCreateProductCategory, useUpdateProductCategory } from '../../hooks/useProductCategories'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
+import { Widgets } from '@mui/icons-material'
 
 export default function InventoryPage() {
   const { data: products = [], isLoading: isLoadingProducts } = useProducts()
@@ -114,7 +115,7 @@ export default function InventoryPage() {
                   flexShrink: 0,
                 }}
               >
-                <CategoryRounded
+                <Widgets
                   sx={{ fontSize: 15, color: row.category ? row.category.color : 'text.tertiary' }}
                 />
               </Box>
@@ -399,8 +400,8 @@ export default function InventoryPage() {
           rowHeight={64}
           loading={isLoadingProducts}
           disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          pageSizeOptions={[25, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
           onRowDoubleClick={(params) => setEditProduct(params.row)}         
         />
       </Card>

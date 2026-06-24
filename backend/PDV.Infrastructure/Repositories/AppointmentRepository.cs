@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
@@ -59,6 +60,18 @@ public class AppointmentRepository(AppDbContext context, ITenantContext tenantCo
         appointment.UpdatedAt = DateTime.UtcNow;
         context.Appointments.Update(appointment);
         await context.SaveChangesAsync();
+    }
+
+    public async Task<bool> HasConflictAsync(Guid? employeeId, DateTime start, int durationMinutes, Guid? excludeId = null)
+    {
+        var newEnd = start.AddMinutes(durationMinutes);
+        return await context.Appointments
+            .Where(a => a.EmployeeId == employeeId
+                && a.Status != AppointmentStatus.Cancelado
+                && (excludeId == null || a.Id != excludeId)
+                && a.Start < newEnd
+                && a.Start.AddMinutes(a.DurationMinutes) > start)
+            .AnyAsync();
     }
 
     // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).

@@ -14,14 +14,10 @@ export type AppointmentStatus =
   | 'concluido'
   | 'cancelado'
 
-/**
- * Profissional que atende — subconjunto de `Employee` usado na agenda.
- * `specialty` vem de `Employee.position` (exibido no header/legenda).
- */
+/** Profissional que atende — subconjunto de `Employee` usado na agenda. */
 export interface Professional {
   id: string
   name: string
-  specialty: string
 }
 
 /** Serviço denormalizado dentro de um agendamento (snapshot do catálogo). */

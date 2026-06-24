@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, LinearProgress, Typography, useTheme } from '@mui/material'
+import { Box, Card, CardContent, Chip, Typography, useTheme } from '@mui/material'
 import type { Theme } from '@mui/material'
 import dayjs from 'dayjs'
 import SpaOutlined from '@mui/icons-material/SpaOutlined'
@@ -13,7 +13,6 @@ import {
   firstName,
   formatHM,
   initialsOf,
-  occupancyForPro,
   proColorKey,
   type ProColorKey,
   upcomingForDay,
@@ -48,7 +47,7 @@ export default function SidePanel({
   onOpenDetail,
 }: SidePanelProps) {
   const theme = useTheme()
-  const kpis = computeKpis(appointments, professionals, selectedDate)
+  const kpis = computeKpis(appointments, selectedDate)
 
   const nowMin = dayjs().hour() * 60 + dayjs().minute()
   const live = isToday && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN
@@ -98,30 +97,17 @@ export default function SidePanel({
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {professionals.map((pro) => {
-              const pct = occupancyForPro(appointments, pro.id, selectedDate)
               const booked = bookedMinutesForPro(appointments, pro.id, selectedDate)
               const color = proHex(theme, pro.id)
               return (
-                <Box key={pro.id} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar name={pro.name} color={color} />
-                    <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
-                      {firstName(pro.name)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {pct}% · {(booked / 60).toFixed(booked % 60 === 0 ? 0 : 1)}h
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={pct}
-                    sx={{
-                      height: 5,
-                      borderRadius: 3,
-                      bgcolor: 'surface.raised',
-                      '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
-                    }}
-                  />
+                <Box key={pro.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar name={pro.name} color={color} />
+                  <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
+                    {firstName(pro.name)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {(booked / 60).toFixed(booked % 60 === 0 ? 0 : 1)}h
+                  </Typography>
                 </Box>
               )
             })}
@@ -179,7 +165,7 @@ export default function SidePanel({
                         width: 3,
                         alignSelf: 'stretch',
                         borderRadius: 2,
-                        bgcolor: accentColor,
+                        bgcolor:  appt.color ?? "secondary.main",
                       }}
                     />
                     <Box sx={{ minWidth: 0, flex: 1 }}>

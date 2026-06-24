@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { zodResolver } from '@hookform/resolvers/zod'
+import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import ContentCutOutlined from '@mui/icons-material/ContentCutOutlined'
+import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
+import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
+import PaletteRounded from '@mui/icons-material/PaletteRounded'
+import PeopleOutlined from '@mui/icons-material/PeopleOutlined'
 import {
   Autocomplete,
   Box,
   Button,
   Chip,
   Dialog,
-  DialogActions,
   DialogContent,
-  DialogTitle,
   FormHelperText,
   InputAdornment,
   TextField,
@@ -16,26 +19,22 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
-import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
-import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
-import PaletteRounded from '@mui/icons-material/PaletteRounded'
-import PeopleOutlined from '@mui/icons-material/PeopleOutlined'
-import ContentCutOutlined from '@mui/icons-material/ContentCutOutlined'
-import { MuiColorInput } from 'mui-color-input'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { MuiColorInput } from 'mui-color-input'
+import { useEffect, useMemo, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import type { Service } from '../../../../types/service.types'
-import type { Appointment, AppointmentServiceRef } from '../../../../types/appointment.types'
-import { conflictsFor, formatHM } from '../appointmentHelpers'
-import { formatPhone } from '../../../../utils/masks'
-import ModalHeader from '../../../../components/ModalHeader'
-import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
+import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
+import ModalHeader from '../../../../components/ModalHeader'
+import type { Appointment, AppointmentServiceRef } from '../../../../types/appointment.types'
+import type { Service } from '../../../../types/service.types'
+import { formatBRL } from '../../../../utils/currency'
+import { formatPhone } from '../../../../utils/masks'
+import { conflictsFor, formatHM } from '../appointmentHelpers'
 import type { NewAppointmentModalProps } from './types'
 
 const APPOINTMENT_COLORS = [
@@ -75,7 +74,7 @@ function buildEmptyValues(date: string): FormValues {
     serviceIds: [],
     employeeId: '',
     date,
-    time: '09:00',
+    time: dayjs().add(1, 'hour').startOf('hour').format('HH:mm'),
     duration: 0,
     price: 0,
     status: 'confirmado',
@@ -108,7 +107,6 @@ export default function NewAppointmentModal({
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [durationTouched, setDurationTouched] = useState(false)
   const [priceTouched, setPriceTouched] = useState(false)
-  const [conflictData, setConflictData] = useState<FormValues | null>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const navigate = useNavigate()
@@ -140,7 +138,6 @@ export default function NewAppointmentModal({
     setCustomerId(null)
     setDurationTouched(false)
     setPriceTouched(false)
-    setConflictData(null)
   }, [open, prefill, defaultDate, reset])
 
   // Serviços agrupados por categoria.
@@ -218,12 +215,6 @@ export default function NewAppointmentModal({
   }
 
   const onSubmit = (data: FormValues) => {
-    const start = dayjs(`${data.date}T${data.time}`).toISOString()
-    const hits = conflictsFor(appointments, data.employeeId, start, data.duration)
-    if (hits.length > 0) {
-      setConflictData(data)
-      return
-    }
     finalize(data)
   }
 
@@ -346,11 +337,11 @@ export default function NewAppointmentModal({
                             sx={
                               selected
                                 ? {
-                                    bgcolor: 'text.primary',
-                                    color: 'background.paper',
-                                    fontWeight: 600,
-                                    '&:hover': { bgcolor: 'text.primary' },
-                                  }
+                                  bgcolor: 'text.primary',
+                                  color: 'background.paper',
+                                  fontWeight: 600,
+                                  '&:hover': { bgcolor: 'text.primary' },
+                                }
                                 : { borderColor: 'border.subtle', color: 'text.secondary' }
                             }
                           />
@@ -365,6 +356,28 @@ export default function NewAppointmentModal({
               <FormHelperText error sx={{ mt: 0.5 }}>
                 {errors.serviceIds.message}
               </FormHelperText>
+            )}
+            {selectedIds.length > 0 && (
+              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {services
+                  .filter((s) => selectedIds.includes(s.id))
+                  .map((s) => (
+                    <Box
+                      key={s.id}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 0.5 }}
+                    >
+                      <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }}>
+                        {s.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {formatBRL(s.price)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {s.durationMinutes ?? 30}min
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
             )}
           </Box>
 
@@ -417,11 +430,11 @@ export default function NewAppointmentModal({
                               sx={
                                 selected
                                   ? {
-                                      bgcolor: 'text.primary',
-                                      color: 'background.paper',
-                                      fontWeight: 600,
-                                      '&:hover': { bgcolor: 'text.primary' },
-                                    }
+                                    bgcolor: 'text.primary',
+                                    color: 'background.paper',
+                                    fontWeight: 600,
+                                    '&:hover': { bgcolor: 'text.primary' },
+                                  }
                                   : { borderColor: 'border.subtle', color: 'text.secondary' }
                               }
                             />
@@ -566,8 +579,8 @@ export default function NewAppointmentModal({
                 <Box sx={{ display: 'flex', gap: 0.75 }}>
                   {(
                     [
-                      { value: 'confirmado', label: 'Confirmado' },
-                      { value: 'pendente', label: 'Aguardando confirmação' },
+                      { value: 'confirmado', label: 'Confirmado', bgcolor: 'success.main' },
+                      { value: 'pendente', label: 'Aguardando confirmação', bgcolor: 'warning.main' },
                     ] as const
                   ).map((opt) => {
                     const selected = field.value === opt.value
@@ -582,12 +595,12 @@ export default function NewAppointmentModal({
                         sx={
                           selected
                             ? {
-                                bgcolor: 'text.primary',
-                                color: 'background.paper',
-                                fontWeight: 600,
-                                '&:hover': { bgcolor: 'text.primary' },
-                              }
-                            : { borderColor: 'border.subtle', color: 'text.secondary' }
+                              bgcolor: opt.bgcolor,
+                              color: 'background.paper',
+                              fontWeight: 600,
+                              '&:hover': { bgcolor: opt.bgcolor },
+                            }
+                            : { borderColor: 'border.subtle', color: 'text.secondary', '&:hover': { bgcolor: 'primary.main'}, }
                         }
                       />
                     )
@@ -707,33 +720,9 @@ export default function NewAppointmentModal({
         onCancel={onClose}
         isPending={false}
         submitLabel="Agendar"
+        submitDisabled={conflicts.length > 0}
         hint="Confirmação enviada por WhatsApp ao salvar"
       />
-
-      {/* Confirmação de conflito (R4: avisa, não bloqueia) */}
-      <Dialog open={!!conflictData} onClose={() => setConflictData(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Conflito de horário</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Há outro atendimento do mesmo profissional nesse horário. Deseja agendar mesmo assim?
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button variant="ghost" onClick={() => setConflictData(null)}>
-            Voltar
-          </Button>
-          <Button
-            variant="contained"
-            color="warning"
-            onClick={() => {
-              if (conflictData) finalize(conflictData)
-              setConflictData(null)
-            }}
-          >
-            Agendar mesmo assim
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Dialog>
   )
 }

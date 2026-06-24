@@ -25,7 +25,7 @@ export default function FilterTabs({ value, onChange, options }: Props) {
           fontWeight: 500,
           color: 'text.secondary',
           border: '1px solid transparent',
-          borderRadius: 2,
+          borderRadius: 999,
           mr: 1,
         },
         '& .MuiTabs-indicator': { display: 'none' },
@@ -36,7 +36,7 @@ export default function FilterTabs({ value, onChange, options }: Props) {
           key={t.value}
           value={t.value}
           label={t.label}
-          sx={{
+          sx={{            
             px: 1,
             '&:hover': {
               backgroundColor: 'action.hover',
@@ -45,7 +45,8 @@ export default function FilterTabs({ value, onChange, options }: Props) {
             '&.Mui-selected': {
               '&:hover': {border: "none"},
               fontWeight: 600,
-              color: 'common.white',
+              borderRadius: 999,
+              color: "common.white",
               backgroundColor: t.color ?? 'neutral.300',
             },
           }}
