@@ -9,7 +9,12 @@ public interface IExpenseRepository
     Task<IEnumerable<Expense>> GetRecurringUnpaidAsync();
     Task<IEnumerable<Expense>> GetInRangeAsync(DateTime start, DateTime end);
     Task AddAsync(Expense expense);
+    Task AddRangeAsync(IEnumerable<Expense> expenses);
     Task UpdateAsync(Expense expense);
     Task DeleteAsync(Expense expense);
+    Task DeleteRangeAsync(IEnumerable<Expense> expenses);
+    Task<IEnumerable<Expense>> GetSeriesFutureAsync(Guid seriesId, DateTime afterDueDate);
+    Task<IEnumerable<Expense>> GetAllInSeriesAsync(Guid seriesId);
+    Task<IEnumerable<Expense>> GetInfiniteSeriesLatestEntriesAsync();
     Task<int> PurgeAllAsync();
 }

@@ -6,4 +6,5 @@ export interface ExpenseRowMenuProps {
   onEdit: (expense: Expense) => void
   onMarkPaid: (id: string) => void
   onDelete: (id: string) => void
+  onDeleteSeries?: (id: string, scope: 'future' | 'all') => void
 }

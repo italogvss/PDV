@@ -86,3 +86,18 @@ export function useDeleteExpense() {
     onError: (error) => handleError(error, 'Erro ao excluir despesa.'),
   })
 }
+
+export function useDeleteExpenseSeries() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: ({ id, scope }: { id: string; scope: 'future' | 'all' }) =>
+      expenseService.deleteWithScope(id, scope),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Despesas excluídas com sucesso.', 'info')
+    },
+    onError: (error) => handleError(error, 'Erro ao excluir despesas da série.'),
+  })
+}

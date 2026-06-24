@@ -127,6 +127,7 @@ builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 builder.Services.AddScoped<IBillingWebhookService, BillingWebhookService>();
 builder.Services.AddScoped<PlanSeeder>();
 builder.Services.AddHostedService<SubscriptionExpiryBackgroundService>();
+builder.Services.AddHostedService<RecurringExpenseRenewalService>();
 
 // Gateway de pagamentos (AbacatePay)
 builder.Services.Configure<AbacatePayOptions>(builder.Configuration.GetSection(AbacatePayOptions.SectionName));

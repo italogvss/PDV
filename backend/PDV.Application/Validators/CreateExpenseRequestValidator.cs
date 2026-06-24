@@ -15,5 +15,8 @@ public class CreateExpenseRequestValidator : AbstractValidator<CreateExpenseRequ
             .WithMessage("Categoria inválida.");
         RuleFor(x => x.Amount).GreaterThan(0);
         RuleFor(x => x.DueDate).NotEmpty();
+        RuleFor(x => x.RepeatCount)
+            .GreaterThan(0).When(x => x.RepeatCount.HasValue)
+            .WithMessage("Número de repetições deve ser maior que zero.");
     }
 }

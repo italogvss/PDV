@@ -9,5 +9,7 @@ public record ExpenseResponse(
     DateTime DueDate,
     bool IsPaid,
     DateTime? PaidAt,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int? RepeatCount = null,
+    Guid? RecurringSeriesId = null
 );

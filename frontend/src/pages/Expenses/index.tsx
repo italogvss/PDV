@@ -8,12 +8,15 @@ import {
   Chip,
   useTheme,
   CircularProgress,
+  Tooltip,
 } from '@mui/material'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
+import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
@@ -37,6 +40,7 @@ import {
   useRecurringExpenses,
   useMarkExpensePaid,
   useDeleteExpense,
+  useDeleteExpenseSeries,
 } from '../../hooks/useExpenses'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import FiltersPopover from '../../components/FiltersPopover'
@@ -66,6 +70,7 @@ export default function ExpensesPage() {
   const { data: recurringExpenses = [] } = useRecurringExpenses()
   const markAsPaid = useMarkExpensePaid()
   const deleteExpense = useDeleteExpense()
+  const deleteExpenseSeries = useDeleteExpenseSeries()
   const { hasPermission } = useUserPermissions()
   const canManage = hasPermission('ManageExpenses')
 
@@ -84,31 +89,41 @@ export default function ExpensesPage() {
     return { total, paid, pending, paidCount, pendingCount, recurringTotal, recurringCount }
   }, [expenses])
 
-  const categoryColorMap: Record<ExpenseCategory, string> = {
-    Salarios: theme.palette.data.purple.main,
-    Aluguel: theme.palette.success.main,
-    Fornecedor: theme.palette.data.blue.main,
-    Energia: theme.palette.data.orange.main,
-    Agua: theme.palette.info.main,
-    Marketing: theme.palette.error.main,
-    Internet: theme.palette.text.disabled,
-    Impostos: theme.palette.warning.main,
-    Manutencao: theme.palette.secondary.main,
-    Outros: theme.palette.text.secondary,
-  }
-
   const donutSegments = EXPENSE_CATEGORIES.map((cat) => ({
     label: EXPENSE_CATEGORY_LABELS[cat].label,
     value: expenses.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
-    color: categoryColorMap[cat],
+    color: EXPENSE_CATEGORY_LABELS[cat].color,
   }))
     .filter((seg) => seg.value > 0)
     .sort((a, b) => b.value - a.value)
 
-  const upcomingRenewals = useMemo(
-    () => [...recurringExpenses].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
-    [recurringExpenses],
-  )
+  const upcomingRenewals = useMemo(() => {
+    const sorted = [...recurringExpenses].sort(
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+    )
+    // Exibe apenas a próxima entrada por série (menor DueDate).
+    // Entradas sem recurringSeriesId (legado) são exibidas individualmente.
+    const seriesInList = new Set<string>()
+    const result = sorted.filter((e) => {
+      const key = e.recurringSeriesId ?? e.id
+      if (seriesInList.has(key)) return false
+      seriesInList.add(key)
+      return true
+    })
+
+    // Se uma série infinita do mês visualizado está paga e ainda não tem entrada futura
+    // no banco (o background service ainda não rodou), exibe visualmente a próxima renovação.
+    for (const paid of expenses) {
+      if (!paid.isRecurring || paid.repeatCount != null || !paid.isPaid || !paid.recurringSeriesId) continue
+      if (seriesInList.has(paid.recurringSeriesId)) continue
+      const d = new Date(paid.dueDate)
+      const nextDue = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()))
+      result.push({ ...paid, id: `virtual-${paid.recurringSeriesId}`, dueDate: nextDue.toISOString(), isPaid: false, paidAt: null })
+      seriesInList.add(paid.recurringSeriesId)
+    }
+
+    return result.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+  }, [recurringExpenses, expenses])
 
   const rows = useMemo(() => {
     if (recurringFilter === 'Recorrentes') return expenses.filter((e) => e.isRecurring)
@@ -133,28 +148,28 @@ export default function ExpensesPage() {
       flex: 1,
       minWidth: 180,
       renderCell: ({ row }: { row: Expense }) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {row.isRecurring && (
-            <Chip
-              label="Mensal"
-              size="small"
-              icon={<SyncRounded />}
-              sx={{
-                height: 20,
-                fontSize: 11,
-                fontWeight: 600,
-                bgcolor: 'success.light',
-                color: 'success.dark',
-                border: '1px solid',
-                borderColor: 'success.main',
-                '& .MuiChip-icon': { fontSize: '11px !important', color: 'inherit', ml: 0.5, mr: '-4px' },
-                '& .MuiChip-label': { px: 1 },
-              }}
-            />
-          )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>         
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
             {row.description}
           </Typography>
+          {row.isRecurring && (
+            <Tooltip describeChild title="Renova mensalmente">
+            <Chip
+              size="small"
+              icon={<SyncRounded/>}              
+              sx={{
+                height: 20,
+                fontSize: 20,
+                fontWeight: 600,
+                bgcolor: 'success.light',
+                color: 'common.white',
+                border: 'none',
+                '& .MuiChip-icon': { fontSize: '16px !important', color: 'inherit',p: 0, m: 0.5 },
+                '& .MuiChip-label': { p: 0, m: 0 },
+              }}
+            />
+            </Tooltip>
+          )}
         </Box>
       ),
     },
@@ -240,6 +255,7 @@ export default function ExpensesPage() {
           onEdit={handleOpenEdit}
           onMarkPaid={(id) => markAsPaid.mutate(id)}
           onDelete={(id) => deleteExpense.mutate(id)}
+          onDeleteSeries={(id, scope) => deleteExpenseSeries.mutate({ id, scope })}
         />
       ),
     },
@@ -248,19 +264,45 @@ export default function ExpensesPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle financeiro`}>
-        <DatePicker
-          label="Mês e Ano"
-          views={['month', 'year']}
-          value={dayjs().year(selectedYear).month(selectedMonth - 1)}
-          onChange={(newValue) => {
-            if (newValue) {
-              setSelectedMonth(newValue.month() + 1)
-              setSelectedYear(newValue.year())
-            }
-          }}
-          format="MMMM YYYY"
-          slotProps={{ textField: { sx: { width: 200 } } }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ minWidth: 0, px: 0.75 }}
+            onClick={() => {
+              const prev = dayjs().year(selectedYear).month(selectedMonth - 1).subtract(1, 'month')
+              setSelectedMonth(prev.month() + 1)
+              setSelectedYear(prev.year())
+            }}
+          >
+            <ChevronLeftRounded fontSize="small" />
+          </Button>
+          <DatePicker
+            label="Mês e Ano"
+            views={['month', 'year']}
+            value={dayjs().year(selectedYear).month(selectedMonth - 1)}
+            onChange={(newValue) => {
+              if (newValue) {
+                setSelectedMonth(newValue.month() + 1)
+                setSelectedYear(newValue.year())
+              }
+            }}
+            format="MMMM YYYY"
+            slotProps={{ textField: { sx: { width: 200 } } }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ minWidth: 0, px: 0.75 }}
+            onClick={() => {
+              const next = dayjs().year(selectedYear).month(selectedMonth - 1).add(1, 'month')
+              setSelectedMonth(next.month() + 1)
+              setSelectedYear(next.year())
+            }}
+          >
+            <ChevronRightRounded fontSize="small" />
+          </Button>
+        </Box>
         {canManage && (
           <Button variant="contained" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
             Nova despesa
@@ -391,6 +433,7 @@ export default function ExpensesPage() {
                 label={upcomingRenewals.length}
                 size="small"
                 sx={{
+                  border: "none",
                   height: 20,
                   fontSize: 11,
                   fontWeight: 700,
@@ -416,23 +459,49 @@ export default function ExpensesPage() {
                   }}
                 >
                   <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 1.5,
-                      bgcolor: categoryColorMap[expense.category] + '22',
-                      flexShrink: 0,
-                    }}
-                  />
+                      sx={{
+                        width: 3,
+                        alignSelf: 'stretch',
+                        borderRadius: 2,
+                        bgcolor:  EXPENSE_CATEGORY_LABELS[expense.category].color,
+                      }}
+                    />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
                       {expense.description}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                      <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
-                      <Typography variant="caption" color="text.tertiary">
-                        Vence em {fmtDueDate(expense.dueDate)}
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25, flexWrap: 'wrap' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
+                        <Typography variant="caption" color="text.tertiary">
+                          Vence em {fmtDueDate(expense.dueDate)}
+                        </Typography>
+                      </Box>
+                      {expense.repeatCount === 0 && (
+                        <Chip
+                          label="Última parcela"
+                          size="small"
+                          sx={{
+                            height: 16,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            bgcolor: 'warning.soft',
+                            color: 'warning.ink',
+                            '& .MuiChip-label': { px: 0.75 },
+                          }}
+                        />
+                      )}
+                      {expense.repeatCount != null && expense.repeatCount > 0 && (
+                        <Chip
+                          label={`${expense.repeatCount} restante${expense.repeatCount !== 1 ? 's' : ''}`}
+                          sx={{
+                            px: 1,
+                            bgcolor: 'info.soft',
+                            color: 'info.ink',
+                            '& .MuiChip-label': { px: 0.75 },
+                          }}
+                        />
+                      )}
                     </Box>
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>

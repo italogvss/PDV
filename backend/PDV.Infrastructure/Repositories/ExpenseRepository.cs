@@ -42,7 +42,7 @@ public class ExpenseRepository(AppDbContext context, ITenantContext tenantContex
 
     public async Task<IEnumerable<Expense>> GetRecurringUnpaidAsync() =>
         await context.Expenses
-            .Where(e => e.IsRecurring && !e.IsPaid)
+            .Where(e => e.IsRecurring && !e.IsPaid && e.DueDate <= DateTime.UtcNow.AddMonths(3))
             .OrderBy(e => e.DueDate)
             .ToListAsync();
 
@@ -52,17 +52,51 @@ public class ExpenseRepository(AppDbContext context, ITenantContext tenantContex
         await context.SaveChangesAsync();
     }
 
+    public async Task AddRangeAsync(IEnumerable<Expense> expenses)
+    {
+        await context.Expenses.AddRangeAsync(expenses);
+        await context.SaveChangesAsync();
+    }
+
     public async Task UpdateAsync(Expense expense)
     {
         context.Expenses.Update(expense);
         await context.SaveChangesAsync();
     }
 
-//pode deletar, não precisa de historico
+    // pode deletar, não precisa de historico
     public async Task DeleteAsync(Expense expense)
     {
         context.Expenses.Remove(expense);
         await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteRangeAsync(IEnumerable<Expense> expenses)
+    {
+        context.Expenses.RemoveRange(expenses);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<Expense>> GetSeriesFutureAsync(Guid seriesId, DateTime afterDueDate) =>
+        await context.Expenses
+            .Where(e => e.RecurringSeriesId == seriesId && e.DueDate > afterDueDate)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Expense>> GetAllInSeriesAsync(Guid seriesId) =>
+        await context.Expenses
+            .Where(e => e.RecurringSeriesId == seriesId)
+            .ToListAsync();
+
+    // IgnoreQueryFilters: cross-tenant — necessário para o background service processar todos os tenants.
+    public async Task<IEnumerable<Expense>> GetInfiniteSeriesLatestEntriesAsync()
+    {
+        var groups = await context.Expenses
+            .IgnoreQueryFilters()
+            .Where(e => e.IsRecurring && e.RepeatCount == null && e.RecurringSeriesId != null)
+            .GroupBy(e => e.RecurringSeriesId)
+            .Select(g => g.OrderByDescending(e => e.DueDate).First())
+            .ToListAsync();
+        return groups;
     }
 
     // IgnoreQueryFilters: remove TUDO do tenant (Expense usa hard-delete; não há soft-delete).

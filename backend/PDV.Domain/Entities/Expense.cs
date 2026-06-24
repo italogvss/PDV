@@ -12,4 +12,6 @@ public class Expense : BaseEntity
     public DateTime DueDate { get; set; }
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }
+    public int? RepeatCount { get; set; }
+    public Guid? RecurringSeriesId { get; set; }
 }

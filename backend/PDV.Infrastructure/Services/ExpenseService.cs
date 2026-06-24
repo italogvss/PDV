@@ -74,6 +74,9 @@ public class ExpenseService(
     {
         await createValidator.ValidateAndThrowAsync(request);
 
+        var dueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc);
+        var seriesId = request.IsRecurring ? Guid.NewGuid() : (Guid?)null;
+
         var expense = new Expense
         {
             Id = Guid.NewGuid(),
@@ -82,13 +85,37 @@ public class ExpenseService(
             Category = Enum.Parse<ExpenseCategory>(request.Category),
             Amount = request.Amount,
             IsRecurring = request.IsRecurring,
-            DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc),
+            RepeatCount = request.RepeatCount,
+            RecurringSeriesId = seriesId,
+            DueDate = dueDate,
             IsPaid = request.IsPaid,
             PaidAt = request.IsPaid ? DateTime.UtcNow : null,
             CreatedAt = DateTime.UtcNow
         };
 
         await repository.AddAsync(expense);
+
+        // Pré-criar todas as entradas futuras para séries finitas
+        if (request.IsRecurring && request.RepeatCount.HasValue && request.RepeatCount.Value > 0)
+        {
+            var futures = Enumerable.Range(1, request.RepeatCount.Value).Select(i => new Expense
+            {
+                Id = Guid.NewGuid(),
+                TenantId = expense.TenantId,
+                RecurringSeriesId = seriesId,
+                Description = expense.Description,
+                Category = expense.Category,
+                Amount = expense.Amount,
+                IsRecurring = true,
+                RepeatCount = request.RepeatCount.Value - i,
+                DueDate = dueDate.AddMonths(i),
+                IsPaid = false,
+                PaidAt = null,
+                CreatedAt = DateTime.UtcNow,
+            }).ToList();
+            await repository.AddRangeAsync(futures);
+        }
+
         return Map(expense);
     }
 
@@ -103,7 +130,9 @@ public class ExpenseService(
         expense.Category = Enum.Parse<ExpenseCategory>(request.Category);
         expense.Amount = request.Amount;
         expense.IsRecurring = request.IsRecurring;
+        expense.RepeatCount = request.RepeatCount;
         expense.DueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc);
+        // RecurringSeriesId nunca é alterado por update — pertence à série original
 
         if (!expense.IsPaid && request.IsPaid)
             expense.PaidAt = DateTime.UtcNow;
@@ -128,39 +157,38 @@ public class ExpenseService(
         expense.PaidAt = DateTime.UtcNow;
         await repository.UpdateAsync(expense);
 
-        // When a recurring expense is paid, create the next month's entry
-        if (expense.IsRecurring)
-        {
-            var next = new Expense
-            {
-                Id = Guid.NewGuid(),
-                TenantId = expense.TenantId,
-                Description = expense.Description,
-                Category = expense.Category,
-                Amount = expense.Amount,
-                IsRecurring = true,
-                DueDate = expense.DueDate.AddMonths(1),
-                IsPaid = false,
-                PaidAt = null,
-                CreatedAt = DateTime.UtcNow
-            };
-            await repository.AddAsync(next);
-        }
-
         return Map(expense);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, string scope = "single")
     {
         var expense = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Despesa não encontrada.");
-        await repository.DeleteAsync(expense);
+
+        switch (scope.ToLowerInvariant())
+        {
+            case "future":
+                if (expense.RecurringSeriesId == null)
+                    throw new BusinessException("Esta despesa não pertence a uma série recorrente.");
+                var future = await repository.GetSeriesFutureAsync(expense.RecurringSeriesId.Value, expense.DueDate);
+                await repository.DeleteRangeAsync(future);
+                break;
+            case "all":
+                if (expense.RecurringSeriesId == null)
+                    throw new BusinessException("Esta despesa não pertence a uma série recorrente.");
+                var all = await repository.GetAllInSeriesAsync(expense.RecurringSeriesId.Value);
+                await repository.DeleteRangeAsync(all);
+                break;
+            default:
+                await repository.DeleteAsync(expense);
+                break;
+        }
     }
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
     private static ExpenseResponse Map(Expense e) =>
-        new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt);
+        new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt, e.RepeatCount, e.RecurringSeriesId);
 
     // ─── Chart helpers ────────────────────────────────────────────────────────
 

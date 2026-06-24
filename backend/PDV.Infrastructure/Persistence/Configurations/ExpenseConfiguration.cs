@@ -16,6 +16,9 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         builder.Property(e => e.DueDate).IsRequired();
         builder.Property(e => e.IsPaid).IsRequired();
         builder.Property(e => e.PaidAt);
+        builder.Property(e => e.RepeatCount);
+        builder.Property(e => e.RecurringSeriesId);
+        builder.HasIndex(e => e.RecurringSeriesId);
 
         builder.HasIndex(e => e.TenantId);
 

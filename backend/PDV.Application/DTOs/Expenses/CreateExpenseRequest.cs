@@ -6,5 +6,6 @@ public record CreateExpenseRequest(
     decimal Amount,
     bool IsRecurring,
     DateTime DueDate,
-    bool IsPaid
+    bool IsPaid,
+    int? RepeatCount = null
 );

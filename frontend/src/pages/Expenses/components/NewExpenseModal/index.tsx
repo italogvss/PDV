@@ -12,6 +12,7 @@ import {
   Switch,
   useMediaQuery,
   useTheme,
+  Collapse,
 } from '@mui/material'
 import SyncRounded from '@mui/icons-material/SyncRounded'
 import { DatePicker } from '@mui/x-date-pickers'
@@ -30,13 +31,19 @@ import FormModalActions from '../../../../components/FormModalActions'
 
 const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória').max(150),
-  amount: z.coerce.number({ invalid_type_error: 'Valor inválido' }).positive('Deve ser maior que zero'),
+  amount: z.coerce.number().positive('Deve ser maior que zero'),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]], {
     errorMap: () => ({ message: 'Selecione uma categoria' }),
   }),
   isPaid: z.boolean(),
   isRecurring: z.boolean(),
+  repeatCount: z.number()
+    .int('Deve ser um número inteiro')
+    .positive('Deve ser maior que zero')
+    .max(60, 'Não pode ser maior que 60')
+    .nullable()
+    .optional(),
 })
 
 type ExpenseForm = z.infer<typeof schema>
@@ -48,6 +55,7 @@ const emptyDefaults: ExpenseForm = {
   category: 'Outros',
   isPaid: false,
   isRecurring: false,
+  repeatCount: null,
 }
 
 export default function NewExpenseModal({ open, onClose, expense }: NewExpenseModalProps) {
@@ -60,6 +68,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   const {
     register,
     control,
+    watch,
     handleSubmit,
     reset,
     formState: { errors },
@@ -69,6 +78,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   })
 
   const isPending = createExpense.isPending || updateExpense.isPending
+  const isRecurring = watch('isRecurring')
 
   useEffect(() => {
     if (open) {
@@ -80,6 +90,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
           category: expense.category,
           isPaid: expense.isPaid,
           isRecurring: expense.isRecurring,
+          repeatCount: expense.repeatCount ?? null,
         })
       } else {
         reset(emptyDefaults)
@@ -95,6 +106,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
       dueDate: new Date(data.dueDate).toISOString(),
       isPaid: data.isPaid,
       isRecurring: data.isRecurring,
+      repeatCount: data.isRecurring ? (data.repeatCount ?? null) : null,
     }
 
     if (isEditing) {
@@ -285,6 +297,22 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               </Box>
             )}
           />
+
+          {/* Número de repetições (apenas quando recorrente) */}
+          <Collapse in={isRecurring}>
+            <Box>
+              <FieldLabel label="Repetir por quantos meses?" />
+              <TextField
+                {...register('repeatCount', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+                type="number"
+                fullWidth
+                placeholder="Ex.: 12"
+                inputProps={{ min: 1 }}
+                error={!!errors.repeatCount}
+                helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
+              />
+            </Box>
+          </Collapse>
         </Box>
       </DialogContent>
 

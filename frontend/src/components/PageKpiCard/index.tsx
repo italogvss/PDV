@@ -32,9 +32,9 @@ export default function PageKpiCard({ icon: Icon, label, value, valueColor, badg
         </Box>
 
         <Typography
-          variant="h1"
+          variant={"h1"}
           color={valueColor ? VALUE_COLOR[valueColor] : 'text.primary'}
-          sx={{ lineHeight: 1, mb: badge ? 1.5 : 0 }}
+          sx={{ lineHeight: 1, mb: badge ? 1.5 : 0, typography: { xs: 'h2', sm: 'h1' } }}
         >
           {value}
         </Typography>

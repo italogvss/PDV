@@ -23,12 +23,12 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Outros',
 ]
 
-export type ExpanseCategoryChip = {
+export type ExpenseCategoryChip = {
   label: string
   color: string
 }
 
-export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, ExpanseCategoryChip> = {
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, ExpenseCategoryChip> = {
   Aluguel: { label: 'Aluguel', color: '#be4444' },
   Fornecedor: { label: 'Fornecedor', color: '#c78f45' },
   Energia: { label: 'Energia', color: '#d4bd37' },
@@ -50,4 +50,6 @@ export interface Expense {
   amount: number
   isRecurring: boolean
   paidAt?: string | null
+  repeatCount?: number | null
+  recurringSeriesId?: string | null
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Expenses;
@@ -33,8 +34,8 @@ public class ExpensesController(IExpenseService service) : ControllerBase
         [FromQuery] string endDate,
         [FromQuery] string groupBy = "month")
     {
-        var start = DateTime.Parse(startDate);
-        var end   = DateTime.Parse(endDate);
+        var start = DateTime.Parse(startDate, CultureInfo.InvariantCulture);
+        var end   = DateTime.Parse(endDate, CultureInfo.InvariantCulture);
         var result = await service.GetChartAsync(start, end, groupBy);
         return Ok(result);
     }
@@ -81,9 +82,9 @@ public class ExpensesController(IExpenseService service) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permission.ManageExpenses)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] string scope = "single")
     {
-        await service.DeleteAsync(id);
+        await service.DeleteAsync(id, scope);
         return NoContent();
     }
 

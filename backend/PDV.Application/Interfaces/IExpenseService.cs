@@ -12,6 +12,6 @@ public interface IExpenseService
     Task<ExpenseResponse> CreateAsync(CreateExpenseRequest request);
     Task<ExpenseResponse> UpdateAsync(Guid id, UpdateExpenseRequest request);
     Task<ExpenseResponse> MarkAsPaidAsync(Guid id);
-    Task DeleteAsync(Guid id);
+    Task DeleteAsync(Guid id, string scope = "single");
     Task<int> PurgeAllAsync();
 }

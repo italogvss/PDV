@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624174758_AddExpenseRepeatCount")]
+    partial class AddExpenseRepeatCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -412,9 +415,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid?>("RecurringSeriesId")
-                        .HasColumnType("char(36)");
-
                     b.Property<int?>("RepeatCount")
                         .HasColumnType("int");
 
@@ -425,8 +425,6 @@ namespace PDV.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("RecurringSeriesId");
 
                     b.HasIndex("TenantId");
 

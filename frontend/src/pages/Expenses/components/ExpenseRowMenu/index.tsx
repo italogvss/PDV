@@ -1,16 +1,58 @@
 import { useState } from 'react'
-import { IconButton, Menu, MenuItem, Divider } from '@mui/material'
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import type { ExpenseRowMenuProps } from './types'
 
-export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid, onDelete }: ExpenseRowMenuProps) {
+type DeleteScope = 'single' | 'future' | 'all'
+
+export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid, onDelete, onDeleteSeries }: ExpenseRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const [confirmScope, setConfirmScope] = useState<DeleteScope | null>(null)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const handleClose = () => setAnchor(null)
+  const isSeries = expense.isRecurring && expense.repeatCount != null
 
   if (!canManage) return null
+
+  const handleConfirm = () => {
+    if (!confirmScope) return
+    if (confirmScope === 'single') {
+      onDelete(expense.id)
+    } else {
+      onDeleteSeries?.(expense.id, confirmScope)
+    }
+    setConfirmScope(null)
+  }
+
+  const confirmTitle = confirmScope === 'all'
+    ? 'Excluir toda a série?'
+    : confirmScope === 'future'
+    ? 'Excluir despesas futuras?'
+    : 'Excluir despesa?'
+
+  const confirmText = confirmScope === 'all'
+    ? (<>Todas as entradas de <strong>{expense.description}</strong> serão removidas permanentemente, incluindo passadas e futuras. Esta ação não pode ser desfeita.</>)
+    : confirmScope === 'future'
+    ? (<>Todas as entradas futuras de <strong>{expense.description}</strong> serão removidas permanentemente. A entrada atual não será afetada.</>)
+    : (<><strong>{expense.description}</strong> será removida permanentemente. Esta ação não pode ser desfeita.</>)
 
   return (
     <>
@@ -41,13 +83,52 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
         )}
         <Divider sx={{ my: 0.5 }} />
         <MenuItem
-          onClick={() => { handleClose(); onDelete(expense.id) }}
+          onClick={() => { handleClose(); setConfirmScope('single') }}
           sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
         >
           <DeleteOutlineRounded />
-          Excluir
+          {isSeries ? 'Excluir somente esta' : 'Excluir'}
         </MenuItem>
+        {isSeries && (
+          <MenuItem
+            onClick={() => { handleClose(); setConfirmScope('future') }}
+            sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+          >
+            <DeleteOutlineRounded />
+            Excluir apenas futuras
+          </MenuItem>
+        )}
+        {isSeries && (
+          <MenuItem
+            onClick={() => { handleClose(); setConfirmScope('all') }}
+            sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+          >
+            <DeleteOutlineRounded />
+            Excluir todas
+          </MenuItem>
+        )}
       </Menu>
+
+      <Dialog
+        open={confirmScope !== null}
+        onClose={() => setConfirmScope(null)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <DialogTitle>{confirmTitle}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{confirmText}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" size="small" onClick={() => setConfirmScope(null)}>
+            Cancelar
+          </Button>
+          <Button variant="contained" color="error" size="small" onClick={handleConfirm}>
+            Excluir
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
