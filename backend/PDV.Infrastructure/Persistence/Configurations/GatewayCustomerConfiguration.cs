@@ -18,5 +18,10 @@ public class GatewayCustomerConfiguration : IEntityTypeConfiguration<GatewayCust
 
         // Um cliente por usuário por provedor.
         builder.HasIndex(c => new { c.Provider, c.UserId }).IsUnique();
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

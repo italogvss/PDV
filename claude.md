@@ -69,7 +69,7 @@ Regras:
 
 - Código em inglês, interface e comentários em português brasileiro
 - Simplicidade acima de tudo — questionar qualquer abstração antes de criar
-- Soft delete em todas as entidades (`IsDeleted + DeletedAt`) — nunca deletar fisicamente
+- Soft delete via `IsActive = false` em todas as entidades (exceto `Expense`, que é hard-deleted) — nunca deletar fisicamente
 - Migrations via EF Core — nunca alterar banco manualmente
 
 ## Roles

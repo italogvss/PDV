@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623195345_AuditLog")]
+    partial class AuditLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -368,8 +371,6 @@ namespace PDV.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("TenantId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Employees");
@@ -509,8 +510,6 @@ namespace PDV.Infrastructure.Migrations
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.HasIndex("Provider", "UserId")
                         .IsUnique();
@@ -707,11 +706,11 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<string>("LimitsJson")
                         .IsRequired()
-                        .HasColumnType("json");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ModulesJson")
                         .IsRequired()
-                        .HasColumnType("json");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1021,8 +1020,6 @@ namespace PDV.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("TenantId");
-
                     b.ToTable("Services");
                 });
 
@@ -1282,7 +1279,7 @@ namespace PDV.Infrastructure.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("BusinessHoursJson")
-                        .HasColumnType("json");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Cnpj")
                         .HasMaxLength(14)
@@ -1299,7 +1296,7 @@ namespace PDV.Infrastructure.Migrations
                         .HasColumnType("decimal(5,2)");
 
                     b.Property<string>("EnabledModulesJson")
-                        .HasColumnType("json");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("FantasyName")
                         .IsRequired()
@@ -1633,12 +1630,6 @@ namespace PDV.Infrastructure.Migrations
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Customer");
 
                     b.Navigation("Employee");
@@ -1655,27 +1646,12 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("Appointment");
                 });
 
-            modelBuilder.Entity("PDV.Domain.Entities.Customer", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("PDV.Domain.Entities.Employee", b =>
                 {
                     b.HasOne("PDV.Domain.Entities.TenantRole", "Role")
                         .WithMany("Employees")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("PDV.Domain.Entities.User", "User")
@@ -1688,15 +1664,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PDV.Domain.Entities.Expense", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("PDV.Domain.Entities.ExternalAuth", b =>
                 {
                     b.HasOne("PDV.Domain.Entities.User", "User")
@@ -1706,15 +1673,6 @@ namespace PDV.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.GatewayCustomer", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.LocalAuth", b =>
@@ -1739,15 +1697,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("PDV.Domain.Entities.Payment", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("PDV.Domain.Entities.Product", b =>
                 {
                     b.HasOne("PDV.Domain.Entities.ProductCategory", "Category")
@@ -1755,22 +1704,7 @@ namespace PDV.Infrastructure.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.ProductCategory", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.Sale", b =>
@@ -1784,12 +1718,6 @@ namespace PDV.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("OperatorId")
                         .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("CancelledBy");
 
@@ -1828,22 +1756,7 @@ namespace PDV.Infrastructure.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.ServiceCategory", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.Subscription", b =>
@@ -1855,24 +1768,6 @@ namespace PDV.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Plan");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.Supplier", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.TenantRole", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.TenantRolePermission", b =>
@@ -1905,15 +1800,6 @@ namespace PDV.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("LastTenant");
-                });
-
-            modelBuilder.Entity("PDV.Domain.Entities.UserSeenMarker", b =>
-                {
-                    b.HasOne("PDV.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PDV.Domain.Entities.UserSettings", b =>

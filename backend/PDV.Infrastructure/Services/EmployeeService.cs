@@ -18,6 +18,7 @@ public class EmployeeService(
     ITenantContext tenantContext,
     IStorageService storage,
     IEntitlementService entitlementService,
+    IAuditLogger auditLogger,
     IValidator<CreateEmployeeRequest> createValidator,
     IValidator<UpdateEmployeeRequest> updateValidator) : IEmployeeService
 {
@@ -128,6 +129,8 @@ public class EmployeeService(
     {
         var employee = await employeeRepository.GetByIdAsync(id)
             ?? throw new NotFoundException("Funcionário não encontrado.");
+
+        await auditLogger.LogEmployeeDeactivatedAsync(employee.Id, employee.UserName);
 
         employee.IsActive = false;
         employee.UpdatedAt = DateTime.UtcNow;

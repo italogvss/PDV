@@ -8,7 +8,7 @@ public interface IAppointmentService
     Task<AppointmentResponse> GetByIdAsync(Guid id);
     Task<AppointmentResponse> CreateAsync(CreateAppointmentRequest request);
     Task<AppointmentResponse> UpdateAsync(Guid id, UpdateAppointmentRequest request);
-    Task<AppointmentResponse> ChangeStatusAsync(Guid id, ChangeAppointmentStatusRequest request, Guid changedByUserId);
+    Task<AppointmentResponse> ChangeStatusAsync(Guid id, ChangeAppointmentStatusRequest request);
     Task DeleteAsync(Guid id);
     Task<int> PurgeAllAsync();
 }

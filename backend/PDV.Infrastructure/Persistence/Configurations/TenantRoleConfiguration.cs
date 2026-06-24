@@ -20,5 +20,10 @@ public class TenantRoleConfiguration : IEntityTypeConfiguration<TenantRole>
         builder.HasIndex(r => new { r.TenantId, r.Name })
             .IsUnique()
             .HasFilter("IsActive = 1");
+
+        builder.HasOne<Tenant>()
+            .WithMany()
+            .HasForeignKey(r => r.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

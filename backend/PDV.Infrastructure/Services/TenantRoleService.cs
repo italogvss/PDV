@@ -11,6 +11,7 @@ namespace PDV.Infrastructure.Services;
 public class TenantRoleService(
     ITenantRoleRepository roleRepository,
     ITenantContext tenantContext,
+    IAuditLogger auditLogger,
     IValidator<CreateTenantRoleRequest> createValidator,
     IValidator<UpdateTenantRoleRequest> updateValidator,
     IValidator<SetRolePermissionsRequest> setPermissionsValidator) : ITenantRoleService
@@ -110,6 +111,9 @@ public class TenantRoleService(
                 throw new BusinessException($"Permissão inválida: '{p}'.");
             parsedPermissions.Add(permission);
         }
+
+        var before = role.Permissions.Select(p => p.Permission).ToList();
+        await auditLogger.LogRolePermissionsChangedAsync(role.Id, role.Name, before, parsedPermissions);
 
         await roleRepository.ReplacePermissionsAsync(id, parsedPermissions);
 

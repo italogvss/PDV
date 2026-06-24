@@ -5,7 +5,6 @@ using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
-using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
@@ -14,7 +13,7 @@ public class AppointmentService(
     IEmployeeRepository employeeRepository,
     IServiceRepository serviceRepository,
     ITenantContext tenantContext,
-    AppDbContext context,
+    IAuditLogger auditLogger,
     IValidator<CreateAppointmentRequest> createValidator,
     IValidator<UpdateAppointmentRequest> updateValidator) : IAppointmentService
 {
@@ -98,7 +97,7 @@ public class AppointmentService(
         return Map(updated);
     }
 
-    public async Task<AppointmentResponse> ChangeStatusAsync(Guid id, ChangeAppointmentStatusRequest request, Guid changedByUserId)
+    public async Task<AppointmentResponse> ChangeStatusAsync(Guid id, ChangeAppointmentStatusRequest request)
     {
         var appointment = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Agendamento não encontrado.");
@@ -107,16 +106,7 @@ public class AppointmentService(
         var toStatus = ParseStatus(request.Status);
         appointment.Status = toStatus;
 
-        var user = await context.Users.FindAsync(changedByUserId);
-        await context.AppointmentStatusLogs.AddAsync(new AppointmentStatusLog
-        {
-            TenantId = tenantContext.TenantId,
-            AppointmentId = id,
-            FromStatus = fromStatus,
-            ToStatus = toStatus,
-            ChangedByUserId = changedByUserId,
-            ChangedByName = user?.Name ?? string.Empty,
-        });
+        await auditLogger.LogAppointmentStatusChangedAsync(id, appointment.CustomerName, fromStatus, toStatus);
 
         await repository.UpdateAsync(appointment);
 

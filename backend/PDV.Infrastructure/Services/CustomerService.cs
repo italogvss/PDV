@@ -11,6 +11,7 @@ namespace PDV.Infrastructure.Services;
 public class CustomerService(
     ICustomerRepository repository,
     ITenantContext tenantContext,
+    IAuditLogger auditLogger,
     IValidator<CreateCustomerRequest> createValidator,
     IValidator<UpdateCustomerRequest> updateValidator) : ICustomerService
 {
@@ -78,6 +79,8 @@ public class CustomerService(
     {
         var customer = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Cliente não encontrado.");
+
+        await auditLogger.LogCustomerDeactivatedAsync(customer.Id, customer.Name);
 
         customer.IsActive = false;
         customer.UpdatedAt = DateTime.UtcNow;

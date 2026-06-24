@@ -12,7 +12,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             ?? "Server=127.0.0.1;Port=3306;Database=pdv;User=root;Password=admin";
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+            .UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)))
             .Options;
 
         return new AppDbContext(options, new DesignTimeTenantContext());

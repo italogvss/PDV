@@ -13,5 +13,10 @@ public class UserSeenMarkerConfiguration : IEntityTypeConfiguration<UserSeenMark
 
         // Invariante: um usuário vê cada Key uma única vez.
         builder.HasIndex(m => new { m.UserId, m.Key }).IsUnique();
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(m => m.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

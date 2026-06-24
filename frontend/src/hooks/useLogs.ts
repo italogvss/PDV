@@ -1,39 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { logsService } from '../services/logs.service'
 import { useUserPermissions } from './useUserPermissions'
+import type { AuditLogFilters } from '../types/audit.types'
 
-const KEYS = {
-  appointmentStatus: (from: string, to: string) =>
-    ['logs', 'appointment-status', from, to] as const,
-  stockMovements: (from: string, to: string) =>
-    ['logs', 'stock-movements', from, to] as const,
-  priceHistory: (from: string, to: string) =>
-    ['logs', 'price-history', from, to] as const,
-}
+const QUERY_KEY = 'audit-logs'
 
-export function useAppointmentStatusLogs(from: string, to: string, enabled = true) {
+// Hook de consulta reutilizável do log de auditoria. Aceita filtros (ação, entidade, datas)
+// e só dispara quando o usuário tem assinatura ativa, o módulo Logs habilitado e ViewLogs.
+export function useAuditLogs(filters: AuditLogFilters, enabled = true) {
   const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
   return useQuery({
-    queryKey: KEYS.appointmentStatus(from, to),
-    queryFn: () => logsService.getAppointmentStatusLogs(from, to),
-    enabled: hasActiveSubscription && enabled && isModuleEnabled('logs') && hasPermission('ViewLogs'),
-  })
-}
-
-export function useStockMovements(from: string, to: string, enabled = true) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
-  return useQuery({
-    queryKey: KEYS.stockMovements(from, to),
-    queryFn: () => logsService.getStockMovements(from, to),
-    enabled: hasActiveSubscription && enabled && isModuleEnabled('logs') && hasPermission('ViewLogs'),
-  })
-}
-
-export function usePriceHistory(from: string, to: string, enabled = true) {
-  const { hasPermission, isModuleEnabled, hasActiveSubscription } = useUserPermissions()
-  return useQuery({
-    queryKey: KEYS.priceHistory(from, to),
-    queryFn: () => logsService.getPriceHistory(from, to),
-    enabled: hasActiveSubscription && enabled && isModuleEnabled('logs') && hasPermission('ViewLogs'),
+    queryKey: [QUERY_KEY, filters] as const,
+    queryFn: () => logsService.getAuditLogs(filters),
+    enabled:
+      hasActiveSubscription && enabled && isModuleEnabled('logs') && hasPermission('ViewLogs'),
   })
 }

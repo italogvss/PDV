@@ -12,7 +12,7 @@ public interface IServiceService
         string? sortBy = null, string? sortOrder = null);
     Task<ServiceResponse> GetByIdAsync(Guid id);
     Task<ServiceResponse> CreateAsync(CreateServiceRequest request);
-    Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request, Guid changedByUserId);
+    Task<ServiceResponse> UpdateAsync(Guid id, UpdateServiceRequest request);
     Task DeleteAsync(Guid id);
     Task<IEnumerable<ServiceResponse>> GetAllInactiveAsync();
     Task RestoreAsync(Guid id);

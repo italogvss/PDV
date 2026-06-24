@@ -36,5 +36,10 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(a => new { a.TenantId, a.EmployeeId, a.Start });
+
+        builder.HasOne<Tenant>()
+            .WithMany()
+            .HasForeignKey(a => a.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

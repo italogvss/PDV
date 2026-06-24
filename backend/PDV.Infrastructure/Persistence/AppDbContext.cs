@@ -28,10 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<AppointmentServiceItem> AppointmentServiceItems => Set<AppointmentServiceItem>();
     public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
-    public DbSet<AppointmentStatusLog> AppointmentStatusLogs => Set<AppointmentStatusLog>();
-    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
-    public DbSet<ProductPriceHistory> ProductPriceHistories => Set<ProductPriceHistory>();
-    public DbSet<ServicePriceHistory> ServicePriceHistories => Set<ServicePriceHistory>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     // Cobrança/assinaturas. Plan e WebhookEvent são GLOBAIS; Subscription/GatewayCustomer/Payment
     // são scoped por UserId (Owner) — nenhuma recebe HasQueryFilter de tenant (ver OnModelCreating).
@@ -57,9 +54,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         modelBuilder.Entity<ProductCategory>()
             .HasQueryFilter(c => c.TenantId == tenantContext.TenantId && c.IsActive);
 
+        // Sale usa SaleStatus para ciclo de vida; IsActive (herdado de BaseEntity) nunca é alterado.
         modelBuilder.Entity<Sale>()
             .HasQueryFilter(s => s.TenantId == tenantContext.TenantId);
 
+        // Expense é hard-deleted (sem soft-delete); IsActive (herdado de BaseEntity) nunca é alterado.
         modelBuilder.Entity<Expense>()
             .HasQueryFilter(e => e.TenantId == tenantContext.TenantId);
 
@@ -87,17 +86,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         modelBuilder.Entity<MediaFile>()
             .HasQueryFilter(m => m.TenantId == tenantContext.TenantId && m.IsActive);
 
-        modelBuilder.Entity<AppointmentStatusLog>()
+        modelBuilder.Entity<AuditLog>()
             .HasQueryFilter(l => l.TenantId == tenantContext.TenantId);
-
-        modelBuilder.Entity<StockMovement>()
-            .HasQueryFilter(m => m.TenantId == tenantContext.TenantId);
-
-        modelBuilder.Entity<ProductPriceHistory>()
-            .HasQueryFilter(h => h.TenantId == tenantContext.TenantId);
-
-        modelBuilder.Entity<ServicePriceHistory>()
-            .HasQueryFilter(h => h.TenantId == tenantContext.TenantId);
 
         // Entidades de cobrança NÃO recebem query filter de tenant: a cobrança pertence ao Owner
         // (UserId) e cobre todas as lojas dele; o webhook (anônimo) precisa lê-las sem tenant context.

@@ -11,6 +11,11 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.TenantId).IsRequired();
         builder.HasIndex(s => s.TenantId);
 
+        builder.HasOne<Tenant>()
+            .WithMany()
+            .HasForeignKey(s => s.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Property(s => s.PaymentMethod).HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(s => s.OperatorName).IsRequired().HasMaxLength(200);
         builder.Property(s => s.CancelledByName).HasMaxLength(200);

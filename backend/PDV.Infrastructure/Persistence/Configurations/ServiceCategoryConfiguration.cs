@@ -14,6 +14,11 @@ public class ServiceCategoryConfiguration : IEntityTypeConfiguration<ServiceCate
 
         builder.HasIndex(c => new { c.TenantId, c.Name }).IsUnique();
 
+        builder.HasOne<Tenant>()
+            .WithMany()
+            .HasForeignKey(c => c.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(c => c.Services)
                .WithOne(s => s.Category)
                .HasForeignKey(s => s.CategoryId)

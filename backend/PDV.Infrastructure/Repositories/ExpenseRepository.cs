@@ -65,7 +65,7 @@ public class ExpenseRepository(AppDbContext context, ITenantContext tenantContex
         await context.SaveChangesAsync();
     }
 
-    // IgnoreQueryFilters: remove TUDO do tenant, inclusive registros já soft-deletados (IsActive = false).
+    // IgnoreQueryFilters: remove TUDO do tenant (Expense usa hard-delete; não há soft-delete).
     // O filtro de TenantId é reaplicado manualmente para não vazar exclusão entre tenants.
     public Task<int> PurgeAllAsync() =>
         context.Expenses

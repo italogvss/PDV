@@ -14,6 +14,7 @@ namespace PDV.Infrastructure.Services;
 public class SaleService(
     AppDbContext context,
     ITenantContext tenantContext,
+    IAuditLogger auditLogger,
     IValidator<CreateSaleRequest> createValidator) : ISaleService
 {
     private Guid TenantId => tenantContext.TenantId;
@@ -176,24 +177,12 @@ public class SaleService(
         var operatorUser = await context.Users.FindAsync(operatorId)
             ?? throw new NotFoundException("Operador não encontrado.");
 
-        if (productItems.Count > 0)
+        foreach (var item in productItems)
         {
-            var saleMovements = productItems.Select(item =>
-            {
-                var product = products[item.ProductId!.Value];
-                return new StockMovement
-                {
-                    TenantId = tenantId,
-                    ProductId = item.ProductId,
-                    ProductName = product.Name,
-                    Type = StockMovementType.Sale,
-                    Quantity = item.Quantity,
-                    UnitCost = product.PurchasePrice,
-                    CreatedByUserId = operatorId,
-                    CreatedByName = operatorUser.Name,
-                };
-            });
-            await context.StockMovements.AddRangeAsync(saleMovements);
+            var product = products[item.ProductId!.Value];
+            await auditLogger.LogStockMovementAsync(
+                product.Id, product.Name, StockMovementType.Sale, item.Quantity,
+                unitCost: product.PurchasePrice);
         }
 
         var sale = new Sale
@@ -244,7 +233,6 @@ public class SaleService(
         sale.CancelledByName = adminUser?.Name;
         sale.CancelledAt = DateTime.UtcNow;
 
-        var cancelMovements = new List<StockMovement>();
         foreach (var item in sale.Items.Where(i => i.ProductId.HasValue))
         {
             var product = await context.Products
@@ -254,21 +242,10 @@ public class SaleService(
             {
                 product.Stock += item.Quantity;
                 product.TotalSold -= item.Quantity;
-                cancelMovements.Add(new StockMovement
-                {
-                    TenantId = sale.TenantId,
-                    ProductId = item.ProductId,
-                    ProductName = item.ProductName,
-                    Type = StockMovementType.SaleCancel,
-                    Quantity = item.Quantity,
-                    CreatedByUserId = adminId,
-                    CreatedByName = adminUser?.Name ?? string.Empty,
-                });
+                await auditLogger.LogStockMovementAsync(
+                    product.Id, item.ProductName, StockMovementType.SaleCancel, item.Quantity);
             }
         }
-
-        if (cancelMovements.Count > 0)
-            await context.StockMovements.AddRangeAsync(cancelMovements);
 
         await context.SaveChangesAsync();
         await transaction.CommitAsync();

@@ -14,5 +14,10 @@ public class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
 
         builder.HasIndex(s => s.TenantId);
         builder.HasIndex(s => new { s.TenantId, s.Name });
+
+        builder.HasOne<Tenant>()
+            .WithMany()
+            .HasForeignKey(s => s.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
