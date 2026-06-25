@@ -240,7 +240,7 @@ export default function FinalizationModal({
         onCancel={onClose}
         onSubmit={onFinalize}
         isPending={isSubmitting}
-        submitLabel="Finalizar venda"
+        submitLabel="Concluir venda"
         submitDisabled={isSubmitting}
       />
     </Dialog>

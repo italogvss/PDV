@@ -55,7 +55,7 @@ export default function CartItem({
             onClick={() => onDecrement(product.id)}
             sx={{ p: 0.5, color: 'text.secondary' }}
           >
-            <RemoveRounded sx={{ fontSize: 14 }} />
+            <RemoveRounded sx={{ fontSize: 20 }} />
           </IconButton>
           <Typography
             variant="body2"
@@ -69,7 +69,7 @@ export default function CartItem({
             onClick={() => onIncrement(product.id)}
             sx={{ p: 0.5, color: 'text.secondary' }}
           >
-            <AddRounded sx={{ fontSize: 14 }} />
+            <AddRounded sx={{ fontSize: 20 }} />
           </IconButton>
         </Box>
 

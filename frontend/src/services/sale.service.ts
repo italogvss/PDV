@@ -19,9 +19,9 @@ export const saleService = {
     return data
   },
 
-  getAll: async (): Promise<SaleListItem[]> => {
+  getAll: async (startDate?: string, endDate?: string): Promise<SaleListItem[]> => {
     const { data } = await api.get<PaginatedSalesResponse>('/sales', {
-      params: { page: 1, pageSize: 200 },
+      params: { page: 1, pageSize: 200, startDate, endDate },
     })
     return data.data
   },

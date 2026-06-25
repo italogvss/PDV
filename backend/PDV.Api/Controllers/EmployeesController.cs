@@ -77,4 +77,12 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         await service.HardDeleteAsync(id);
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}/reset-password")]
+    [RequirePermission(Permission.ManageEmployees)]
+    public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetEmployeePasswordRequest request)
+    {
+        await service.ResetPasswordAsync(id, request);
+        return NoContent();
+    }
 }

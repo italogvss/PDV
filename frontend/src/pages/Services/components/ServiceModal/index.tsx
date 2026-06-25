@@ -1,32 +1,29 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import {
+  Box,
   Dialog,
   DialogContent,
-  Box,
-  TextField,
-  Typography,
   InputAdornment,
-  Switch,
-  FormControlLabel,
+  TextField,
   useMediaQuery,
-  useTheme,
+  useTheme
 } from '@mui/material'
-import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { useEffect } from 'react'
-import { useCreateService, useUpdateService } from '../../../../hooks/useServices'
-import { useServiceCategories } from '../../../../hooks/useServiceCategories'
-import ModalHeader from '../../../../components/ModalHeader'
-import FieldLabel from '../../../../components/FieldLabel'
-import CurrencyField from '../../../../components/CurrencyField'
-import FormModalActions from '../../../../components/FormModalActions'
+import { Controller, useForm } from 'react-hook-form'
+import { z } from 'zod'
 import ChipSelect from '../../../../components/ChipSelect'
+import CurrencyField from '../../../../components/CurrencyField'
+import FieldLabel from '../../../../components/FieldLabel'
+import FormModalActions from '../../../../components/FormModalActions'
+import ModalHeader from '../../../../components/ModalHeader'
+import { useServiceCategories } from '../../../../hooks/useServiceCategories'
+import { useCreateService, useUpdateService } from '../../../../hooks/useServices'
 import type { ServiceModalProps } from './types'
 
 const schema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(200),
-  description: z.string().max(300).optional().or(z.literal('')),
+  name: z.string().min(1, 'Nome é obrigatório').max(100, "Não pode ter mais de 100 caracteres"),
+  description: z.string().max(300, "Não pode ter mais de 300 caracteres").optional().or(z.literal('')),
   durationMinutes: z.coerce
     .number({ invalid_type_error: 'Informe um número' })
     .int()
@@ -161,8 +158,9 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
               fullWidth
               size="small"
               multiline
-              rows={2}
+              minRows={2}
               placeholder="Descreva brevemente o serviço (opcional)"
+              slotProps={{ input: { sx: { maxHeight: 280, overflowY: 'auto' } } }}
               error={!!errors.description}
               helperText={errors.description?.message as string}
             />
@@ -234,31 +232,6 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
             />
           </Box>
 
-          {/* Status */}
-          {isEditing && (
-            <Box>
-              <Controller
-                name="isActive"
-                control={control}
-                render={({ field }) => (
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        size="small"
-                      />
-                    }
-                    label={
-                      <Typography variant="body2">
-                        Serviço {field.value ? 'ativo' : 'inativo'}
-                      </Typography>
-                    }
-                  />
-                )}
-              />
-            </Box>
-          )}
         </Box>
       </DialogContent>
 

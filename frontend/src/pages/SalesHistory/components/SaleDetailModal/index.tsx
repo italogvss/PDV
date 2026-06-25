@@ -25,6 +25,8 @@ import StatusChip from '../StatusChip'
 import PaymentChip from '../PaymentChip'
 import type { SaleDetailModalProps } from './types'
 import type { SaleStatus, SalePaymentMethod } from '../../types'
+import { PAYMENT_METHODS } from '../../../Settings/types'
+import { PAYMENT_METHOD_LABELS } from '../../../Reports/components/chartHelpers'
 
 const STATUS_MAP: Record<string, SaleStatus> = {
   Active: 'Ativo',
@@ -197,7 +199,7 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
               </InfoRow>
               {sale.feeAmount > 0 && (
                 <>
-                  <InfoRow label={`Taxa operadora (${sale.feeRate}%)`}>
+                  <InfoRow label={`Taxa ${PAYMENT_METHOD_LABELS[sale.paymentMethod]} (${sale.feeRate}%)`}>
                     <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
                       -{formatBRL(sale.feeAmount)}
                     </Typography>

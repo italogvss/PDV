@@ -102,3 +102,14 @@ export function useHardDeleteEmployee() {
     onError: (error) => handleError(error, 'Erro ao excluir funcionário.'),
   })
 }
+
+export function useResetEmployeePassword() {
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      employeeService.resetPassword(id, newPassword),
+    onSuccess: () => showToast('Senha alterada. O funcionário deverá trocar no próximo acesso.', 'success'),
+    onError: (error) => handleError(error, 'Erro ao alterar senha.'),
+  })
+}

@@ -124,7 +124,7 @@ export default function SalesHistoryPage() {
       {
         field: 'id',
         headerName: 'Pedido',
-        width: 110,
+        width: 120,
         renderCell: ({ row }) => (
           <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
             <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>

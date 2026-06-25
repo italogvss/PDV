@@ -43,7 +43,7 @@ export interface MethodMeta {
 }
 
 export const PAYMENT_METHODS: MethodMeta[] = [
-  { key: 'pix', showFees: false,label: 'Pix', subtitle: 'Sem taxa', icon: Pix },
+  { key: 'pix', showFees: true,label: 'Pix', subtitle: 'Sem taxa', icon: Pix },
   { key: 'cardCredit', showFees: true,label: 'Cartão crédito', subtitle: 'Taxa média 3,2%', icon: CreditCard },
   { key: 'cardDebit', showFees: true,label: 'Cartão débito', subtitle: 'Taxa 1,5%', icon: CreditCard },
   { key: 'cash', showFees: false,label: 'Dinheiro', subtitle: 'Sem taxa', icon: AttachMoney },

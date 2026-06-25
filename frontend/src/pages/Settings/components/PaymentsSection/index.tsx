@@ -222,7 +222,7 @@ export default function PaymentsSection() {
 
                 {enabled && method.showFees && (
                   <>
-                    <FieldLabel label="Taxa por venda" />
+                    <FieldLabel label="Taxa média por venda" />
                     <TextField
                       type="text"
                       placeholder="0,00"

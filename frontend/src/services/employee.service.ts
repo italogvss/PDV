@@ -82,4 +82,8 @@ export const employeeService = {
   hardDelete: async (id: string): Promise<void> => {
     await api.delete(`/employees/${id}/permanent`)
   },
+
+  resetPassword: async (id: string, newPassword: string): Promise<void> => {
+    await api.patch(`/employees/${id}/reset-password`, { newPassword })
+  },
 }

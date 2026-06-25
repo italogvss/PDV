@@ -8,11 +8,11 @@ import { useUserPermissions } from './useUserPermissions'
 const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
 
-export function useSales() {
+export function useSales(startDate?: string, endDate?: string) {
   const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
-    queryKey: SALES_KEY,
-    queryFn: () => saleService.getAll(),
+    queryKey: [...SALES_KEY, startDate, endDate],
+    queryFn: () => saleService.getAll(startDate, endDate),
     enabled:
       isModuleEnabled('sales') &&
       (hasPermission('SellProducts') || hasPermission('ViewSalesHistory')),

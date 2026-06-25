@@ -22,7 +22,8 @@ public class EmployeeService(
     IExpenseRepository expenseRepository,
     IEmployeeSalaryLinkRepository salaryLinkRepository,
     IValidator<CreateEmployeeRequest> createValidator,
-    IValidator<UpdateEmployeeRequest> updateValidator) : IEmployeeService
+    IValidator<UpdateEmployeeRequest> updateValidator,
+    IValidator<ResetEmployeePasswordRequest> resetPasswordValidator) : IEmployeeService
 {
     public async Task<PaginatedResponse<EmployeeResponse>> GetAllAsync(int page, int pageSize)
     {
@@ -236,6 +237,30 @@ public class EmployeeService(
     {
         var data = await employeeRepository.GetAllInactiveAsync();
         return await Task.WhenAll(data.Select(Map));
+    }
+
+    public async Task ResetPasswordAsync(Guid id, ResetEmployeePasswordRequest request)
+    {
+        await resetPasswordValidator.ValidateAndThrowAsync(request);
+
+        var employee = await employeeRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Funcionário não encontrado.");
+
+        if (employee.UserId is null)
+            throw new BusinessException("Funcionário não possui acesso ao sistema.");
+
+        var user = await userRepository.GetByIdAsync(employee.UserId.Value)
+            ?? throw new NotFoundException("Usuário do funcionário não encontrado.");
+
+        var localAuth = user.LocalAuth
+            ?? throw new BusinessException("Funcionário não possui login por senha.");
+
+        localAuth.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        localAuth.MustChangePassword = true;
+        localAuth.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await userRepository.UpdateAsync(user);
     }
 
     public async Task HardDeleteAsync(Guid id)

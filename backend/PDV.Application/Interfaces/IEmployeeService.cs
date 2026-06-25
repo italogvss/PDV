@@ -13,4 +13,5 @@ public interface IEmployeeService
     Task ReactivateAsync(Guid id);
     Task<IEnumerable<EmployeeResponse>> GetAllInactiveAsync();
     Task HardDeleteAsync(Guid id);
+    Task ResetPasswordAsync(Guid id, ResetEmployeePasswordRequest request);
 }

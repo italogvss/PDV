@@ -1,19 +1,27 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import SearchIcon from '@mui/icons-material/Search'
 import {
   Box,
+  Button,
+  CircularProgress,
   Dialog,
   DialogContent,
+  FormControl,
+  MenuItem,
+  Select,
   TextField,
   Typography,
   useMediaQuery,
   useTheme
 } from '@mui/material'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
 import { useCreateCustomer } from '../../../../hooks/useCustomers'
+import { viacepService } from '../../../../services/viacep.service'
 import { formatPhone, maskCEP, maskDocument } from '../../../../utils/masks'
 
 const schema = z.object({
@@ -50,6 +58,12 @@ const defaultValues: AddCustomerForm = {
   zipCode: '',
 }
 
+const STATES = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
+  'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
+  'RS','RO','RR','SC','SP','SE','TO',
+]
+
 interface AddCustomerModalProps {
   open: boolean
   onClose: () => void
@@ -60,17 +74,36 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
   const isPending = createCustomer.isPending
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const [searching, setSearching] = useState(false)
+  const [cepError, setCepError] = useState('')
 
   const {
     register,
     control,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<AddCustomerForm>({
     resolver: zodResolver(schema),
     defaultValues,
   })
+
+  async function handleCepSearch() {
+    setCepError('')
+    setSearching(true)
+    try {
+      const address = await viacepService.lookup(getValues('zipCode') ?? '')
+      setValue('street', address.street)
+      setValue('city', address.city)
+      setValue('state', address.stateCode)
+    } catch (err) {
+      setCepError(err instanceof Error ? err.message : 'Erro ao buscar CEP. Tente novamente.')
+    } finally {
+      setSearching(false)
+    }
+  }
 
   const onSubmit = async (data: AddCustomerForm) => {
     const hasAddress = data.street || data.number || data.city || data.state || data.zipCode
@@ -179,6 +212,40 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
             Endereço (opcional)
           </Typography>
 
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="CEP" />
+              <Controller
+                name="zipCode"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onChange={(e) => {
+                      setCepError('')
+                      field.onChange(maskCEP(e.target.value))
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleCepSearch() }}
+                    placeholder="00000-000"
+                    fullWidth
+                    error={!!errors.zipCode || !!cepError}
+                    helperText={cepError || errors.zipCode?.message}
+                  />
+                )}
+              />
+            </Box>
+            <Box sx={{ pt: '22px' }}>
+              <Button
+                variant="outlined"
+                startIcon={searching ? <CircularProgress size={14} /> : <SearchIcon />}
+                onClick={handleCepSearch}
+                disabled={searching}
+              >
+                Buscar endereço
+              </Button>
+            </Box>
+          </Box>
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 2 }}>
               <FieldLabel label="Rua" />
@@ -202,23 +269,6 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <FieldLabel label="CEP" />
-              <Controller
-                name="zipCode"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    onChange={(e) => field.onChange(maskCEP(e.target.value))}
-                    placeholder="00000-000"
-                    fullWidth
-                    error={!!errors.zipCode}
-                    helperText={errors.zipCode?.message}
-                  />
-                )}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
               <FieldLabel label="Cidade" />
               <TextField
                 {...register('city')}
@@ -229,12 +279,19 @@ export default function AddCustomerModal({ open, onClose }: AddCustomerModalProp
             </Box>
             <Box sx={{ width: 96 }}>
               <FieldLabel label="UF" />
-              <TextField
-                {...register('state')}
-                fullWidth
-                error={!!errors.state}
-                helperText={errors.state?.message}
-                slotProps={{ htmlInput: { maxLength: 2 } }}
+              <Controller
+                name="state"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.state}>
+                    <Select {...field} displayEmpty>
+                      <MenuItem value=""><em>—</em></MenuItem>
+                      {STATES.map((uf) => (
+                        <MenuItem key={uf} value={uf}>{uf}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               />
             </Box>
           </Box>

@@ -1,6 +1,8 @@
-import { SearchOutlined, GridViewRounded, TableRowsRounded, Inventory2Outlined, MiscellaneousServicesRounded } from '@mui/icons-material'
-import { Box, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { SearchOutlined, GridViewRounded, TableRowsRounded, Inventory2Outlined, MiscellaneousServicesRounded, AddRounded } from '@mui/icons-material'
+import { Box, Button, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAppSelector } from '../../../../store'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import FilterTabs from '../../../../components/FilterTabs'
@@ -27,6 +29,8 @@ export default function ProductCatalog({
   isLoading,
 }: ProductCatalogProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
+  const navigate = useNavigate()
+  const hasServices = useAppSelector((s) => s.auth.modules.includes('services'))
 
   const tabs: Array<{ value: CategoryValue; label: string; color?: string }> =
     mode === 'products'
@@ -147,7 +151,7 @@ export default function ProductCatalog({
           sx={{ flexShrink: 0 }}
         >
           <ToggleButton value="products">Produtos</ToggleButton>
-          <ToggleButton value="services">Serviços</ToggleButton>
+          {hasServices && <ToggleButton value="services">Serviços</ToggleButton>}
         </ToggleButtonGroup>
       </Box>
 
@@ -181,8 +185,25 @@ export default function ProductCatalog({
             <CircularProgress size={32} />
           </Box>
         ) : isEmpty ? (
-          <Box sx={{ py: 8, textAlign: 'center', color: 'text.tertiary', fontSize: 14 }}>
-            {mode === 'products' ? 'Nenhum produto encontrado.' : 'Nenhum serviço encontrado.'}
+          <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, color: 'text.tertiary' }}>
+            {mode === 'products'
+              ? <Inventory2Outlined sx={{ fontSize: 52 }} />
+              : <MiscellaneousServicesRounded sx={{ fontSize: 52 }} />
+            }
+            <Typography variant="body2" color="text.tertiary">
+              {mode === 'products' ? 'Nenhum produto encontrado.' : 'Nenhum serviço encontrado.'}
+            </Typography>
+            {!search && category === 'all' && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddRounded />}
+                onClick={() => navigate(mode === 'products' ? '/estoque' : '/servicos')}
+                sx={{ mt: 1 }}
+              >
+                {mode === 'products' ? 'Cadastrar produto' : 'Cadastrar serviço'}
+              </Button>
+            )}
           </Box>
         ) : viewMode === 'list' ? (
           <DataGrid

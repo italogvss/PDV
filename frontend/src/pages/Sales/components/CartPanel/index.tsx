@@ -112,7 +112,7 @@ export default function CartPanel({
           onClick={onFinalize}
           sx={{ mt: 1 }}
         >
-          Finalizar venda
+          Finalizar
         </Button>
       </Box>
     </Box>

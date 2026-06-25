@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -9,12 +10,17 @@ import {
   Collapse,
   useMediaQuery,
   useTheme,
+  Button,
+  IconButton,
+  InputAdornment,
+  Divider,
 } from '@mui/material'
+import { Visibility, VisibilityOff, LockResetRounded } from '@mui/icons-material'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect } from 'react'
-import { useUpdateEmployee } from '../../../../hooks/useEmployees'
+import { useUpdateEmployee, useResetEmployeePassword } from '../../../../hooks/useEmployees'
 import { formatPhone } from '../../../../utils/masks'
 import { useTeamRoles } from '../../../../hooks/useTeamRoles'
 import ModalHeader from '../../../../components/ModalHeader'
@@ -34,6 +40,11 @@ const schema = z.object({
   autoCreateSalaryExpense: z.boolean(),
   salary: z.number().optional(),
   paymentDay: z.number().int().optional(),
+  newPassword: z.string()
+    .refine(v => !v || v.length >= 8, 'A senha deve ter no mínimo 8 caracteres')
+    .refine(v => !v || /\d/.test(v), 'A senha deve conter pelo menos um número')
+    .refine(v => !v || /[^a-zA-Z0-9]/.test(v), 'A senha deve conter pelo menos um caractere especial')
+    .optional().or(z.literal('')),
 }).refine(data => !data.autoCreateSalaryExpense || (data.salary != null && data.salary > 0), {
   message: 'Informe o salário.',
   path: ['salary'],
@@ -45,9 +56,13 @@ const schema = z.object({
 type EditEmployeeForm = z.infer<typeof schema>
 
 export default function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
+  const [showPasswordSection, setShowPasswordSection] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
   const updateEmployee = useUpdateEmployee()
+  const resetPassword = useResetEmployeePassword()
   const { data: roles, isLoading: rolesLoading } = useTeamRoles()
-  const isPending = updateEmployee.isPending
+  const isPending = updateEmployee.isPending || resetPassword.isPending
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
@@ -55,6 +70,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
     control,
     handleSubmit,
     reset,
+    register,
     formState: { errors },
   } = useForm<EditEmployeeForm>({
     resolver: zodResolver(schema),
@@ -64,6 +80,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
       autoCreateSalaryExpense: employee.autoCreateSalaryExpense,
       salary: employee.salary ?? undefined,
       paymentDay: employee.paymentDay ?? undefined,
+      newPassword: '',
     },
   })
 
@@ -77,7 +94,10 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
         autoCreateSalaryExpense: employee.autoCreateSalaryExpense,
         salary: employee.salary ?? undefined,
         paymentDay: employee.paymentDay ?? undefined,
+        newPassword: '',
       })
+      setShowPasswordSection(false)
+      setShowPassword(false)
     }
   }, [open, employee, reset])
 
@@ -92,6 +112,11 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
         paymentDay: data.autoCreateSalaryExpense ? data.paymentDay : undefined,
       },
     })
+
+    if (data.newPassword) {
+      await resetPassword.mutateAsync({ id: employee.id, newPassword: data.newPassword })
+    }
+
     onClose()
   }
 
@@ -151,6 +176,51 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
                 />
               )}
             />
+          </Box>
+
+          <Box>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<LockResetRounded fontSize="small" />}
+              onClick={() => setShowPasswordSection((v) => !v)}
+              sx={{ color: 'text.secondary', px: 0, fontWeight: 400 }}
+            >
+              {showPasswordSection ? 'Cancelar alteração de senha' : 'Alterar senha'}
+            </Button>
+
+            <Collapse in={showPasswordSection} unmountOnExit>
+              <Box sx={{ mt: 1.5 }}>
+                <Divider sx={{ mb: 2 }} />
+                <FieldLabel label="Nova senha" />
+                <TextField
+                  {...register('newPassword')}
+                  type={showPassword ? 'text' : 'password'}
+                  fullWidth
+                  error={!!errors.newPassword}
+                  helperText={
+                    errors.newPassword?.message ??
+                    'Mínimo 8 caracteres, com número e caractere especial. O funcionário deverá trocar no próximo acesso.'
+                  }
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword((v) => !v)}
+                            edge="end"
+                            size="small"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </Box>
+            </Collapse>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
