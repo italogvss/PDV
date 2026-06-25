@@ -24,6 +24,11 @@ import type { AddEmployeeModalProps } from './types'
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
+  username: z
+    .string()
+    .min(1, 'Nome de usuário é obrigatório')
+    .max(50, 'Máximo 50 caracteres')
+    .regex(/^[a-zA-Z0-9_.]+$/, 'Apenas letras, números, ponto e underscore'),
   email: z.string().email('E-mail inválido'),
   temporaryPassword: z
     .string()
@@ -40,6 +45,7 @@ type AddEmployeeForm = z.infer<typeof schema>
 
 const defaultValues: AddEmployeeForm = {
   name: '',
+  username: '',
   email: '',
   temporaryPassword: '',
   roleId: '',
@@ -68,6 +74,7 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
   const onSubmit = async (data: AddEmployeeForm) => {
     await createEmployee.mutateAsync({
       name: data.name,
+      username: data.username,
       email: data.email,
       temporaryPassword: data.temporaryPassword,
       roleId: data.roleId,
@@ -110,15 +117,27 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <FieldLabel label="E-mail" required />
+              <FieldLabel label="Nome de usuário" required />
               <TextField
-                {...register('email')}
-                type="email"
+                {...register('username')}
                 fullWidth
-                error={!!errors.email}
-                helperText={errors.email?.message}
+                placeholder="joao.silva"
+                error={!!errors.username}
+                helperText={errors.username?.message ?? 'Usado para entrar no sistema'}
+                slotProps={{ htmlInput: { autoComplete: 'off' } }}
               />
             </Box>
+          </Box>
+
+          <Box>
+            <FieldLabel label="E-mail" required />
+            <TextField
+              {...register('email')}
+              type="email"
+              fullWidth
+              error={!!errors.email}
+              helperText={errors.email?.message}
+            />
           </Box>
 
           <Box>

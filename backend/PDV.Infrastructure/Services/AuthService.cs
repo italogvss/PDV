@@ -59,8 +59,8 @@ public class AuthService(
     private async Task<(string AccessToken, string RefreshToken)> HandleGoogleCallbackAsync(
         string googleId, string email, string name, string? avatarUrl)
     {
-        var user = await userRepository.GetByExternalAuthAsync("Google", googleId)
-                ?? await userRepository.GetByEmailAsync(email);
+        // Busca exclusivamente pelo GoogleId — sem fallback por email para evitar colisão com contas de employee
+        var user = await userRepository.GetByExternalAuthAsync("Google", googleId);
 
         if (user is null)
         {
@@ -229,11 +229,11 @@ public class AuthService(
         return items;
     }
 
-    public async Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string email, string password)
+    public async Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string username, string password)
     {
-        var user = await userRepository.GetByEmailAsync(email);
+        var user = await userRepository.GetByUsernameAsync(username);
 
-        // Mesma mensagem em todos os casos — não revelar se o e-mail existe
+        // Mesma mensagem em todos os casos — não revelar se o usuário existe
         if (user is null || !user.IsActive)
             throw new UnauthorizedException("Credenciais inválidas.");
 

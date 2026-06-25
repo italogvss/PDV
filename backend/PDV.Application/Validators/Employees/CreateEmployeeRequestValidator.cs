@@ -8,6 +8,10 @@ public class CreateEmployeeRequestValidator : AbstractValidator<CreateEmployeeRe
     public CreateEmployeeRequestValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Username)
+            .NotEmpty()
+            .MaximumLength(50)
+            .Matches(@"^[a-zA-Z0-9_.]+$").WithMessage("Nome de usuário deve conter apenas letras, números, ponto e underscore.");
         RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(254);
         RuleFor(x => x.TemporaryPassword)
             .NotEmpty()

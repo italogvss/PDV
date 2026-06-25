@@ -1,3 +1,3 @@
 namespace PDV.Application.DTOs.Auth;
 
-public record LocalLoginRequest(string Email, string Password);
+public record LocalLoginRequest(string Username, string Password);

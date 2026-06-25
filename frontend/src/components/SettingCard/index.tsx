@@ -7,9 +7,10 @@ interface SettingCardProps {
   action?: ReactNode
   children: ReactNode
   danger?: boolean
+  maxContentHeight?: number | string
 }
 
-export default function SettingCard({ title, subtitle, action, children, danger }: SettingCardProps) {
+export default function SettingCard({ title, subtitle, action, children, danger, maxContentHeight }: SettingCardProps) {
   return (
     <Card
       variant="outlined"
@@ -44,7 +45,10 @@ export default function SettingCard({ title, subtitle, action, children, danger 
         {action}
       </Box>
       <Divider sx={danger ? { borderColor: 'error.main', opacity: 0.3 } : undefined} />
-      <Stack divider={<Divider sx={danger ? { borderColor: 'error.main', opacity: 0.2 } : undefined} />}>
+      <Stack
+        divider={<Divider sx={danger ? { borderColor: 'error.main', opacity: 0.2 } : undefined} />}
+        sx={maxContentHeight ? { maxHeight: maxContentHeight, overflowY: 'auto' } : undefined}
+      >
         {children}
       </Stack>
     </Card>

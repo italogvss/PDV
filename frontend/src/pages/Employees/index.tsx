@@ -25,6 +25,8 @@ import AddIcon from '@mui/icons-material/Add'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 import CheckIcon from '@mui/icons-material/Check'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { DeleteOutlineOutlined } from '@mui/icons-material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
@@ -145,6 +147,42 @@ export default function EmployeesPage() {
     await Promise.all(dirty.map((r) => setPermissions.mutateAsync({ id: r.id, permissions: pendingPermissions[r.id] ?? [] })))
   }
 
+  const managePerms = useMemo(
+    () => visiblePermissions.filter((p) => !p.startsWith('View')),
+    [visiblePermissions],
+  )
+  const viewPerms = useMemo(
+    () => visiblePermissions.filter((p) => p.startsWith('View')),
+    [visiblePermissions],
+  )
+
+  const toggleAllForRow = (perm: string) => {
+    if (!roles.length) return
+    const allHave = roles.every((r) => (pendingPermissions[r.id] ?? []).includes(perm))
+    setPendingPermissions((prev) => {
+      const next = { ...prev }
+      roles.forEach((role) => {
+        const cur = prev[role.id] ?? []
+        next[role.id] = allHave ? cur.filter((p) => p !== perm) : cur.includes(perm) ? cur : [...cur, perm]
+      })
+      return next
+    })
+  }
+
+  const toggleAllForColumn = (roleId: string) => {
+    const cur = pendingPermissions[roleId] ?? []
+    const allHave = visiblePermissions.every((p) => cur.includes(p))
+    setPendingPermissions((prev) => {
+      const roleCur = prev[roleId] ?? []
+      return {
+        ...prev,
+        [roleId]: allHave
+          ? roleCur.filter((p) => !visiblePermissions.includes(p as Permission))
+          : [...new Set([...roleCur, ...visiblePermissions])],
+      }
+    })
+  }
+
   const filteredRows = useMemo(
     () =>
       employees.filter(
@@ -235,7 +273,7 @@ export default function EmployeesPage() {
       {/* DataGrid + Papéis lado a lado */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
         {/* DataGrid */}
-        <Card sx={{ overflow: 'hidden', flex: 1, minWidth: 0, borderRadius: 2 }}>
+        <Card sx={{ overflow: 'hidden', flex: 1, minWidth: 0, borderRadius: 2,borderTopLeftRadius: 15 }}>
           <Box
             sx={{
               display: 'flex',
@@ -243,7 +281,7 @@ export default function EmployeesPage() {
               gap: 1,
               p: 1.5,
               borderBottom: '1px solid',
-              borderColor: 'divider',
+              borderColor: 'divider',             
             }}
           >
             <TextField
@@ -251,7 +289,7 @@ export default function EmployeesPage() {
               placeholder="Buscar funcionário..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              sx={{ width: 280 }}
+              sx={{ width: 300 }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -287,6 +325,7 @@ export default function EmployeesPage() {
           <SettingCard
             title="Papéis disponíveis"
             subtitle="Gerencie os papéis da equipe."
+            maxContentHeight={400}
             action={
               <Button
                 variant="contained"
@@ -326,7 +365,7 @@ export default function EmployeesPage() {
                             {role.name}
                           </Typography>
                           {role.isDefault && (
-                            <Chip label="padrão" size="small" sx={{ height: 16, fontSize: 10, bgcolor: 'surface.raised', color: 'text.tertiary' }} />
+                            <Chip label="padrão" sx={{ height: 16, bgcolor: 'surface.raised', color: 'text.tertiary' }} />
                           )}
                         </Box>
                         <Typography variant="caption" color="text.secondary">
@@ -389,60 +428,153 @@ export default function EmployeesPage() {
           )}
         </Box>
         <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'surface.sunken' }}>
-              <TableCell
-                sx={{ fontWeight: 600, fontSize: 11, color: 'text.tertiary', letterSpacing: '0.06em', py: 1.5, pl: 4, borderBottom: 1, borderColor: 'border.subtle' }}
-              >
-                PERMISSÃO
-              </TableCell>
-              {rolesLoading
-                ? [1, 2, 3].map((i) => (
-                    <TableCell key={i} align="center" sx={{ py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}>
-                      <Skeleton width={60} sx={{ mx: 'auto' }} />
-                    </TableCell>
-                  ))
-                : roles.map((role) => (
-                    <TableCell
-                      key={role.id}
-                      align="center"
-                      sx={{ fontWeight: 600, fontSize: 11, color: 'text.tertiary', letterSpacing: '0.06em', py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}
-                    >
-                      {role.name.toUpperCase()}
-                    </TableCell>
-                  ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {visiblePermissions.map((perm) => (
-              <TableRow key={perm} sx={{ '&:last-child td': { border: 0 } }}>
-                <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 4, borderColor: 'border.subtle' }}>
-                  {PERMISSIONS[perm]}
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'surface.sunken' }}>
+                {/* Row-toggle column header: no label */}
+                <TableCell sx={{ py: 1.5, pl: 2, pr: 0, width: 40, borderBottom: 1, borderColor: 'border.subtle' }} />
+                <TableCell
+                  sx={{ py: 1.5, pl: 1, borderBottom: 1, borderColor: 'border.subtle' }}
+                >
+                  <Typography variant='h6' sx={{ fontWeight: 500, color: 'text.tertiary',textTransform: 'uppercase',letterSpacing: '0.06em', fontSize: '1em'}}>
+                    Permissão
+                  </Typography>
                 </TableCell>
                 {rolesLoading
                   ? [1, 2, 3].map((i) => (
-                      <TableCell key={i} align="center" sx={{ py: 1.5, borderColor: 'border.subtle' }}>
-                        <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                      <TableCell key={i} align="center" sx={{ py: 1.5, borderBottom: 1, borderColor: 'border.subtle' }}>
+                        <Skeleton width={60} sx={{ mx: 'auto' }} />
                       </TableCell>
                     ))
                   : roles.map((role) => {
-                      const checked = (pendingPermissions[role.id] ?? []).includes(perm)
+                      const allHave = visiblePermissions.every((p) => (pendingPermissions[role.id] ?? []).includes(p))
+                      const someHave = visiblePermissions.some((p) => (pendingPermissions[role.id] ?? []).includes(p))
                       return (
-                        <TableCell key={role.id} align="center" sx={{ py: 0.5, borderColor: 'border.subtle' }}>
-                          <Checkbox
-                            size="small"
-                            checked={checked}
-                            onChange={() => togglePermission(role.id, perm)}
-                            sx={{ p: 0.5 }}
-                          />
+                        <TableCell
+                          key={role.id}
+                          align="center"
+                          sx={{ py: 1, borderBottom: 1, borderColor: 'border.subtle' }}
+                        >
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+                            <Typography sx={{ fontWeight: 500, fontSize: "1em", color: 'text.tertiary', letterSpacing: '0.06em' }}>
+                              {role.name.toUpperCase()}
+                            </Typography>
+                            <Checkbox
+                              size="small"
+                              checked={allHave}
+                              indeterminate={!allHave && someHave}
+                              onChange={() => toggleAllForColumn(role.id)}
+                              sx={{ p: 0.5 }}
+                            />
+                          </Box>
                         </TableCell>
                       )
                     })}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {/* Permissões de gerenciar */}
+              {managePerms.map((perm) => {
+                const allRolesHave = roles.length > 0 && roles.every((r) => (pendingPermissions[r.id] ?? []).includes(perm))
+                const someRolesHave = roles.some((r) => (pendingPermissions[r.id] ?? []).includes(perm))
+                return (
+                  <TableRow key={perm}>
+                    <TableCell align="center" sx={{ py: 0.5, pl: 2, pr: 0, borderColor: 'border.subtle' }}>
+                      {rolesLoading ? (
+                        <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                      ) : (
+                        <Checkbox
+                          size="small"
+                          checked={allRolesHave}
+                          indeterminate={!allRolesHave && someRolesHave}
+                          onChange={() => toggleAllForRow(perm)}
+                          sx={{ p: 0.5 }}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 1, borderColor: 'border.subtle' }}>
+                      {PERMISSIONS[perm]}
+                    </TableCell>
+                    {rolesLoading
+                      ? [1, 2, 3].map((i) => (
+                          <TableCell key={i} align="center" sx={{ py: 1.5, borderColor: 'border.subtle' }}>
+                            <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                          </TableCell>
+                        ))
+                      : roles.map((role) => {
+                          const checked = (pendingPermissions[role.id] ?? []).includes(perm)
+                          return (
+                            <TableCell key={role.id} align="center" sx={{ py: 0.5, borderColor: 'border.subtle' }}>
+                              <Checkbox
+                                size="small"
+                                checked={checked}
+                                onChange={() => togglePermission(role.id, perm)}
+                                sx={{ p: 0.5 }}
+                              />
+                            </TableCell>
+                          )
+                        })}
+                  </TableRow>
+                )
+              })}
+
+              {/* Separador: Permissões de visualização */}
+              {viewPerms.length > 0 && (
+                <TableRow sx={{ bgcolor: 'surface.sunken' }}>
+                  <TableCell sx={{ py: 1.5, pl: 2, pr: 0, borderTop: 1, borderColor: 'border.subtle' }} />
+                  <TableCell
+                  colSpan={999}
+                  sx={{ py: 1.5, pl: 1, borderBottom: 1, borderColor: 'border.subtle' }}
+                >
+                  <Typography variant='h6' sx={{ fontWeight: 500, color: 'text.tertiary',textTransform: 'uppercase',letterSpacing: '0.06em', fontSize: '1em'}}>
+                    Permissões de visualização
+                  </Typography>
+                </TableCell>
+                </TableRow>
+              )}
+
+              {/* Permissões de visualizar */}
+              {viewPerms.map((perm, idx) => {
+                const allRolesHave = roles.length > 0 && roles.every((r) => (pendingPermissions[r.id] ?? []).includes(perm))
+                return (
+                  <TableRow key={perm} sx={idx === viewPerms.length - 1 ? { '& td': { border: 0 } } : undefined}>
+                    <TableCell align="center" sx={{ py: 0.5, pl: 2, pr: 0, borderColor: 'border.subtle' }}>
+                      {rolesLoading ? (
+                        <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                      ) : (
+                        <IconButton size="small" onClick={() => toggleAllForRow(perm)}>
+                          {allRolesHave
+                            ? <VisibilityIcon fontSize="small" color="secondary" />
+                            : <VisibilityOffIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
+                        </IconButton>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.primary', fontSize: 13, py: 1.5, pl: 1, borderColor: 'border.subtle' }}>
+                      {PERMISSIONS[perm]}
+                    </TableCell>
+                    {rolesLoading
+                      ? [1, 2, 3].map((i) => (
+                          <TableCell key={i} align="center" sx={{ py: 1.5, borderColor: 'border.subtle' }}>
+                            <Skeleton variant="circular" width={24} height={24} sx={{ mx: 'auto' }} />
+                          </TableCell>
+                        ))
+                      : roles.map((role) => {
+                          const checked = (pendingPermissions[role.id] ?? []).includes(perm)
+                          return (
+                            <TableCell key={role.id} align="center" sx={{ py: 0.5, borderColor: 'border.subtle' }}>
+                              <IconButton size="small" onClick={() => togglePermission(role.id, perm)}>
+                                {checked
+                                  ? <VisibilityIcon fontSize="small" color="secondary" />
+                                  : <VisibilityOffIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
+                              </IconButton>
+                            </TableCell>
+                          )
+                        })}
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
         </Box>
       </Paper>
 

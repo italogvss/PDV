@@ -52,8 +52,8 @@ export const authService = {
     await api.post('/auth/google', { credential })
   },
 
-  loginWithLocal: async (email: string, password: string): Promise<void> => {
-    await api.post('/auth/local', { email, password })
+  loginWithLocal: async (username: string, password: string): Promise<void> => {
+    await api.post('/auth/local', { username, password })
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {

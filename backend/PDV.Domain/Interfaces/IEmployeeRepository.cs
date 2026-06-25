@@ -10,6 +10,7 @@ public interface IEmployeeRepository
     Task<(IEnumerable<Employee> Data, int TotalCount)> GetAllAsync(int page, int pageSize);
     // Total de funcionários ativos do tenant atual (para enforcement de limite de plano).
     Task<int> CountAsync();
+    Task<bool> EmailExistsInTenantAsync(string email);
     Task AddAsync(Employee employee);
     Task UpdateAsync(Employee employee);
     Task<IEnumerable<Employee>> GetAllInactiveAsync();

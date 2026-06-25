@@ -41,9 +41,12 @@ public class EmployeeService(
     {
         await createValidator.ValidateAndThrowAsync(request);
 
-        var existing = await userRepository.GetByEmailAsync(request.Email);
-        if (existing is not null)
-            throw new BusinessException("Já existe um usuário com este e-mail.");
+        var existingUsername = await userRepository.GetByUsernameAsync(request.Username);
+        if (existingUsername is not null)
+            throw new BusinessException("Nome de usuário já está em uso.");
+
+        if (await employeeRepository.EmailExistsInTenantAsync(request.Email))
+            throw new BusinessException("Já existe um funcionário com este e-mail nesta loja.");
 
         // Enforcement de limite do plano (402 se atingido).
         await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxEmployees, await employeeRepository.CountAsync());
@@ -54,6 +57,7 @@ public class EmployeeService(
         var user = new User
         {
             Email = request.Email,
+            Username = request.Username,
             Name = request.Name,
             Role = UserRole.Employee,
             LastTenantId = tenantContext.TenantId,

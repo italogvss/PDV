@@ -113,7 +113,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("local")]
     public async Task<IActionResult> Local([FromBody] LocalLoginRequest request)
     {
-        var (accessToken, refreshToken) = await authService.LoginWithLocalAsync(request.Email, request.Password);
+        var (accessToken, refreshToken) = await authService.LoginWithLocalAsync(request.Username, request.Password);
         SetAuthCookies(accessToken, refreshToken);
         return Ok();
     }

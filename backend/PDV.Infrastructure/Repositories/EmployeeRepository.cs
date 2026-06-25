@@ -50,6 +50,10 @@ public class EmployeeRepository(AppDbContext context, ITenantContext tenantConte
     // Query filter global já restringe ao tenant atual + IsActive.
     public Task<int> CountAsync() => context.Employees.CountAsync();
 
+    // Query filter global garante isolamento por tenant; verifica se email já está em uso neste tenant.
+    public Task<bool> EmailExistsInTenantAsync(string email) =>
+        context.Employees.AnyAsync(e => e.UserEmail == email);
+
     public async Task AddAsync(Employee employee)
     {
         await context.Employees.AddAsync(employee);

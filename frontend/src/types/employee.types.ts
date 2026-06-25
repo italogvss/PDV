@@ -45,6 +45,7 @@ export type Permission = keyof typeof PERMISSIONS
 
 export interface CreateEmployeePayload {
   name: string
+  username: string
   email: string
   temporaryPassword: string
   roleId: string

@@ -27,6 +27,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public Task<User?> GetByEmailAsync(string email) =>
         WithIncludes().FirstOrDefaultAsync(u => u.Email == email);
 
+    public Task<User?> GetByUsernameAsync(string username) =>
+        WithIncludes().FirstOrDefaultAsync(u => u.Username == username);
+
     public Task<User?> GetByRefreshTokenAsync(string hashedRefreshToken) =>
         WithIncludes().FirstOrDefaultAsync(u => u.RefreshToken == hashedRefreshToken);
 

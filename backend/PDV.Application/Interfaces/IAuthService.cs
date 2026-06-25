@@ -6,7 +6,7 @@ public interface IAuthService
 {
     Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential);
-    Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string email, string password);
+    Task<(string AccessToken, string RefreshToken)> LoginWithLocalAsync(string username, string password);
     Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
     Task<MeResponse> GetMeAsync(Guid userId, string role, Guid? tenantId);
     Task<string> SwitchTenantAsync(Guid userId, Guid tenantId);

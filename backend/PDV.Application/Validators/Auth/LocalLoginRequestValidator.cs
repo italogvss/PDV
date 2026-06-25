@@ -7,7 +7,7 @@ public class LocalLoginRequestValidator : AbstractValidator<LocalLoginRequest>
 {
     public LocalLoginRequestValidator()
     {
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.Username).NotEmpty();
         RuleFor(x => x.Password).NotEmpty();
     }
 }

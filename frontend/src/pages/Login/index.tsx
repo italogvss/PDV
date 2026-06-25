@@ -27,6 +27,7 @@ const MAX_RECENT = 3
 interface RecentAccount {
   name: string
   email: string
+  username?: string
   avatarUrl: string | null
   role: 'owner' | 'employee'
 }
@@ -40,7 +41,14 @@ function loadRecent(): RecentAccount[] {
 }
 
 function saveRecent(account: RecentAccount) {
-  const next = [account, ...loadRecent().filter((a) => a.email !== account.email)].slice(0, MAX_RECENT)
+  const key = account.role === 'employee' ? account.username : account.email
+  const next = [
+    account,
+    ...loadRecent().filter((a) => {
+      const aKey = a.role === 'employee' ? a.username : a.email
+      return aKey !== key
+    }),
+  ].slice(0, MAX_RECENT)
   localStorage.setItem(RECENT_KEY, JSON.stringify(next))
 }
 
@@ -51,7 +59,7 @@ function getInitials(name: string): string {
 }
 
 const employeeSchema = z.object({
-  email: z.string().email('E-mail inválido'),
+  username: z.string().min(1, 'Usuário é obrigatório'),
   password: z.string().min(1, 'Senha é obrigatória'),
 })
 
@@ -104,16 +112,16 @@ export default function LoginPage() {
 
   const onEmployeeSubmit = async (data: EmployeeForm) => {
     try {
-      await authService.loginWithLocal(data.email, data.password)
+      await authService.loginWithLocal(data.username, data.password)
       const user = await authService.getMe()
-      saveRecent({ name: user.name, email: user.email, avatarUrl: user.avatarUrl, role: 'employee' })
+      saveRecent({ name: user.name, email: user.email, username: data.username, avatarUrl: user.avatarUrl, role: 'employee' })
       dispatch(setAuth(user))
       navigate(
         user.mustChangePassword ? '/trocar-senha' : user.tenantId ? '/' : '/criar-negocio',
         { replace: true },
       )
     } catch (error) {
-      handleError(error, 'E-mail ou senha incorretos.')
+      handleError(error, 'Usuário ou senha incorretos.')
     }
   }
 
@@ -213,7 +221,7 @@ export default function LoginPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3.5 }}>
             {role === 'owner'
               ? 'Selecione a opção de seu estabelecimento como proprietário'
-              : 'Entre com o e-mail e a senha configurados para você'}
+              : 'Entre com o nome de usuário e a senha configurados para você'}
           </Typography>
 
           {/* Toggle de papel */}
@@ -273,15 +281,16 @@ export default function LoginPage() {
             >
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75, fontWeight: 500 }}>
-                  E-mail do trabalho
+                  Usuário
                 </Typography>
                 <TextField
-                  {...register('email')}
-                  type="email"
+                  {...register('username')}
+                  type="text"
                   fullWidth
-                  placeholder="seu@email.com"
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
+                  placeholder="nome.usuario"
+                  autoComplete="username"
+                  error={!!errors.username}
+                  helperText={errors.username?.message}
                 />
               </Box>
               <Box>
@@ -332,9 +341,9 @@ export default function LoginPage() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {filteredRecent.map((account) => (
                   <Box
-                    key={account.email}
+                    key={account.role === 'employee' ? account.username : account.email}
                     onClick={() => {
-                      if (role === 'employee') setValue('email', account.email)
+                      if (role === 'employee' && account.username) setValue('username', account.username)
                     }}
                     sx={{
                       display: 'flex',
@@ -362,7 +371,7 @@ export default function LoginPage() {
                         {account.name}
                       </Typography>
                       <Typography variant="caption" color="text.tertiary" noWrap sx={{ display: 'block' }}>
-                        {account.email}
+                        {account.role === 'employee' ? account.username : account.email}
                       </Typography>
                     </Box>
                     {role === 'employee' && (

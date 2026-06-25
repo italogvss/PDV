@@ -71,6 +71,8 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
     watch,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<ExpenseForm>({
     resolver: zodResolver(schema),
@@ -143,6 +145,60 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
           onSubmit={handleSubmit(onSubmit)}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1.5 }}
         >
+
+          {/* Categoria */}
+          <Box>
+            <FieldLabel label="Categoria" required />
+            <Controller
+              name="category"
+              control={control}
+              render={({ field }) => (
+                <Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {EXPENSE_CATEGORIES.map((cat) => {
+                      const selected = field.value === cat
+                      return (
+                        <Chip
+                          key={cat}
+                          label={EXPENSE_CATEGORY_LABELS[cat].label}
+                          clickable
+                          size="large"
+                          onClick={() => {
+                            field.onChange(cat)
+                            const desc = getValues('description')
+                            const isCategoryLabel = EXPENSE_CATEGORIES.some(
+                              (c) => EXPENSE_CATEGORY_LABELS[c].label === desc
+                            )
+                            if (!desc || isCategoryLabel) {
+                              setValue('description', EXPENSE_CATEGORY_LABELS[cat].label)
+                            }
+                          }}
+                          variant={selected ? 'filled' : 'outlined'}
+                          sx={selected ? {
+                            bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,
+                            color: 'background.paper',
+                            borderColor: EXPENSE_CATEGORY_LABELS[cat].color,
+                            fontWeight: 600,
+                            
+                            '&:hover': { bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,  },
+                          } : {
+                            borderColor: 'border.subtle',
+                            color: 'text.secondary',
+                            fontWeight: 500,
+                            '&:hover': { borderColor: EXPENSE_CATEGORY_LABELS[cat].color,  },
+                          }}
+                        />
+                      )
+                    })}
+                  </Box>
+                  {errors.category && (
+                    <FormHelperText error sx={{ mt: 0.5 }}>{errors.category.message}</FormHelperText>
+                  )}
+                </Box>
+              )}
+            />
+          </Box>
+
           {/* Descrição */}
           <Box>
             <FieldLabel label="Descrição" required />
@@ -197,49 +253,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
             </Box>
           </Box>
 
-          {/* Categoria */}
-          <Box>
-            <FieldLabel label="Categoria" required />
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {EXPENSE_CATEGORIES.map((cat) => {
-                      const selected = field.value === cat
-                      return (
-                        <Chip
-                          key={cat}
-                          label={EXPENSE_CATEGORY_LABELS[cat].label}
-                          clickable
-                          size="large"
-                          onClick={() => field.onChange(cat)}
-                          variant={selected ? 'filled' : 'outlined'}
-                          sx={selected ? {
-                            bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,
-                            color: 'background.paper',
-                            borderColor: EXPENSE_CATEGORY_LABELS[cat].color,
-                            fontWeight: 600,
-                            
-                            '&:hover': { bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,  },
-                          } : {
-                            borderColor: 'border.subtle',
-                            color: 'text.secondary',
-                            fontWeight: 500,
-                            '&:hover': { borderColor: EXPENSE_CATEGORY_LABELS[cat].color,  },
-                          }}
-                        />
-                      )
-                    })}
-                  </Box>
-                  {errors.category && (
-                    <FormHelperText error sx={{ mt: 0.5 }}>{errors.category.message}</FormHelperText>
-                  )}
-                </Box>
-              )}
-            />
-          </Box>
+          
 
           {/* Status */}
           <Box>
