@@ -6,4 +6,7 @@ public record CreateEmployeeRequest(
     string Email,
     string TemporaryPassword,
     Guid RoleId,
-    string? Phone);
+    string? Phone,
+    decimal? Salary = null,
+    int? PaymentDay = null,
+    bool AutoCreateSalaryExpense = false);

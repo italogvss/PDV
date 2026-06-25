@@ -19,6 +19,8 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         builder.Property(e => e.RepeatCount);
         builder.Property(e => e.RecurringSeriesId);
         builder.HasIndex(e => e.RecurringSeriesId);
+        builder.Property(e => e.EmployeeId);
+        builder.HasIndex(e => e.EmployeeId);
 
         builder.HasIndex(e => e.TenantId);
 
@@ -26,5 +28,12 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .WithMany()
             .HasForeignKey(e => e.TenantId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Restrict: despesas de salário não são deletadas em cascata — Employee usa soft delete.
+        builder.HasOne<Employee>()
+            .WithMany()
+            .HasForeignKey(e => e.EmployeeId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

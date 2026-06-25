@@ -53,6 +53,7 @@ public class RecurringExpenseRenewalService(
                         IsPaid = false,
                         PaidAt = null,
                         CreatedAt = DateTime.UtcNow,
+                        EmployeeId = current.EmployeeId,
                     };
                     await repo.AddAsync(next);
                     current = next;

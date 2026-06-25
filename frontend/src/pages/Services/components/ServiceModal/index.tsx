@@ -25,7 +25,7 @@ import ChipSelect from '../../../../components/ChipSelect'
 import type { ServiceModalProps } from './types'
 
 const schema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100),
+  name: z.string().min(1, 'Nome é obrigatório').max(200),
   description: z.string().max(300).optional().or(z.literal('')),
   durationMinutes: z.coerce
     .number({ invalid_type_error: 'Informe um número' })

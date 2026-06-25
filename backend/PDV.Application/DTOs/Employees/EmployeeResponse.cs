@@ -10,4 +10,7 @@ public record EmployeeResponse(
     string? Phone,
     string? ImageUrl,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    decimal? Salary = null,
+    int? PaymentDay = null,
+    bool AutoCreateSalaryExpense = false);

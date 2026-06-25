@@ -52,4 +52,5 @@ export interface Expense {
   paidAt?: string | null
   repeatCount?: number | null
   recurringSeriesId?: string | null
+  employeeId?: string | null
 }

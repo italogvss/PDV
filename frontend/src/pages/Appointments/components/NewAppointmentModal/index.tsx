@@ -49,7 +49,7 @@ const APPOINTMENT_COLORS = [
 ]
 
 const schema = z.object({
-  customerName: z.string().min(1, 'Cliente é obrigatório'),
+  customerName: z.string().min(1, 'Cliente é obrigatório').max(200),
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido'),
   serviceIds: z.array(z.string()).min(1, 'Selecione ao menos um serviço'),
@@ -61,7 +61,7 @@ const schema = z.object({
     .positive('Duração deve ser maior que zero'),
   price: z.number({ message: 'Valor inválido' }).min(0),
   status: z.enum(['confirmado', 'pendente']),
-  note: z.string(),
+  note: z.string().max(1000),
   color: z.string(),
 })
 

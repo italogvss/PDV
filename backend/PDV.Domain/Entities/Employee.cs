@@ -11,4 +11,7 @@ public class Employee : BaseEntity
     public TenantRole Role { get; set; } = null!;
     public string? Phone { get; set; }
     public string? ImageUrl { get; set; } // {tenantId}/employees/{employeeId}.webp
+    public decimal? Salary { get; set; }
+    public int? PaymentDay { get; set; }
+    public bool AutoCreateSalaryExpense { get; set; } = false;
 }

@@ -32,7 +32,7 @@ import type { ProductModalProps } from './types'
 const PRODUCTS_QUERY_KEY = ['products'] as const
 
 const schema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100),
+  name: z.string().min(1, 'Nome é obrigatório').max(200),
   costPrice: z.number().positive('Deve ser maior que zero'),
   price: z.number().positive('Deve ser maior que zero'),
   stock: z.coerce
@@ -54,7 +54,7 @@ const schema = z.object({
     .max(9999)
     .optional()
     .or(z.literal('')),
-  barcode: z.string().max(100).optional(),
+  barcode: z.string().max(50, 'Código de barras deve ter no máximo 50 caracteres').optional(),
   categoryId: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
   const min = typeof data.minStock === 'number' ? data.minStock : undefined

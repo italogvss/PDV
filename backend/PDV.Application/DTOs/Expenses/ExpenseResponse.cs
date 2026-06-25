@@ -11,5 +11,6 @@ public record ExpenseResponse(
     DateTime? PaidAt,
     DateTime CreatedAt,
     int? RepeatCount = null,
-    Guid? RecurringSeriesId = null
+    Guid? RecurringSeriesId = null,
+    Guid? EmployeeId = null
 );

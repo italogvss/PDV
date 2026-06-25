@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ExternalAuth> ExternalAuths => Set<ExternalAuth>();
     public DbSet<LocalAuth> LocalAuths => Set<LocalAuth>();
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<EmployeeSalaryLink> EmployeeSalaryLinks => Set<EmployeeSalaryLink>();
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
     public DbSet<TenantRolePermission> TenantRolePermissions => Set<TenantRolePermission>();
     public DbSet<Customer> Customers => Set<Customer>();
@@ -64,6 +65,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<Employee>()
             .HasQueryFilter(e => e.TenantId == tenantContext.TenantId && e.IsActive);
+
+        // EmployeeSalaryLink é hard-deleted; IsActive não existe nessa entidade.
+        modelBuilder.Entity<EmployeeSalaryLink>()
+            .HasQueryFilter(l => l.TenantId == tenantContext.TenantId);
 
         modelBuilder.Entity<TenantRole>()
             .HasQueryFilter(r => r.TenantId == tenantContext.TenantId && r.IsActive);

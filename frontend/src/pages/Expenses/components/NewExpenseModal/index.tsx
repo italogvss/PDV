@@ -30,7 +30,7 @@ import CurrencyField from '../../../../components/CurrencyField'
 import FormModalActions from '../../../../components/FormModalActions'
 
 const schema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(150),
+  description: z.string().min(1, 'Descrição é obrigatória').max(500),
   amount: z.coerce.number().positive('Deve ser maior que zero'),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]], {

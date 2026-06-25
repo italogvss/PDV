@@ -106,4 +106,11 @@ public class ExpenseRepository(AppDbContext context, ITenantContext tenantContex
             .IgnoreQueryFilters()
             .Where(e => e.TenantId == tenantContext.TenantId)
             .ExecuteDeleteAsync();
+
+    // Remove a referência ao funcionário de todas as despesas vinculadas a ele — libera a
+    // restrição FK antes do hard-delete do Employee e transforma as despesas em registros comuns.
+    public Task ClearEmployeeReferenceAsync(Guid employeeId) =>
+        context.Expenses
+            .Where(e => e.EmployeeId == employeeId)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.EmployeeId, (Guid?)null));
 }

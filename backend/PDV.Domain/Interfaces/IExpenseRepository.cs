@@ -17,4 +17,5 @@ public interface IExpenseRepository
     Task<IEnumerable<Expense>> GetAllInSeriesAsync(Guid seriesId);
     Task<IEnumerable<Expense>> GetInfiniteSeriesLatestEntriesAsync();
     Task<int> PurgeAllAsync();
+    Task ClearEmployeeReferenceAsync(Guid employeeId);
 }

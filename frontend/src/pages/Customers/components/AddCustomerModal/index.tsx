@@ -21,7 +21,7 @@ const schema = z.object({
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido')
     .optional().or(z.literal('')),
-  email: z.string().email('E-mail inválido').max(50).optional().or(z.literal('')),
+  email: z.string().email('E-mail inválido').max(200).optional().or(z.literal('')),
   document: z.string()
     .refine(v => !v || [11, 14].includes(v.replace(/\D/g, '').length), 'CPF ou CNPJ inválido')
     .optional().or(z.literal('')),

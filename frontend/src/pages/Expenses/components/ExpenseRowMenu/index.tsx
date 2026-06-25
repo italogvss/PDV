@@ -10,6 +10,7 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
@@ -29,6 +30,7 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
 
   const handleClose = () => setAnchor(null)
   const isSeries = expense.isRecurring && expense.repeatCount != null
+  const isSalaryExpense = expense.employeeId != null
 
   if (!canManage) return null
 
@@ -53,6 +55,8 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
     : confirmScope === 'future'
     ? (<>Todas as entradas futuras de <strong>{expense.description}</strong> serão removidas permanentemente. A entrada atual não será afetada.</>)
     : (<><strong>{expense.description}</strong> será removida permanentemente. Esta ação não pode ser desfeita.</>)
+
+  const salaryTooltip = 'Despesa de salário — gerada automaticamente. Desative o salário automático do funcionário para encerrar a série.'
 
   return (
     <>
@@ -82,30 +86,45 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
           </MenuItem>
         )}
         <Divider sx={{ my: 0.5 }} />
-        <MenuItem
-          onClick={() => { handleClose(); setConfirmScope('single') }}
-          sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
-        >
-          <DeleteOutlineRounded />
-          {isSeries ? 'Excluir somente esta' : 'Excluir'}
-        </MenuItem>
+        <Tooltip title={isSalaryExpense ? salaryTooltip : ''} placement="left">
+          <span>
+            <MenuItem
+              onClick={() => { handleClose(); setConfirmScope('single') }}
+              disabled={isSalaryExpense}
+              sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+            >
+              <DeleteOutlineRounded />
+              {isSeries ? 'Excluir somente esta' : 'Excluir'}
+            </MenuItem>
+          </span>
+        </Tooltip>
         {isSeries && (
-          <MenuItem
-            onClick={() => { handleClose(); setConfirmScope('future') }}
-            sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
-          >
-            <DeleteOutlineRounded />
-            Excluir apenas futuras
-          </MenuItem>
+          <Tooltip title={isSalaryExpense ? salaryTooltip : ''} placement="left">
+            <span>
+              <MenuItem
+                onClick={() => { handleClose(); setConfirmScope('future') }}
+                disabled={isSalaryExpense}
+                sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+              >
+                <DeleteOutlineRounded />
+                Excluir apenas futuras
+              </MenuItem>
+            </span>
+          </Tooltip>
         )}
         {isSeries && (
-          <MenuItem
-            onClick={() => { handleClose(); setConfirmScope('all') }}
-            sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
-          >
-            <DeleteOutlineRounded />
-            Excluir todas
-          </MenuItem>
+          <Tooltip title={isSalaryExpense ? salaryTooltip : ''} placement="left">
+            <span>
+              <MenuItem
+                onClick={() => { handleClose(); setConfirmScope('all') }}
+                disabled={isSalaryExpense}
+                sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
+              >
+                <DeleteOutlineRounded />
+                Excluir todas
+              </MenuItem>
+            </span>
+          </Tooltip>
         )}
       </Menu>
 

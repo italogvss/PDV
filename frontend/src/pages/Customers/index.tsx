@@ -1,26 +1,44 @@
 import AddRounded from '@mui/icons-material/AddRounded'
 import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded'
-import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import SearchRounded from '@mui/icons-material/SearchRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import WhatsApp from '@mui/icons-material/WhatsApp'
 import {
+  Avatar,
   Box,
   Button,
-  CircularProgress,
-  InputBase
+  Card,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material'
+import { DataGrid } from '@mui/x-data-grid'
+import type { GridColDef } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useCustomers, useDeleteCustomer } from '../../hooks/useCustomers'
 import type { Customer } from '../../types/customers.types'
 import AddCustomerModal from './components/AddCustomerModal'
-import CustomerDetailPanel from './components/CustomerDetailPanel'
-import CustomerTable from './components/CustomerTable'
+import CustomerRowMenu from './components/CustomerRowMenu'
 import EditCustomerModal from './components/EditCustomerModal'
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
 
 export default function CustomersPage() {
   const [search, setSearch] = useState('')
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>()
+  const [sortBy, setSortBy] = useState('name-asc')
   const [addOpen, setAddOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
 
@@ -30,41 +48,137 @@ export default function CustomersPage() {
   const customers = data?.data ?? []
 
   const kpis = useMemo(
-    () => ({
-      total: customers.length,
-      withPhone: customers.filter((c) => c.phone).length,
-      withEmail: customers.filter((c) => c.email).length,
-      withDocument: customers.filter((c) => c.document).length,
-    }),
+    () => ({ total: customers.length }),
     [customers],
   )
 
-  const filteredCustomers = useMemo(() => {
-    if (!search.trim()) return customers
+  const rows = useMemo(() => {
     const q = search.toLowerCase()
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.email?.toLowerCase().includes(q) ?? false) ||
-        (c.phone?.includes(search) ?? false) ||
-        (c.document?.includes(search) ?? false),
-    )
-  }, [customers, search])
+    const filtered = q
+      ? customers.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            (c.email?.toLowerCase().includes(q) ?? false) ||
+            (c.phone?.includes(search) ?? false) ||
+            (c.document?.includes(search) ?? false),
+        )
+      : customers
 
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc': return a.name.localeCompare(b.name, 'pt-BR')
+        case 'name-desc': return b.name.localeCompare(a.name, 'pt-BR')
+        default: return 0
+      }
+    })
+  }, [customers, search, sortBy])
 
-  const handleDelete = async (customerId: string) => {
-    await deleteCustomer.mutateAsync(customerId)
-    if (selectedCustomerId === customerId) setSelectedCustomerId(undefined)
-  }
-
-  const handleEditOpen = (customer: Customer) => {
-    setEditCustomer(customer)
-  }
-
-  const handleEditClose = () => {
-    setEditCustomer(null)
-  }
+  const columns: GridColDef<Customer>[] = useMemo(
+    () => [
+      {
+        field: 'whatsapp',
+        headerName: '',
+        width: 48,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => (
+          <Tooltip title={row.phone ? 'Abrir WhatsApp' : 'Sem telefone cadastrado'}>
+            <span>
+              <IconButton
+                disabled={!row.phone}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const phone = row.phone!.replace(/\D/g, '')
+                  window.open(`https://wa.me/55${phone}`, '_blank')
+                }}
+                sx={{ color: '#25D366' }}
+              >
+                <WhatsApp sx={{ fontSize: 24 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ),
+      },
+      {
+        field: 'name',
+        headerName: 'Cliente',
+        flex: 1,
+        minWidth: 220,
+        renderCell: ({ row }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, height: '100%' }}>
+            <Avatar sx={{ width: 34, height: 34, fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+              {getInitials(row.name)}
+            </Avatar>
+            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {row.name}
+              </Typography>
+              {row.phone && (
+                <Typography variant="caption" color="text.tertiary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {row.phone}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        ),
+      },
+      {
+        field: 'email',
+        headerName: 'E-mail',
+        flex: 1,
+        minWidth: 180,
+        renderCell: ({ row }) => (
+          <Typography variant="body2" color={row.email ? 'text.primary' : 'text.disabled'}>
+            {row.email ?? '—'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'document',
+        headerName: 'Documento',
+        width: 160,
+        renderCell: ({ row }) => (
+          <Typography variant="body2" color={row.document ? 'text.primary' : 'text.disabled'}>
+            {row.document ?? '—'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'address',
+        headerName: 'Localização',
+        width: 180,
+        sortable: false,
+        renderCell: ({ row }) => {
+          const loc =
+            row.address?.city && row.address?.state
+              ? `${row.address.city}, ${row.address.state}`
+              : null
+          return (
+            <Typography variant="body2" color={loc ? 'text.primary' : 'text.disabled'}>
+              {loc ?? '—'}
+            </Typography>
+          )
+        },
+      },     
+      {
+        field: 'rowActions',
+        headerName: '',
+        width: 56,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => (
+          <CustomerRowMenu
+            customer={row}
+            onEdit={() => setEditCustomer(row)}
+            onDelete={() => deleteCustomer.mutate(row.id)}
+          />
+        ),
+      },
+    ],
+    [deleteCustomer],
+  )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -81,73 +195,61 @@ export default function CustomersPage() {
           value={kpis.total}
           badge={{ label: `${kpis.total} cadastrados`, color: 'success', icon: TrendingUpRounded }}
         />
-        {/*
-        <PageKpiCard icon={PhoneAndroidOutlined} label="Com telefone" value={kpis.withPhone} badge={{ label: 'disponíveis para WhatsApp', color: 'success', icon: TrendingUpRounded }} />
-        <PageKpiCard icon={EmailOutlined} label="Com e-mail" value={kpis.withEmail} badge={{ label: 'para contato', color: 'success', icon: TrendingUpRounded }} />
-        <PageKpiCard icon={BadgeOutlined} label="Com documento" value={kpis.withDocument} badge={{ label: 'CPF / CNPJ', color: 'default' }} />
-*/}
       </PageKpiGrid>
 
-      {/* Busca */}
-
-      <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          px: 2,
-          py: 1,
-          borderRadius: 2,
-          border: 1,
-          borderColor: 'border.subtle',
-          bgcolor: 'background.paper',
-          '&:focus-within': { borderColor: 'border.strong' },
-        }}
-      >
-        <SearchOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
-        <InputBase
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar nome, e-mail, telefone ou documento..."
-          sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
-        />
-        {isLoading && <CircularProgress size={14} color="inherit" />}
-      </Box>
-
-      {/* Tabela + Painel de detalhe */}
-      {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
+      <Card sx={{ overflow: 'hidden' }}>
         <Box
           sx={{
-            display: 'grid',
-            gap: 2,
-            gridTemplateColumns: {
-              xs: '1fr',
-              xl: selectedCustomer ? '2fr 1fr' : '1fr',
-            },
-            alignItems: 'start',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            p: 1.5,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
           }}
         >
-          <CustomerTable
-            customers={filteredCustomers}
-            selectedCustomerId={selectedCustomerId}
-            onSelectCustomer={setSelectedCustomerId}
-            onEdit={handleEditOpen}
-            onDelete={handleDelete}
+          <TextField
+            size="small"
+            placeholder="Buscar nome, e-mail, telefone ou documento..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ width: 340 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRounded sx={{ fontSize: 17, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
-          {selectedCustomer && (
-            <CustomerDetailPanel
-              customer={selectedCustomer}
-              onEdit={handleEditOpen}
-              onDelete={handleDelete}
-            />
-          )}
+
+          <Box sx={{ flex: 1 }} />
+
+          <Select
+            size="small"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            sx={{ fontSize: 13, minWidth: 160 }}
+          >
+            <MenuItem value="name-asc">Nome (A → Z)</MenuItem>
+            <MenuItem value="name-desc">Nome (Z → A)</MenuItem>
+          </Select>
         </Box>
-      )}
+
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          loading={isLoading}
+          getRowId={(row) => row.id}
+          rowHeight={64}
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          onRowDoubleClick={(params) => setEditCustomer(params.row)}
+        />
+      </Card>
 
       <AddCustomerModal open={addOpen} onClose={() => setAddOpen(false)} />
 
@@ -155,7 +257,7 @@ export default function CustomersPage() {
         <EditCustomerModal
           open
           customer={editCustomer}
-          onClose={handleEditClose}
+          onClose={() => setEditCustomer(null)}
         />
       )}
     </Box>

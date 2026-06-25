@@ -165,6 +165,9 @@ public class ExpenseService(
         var expense = await repository.GetByIdAsync(id)
             ?? throw new NotFoundException("Despesa não encontrada.");
 
+        if (expense.EmployeeId != null)
+            throw new BusinessException("Esta despesa está vinculada ao salário de um funcionário e não pode ser excluída manualmente.");
+
         switch (scope.ToLowerInvariant())
         {
             case "future":
@@ -188,7 +191,7 @@ public class ExpenseService(
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();
 
     private static ExpenseResponse Map(Expense e) =>
-        new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt, e.RepeatCount, e.RecurringSeriesId);
+        new(e.Id, e.Description, e.Category.ToString(), e.Amount, e.IsRecurring, e.DueDate, e.IsPaid, e.PaidAt, e.CreatedAt, e.RepeatCount, e.RecurringSeriesId, e.EmployeeId);
 
     // ─── Chart helpers ────────────────────────────────────────────────────────
 

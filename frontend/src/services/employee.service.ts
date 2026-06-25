@@ -20,6 +20,9 @@ interface BackendEmployee {
   avatarUrl?: string | null
   isActive: boolean
   createdAt: string
+  salary?: number | null
+  paymentDay?: number | null
+  autoCreateSalaryExpense: boolean
 }
 
 function mapEmployee(e: BackendEmployee): Employee {
@@ -34,6 +37,9 @@ function mapEmployee(e: BackendEmployee): Employee {
     avatarUrl: e.avatarUrl ?? undefined,
     isActive: e.isActive,
     createdAt: e.createdAt,
+    salary: e.salary ?? undefined,
+    paymentDay: e.paymentDay ?? undefined,
+    autoCreateSalaryExpense: e.autoCreateSalaryExpense,
   }
 }
 

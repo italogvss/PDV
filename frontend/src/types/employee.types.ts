@@ -19,6 +19,9 @@ export interface Employee {
   avatarUrl?: string
   isActive: boolean
   createdAt: string
+  salary?: number | null
+  paymentDay?: number | null
+  autoCreateSalaryExpense: boolean
 }
 
 export const PERMISSIONS = {
@@ -50,9 +53,15 @@ export interface CreateEmployeePayload {
   temporaryPassword: string
   roleId: string
   phone?: string
+  salary?: number
+  paymentDay?: number
+  autoCreateSalaryExpense?: boolean
 }
 
 export interface UpdateEmployeePayload {
   roleId: string
   phone?: string
+  salary?: number
+  paymentDay?: number
+  autoCreateSalaryExpense?: boolean
 }
