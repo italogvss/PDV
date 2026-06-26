@@ -4,8 +4,6 @@ import dayjs from 'dayjs'
 import SpaOutlined from '@mui/icons-material/SpaOutlined'
 import { formatBRL } from '../../../../utils/currency'
 import {
-  DAY_END_MIN,
-  DAY_START_MIN,
   STATUS_META,
   type StatusTone,
   bookedMinutesForPro,
@@ -49,8 +47,6 @@ export default function SidePanel({
   const theme = useTheme()
   const kpis = computeKpis(appointments, selectedDate)
 
-  const nowMin = dayjs().hour() * 60 + dayjs().minute()
-  const live = isToday && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN
 
   const upcoming = upcomingForDay(appointments, selectedDate, isToday)
   const proById = (id: string) => professionals.find((p) => p.id === id)
@@ -63,19 +59,7 @@ export default function SidePanel({
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Resumo do dia
-            </Typography>
-            {live && (
-              <Chip
-                size="small"
-                label="Ao vivo"
-                sx={{
-                  bgcolor: 'success.soft',
-                  color: 'success.ink',
-                  fontWeight: 600,
-                  height: 22,
-                }}
-              />
-            )}
+            </Typography>           
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
             <SummaryBlock label="Horários" value={String(kpis.count)} />
@@ -207,7 +191,7 @@ export default function SidePanel({
 
 function SummaryBlock({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <Box sx={{ p: 1.25, borderRadius: 1.5, bgcolor: 'surface.sunken' }}>
+    <Box sx={{ py: 1.25, px: 2, borderRadius: 1, bgcolor: 'surface.sunken' }}>
       <Typography variant="caption" color="text.tertiary" sx={{ display: 'block' }}>
         {label}
       </Typography>

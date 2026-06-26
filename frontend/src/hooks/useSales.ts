@@ -38,6 +38,7 @@ export function useCreateSale() {
   return useMutation({
     mutationFn: (payload: CreateSalePayload) => saleService.create(payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
       showToast('Venda registrada com sucesso!', 'success')
     },

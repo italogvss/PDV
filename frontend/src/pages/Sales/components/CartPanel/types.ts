@@ -9,6 +9,7 @@ export interface CartPanelProps {
   lines: EnrichedCartLine[]
   subtotal: number
   total: number
+  onRestart: () => void
   onIncrement: (productId: string) => void
   onDecrement: (productId: string) => void
   onRemove: (id: string) => void

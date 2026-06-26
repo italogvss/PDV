@@ -1,23 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { HistoryOutlined } from '@mui/icons-material'
 import { Box, Button } from '@mui/material'
-import { RestartAltRounded } from '@mui/icons-material'
-import ProductCatalog from './components/ProductCatalog'
-import CartPanel from './components/CartPanel'
-import SelectCustomerModal from './components/SelectCustomerModal'
-import FinalizationModal from './components/FinalizationModal'
-import { EnrichedCartLine } from './components/CartPanel/types'
-import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
-import { CartLine, CardType, CustomerSelection, PaymentMethod } from './types'
-import { useProducts } from '../../hooks/useProducts'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import PageHeader from '../../components/PageHeader'
 import { useProductCategories } from '../../hooks/useProductCategories'
-import { useServices } from '../../hooks/useServices'
-import { useServiceCategories } from '../../hooks/useServiceCategories'
+import { useProducts } from '../../hooks/useProducts'
 import { useCreateSale } from '../../hooks/useSales'
+import { useServiceCategories } from '../../hooks/useServiceCategories'
+import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
+import { useAppSelector } from '../../store'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
-import PageHeader from '../../components/PageHeader'
-import { useAppSelector } from '../../store'
+import CartPanel from './components/CartPanel'
+import { EnrichedCartLine } from './components/CartPanel/types'
+import FinalizationModal from './components/FinalizationModal'
+import ProductCatalog from './components/ProductCatalog'
+import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
+import SelectCustomerModal from './components/SelectCustomerModal'
+import { CardType, CartLine, CustomerSelection, PaymentMethod } from './types'
+import { useNavigate } from 'react-router-dom'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -42,7 +43,7 @@ export default function SalesPage() {
   const [discountAmount, setDiscountAmount] = useState(0)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
+  const navigate = useNavigate()
   const { data: products = [], isLoading: loadingProducts } = useProducts()
   const { data: categories = [] } = useProductCategories()
   const { data: services = [], isLoading: loadingServices } = useServices()
@@ -243,8 +244,8 @@ export default function SalesPage() {
         title="Vender"
         description={`Operador: ${auth.name}`}
       >
-        <Button variant="outlined" startIcon={<RestartAltRounded />} onClick={handleRestart}>
-          Limpar
+        <Button variant="outlined" startIcon={<HistoryOutlined />} onClick={()=>navigate("/historico")}>
+          Histórico
         </Button>
       </PageHeader>
       <Box
@@ -272,6 +273,7 @@ export default function SalesPage() {
           isLoading={catalogMode === 'products' ? loadingProducts : loadingServices}
         />
         <CartPanel
+          onRestart={handleRestart}
           lines={cartLines}
           subtotal={subtotal}
           total={subtotal}

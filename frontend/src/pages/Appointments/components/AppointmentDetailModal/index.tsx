@@ -1,9 +1,8 @@
 import BoltRounded from '@mui/icons-material/BoltRounded'
+import CancelRounded from '@mui/icons-material/CancelRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
-import CloseRounded from '@mui/icons-material/CloseRounded'
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded'
 import WhatsApp from '@mui/icons-material/WhatsApp'
-import type { Theme } from '@mui/material'
 import {
   Box,
   Button,
@@ -11,31 +10,23 @@ import {
   Dialog,
   DialogContent,
   Divider,
-  IconButton,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import ModalHeader from '../../../../components/ModalHeader'
 import { formatBRL } from '../../../../utils/currency'
 import {
   formatRange,
-  initialsOf,
-  proColorKey,
+  STATUS_COLOR,
   STATUS_META,
-  type ProColorKey,
   type StatusTone,
 } from '../appointmentHelpers'
 import type { AppointmentDetailModalProps } from './types'
 
 const DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
-
-function proHex(theme: Theme, id: string): string {
-  const key: ProColorKey = proColorKey(id)
-  return key === 'green' ? theme.palette.success.main : theme.palette.data[key].main
-}
 
 function toneSx(tone: StatusTone) {
   if (tone === 'neutral') return { bgcolor: 'surface.raised', color: 'text.secondary' }
@@ -67,12 +58,10 @@ export default function AppointmentDetailModal({
   if (!data) return null
 
   const meta = STATUS_META[data.status]
-  const color = data.color || (data.employeeId ? proHex(theme, data.employeeId) : theme.palette.text.disabled)
+  const color = theme.palette[STATUS_COLOR[data.status]].main
   const start = dayjs(data.start)
   const isClosed = data.status === 'concluido' || data.status === 'cancelado'
   const waDigits = data.customerPhone?.replace(/\D/g, '')
-  const colorValue = data.color ?? ''
-  const isValidColor = /^#[0-9A-Fa-f]{6}$/.test(colorValue)
 
   const advance = (() => {
     switch (data.status) {
@@ -89,129 +78,121 @@ export default function AppointmentDetailModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
-      {/* Hero */}
-      <Box sx={{ position: 'relative', p: 3, pb: 2 }}>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{ position: 'absolute', top: 12, right: 12 }}
-        >
-          <CloseRounded fontSize="small" />
-        </IconButton>
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', pr: 4 }}>
+      <ModalHeader
+        title={data.customerName}
+        subtitle={data.services.map((s) => s.name).join(' + ')}
+        onClose={onClose}
+      />
+
+      <DialogContent sx={{ pt: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, color: 'text.secondary' }}>
+
           <Box
             sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              bgcolor: color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              backgroundColor: 'surface.sunken',
+              border: '1px solid',
+              borderColor: 'border.strong',
+              px: 2,
+              py: 2,
+              borderRadius: 2,
             }}
           >
-            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-              {initialsOf(data.customerName)}
-            </Typography>
+            {/* Lista de serviços */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+              >
+                Serviços
+              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {data.services.map((s) => (
+                  <Box key={s.id} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1, mr: 2 }}>
+                      {s.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
+                      {formatBRL(s.price)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Resumo */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Divider sx={{ mb: 1, borderColor: 'border.strong', borderStyle: 'dashed' }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Data</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {`${DOW_SHORT[start.day()]}, ${start.format('DD/MM')}`}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Horário</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {formatRange(data.start, data.durationMinutes)}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Duração</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>{data.durationMinutes} min</Typography>
+              </Box>
+              <Divider sx={{ my: 0.5, borderColor: 'border.strong', borderStyle: 'dashed' }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>Total</Typography>
+                <Typography variant="h3" sx={{ color: 'text.primary' }}>{formatBRL(data.price)}</Typography>
+              </Box>
+            </Box>
           </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h3" sx={{ fontWeight: 600 }}>
-              {data.customerName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {data.services.map((s) => s.name).join(' + ')}
-            </Typography>
+
+          {/* Status e profissional */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip size="small" label={meta.label} sx={{ fontWeight: 600, ...toneSx(meta.tone) }} />
+            {professional && (
+              <Chip
+                size="small"
+                variant="outlined"
+                label={professional.name}
+                avatar={
+                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color }} />
+                }
+              />
+            )}
           </Box>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-          <Chip size="small" label={meta.label} sx={{ fontWeight: 600, ...toneSx(meta.tone) }} />
-          {professional && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={professional.name}
-              avatar={
-                <Box
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    bgcolor: color,
-                  }}
-                />
-              }
-            />
-          )}
-        </Box>
-      </Box>
 
-      <Divider />
-
-      <DialogContent>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-          <Detail label="Data" value={`${DOW_SHORT[start.day()]}, ${start.format('DD/MM')}`} />
-          <Detail
-            label="Horário"
-            value={formatRange(data.start, data.durationMinutes)}
-          />
-          <Detail label="Duração" value={`${data.durationMinutes} min`} />
-          <Detail label="Valor" value={formatBRL(data.price)} />
-        </Box>
-
-        {data.customerPhone && (
-          <Box
-            sx={{
-              mt: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-            }}
-          >
+          {/* Contato */}
+          {data.customerPhone && (
             <Box>
               <Typography variant="caption" color="text.tertiary" sx={{ display: 'block' }}>
                 Contato
               </Typography>
               <Typography variant="body2">{data.customerPhone}</Typography>
             </Box>
-            <Button
-              size="small"
-              variant="outlined"
-              color="success"
-              startIcon={<WhatsApp />}
-              component="a"
-              href={`https://wa.me/55${waDigits}`}
-              target="_blank"
-              rel="noopener"
+          )}
+
+          {/* Observação */}
+          {data.note && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 1.5,
+                bgcolor: 'warning.soft',
+                color: 'warning.ink',
+              }}
             >
-              WhatsApp
-            </Button>
-          </Box>
-        )}
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.25 }}>
+                Observação
+              </Typography>
+              <Typography variant="body2">{data.note}</Typography>
+            </Box>
+          )}
 
-        {data.note && (
-          <Box
-            sx={{
-              mt: 2,
-              p: 1.5,
-              borderRadius: 1.5,
-              bgcolor: 'warning.soft',
-              color: 'warning.ink',
-            }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.25 }}>
-              Observação
-            </Typography>
-            <Typography variant="body2">{data.note}</Typography>
-          </Box>
-        )}
-
+        </Box>
       </DialogContent>
 
       <Divider />
 
-      {/* Rodapé — ações por status */}
       <Box sx={{ p: 2 }}>
         {confirmingCancel ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -224,8 +205,7 @@ export default function AppointmentDetailModal({
               </Button>
               <Button
                 variant="contained"
-                color="error"
-                size="small"
+                sx={{backgroundColor: "error.main"}}
                 onClick={() => onChangeStatus(data.id, 'cancelado')}
               >
                 Sim, cancelar
@@ -233,20 +213,33 @@ export default function AppointmentDetailModal({
             </Box>
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {isClosed ? (
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={onClose} sx={{ ml: 'auto' }}>
                 Fechar
               </Button>
             ) : (
               <>
                 <Button
-                  variant="ghost"
-                  color="error"
+                  variant="outlined"
+                  sx={{"&:hover":{color: "error.main"}}}       
+                  startIcon={<CancelRounded />}
                   onClick={() => setConfirmingCancel(true)}
-                  sx={{ mr: 'auto' }}
                 >
                   Cancelar
+                </Button>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  variant="outlined"
+                  component={data.customerPhone ? 'a' : 'button'}
+                  href={data.customerPhone ? `https://wa.me/55${waDigits}` : undefined}
+                  target={data.customerPhone ? '_blank' : undefined}
+                  rel={data.customerPhone ? 'noopener' : undefined}
+                  disabled={!data.customerPhone}
+                  startIcon={<WhatsApp />}
+                  color="success"
+                >
+                  WhatsApp
                 </Button>
                 {advance && (
                   <Button
@@ -263,18 +256,5 @@ export default function AppointmentDetailModal({
         )}
       </Box>
     </Dialog>
-  )
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <Box>
-      <Typography variant="caption" color="text.tertiary" sx={{ display: 'block' }}>
-        {label}
-      </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-        {value}
-      </Typography>
-    </Box>
   )
 }

@@ -1,32 +1,32 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
+import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import {
+  Box,
+  Button,
   Dialog,
   DialogContent,
-  Box,
-  TextField,
-  Button,
-  Typography,
   InputAdornment,
+  TextField,
+  Typography,
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
-import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
-import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
-import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { useState, useEffect } from 'react'
-import { formatBRL } from '../../../../utils/currency'
-import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
-import { useProductCategories } from '../../../../hooks/useProductCategories'
-import { useUploadImage, useRemoveImage } from '../../../../hooks/useMediaUpload'
-import ModalHeader from '../../../../components/ModalHeader'
-import FieldLabel from '../../../../components/FieldLabel'
+import ChipSelect from '../../../../components/ChipSelect'
 import CurrencyField from '../../../../components/CurrencyField'
+import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ImageUpload from '../../../../components/ImageUpload'
-import ChipSelect from '../../../../components/ChipSelect'
+import ModalHeader from '../../../../components/ModalHeader'
+import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
+import { useProductCategories } from '../../../../hooks/useProductCategories'
+import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
+import { formatBRL } from '../../../../utils/currency'
 import type { ProductModalProps } from './types'
 
 const PRODUCTS_QUERY_KEY = ['products'] as const
@@ -308,7 +308,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                     type="number"
                     placeholder="0"
                     error={!!errors.stock}
-                    helperText={ errors.stock?.message}
+                    helperText={errors.stock?.message}
                     slotProps={{ htmlInput: { min: 0, step: 1 } }}
                   />
                 </Box>
@@ -430,10 +430,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
 
           {/* Código de barras */}
           <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <FieldLabel label="Código de barras" inline />
-              <Typography variant="caption" color="text.disabled">EAN-13 ou SKU</Typography>
-            </Box>
+            <FieldLabel label="Código de barras" inline />
+            <Box sx={{display: 'flex', justifyContent: 'space-between', gap: 2}}>
             <TextField
               {...register('barcode')}
               fullWidth
@@ -448,20 +446,21 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <Button
-                        size="small"
-                        variant="ghost"
-                        onClick={() => setValue('barcode', generateEAN13())}
-                        startIcon={<AutoFixHighRounded sx={{ fontSize: 13 }} />}
-                        sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: 12 }}
-                      >
-                        Gerar
-                      </Button>
+
                     </InputAdornment>
                   ),
                 },
               }}
             />
+            
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setValue('barcode', generateEAN13())}
+              startIcon={<AutoFixHighRounded sx={{ fontSize: 13 }} />}>
+              Gerar
+            </Button>
+            </Box>
           </Box>
 
           {/* Categoria */}

@@ -13,6 +13,7 @@ import ExpensesPage from '../pages/Expenses'
 import EmployeesPage from '../pages/Employees'
 import ReportsPage from '../pages/Reports'
 import CustomersPage from '../pages/Customers'
+import CustomerDetailPage from '../pages/Customers/CustomerDetail'
 import SuppliersPage from '../pages/Suppliers'
 import SettingsPage from '../pages/Settings'
 import SubscriptionReturnPage from '../pages/SubscriptionReturn'
@@ -102,11 +103,24 @@ export const router = createBrowserRouter([
           },
           {
             path: 'clientes',
-            element: (
-              <PermissionGuard permission="ViewCustomers">
-                <CustomersPage />
-              </PermissionGuard>
-            ),
+            children: [
+              {
+                index: true,
+                element: (
+                  <PermissionGuard permission="ViewCustomers">
+                    <CustomersPage />
+                  </PermissionGuard>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <PermissionGuard permission="ViewCustomers">
+                    <CustomerDetailPage />
+                  </PermissionGuard>
+                ),
+              },
+            ],
           },
           {
             path: 'fornecedores',

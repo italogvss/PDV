@@ -12,18 +12,18 @@ import {
   Button,
 } from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
-import EditRounded from '@mui/icons-material/EditRounded'
+import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import WhatsApp from '@mui/icons-material/WhatsApp'
 import type { Customer } from '../../../../types/customers.types'
 
 interface CustomerRowMenuProps {
   customer: Customer
-  onEdit: () => void
+  onNavigate: () => void
   onDelete: () => void
 }
 
-export default function CustomerRowMenu({ customer, onEdit, onDelete }: CustomerRowMenuProps) {
+export default function CustomerRowMenu({ customer, onNavigate, onDelete }: CustomerRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -65,15 +65,16 @@ export default function CustomerRowMenu({ customer, onEdit, onDelete }: Customer
         <MenuItem
           onClick={() => {
             handleClose()
-            onEdit()
+            onNavigate()
           }}
         >
-          <EditRounded sx={{ fontSize: 18, mr: 1 }} />
-          Editar
+          <OpenInNewRounded sx={{ fontSize: 18, mr: 1 }} />
+          Ver detalhes
         </MenuItem>
         <Divider sx={{ my: 0.5 }} />
         <MenuItem
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation()
             handleClose()
             setConfirmOpen(true)
           }}

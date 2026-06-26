@@ -15,6 +15,14 @@ export const EXPEDIENTE_MIN = DAY_END_MIN - DAY_START_MIN
 
 // ─── Status ────────────────────────────────────────────────────────────────
 
+export const STATUS_COLOR: Record<AppointmentStatus, 'warning' | 'info' | 'success' | 'error'> = {
+  pendente: 'warning',
+  confirmado: 'info',
+  em_atendimento: 'info',
+  concluido: 'success',
+  cancelado: 'error',
+}
+
 /** Tom semântico do tema usado por chips/blocos de cada status. */
 export type StatusTone = 'warning' | 'success' | 'info' | 'error' | 'neutral'
 

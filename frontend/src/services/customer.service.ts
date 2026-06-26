@@ -37,7 +37,58 @@ function mapCustomer(c: BackendCustomer): Customer {
     document: c.document,
     note: c.note,
     address: c.address,
+    createdAt: c.createdAt,
   }
+}
+
+export interface CustomerTopProduct {
+  productName: string
+  quantity: number
+  totalSpent: number
+  maxQuantity: number
+}
+
+export interface CustomerRecentSale {
+  id: string
+  shortId: string
+  itemsSummary: string
+  paymentMethod: string
+  total: number
+  createdAt: string
+}
+
+export interface CustomerAppointmentCounts {
+  total: number
+  completed: number
+  cancelled: number
+  inProgress: number
+}
+
+export interface CustomerNextAppointment {
+  id: string
+  start: string
+  serviceNames: string[]
+  employeeName: string
+  status: string
+}
+
+export interface CustomerTopService {
+  serviceName: string
+  count: number
+  maxCount: number
+}
+
+export interface CustomerCrmStats {
+  totalSales: number
+  totalSpent: number
+  averageTicket: number
+  lastPurchaseDate: string | null
+  preferredPaymentMethod: string | null
+  topProducts: CustomerTopProduct[]
+  recentSales: CustomerRecentSale[]
+  appointmentCounts: CustomerAppointmentCounts
+  nextAppointment: CustomerNextAppointment | null
+  topServices: CustomerTopService[]
 }
 
 export const customerService = {
@@ -55,6 +106,11 @@ export const customerService = {
   getById: async (id: string): Promise<Customer> => {
     const { data } = await api.get<BackendCustomer>(`/customers/${id}`)
     return mapCustomer(data)
+  },
+
+  getStats: async (id: string): Promise<CustomerCrmStats> => {
+    const { data } = await api.get<CustomerCrmStats>(`/customers/${id}/stats`)
+    return data
   },
 
   create: async (payload: CreateCustomerPayload): Promise<Customer> => {

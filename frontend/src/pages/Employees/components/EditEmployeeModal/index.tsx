@@ -180,11 +180,10 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
 
           <Box>
             <Button
-              variant="text"
-              size="small"
+              variant="outlined"
               startIcon={<LockResetRounded fontSize="small" />}
               onClick={() => setShowPasswordSection((v) => !v)}
-              sx={{ color: 'text.secondary', px: 0, fontWeight: 400 }}
+              
             >
               {showPasswordSection ? 'Cancelar alteração de senha' : 'Alterar senha'}
             </Button>
@@ -223,7 +222,7 @@ export default function EditEmployeeModal({ employee, open, onClose }: EditEmplo
             </Collapse>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 3 }}>
             <Typography variant="body1">Criar despesas de salário automaticamente</Typography>
             <Controller
               name="autoCreateSalaryExpense"

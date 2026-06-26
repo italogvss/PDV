@@ -89,13 +89,14 @@ export default function SuppliersPage() {
           Novo fornecedor
         </Button></PageHeader>
 
-      <Card sx={{ overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             p: 1.5,
+            flexShrink: 0,
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
@@ -105,7 +106,7 @@ export default function SuppliersPage() {
             placeholder="Buscar fornecedor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 280 }}
+            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken' } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -123,12 +124,12 @@ export default function SuppliersPage() {
           columns={columns}
           loading={isLoading}
           getRowId={(row) => row.id}
-          rowHeight={60}
+          rowHeight={64}
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },
-          }}          
+          }}
         />
       </Card>
 

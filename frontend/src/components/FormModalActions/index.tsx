@@ -5,7 +5,7 @@ import type { FormModalActionsProps } from './types'
 const defaultHint = (
   <>
     Campos com{' '}
-    <Typography component="span" variant="caption" color="error.main">
+    <Typography variant="caption" sx={{color: "error.main"}}>
       *
     </Typography>{' '}
     são obrigatórios

@@ -1,49 +1,48 @@
-import { useState, useMemo } from 'react'
+import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import AddRounded from '@mui/icons-material/AddRounded'
+import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
+import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
+import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
+import SyncRounded from '@mui/icons-material/SyncRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import {
   Box,
-  Typography,
   Button,
   Card,
   CardContent,
   Chip,
-  useTheme,
   CircularProgress,
   Tooltip,
+  Typography
 } from '@mui/material'
-import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
-import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
-import SyncRounded from '@mui/icons-material/SyncRounded'
-import AddRounded from '@mui/icons-material/AddRounded'
-import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
-import FilterListRounded from '@mui/icons-material/FilterListRounded'
-import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
-import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
-import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
+import { DataGrid } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
-import { formatBRL } from '../../utils/currency'
+import { useMemo, useState } from 'react'
+import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from './types'
-import type { Expense, ExpenseCategory } from './types'
-import ExpenseStatusChip from './components/ExpenseStatusChip'
-import ExpenseRowMenu from './components/ExpenseRowMenu'
-import DonutChart from './components/DonutChart'
-import NewExpenseModal from './components/NewExpenseModal'
 import {
-  useExpenses,
-  useRecurringExpenses,
-  useMarkExpensePaid,
   useDeleteExpense,
   useDeleteExpenseSeries,
+  useExpenses,
+  useMarkExpensePaid,
+  useRecurringExpenses,
 } from '../../hooks/useExpenses'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
-import FiltersPopover from '../../components/FiltersPopover'
+import { formatBRL } from '../../utils/currency'
+import DonutChart from './components/DonutChart'
+import ExpenseRowMenu from './components/ExpenseRowMenu'
+import ExpenseStatusChip from './components/ExpenseStatusChip'
+import NewExpenseModal from './components/NewExpenseModal'
+import type { Expense } from './types'
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from './types'
 
 const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -56,7 +55,6 @@ function fmtDueDate(isoDate: string): string {
 }
 
 export default function ExpensesPage() {
-  const theme = useTheme()
 
   const now = new Date()
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1)
@@ -148,26 +146,26 @@ export default function ExpensesPage() {
       flex: 1,
       minWidth: 180,
       renderCell: ({ row }: { row: Expense }) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>         
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
             {row.description}
           </Typography>
           {row.isRecurring && (
             <Tooltip describeChild title="Renova mensalmente">
-            <Chip
-              size="small"
-              icon={<SyncRounded/>}              
-              sx={{
-                height: 20,
-                fontSize: 20,
-                fontWeight: 600,
-                bgcolor: 'success.light',
-                color: 'common.white',
-                border: 'none',
-                '& .MuiChip-icon': { fontSize: '16px !important', color: 'inherit',p: 0, m: 0.5 },
-                '& .MuiChip-label': { p: 0, m: 0 },
-              }}
-            />
+              <Chip
+                size="small"
+                icon={<SyncRounded />}
+                sx={{
+                  height: 20,
+                  fontSize: 20,
+                  fontWeight: 600,
+                  bgcolor: 'success.light',
+                  color: 'common.white',
+                  border: 'none',
+                  '& .MuiChip-icon': { fontSize: '16px !important', color: 'inherit', p: 0, m: 0.5 },
+                  '& .MuiChip-label': { p: 0, m: 0 },
+                }}
+              />
             </Tooltip>
           )}
         </Box>
@@ -180,7 +178,7 @@ export default function ExpensesPage() {
       renderCell: ({ row }: { row: Expense }) => (
         <Chip
           size="large"
-          
+
           label={EXPENSE_CATEGORY_LABELS[row.category].label}
           sx={{
             fontWeight: 500,
@@ -204,24 +202,6 @@ export default function ExpensesPage() {
           {fmtDueDate(row.dueDate)}
         </Typography>
       ),
-    },
-    {
-      field: 'isRecurring',
-      headerName: 'Renovação',
-      width: 110,
-      renderCell: ({ row }: { row: Expense }) =>
-        row.isRecurring ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <SyncRounded sx={{ fontSize: 13, color: 'text.tertiary' }} />
-            <Typography variant="body2" color="text.secondary">
-              mensal
-            </Typography>
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.disabled">
-            —
-          </Typography>
-        ),
     },
     {
       field: 'isPaid',
@@ -358,7 +338,7 @@ export default function ExpensesPage() {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, ml: 1 }}>
               Histórico de despesas
             </Typography>
             <Box sx={{ flex: 1 }} />
@@ -393,7 +373,7 @@ export default function ExpensesPage() {
               disableRowSelectionOnClick
               pageSizeOptions={[10, 25]}
               initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-              onRowDoubleClick={(params) => handleOpenEdit(params.row)}             
+              onRowDoubleClick={(params) => handleOpenEdit(params.row)}
             />
           )}
         </Card>
@@ -459,13 +439,13 @@ export default function ExpensesPage() {
                   }}
                 >
                   <Box
-                      sx={{
-                        width: 3,
-                        alignSelf: 'stretch',
-                        borderRadius: 2,
-                        bgcolor:  EXPENSE_CATEGORY_LABELS[expense.category].color,
-                      }}
-                    />
+                    sx={{
+                      width: 3,
+                      alignSelf: 'stretch',
+                      borderRadius: 2,
+                      bgcolor: EXPENSE_CATEGORY_LABELS[expense.category].color,
+                    }}
+                  />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
                       {expense.description}

@@ -27,9 +27,9 @@ public class SaleService(
         var query = context.Sales.AsQueryable();
 
         if (startDate.HasValue)
-            query = query.Where(s => s.CreatedAt >= startDate.Value);
-        if (endDate.HasValue)
-            query = query.Where(s => s.CreatedAt <= endDate.Value);
+             query = query.Where(s => s.CreatedAt >= startDate.Value);
+        // if (endDate.HasValue)
+        //     query = query.Where(s => s.CreatedAt < endDate.Value.AddDays(1));
         if (operatorId.HasValue)
             query = query.Where(s => s.OperatorId == operatorId.Value);
         if (status.HasValue)
@@ -191,6 +191,7 @@ public class SaleService(
             TenantId = tenantId,
             OperatorId = operatorId,
             OperatorName = operatorUser.Name,
+            CustomerId = request.CustomerId,
             CustomerName = customerName,
             CustomerDocument = customerDocument,
             PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),

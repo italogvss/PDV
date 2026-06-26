@@ -32,6 +32,14 @@ public class CustomersController(ICustomerService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/stats")]
+    [RequirePermission(Permission.ViewCustomers)]
+    public async Task<IActionResult> GetCrmStats(Guid id)
+    {
+        var result = await service.GetCrmStatsAsync(id);
+        return Ok(result);
+    }
+
     [HttpPost]
     [RequirePermission(Permission.ManageCustomers)]
     public async Task<IActionResult> Create([FromBody] CreateCustomerRequest request)

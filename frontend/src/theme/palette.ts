@@ -146,8 +146,8 @@ export const colors = {
   surface: {
     default: neutral[50],   // body
     paper:   '#ffffff',     // cards
-    sunken:  neutral[100],  // topbar/sidebar bg
-    raised:  neutral[200],  // hover suave
+    sunken:  neutral[200],  // topbar/sidebar bg
+    raised:  neutral[300],  // hover suave
   },
 
   text: {

@@ -147,7 +147,7 @@ export default function InventoryPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.75,
-                bgcolor: 'surface.raised',
+                bgcolor: 'surface.sunken',
                 border: '1px solid',
                 borderColor: 'border.subtle',
                 borderRadius: '999px',
@@ -164,7 +164,7 @@ export default function InventoryPage() {
                   flexShrink: 0,
                 }}
               />
-              <Typography variant="caption" sx={{ fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary'}}>
                 {row.category.name}
               </Typography>
             </Box>
@@ -277,7 +277,7 @@ export default function InventoryPage() {
   }, [products, search, categoryFilter, levelFilter, sortBy])
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader
         title="Estoque"
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
@@ -346,7 +346,7 @@ export default function InventoryPage() {
             placeholder="Buscar produto ou código..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 280 }}
+            sx={{ m:1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken'} }}
             slotProps={{
               input: {
                 startAdornment: (

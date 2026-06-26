@@ -1,8 +1,8 @@
+import { CheckRounded, DeleteOutlined, ShoppingCartOutlined } from '@mui/icons-material'
 import { Box, Button, Divider, Typography } from '@mui/material'
-import { CheckRounded, ShoppingCartOutlined } from '@mui/icons-material'
+import { formatBRL } from '../../../../utils/currency'
 import CartItem from '../CartItem'
 import ServiceCartItem from '../ServiceCartItem'
-import { formatBRL } from '../../../../utils/currency'
 import { CartPanelProps } from './types'
 
 export default function CartPanel({
@@ -13,6 +13,7 @@ export default function CartPanel({
   onDecrement,
   onRemove,
   onFinalize,
+  onRestart,
 }: CartPanelProps) {
   const isEmpty = lines.length === 0
 
@@ -25,14 +26,18 @@ export default function CartPanel({
         minWidth: 0,
         borderRadius: 3,
         border: 1,
-        borderColor: 'border.subtle',
-        bgcolor: 'background.paper',
+        overflow: "hidden",
+        borderColor: 'border.strong',
+        bgcolor: 'background.default',
       }}
     >
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'border.subtle' }}>
-        <Typography variant="h4" color="text.primary">
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'border.subtle', display: "flex", justifyContent: "space-between" }}>
+        <Typography variant="h4" color="text.primary" sx={{pl: 2}}>
           Carrinho
         </Typography>
+        <Button variant="ghost" startIcon={<DeleteOutlined />} onClick={onRestart}>
+          Limpar
+        </Button>
       </Box>
 
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 3 }}>
@@ -79,10 +84,11 @@ export default function CartPanel({
         sx={{
           p: 3,
           borderTop: 1,
-          borderColor: 'border.subtle',
+          borderColor: 'border.strong',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
+          backgroundColor: "surface.sunken"
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -93,7 +99,7 @@ export default function CartPanel({
             {formatBRL(subtotal)}
           </Typography>
         </Box>
-        <Divider sx={{ borderColor: 'border.subtle' }} />
+        <Divider sx={{ borderColor: 'border.strong', borderStyle: 'dashed' }} />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Typography variant="body1" color="text.primary" sx={{ fontWeight: 600 }}>
             Total

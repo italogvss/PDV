@@ -36,4 +36,5 @@ export interface Customer {
     state: string | null
     zipCode: string | null
   } | null
+  createdAt: string
 }

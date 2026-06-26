@@ -273,15 +273,16 @@ export default function EmployeesPage() {
       {/* DataGrid + Papéis lado a lado */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
         {/* DataGrid */}
-        <Card sx={{ overflow: 'hidden', flex: 1, minWidth: 0, borderRadius: 2,borderTopLeftRadius: 15 }}>
+        <Card sx={{ overflow: 'hidden', flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1,
               p: 1.5,
+              flexShrink: 0,
               borderBottom: '1px solid',
-              borderColor: 'divider',             
+              borderColor: 'divider',
             }}
           >
             <TextField
@@ -289,7 +290,7 @@ export default function EmployeesPage() {
               placeholder="Buscar funcionário..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              sx={{ width: 300 }}
+              sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken' } }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -302,22 +303,17 @@ export default function EmployeesPage() {
             />
           </Box>
 
-          {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <DataGrid
-              rows={filteredRows}
-              columns={columns}
-              getRowId={(row) => row.id}
-              rowHeight={64}
-              disableRowSelectionOnClick
-              pageSizeOptions={[10, 25, 50]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-              onRowDoubleClick={(params) => setEditEmployee(params.row)}              
-            />
-          )}
+          <DataGrid
+            rows={filteredRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            rowHeight={64}
+            loading={isLoading}
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            onRowDoubleClick={(params) => setEditEmployee(params.row)}
+          />
         </Card>
 
         {/* Papéis disponíveis */}

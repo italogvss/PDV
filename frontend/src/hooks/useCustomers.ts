@@ -7,6 +7,22 @@ import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['customers'] as const
 
+export function useCustomer(id: string) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, id],
+    queryFn: () => customerService.getById(id),
+    enabled: !!id,
+  })
+}
+
+export function useCustomerStats(id: string) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, id, 'stats'],
+    queryFn: () => customerService.getStats(id),
+    enabled: !!id,
+  })
+}
+
 export function useCustomers(page = 1, pageSize = 50, search?: string) {
   const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({

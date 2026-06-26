@@ -1,4 +1,9 @@
 import {
+  CloseRounded,
+  LocalOfferRounded,
+  PersonAddAlt1Rounded,
+} from '@mui/icons-material'
+import {
   Box,
   Button,
   Dialog,
@@ -10,18 +15,13 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import {
-  CloseRounded,
-  LocalOfferRounded,
-  PersonAddAlt1Rounded,
-} from '@mui/icons-material'
-import ModalHeader from '../../../../components/ModalHeader'
-import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
+import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
-import PaymentSection from '../CartPanel/components/PaymentSection'
+import ModalHeader from '../../../../components/ModalHeader'
 import { formatBRL } from '../../../../utils/currency'
 import { maskCPF } from '../../../../utils/masks'
+import PaymentSection from '../CartPanel/components/PaymentSection'
 import type { FinalizationModalProps } from './types'
 
 
@@ -67,99 +67,94 @@ export default function FinalizationModal({
       />
 
       <DialogContent sx={{ pt: 2.5 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-
-          {/* Resumo dos itens */}
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            >
-              Itens
-            </Typography>
-            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {lines.map((line) => {
-                const name = line.type === 'product' ? line.product.name : line.service.name
-                const price = line.type === 'product' ? line.product.price : line.service.price
-                const qty = line.quantity
-                return (
-                  <Box
-                    key={line.type === 'product' ? line.productId : line.lineId}
-                    sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}
-                  >
-                    <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1, mr: 2 }}>
-                      {qty}× {name}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
-                      {formatBRL(price * qty)}
-                    </Typography>
-                  </Box>
-                )
-              })}
-            </Box>
-          </Box>
-
-          {allowDiscounts && (
-            <>
-              <Divider sx={{ borderColor: 'border.subtle' }} />
-
-              {/* Desconto */}
-              <Box>
-                <FieldLabel label="Desconto" />
-                <CurrencyField
-                  value={discountAmount}
-                  onChange={(value) => onDiscountChange(Math.min(value, maxDiscount))}
-                  fullWidth
-                  size="small"
-                  placeholder="0,00"
-                />
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5}}>
-                  Limite de {discountLimitPercent}% — até {formatBRL(maxDiscount)}
-                </Typography>
-                {clampedDiscount > 0 && (
-                  <Box
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.75,
-                      px: 2,
-                      py: 0.75,
-                      mt: 1,
-                      borderRadius: '10px',
-                      bgcolor: 'warning.soft',
-                    }}
-                  >
-                    <LocalOfferRounded sx={{ fontSize: 13, color: 'warning.main' }} />
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.ink' }}>
-                      Desconto -{discountPercent.toFixed(1)}%
-                    </Typography>
-                  </Box>
-                )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, color: "text.secondary" }}>
+          <Box sx={{ backgroundColor: "surface.sunken", border: "1px solid", borderColor: "border.strong", px: 2, py: 2, borderRadius: 2}}>
+            {/* Resumo dos itens */}
+            <Box sx={{mb: 2}} >
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+              >
+                Itens
+              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5, maxHeight: 250, overflowY: 'auto' }}>
+                {lines.map((line) => {
+                  const name = line.type === 'product' ? line.product.name : line.service.name
+                  const price = line.type === 'product' ? line.product.price : line.service.price
+                  const qty = line.quantity
+                  return (
+                    <Box
+                      key={line.type === 'product' ? line.productId : line.lineId}
+                      sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}
+                    >
+                      <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1, mr: 2 }}>
+                        {qty}× {name}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
+                        {formatBRL(price * qty)}
+                      </Typography>
+                    </Box>
+                  )
+                })}
               </Box>
-            </>
-          )}
-
-          {/* Resumo financeiro */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-              <Typography variant="body2">{formatBRL(subtotal)}</Typography>
             </Box>
-            {clampedDiscount > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">Desconto</Typography>
-                <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-                  -{formatBRL(clampedDiscount)}
-                </Typography>
-              </Box>
+
+            {allowDiscounts && (
+              <>
+                {/* Desconto */}
+                <Box>
+                  <FieldLabel label={`Desconto: Limite de ${discountLimitPercent}% (${formatBRL(maxDiscount)})`} />
+                  <CurrencyField
+                    value={discountAmount}
+                    onChange={(value) => onDiscountChange(Math.min(value, maxDiscount))}
+                    fullWidth
+                    size="small"
+                    placeholder="0,00"
+                  />
+                  {clampedDiscount > 0 && (
+                    <Box
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 2,
+                        py: 0.75,
+                        mt: 1,
+                        borderRadius: '10px',
+                        bgcolor: 'warning.soft',
+                      }}
+                    >
+                      <LocalOfferRounded sx={{ fontSize: 13, color: 'warning.main' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.ink' }}>
+                        Desconto -{discountPercent.toFixed(1)}%
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </>
             )}
-            <Divider sx={{ my: 0.5, borderColor: 'border.subtle' }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>Total</Typography>
-              <Typography variant="h3">{formatBRL(total)}</Typography>
+
+            {/* Resumo financeiro */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                <Typography variant="body2">{formatBRL(subtotal)}</Typography>
+              </Box>
+              {clampedDiscount > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">Desconto</Typography>
+                  <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                    -{formatBRL(clampedDiscount)}
+                  </Typography>
+                </Box>
+              )}
+              <Divider sx={{ my: 0.5, borderColor: 'border.strong', borderStyle: "dashed" }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: "text.primary"}}>Total</Typography>
+                <Typography variant="h3" sx={{color: "text.primary"}}>{formatBRL(total)}</Typography>
+              </Box>
             </Box>
           </Box>
-
           <Divider sx={{ borderColor: 'border.subtle' }} />
 
           {/* Cliente */}

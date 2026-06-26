@@ -18,6 +18,7 @@ export default function FilterTabs({ value, onChange, options }: Props) {
         borderRadius: 999,
         border: 1,
         borderColor: 'border.subtle',
+        backgroundColor: "surface.sunken",
         '& .MuiTab-root': {
           px: 3,
           py: 2,
@@ -39,8 +40,8 @@ export default function FilterTabs({ value, onChange, options }: Props) {
           sx={{            
             px: 1,
             '&:hover': {
-              backgroundColor: 'action.hover',
-              borderColor: 'border.subtle',
+              backgroundColor: 'surface.raised',
+              borderColor: 'secondary.main',
             },
             '&.Mui-selected': {
               '&:hover': {border: "none"},

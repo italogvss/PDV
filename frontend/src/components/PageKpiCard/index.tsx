@@ -26,7 +26,7 @@ export default function PageKpiCard({ icon: Icon, label, value, valueColor, badg
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
           <Icon sx={{ fontSize: 15, color: 'text.tertiary' }} />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: 'text.tertiary' }}>
             {label}
           </Typography>
         </Box>

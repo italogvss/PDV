@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   TextField,
   Box,
@@ -10,6 +9,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import ModalHeader from '../../../../components/ModalHeader'
 import { DataGrid, type GridColDef, type GridRowParams } from '@mui/x-data-grid'
 import { useCustomers } from '../../../../hooks/useCustomers'
 import type { SelectCustomerModalProps } from './types'
@@ -51,7 +51,7 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
-      <DialogTitle>Selecionar cliente</DialogTitle>
+      <ModalHeader title="Selecionar cliente" onClose={onClose} />
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
         <TextField
           placeholder="Buscar por nome, CPF ou telefone..."

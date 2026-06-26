@@ -17,7 +17,7 @@ interface CustomerTableProps {
   customers: Customer[]
   selectedCustomerId?: string
   onSelectCustomer?: (customerId: string) => void
-  onEdit: (customer: Customer) => void
+  onNavigate: (customer: Customer) => void
   onDelete: (customerId: string) => void
 }
 
@@ -42,7 +42,7 @@ export default function CustomerTable({
   customers,
   selectedCustomerId,
   onSelectCustomer,
-  onEdit,
+  onNavigate,
   onDelete,
 }: CustomerTableProps) {
   if (customers.length === 0) {
@@ -142,7 +142,7 @@ export default function CustomerTable({
                   >
                     <CustomerRowMenu
                       customer={customer}
-                      onEdit={() => onEdit(customer)}
+                      onNavigate={() => onNavigate(customer)}
                       onDelete={() => onDelete(customer.id)}
                     />
                   </TableCell>

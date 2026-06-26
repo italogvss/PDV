@@ -2,6 +2,7 @@ import AddRounded from '@mui/icons-material/AddRounded'
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
+import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
 import PaidOutlined from '@mui/icons-material/PaidOutlined'
 import TableRowsRounded from '@mui/icons-material/TableRowsRounded'
 import TodayOutlined from '@mui/icons-material/TodayOutlined'
@@ -32,7 +33,7 @@ import type { Appointment, AppointmentStatus, Professional } from '../../types/a
 import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
 import { formatBRL } from '../../utils/currency'
 import AppointmentDetailModal from './components/AppointmentDetailModal'
-import { computeKpis } from './components/appointmentHelpers'
+import { computeKpis, STATUS_COLOR } from './components/appointmentHelpers'
 import AppointmentScheduler from './components/AppointmentScheduler'
 import NewAppointmentModal from './components/NewAppointmentModal'
 import SidePanel from './components/SidePanel'
@@ -41,13 +42,6 @@ import type { AgendaView, NewAppointmentPrefill } from './types'
 
 type ViewMode = 'scheduler' | 'list'
 
-const STATUS_COLOR: Record<AppointmentStatus, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
-  pendente: 'warning',
-  confirmado: 'info',
-  em_atendimento: 'info',
-  concluido: 'success',
-  cancelado: 'error',
-}
 
 const DOW_FULL = [
   'Domingo',
@@ -96,7 +90,7 @@ export default function AppointmentsPage() {
 
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [view, setView] = useState<AgendaView>('day')
-  const [viewMode, setViewMode] = useState<ViewMode>('scheduler')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [proFilter, setProFilter] = useState<string>('todos')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [newOpen, setNewOpen] = useState(false)
@@ -151,9 +145,15 @@ export default function AppointmentsPage() {
   const listColumns = useMemo<GridColDef<Appointment>[]>(() => [
     {
       field: 'start',
-      headerName: 'Hora',
+      headerName: 'Início',
       width: 80,
       valueFormatter: (value: string) => dayjs(value).format('HH:mm'),
+    },
+    {
+      field: 'end',
+      headerName: 'Término',
+      width: 80,
+      valueGetter: (_: unknown, row: Appointment) => dayjs(row.start).add(row.durationMinutes, 'minute').format('HH:mm'),
     },
     ...(view === 'week' ? [{
       field: 'startDate',
@@ -334,7 +334,7 @@ export default function AppointmentsPage() {
           display: 'block',
         }}
       >
-        Filtrar por dia
+        Filtrar por dia da semana
       </Typography>
       <WeekStrip
         selectedDate={selectedDate}
@@ -404,6 +404,14 @@ export default function AppointmentsPage() {
               hideFooter={listAppointments.length <= 100}
               disableColumnFilter
               disableColumnMenu
+              slots={{
+                noRowsOverlay: () => (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1, color: 'text.disabled' }}>
+                    <EventBusyOutlined sx={{ fontSize: 40 }} />
+                    <Typography variant="body2">Nenhum agendamento para esta data</Typography>
+                  </Box>
+                ),
+              }}
               sx={{ cursor: 'pointer' }}
             />
           )}

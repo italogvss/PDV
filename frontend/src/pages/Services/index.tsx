@@ -252,7 +252,7 @@ export default function ServicesPage() {
   }, [services, search, categoryFilter, statusFilter, sortBy])
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '150vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader
         title="Serviços"
         description={isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
@@ -300,7 +300,7 @@ export default function ServicesPage() {
       />
 
       {/* Barra de busca e filtros */}
-      <Card sx={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Card sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <Box
           sx={{
             display: 'flex',
@@ -317,7 +317,7 @@ export default function ServicesPage() {
             placeholder="Buscar serviço ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 280 }}
+            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken'} }}
             slotProps={{
               input: {
                 startAdornment: (

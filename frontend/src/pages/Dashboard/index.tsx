@@ -1,5 +1,7 @@
 import AddRounded from '@mui/icons-material/AddRounded'
+import AppsRounded from '@mui/icons-material/AppsRounded'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
@@ -25,6 +27,7 @@ import { useTenantSettings } from '../../hooks/useTenantSettings'
 import { useAppSelector } from '../../store'
 import { formatBRL } from '../../utils/currency'
 import ActiveTeamCard from './components/ActiveTeamCard'
+import EmployeeDashboard from './components/EmployeeDashboard'
 import PaymentMethodsDonut from './components/PaymentMethodsDonut'
 import PendingBillsCard from './components/PendingBillsCard'
 import RecentSalesTable from './components/RecentSalesTable'
@@ -32,10 +35,13 @@ import RevenueAreaChart from './components/RevenueAreaChart'
 import StockAlertsCard from './components/StockAlertsCard'
 import TopProductsRanking from './components/TopProductsRanking'
 
+type DashboardView = 'analytics' | 'modules'
+
 const DATE_RANGE_DAYS = [7, 14, 30, 90] as const
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const [view, setView] = useState<DashboardView>('analytics')
   const [selectedDays, setSelectedDays] = useState(14)
   const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
 
@@ -108,24 +114,45 @@ export default function DashboardPage() {
         <ToggleButtonGroup
           exclusive
           size="small"
-          value={selectedDays}
-          onChange={(_, value) => value !== null && setSelectedDays(value)}
+          value={view}
+          onChange={(_, v: DashboardView | null) => v && setView(v)}
         >
-          {DATE_RANGE_DAYS.map((days) => (
-            <ToggleButton key={days} value={days}>
-              {days} dias
-            </ToggleButton>
-          ))}
+          <ToggleButton value="analytics">
+            <InsightsOutlined sx={{ fontSize: 18 }} />
+          </ToggleButton>
+          <ToggleButton value="modules">
+            <AppsRounded sx={{ fontSize: 18 }} />
+          </ToggleButton>
         </ToggleButtonGroup>
-        <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={handleExport}>
-          Exportar
-        </Button>
+
+        {view === 'analytics' && (
+          <>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={selectedDays}
+              onChange={(_, value) => value !== null && setSelectedDays(value)}
+            >
+              {DATE_RANGE_DAYS.map((days) => (
+                <ToggleButton key={days} value={days}>
+                  {days} dias
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+            <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={handleExport}>
+              Exportar
+            </Button>
+          </>
+        )}
+
         <Button variant="contained" startIcon={<AddRounded />} onClick={() => navigate('/vendas')}>
           Nova venda
         </Button>
       </PageHeader>
 
-      {kpisLoading ? (
+      {view === 'modules' ? (
+        <EmployeeDashboard />
+      ) : kpisLoading ? (
         <PageKpiGrid>
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} variant="rounded" height={120} />
@@ -168,29 +195,31 @@ export default function DashboardPage() {
         </PageKpiGrid>
       )}
 
-      <Fade in timeout={400}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' } }}>
-            <RevenueAreaChart data={financialSummary ?? []} days={selectedDays} loading={financialLoading} />
-            <PaymentMethodsDonut
-              data={paymentMethods ?? []}
-              payments={settings?.payments}
-              loading={paymentsLoading}
-            />
-          </Box>
+      {view === 'analytics' && (
+        <Fade in timeout={400}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' } }}>
+              <RevenueAreaChart data={financialSummary ?? []} days={selectedDays} loading={financialLoading} />
+              <PaymentMethodsDonut
+                data={paymentMethods ?? []}
+                payments={settings?.payments}
+                loading={paymentsLoading}
+              />
+            </Box>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' } }}>
-            <RecentSalesTable sales={todaySales} loading={salesLoading} onViewAll={() => navigate('/historico')} />
-            <TopProductsRanking products={topProducts ?? []} loading={topProductsLoading} />
-          </Box>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' } }}>
+              <RecentSalesTable sales={todaySales} loading={salesLoading} onViewAll={() => navigate('/historico')} />
+              <TopProductsRanking products={topProducts ?? []} loading={topProductsLoading} />
+            </Box>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' } }}>
-            <StockAlertsCard />
-            <PendingBillsCard />
-            <ActiveTeamCard />
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' } }}>
+              <StockAlertsCard />
+              <PendingBillsCard />
+              <ActiveTeamCard />
+            </Box>
           </Box>
-        </Box>
-      </Fade>
+        </Fade>
+      )}
     </Box>
   )
 }

@@ -19,13 +19,13 @@ import {
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useCustomers, useDeleteCustomer } from '../../hooks/useCustomers'
 import type { Customer } from '../../types/customers.types'
 import AddCustomerModal from './components/AddCustomerModal'
 import CustomerRowMenu from './components/CustomerRowMenu'
-import EditCustomerModal from './components/EditCustomerModal'
 
 function getInitials(name: string) {
   return name
@@ -40,8 +40,8 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('name-asc')
   const [addOpen, setAddOpen] = useState(false)
-  const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
 
+  const navigate = useNavigate()
   const { data, isLoading } = useCustomers(1, 200)
   const deleteCustomer = useDeleteCustomer()
 
@@ -160,7 +160,7 @@ export default function CustomersPage() {
             </Typography>
           )
         },
-      },     
+      },
       {
         field: 'rowActions',
         headerName: '',
@@ -171,13 +171,13 @@ export default function CustomersPage() {
         renderCell: ({ row }) => (
           <CustomerRowMenu
             customer={row}
-            onEdit={() => setEditCustomer(row)}
+            onNavigate={() => navigate(`/clientes/${row.id}`)}
             onDelete={() => deleteCustomer.mutate(row.id)}
           />
         ),
       },
     ],
-    [deleteCustomer],
+    [deleteCustomer, navigate],
   )
 
   return (
@@ -197,13 +197,14 @@ export default function CustomersPage() {
         />
       </PageKpiGrid>
 
-      <Card sx={{ overflow: 'hidden' }}>
+      <Card sx={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             p: 1.5,
+            flexShrink: 0,
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
@@ -213,7 +214,7 @@ export default function CustomersPage() {
             placeholder="Buscar nome, e-mail, telefone ou documento..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 340 }}
+            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken' } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -231,7 +232,7 @@ export default function CustomersPage() {
             size="small"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            sx={{ fontSize: 13, minWidth: 160 }}
+            sx={{ fontSize: 13, minWidth: 170 }}
           >
             <MenuItem value="name-asc">Nome (A → Z)</MenuItem>
             <MenuItem value="name-desc">Nome (Z → A)</MenuItem>
@@ -247,19 +248,12 @@ export default function CustomersPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          onRowDoubleClick={(params) => setEditCustomer(params.row)}
+          onRowClick={(params) => navigate(`/clientes/${params.row.id}`)}
+          sx={{ cursor: 'pointer' }}
         />
       </Card>
 
       <AddCustomerModal open={addOpen} onClose={() => setAddOpen(false)} />
-
-      {editCustomer && (
-        <EditCustomerModal
-          open
-          customer={editCustomer}
-          onClose={() => setEditCustomer(null)}
-        />
-      )}
     </Box>
   )
 }

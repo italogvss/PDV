@@ -8,6 +8,8 @@ public class Sale : BaseEntity
     public Guid? OperatorId { get; set; }
     public User? Operator { get; set; }
     public string OperatorName { get; set; } = string.Empty;
+    public Guid? CustomerId { get; set; }
+    public Customer? Customer { get; set; }
     public string? CustomerName { get; set; }
     public string? CustomerDocument { get; set; }
     public PaymentMethod PaymentMethod { get; set; }

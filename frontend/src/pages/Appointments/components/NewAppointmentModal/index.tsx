@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import AddRounded from '@mui/icons-material/AddRounded'
 import ContentCutOutlined from '@mui/icons-material/ContentCutOutlined'
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
@@ -13,8 +14,10 @@ import {
   Dialog,
   DialogContent,
   FormHelperText,
+  IconButton,
   InputAdornment,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -237,32 +240,44 @@ export default function NewAppointmentModal({
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Cliente" required />
-              <Controller
-                name="customerName"
-                control={control}
-                render={({ field }) => (
-                  <Autocomplete
-                    freeSolo
-                    options={customers}
-                    getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
-                    inputValue={field.value}
-                    onInputChange={(_, value) => {
-                      field.onChange(value)
-                      const match = customers.find((c) => c.name === value)
-                      setCustomerId(match ? match.id : null)
-                      if (match) setValue('phone', match.phone ?? '')
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Nome do cliente"
-                        error={!!errors.customerName}
-                        helperText={errors.customerName?.message}
-                      />
-                    )}
-                  />
-                )}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                <Controller
+                  name="customerName"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      freeSolo
+                      fullWidth
+                      options={customers}
+                      getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
+                      inputValue={field.value}
+                      onInputChange={(_, value) => {
+                        field.onChange(value)
+                        const match = customers.find((c) => c.name === value)
+                        setCustomerId(match ? match.id : null)
+                        if (match) setValue('phone', match.phone ?? '')
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Nome do cliente"
+                          error={!!errors.customerName}
+                          helperText={errors.customerName?.message}
+                        />
+                      )}
+                    />
+                  )}
+                />
+                <Tooltip title="Cadastrar novo cliente">
+                  <IconButton
+                    size="small"
+                    onClick={() => { onClose(); navigate('/clientes') }}
+                    sx={{ mt: 1 }}
+                  >
+                    <AddRounded sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone / WhatsApp" />

@@ -54,44 +54,91 @@ export default function ProductCatalog({
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
-      renderCell: ({ row }) => {
-        const color = row.category?.color ?? 'primary.main'
-        return (
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 1.5,
-              overflow: 'hidden',
-              flexShrink: 0,
-              bgcolor: color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'common.white',
-            }}
-          >
-            {row.imageUrl ? (
-              <Box
-                component="img"
-                src={row.imageUrl}
-                alt={row.name}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : mode === 'products' ? (
-              <Inventory2Outlined sx={{ fontSize: 18, opacity: 0.7 }} />
-            ) : (
-              <MiscellaneousServicesRounded sx={{ fontSize: 18, opacity: 0.7 }} />
-            )}
-          </Box>
-        )
-      },
+      renderCell: ({ row }) => (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 1.5,
+            overflow: 'hidden',
+            flexShrink: 0,
+            border: '1px solid',
+            borderColor: 'border.strong',
+          }}
+        >
+          {row.imageUrl ? (
+            <Box
+              component="img"
+              src={row.imageUrl}
+              alt={row.name}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                background: (theme) =>
+                  `repeating-linear-gradient(-45deg, ${theme.palette.background.default}, ${theme.palette.background.default} 4px, ${theme.palette.divider} 4px, ${theme.palette.divider} 8px)`,
+              }}
+            />
+          )}
+        </Box>
+      ),
     },
     {
       field: 'name',
       headerName: 'Nome',
       flex: 1,
       renderCell: ({ value }) => <Typography variant="body2">{value}</Typography>,
+    },
+    {
+      field: 'category',
+      headerName: 'Categoria',
+      width: 140,
+      renderCell: ({ row }) =>
+        row.category ? (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              bgcolor: 'surface.sunken',
+              border: '1px solid',
+              borderColor: 'border.subtle',
+              borderRadius: '999px',
+              px: 1.25,
+              py: 0.5,
+            }}
+          >
+            <Box
+              sx={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                bgcolor: row.category.color,
+                flexShrink: 0,
+              }}
+            />
+            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+              {row.category.name}
+            </Typography>
+          </Box>
+        ) : (
+          <Typography variant="caption" color="text.disabled">—</Typography>
+        ),
+    },
+    {
+      field: 'stock',
+      headerName: 'Qtd.',
+      width: 72,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: ({ value }) => (
+        <Typography variant="body2" color="text.secondary">
+          {value ?? '—'}
+        </Typography>
+      ),
     },
     {
       field: 'price',
@@ -137,7 +184,7 @@ export default function ProductCatalog({
           <InputBase
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={mode === 'products' ? 'Buscar produto...' : 'Buscar serviço...'}
+            placeholder={mode === 'products' ? 'Buscar produto por nome ou código de barras' : 'Buscar serviço...'}
             sx={{ flex: 1, fontSize: 14, color: 'text.primary' }}
           />
           {isLoading && <CircularProgress size={14} color="inherit" />}
