@@ -93,6 +93,14 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
         },
       },
       {
+        props: { color: 'error', variant: 'contained' },
+        style: {
+          backgroundColor: theme.palette.error.main,
+          color: theme.palette.error.contrastText,
+          '&:hover': { backgroundColor: theme.palette.error.dark },
+        },
+      },
+      {
         // Secundário = cor de destaque (accent) escolhida pelo usuário
         props: { color: 'secondary', variant: 'contained' },
         style: {
