@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Tenants;
@@ -9,7 +9,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/tenants")]
 [Authorize]
-public class TenantController(ITenantService tenantService) : ControllerBase
+public class TenantController(ITenantService tenantService, IReportService reportService) : ControllerBase
 {
     private static readonly bool IsProduction =
         string.Equals(
@@ -58,4 +58,47 @@ public class TenantController(ITenantService tenantService) : ControllerBase
     [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> UpdateModules([FromBody] ModulesSettingsDto request)
         => Ok(await tenantService.UpdateModulesAsync(request));
+
+    [HttpDelete("current")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> Deactivate()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var accessToken = await tenantService.DeactivateCurrentAsync(userId);
+
+        Response.Cookies.Append("access_token", accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure   = IsProduction,
+            SameSite = SameSiteMode.Strict,
+            MaxAge   = TimeSpan.FromHours(8),
+        });
+
+        return NoContent();
+    }
+
+    // Exporta dados de um tenant inativo (agendado para exclusão) pelo Owner.
+    // Não usa o contexto de tenant do JWT — o tenantId vem explicitamente na rota.
+    [HttpGet("{tenantId:guid}/export/{category}")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> ExportInactiveTenantData(Guid tenantId, string category)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await tenantService.ValidateOwnershipAsync(userId, tenantId);
+
+        var filenames = new Dictionary<string, string>
+        {
+            ["sales"]     = "vendas.csv",
+            ["products"]  = "produtos.csv",
+            ["customers"] = "clientes.csv",
+            ["services"]  = "servicos.csv",
+            ["expenses"]  = "despesas.csv",
+            ["billing"]   = "faturamento.csv",
+            ["team"]      = "equipe.csv",
+        };
+
+        var csv = await reportService.ExportForTenantAsync(tenantId, category);
+        var filename = filenames.GetValueOrDefault(category, $"{category}.csv");
+        return File(csv, "text/csv", filename);
+    }
 }

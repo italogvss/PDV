@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   BlockOutlined,
   CalendarMonthOutlined,
@@ -9,22 +9,12 @@ import {
   PaidOutlined,
   PeopleAltOutlined,
   PointOfSaleOutlined,
-  WarningAmberRounded,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, Button } from '@mui/material'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import ModalHeader from '../../../../components/ModalHeader'
+import ConfirmPhraseDialog from '../../../../components/ConfirmPhraseDialog'
 import { usePurgeEntity } from '../../../../hooks/usePurgeEntity'
 import type { EntityKey } from '../../../../services/tenantData.service'
 
@@ -35,7 +25,6 @@ interface DeletableEntity {
   icon: SvgIconComponent
 }
 
-// Mesma iconografia do SidebarNav, por seção correspondente.
 const DELETABLE_ENTITIES: DeletableEntity[] = [
   { key: 'products', label: 'Produtos', sublabel: 'Remove todo o estoque cadastrado', icon: Inventory2Outlined },
   { key: 'sales', label: 'Vendas', sublabel: 'Apaga o histórico de vendas', icon: PointOfSaleOutlined },
@@ -46,22 +35,9 @@ const DELETABLE_ENTITIES: DeletableEntity[] = [
   { key: 'suppliers', label: 'Fornecedores', sublabel: 'Remove os fornecedores cadastrados', icon: LocalShippingOutlined },
 ]
 
-function confirmationPhrase(label: string) {
-  return `Eu quero excluir para sempre todos os ${label}`
-}
-
 export default function AdvancedSection() {
   const purge = usePurgeEntity()
   const [target, setTarget] = useState<DeletableEntity | null>(null)
-  const [typed, setTyped] = useState('')
-
-  // Limpa o texto digitado sempre que abrir/trocar de entidade.
-  useEffect(() => {
-    setTyped('')
-  }, [target])
-
-  const expectedPhrase = target ? confirmationPhrase(target.label) : ''
-  const phraseMatches = typed === expectedPhrase // case sensitive
 
   const handleClose = () => {
     if (purge.isPending) return
@@ -69,10 +45,8 @@ export default function AdvancedSection() {
   }
 
   const handleConfirm = () => {
-    if (!target || !phraseMatches) return
-    purge.mutate(target.key, {
-      onSuccess: () => handleClose(),
-    })
+    if (!target) return
+    purge.mutate(target.key, { onSuccess: () => handleClose() })
   }
 
   return (
@@ -116,87 +90,25 @@ export default function AdvancedSection() {
         </SettingRow>
       </SettingCard>
 
-      <Dialog open={!!target} onClose={handleClose} maxWidth="sm" fullWidth>
-        {target && (
-          <>
-            <ModalHeader
-              title={`Excluir todos os ${target.label}`}
-              subtitle="Esta ação é irreversível."
-              onClose={handleClose}
-              disabled={purge.isPending}
-            />
-            <DialogContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1.5,
-                  p: 2,
-                  mb: 3,
-                  borderRadius: 2,
-                  bgcolor: 'error.soft',
-                  color: 'error.ink',
-                }}
-              >
-                <WarningAmberRounded sx={{ fontSize: 22, mt: 0.25, flexShrink: 0 }} />
-                <Typography variant="body2">
-                  Você está prestes a excluir <strong>permanentemente</strong> todos os{' '}
-                  <strong>{target.label}</strong> deste estabelecimento. Os dados não poderão
-                  ser recuperados.
-                </Typography>
-              </Box>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Para confirmar, escreva exatamente a frase abaixo:
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  mb: 1.5,
-                  userSelect: 'none',
-                }}
-              >
-                {expectedPhrase}
-              </Typography>
-
-              <TextField
-                fullWidth
-                size="small"
-                autoComplete="off"
-                placeholder={expectedPhrase}
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                disabled={purge.isPending}
-                error={typed.length > 0 && !phraseMatches}
-                helperText={
-                  typed.length > 0 && !phraseMatches
-                    ? 'A frase não confere (diferencia maiúsculas e minúsculas).'
-                    : ' '
-                }
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button variant="ghost" onClick={handleClose} disabled={purge.isPending}>
-                Cancelar
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={
-                  purge.isPending
-                    ? <CircularProgress size={16} color="inherit" />
-                    : <DeleteForeverOutlined />
-                }
-                disabled={!phraseMatches || purge.isPending}
-                onClick={handleConfirm}
-              >
-                {purge.isPending ? 'Excluindo...' : 'Excluir para sempre'}
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+      <ConfirmPhraseDialog
+        open={!!target}
+        onClose={handleClose}
+        title={target ? `Excluir todos os ${target.label}` : ''}
+        warningText={
+          target ? (
+            <>
+              Você está prestes a excluir <strong>permanentemente</strong> todos os{' '}
+              <strong>{target.label}</strong> deste estabelecimento. Os dados não poderão
+              ser recuperados.
+            </>
+          ) : null
+        }
+        confirmPhrase={target ? `Eu quero excluir para sempre todos os ${target.label}` : ''}
+        confirmButtonLabel="Excluir para sempre"
+        confirmButtonIcon={<DeleteForeverOutlined />}
+        isPending={purge.isPending}
+        onConfirm={handleConfirm}
+      />
     </Box>
   )
 }

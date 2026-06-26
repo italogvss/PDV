@@ -15,7 +15,7 @@ interface MeApiResponse {
   lastTenantId: string | null
   role: UserRole
   settings: { theme: Theme; accentColor: AccentColor; textSize: number } | null
-  tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee'; logoUrl: string | null }>
+  tenants: Array<{ tenantId: string; name: string; role: 'Owner' | 'Employee'; logoUrl: string | null; isActive: boolean; scheduledDeletionAt: string | null }>
   mustChangePassword?: boolean
   permissions?: string[]
   modules?: string[]
@@ -41,7 +41,12 @@ export const authService = {
             textSize: data.settings.textSize ?? 15,
           }
         : null,
-      tenants: (data.tenants ?? []).map((t) => ({ ...t, logoUrl: t.logoUrl ?? null })),
+      tenants: (data.tenants ?? []).map((t) => ({
+        ...t,
+        logoUrl: t.logoUrl ?? null,
+        isActive: t.isActive ?? true,
+        scheduledDeletionAt: t.scheduledDeletionAt ?? null,
+      })),
       mustChangePassword: data.mustChangePassword ?? false,
       permissions: (data.permissions ?? []) as Permission[],
       modules: (data.modules ?? ALL_MODULES) as OperationModule[],

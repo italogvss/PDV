@@ -100,4 +100,25 @@ export const reportService = {
     link.click()
     URL.revokeObjectURL(url)
   },
+
+  exportCsvForTenant: async (tenantId: string, category: string): Promise<void> => {
+    const filenames: Record<string, string> = {
+      sales:     'vendas.csv',
+      products:  'produtos.csv',
+      customers: 'clientes.csv',
+      services:  'servicos.csv',
+      expenses:  'despesas.csv',
+      billing:   'faturamento.csv',
+      team:      'equipe.csv',
+    }
+
+    const { data } = await api.get<string>(`/tenants/${tenantId}/export/${category}`, { responseType: 'blob' })
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filenames[category] ?? `${category}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  },
 }

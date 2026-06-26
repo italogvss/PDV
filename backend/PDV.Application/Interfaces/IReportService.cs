@@ -43,4 +43,6 @@ public interface IReportService
     Task<byte[]> ExportBillingCsvAsync();
 
     Task<byte[]> ExportTeamCsvAsync();
+
+    Task<byte[]> ExportForTenantAsync(Guid tenantId, string category);
 }

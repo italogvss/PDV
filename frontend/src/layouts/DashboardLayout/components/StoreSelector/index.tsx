@@ -91,10 +91,11 @@ export default function StoreSelector() {
   const dispatch = useAppDispatch()
   const queryClient = useQueryClient()
 
+  const switchableTenants = tenants.filter((t) => t.isActive)
   const activeTenant = tenants.find((t) => t.tenantId === tenantId)
   const activeName = activeTenant?.name ?? ''
-  const canSwitch = tenants.length > 1
-  const singleTenant = tenants.length === 1
+  const canSwitch = switchableTenants.length > 1
+  const singleTenant = switchableTenants.length === 1
   const logoUrl = settings?.business.logoUrl ?? null
 
   function handleOpen() {
@@ -192,7 +193,7 @@ export default function StoreSelector() {
           },
         }}
       >
-        {tenants.map((tenant) => (
+        {switchableTenants.map((tenant) => (
           <TenantRow
             key={tenant.tenantId}
             tenant={tenant}

@@ -36,7 +36,9 @@
       "Bash(findstr router *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PDV-Ultra\\\\backend\" -Recurse -Depth 2)",
       "Bash(Select-Object FullName, PSIsContainer)",
-      "Bash(Format-List)"
+      "Bash(Format-List)",
+      "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add AddTenantScheduledDeletion -p PDV.Infrastructure -s PDV.Api)",
+      "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef database update -p PDV.Infrastructure -s PDV.Api)"
     ]
   }
 }

@@ -12,4 +12,6 @@ public interface ITenantService
     Task<OperationSettingsDto> UpdateOperationAsync(OperationSettingsDto request);
     Task<PaymentsSettingsDto> UpdatePaymentsAsync(PaymentsSettingsDto request);
     Task<ModulesSettingsDto> UpdateModulesAsync(ModulesSettingsDto request);
+    Task<string> DeactivateCurrentAsync(Guid userId);
+    Task ValidateOwnershipAsync(Guid userId, Guid tenantId);
 }

@@ -1,4 +1,13 @@
-import { useEffect } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { WhatsApp } from '@mui/icons-material'
+import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined'
+import GitHubIcon from '@mui/icons-material/GitHub'
+import HelpOutlinedIcon from '@mui/icons-material/HelpOutlined'
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
+import LinkedInIcon from '@mui/icons-material/LinkedIn'
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import {
   Box,
   Button,
@@ -11,23 +20,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
-import GitHubIcon from '@mui/icons-material/GitHub'
-import LinkedInIcon from '@mui/icons-material/LinkedIn'
-import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
-import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
-import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined'
-import HelpOutlinedIcon from '@mui/icons-material/HelpOutlined'
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
+import { z } from 'zod'
+import ChipSelect from '../../components/ChipSelect'
 import FieldLabel from '../../components/FieldLabel'
+import PageHeader from '../../components/PageHeader'
 import { useCreateContactMessage } from '../../hooks/useContact'
 import type { ContactMessageCategory, Reproducibility } from '../../types/contact.types'
-import ChipSelect from '../../components/ChipSelect'
-import PageHeader from '../../components/PageHeader'
 
 const schema = z.object({
   category: z.enum(['FeatureSuggestion', 'BugReport', 'Compliment', 'Other'] as const),
@@ -42,11 +43,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-const CATEGORIES: { value: ContactMessageCategory; label: string; icon: React.ReactNode, color?: string}[] = [
-  { value: 'FeatureSuggestion', label: 'Sugestão', icon: <LightbulbOutlinedIcon fontSize="small"/>, color: "warning.main" },
-  { value: 'BugReport', label: 'Relatar bug', icon: <BugReportOutlinedIcon fontSize="small"/>, color: "error.main" },
-  { value: 'Compliment', label: 'Elogio', icon: <FavoriteOutlinedIcon fontSize="small"/>, color: "secondary.main" },
-  { value: 'Other', label: 'Outro', icon: <HelpOutlinedIcon fontSize="small"/> },
+const CATEGORIES: { value: ContactMessageCategory; label: string; icon: React.ReactNode, color?: string }[] = [
+  { value: 'FeatureSuggestion', label: 'Sugestão', icon: <LightbulbOutlinedIcon fontSize="small" />, color: "warning.main" },
+  { value: 'BugReport', label: 'Relatar bug', icon: <BugReportOutlinedIcon fontSize="small" />, color: "error.main" },
+  { value: 'Compliment', label: 'Elogio', icon: <FavoriteOutlinedIcon fontSize="small" />, color: "secondary.main" },
+  { value: 'Other', label: 'Outro', icon: <HelpOutlinedIcon fontSize="small" /> },
 ]
 
 const REPRODUCIBILITY: { value: Reproducibility; label: string }[] = [
@@ -116,8 +117,8 @@ export default function ContactPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <PageHeader
-      title='Fale com o desenvolvedor'
-      description='Sugestões, bugs ou elogios — toda mensagem é lida com atenção.'
+        title='Fale com o desenvolvedor'
+        description='Sugestões, bugs ou elogios — toda mensagem é lida com atenção.'
       />
 
       <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -291,6 +292,13 @@ export default function ContactPage() {
                     italo.gavassi@gmail.com
                   </Typography>
                 </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <WhatsApp sx={{ fontSize: 18, color: 'text.tertiary', flexShrink: 0 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    + 45 991377068
+                  </Typography>
+                </Box>
+
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <GitHubIcon sx={{ fontSize: 18, color: 'text.tertiary', flexShrink: 0 }} />

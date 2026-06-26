@@ -8,4 +8,6 @@ export interface TenantListItem {
   name: string
   role: 'Owner' | 'Employee'
   logoUrl: string | null
+  isActive: boolean
+  scheduledDeletionAt: string | null
 }

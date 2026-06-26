@@ -300,6 +300,50 @@ public class TenantService(
         ];
     }
 
+    public async Task ValidateOwnershipAsync(Guid userId, Guid tenantId)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException("Usuário não encontrado.");
+
+        var link = user.UserTenants.FirstOrDefault(ut => ut.TenantId == tenantId)
+            ?? throw new UnauthorizedException("Sem acesso a este estabelecimento.");
+
+        if (link.Role != UserRole.Owner)
+            throw new UnauthorizedException("Apenas o proprietário pode exportar dados deste estabelecimento.");
+    }
+
+    public async Task<string> DeactivateCurrentAsync(Guid userId)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException("Usuário não encontrado.");
+
+        var currentLink = user.UserTenants.FirstOrDefault(ut => ut.TenantId == tenantContext.TenantId)
+            ?? throw new NotFoundException("Estabelecimento não encontrado.");
+
+        if (currentLink.Role != UserRole.Owner)
+            throw new UnauthorizedException("Apenas o proprietário pode encerrar o estabelecimento.");
+
+        var otherActive = user.UserTenants
+            .Where(ut => ut.TenantId != tenantContext.TenantId && ut.Tenant.IsActive)
+            .ToList();
+
+        if (otherActive.Count == 0)
+            throw new BusinessException("Não é possível encerrar o único estabelecimento ativo. Crie outro negócio antes.");
+
+        var tenant = currentLink.Tenant;
+        tenant.IsActive = false;
+        tenant.ScheduledDeletionAt = DateTime.UtcNow.AddMonths(1);
+        tenant.UpdatedAt = DateTime.UtcNow;
+        await tenantRepository.UpdateAsync(tenant);
+
+        var next = otherActive.First();
+        user.LastTenantId = next.TenantId;
+        user.UpdatedAt = DateTime.UtcNow;
+        await userRepository.UpdateAsync(user);
+
+        return GenerateToken(userId, next.TenantId, user.Name, next.Role.ToString());
+    }
+
     private static string? StripMask(string? value) =>
         string.IsNullOrWhiteSpace(value)
             ? null

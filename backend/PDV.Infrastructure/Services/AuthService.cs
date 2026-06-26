@@ -166,7 +166,8 @@ public class AuthService(
             var logoUrl = s is not null
                 ? await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt)
                 : null;
-            tenantItems.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl));
+            tenantItems.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl,
+                ut.Tenant.IsActive, ut.Tenant.ScheduledDeletionAt));
         }
 
         var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
@@ -224,7 +225,8 @@ public class AuthService(
             var logoUrl = s is not null
                 ? await storage.ResolveReadUrlAsync(s.LogoUrl, MediaCategory.Tenant, s.UpdatedAt)
                 : null;
-            items.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl));
+            items.Add(new TenantListItem(ut.TenantId, s?.FantasyName ?? "", ut.Role.ToString(), logoUrl,
+                ut.Tenant.IsActive, ut.Tenant.ScheduledDeletionAt));
         }
         return items;
     }
