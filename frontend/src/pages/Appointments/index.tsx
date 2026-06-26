@@ -29,6 +29,7 @@ import { useCustomers } from '../../hooks/useCustomers'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
+import { ALL_MODULES } from '../../constants/modules'
 import { useAppSelector } from '../../store'
 import type { Appointment, AppointmentStatus, Professional } from '../../types/appointment.types'
 import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
@@ -99,6 +100,7 @@ export default function AppointmentsPage() {
 
   const { data: tenantSettings } = useTenantSettings()
   const requireCustomerOnAppointment = tenantSettings?.operation.requireCustomerOnAppointment ?? false
+  const customersModuleActive = (tenantSettings?.modules ?? ALL_MODULES).includes('customers')
 
   // Busca agendamentos da semana completa (segunda–domingo) que contém a data selecionada.
   // Mesma lógica do WeekStrip para calcular a segunda-feira.
@@ -442,6 +444,7 @@ export default function AppointmentsPage() {
         defaultDate={selectedDate}
         onCreate={handleCreate}
         requireCustomerOnAppointment={requireCustomerOnAppointment}
+        customersModuleActive={customersModuleActive}
       />
 
       <AppointmentDetailModal

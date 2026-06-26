@@ -305,7 +305,7 @@ function CustomersCard({ form, set, hasChanges, onSave, onCancel, isPending, ena
           />
         </SettingRow>
       )}
-      {hasSales && hasScheduling && <Divider />}
+      {hasSales && hasScheduling}
       {hasScheduling && (
         <SettingRow
           label="Obrigar cliente em novo agendamento"

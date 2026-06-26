@@ -1,33 +1,34 @@
-import { useEffect } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import SyncRounded from '@mui/icons-material/SyncRounded'
 import {
-  Dialog,
-  DialogContent,
   Box,
   Chip,
+  Collapse,
+  Dialog,
+  DialogContent,
+  FormHelperText,
+  Paper,
+  Switch,
   TextField,
-  Typography,
   ToggleButton,
   ToggleButtonGroup,
-  FormHelperText,
-  Switch,
+  Typography,
   useMediaQuery,
   useTheme,
-  Collapse,
 } from '@mui/material'
-import SyncRounded from '@mui/icons-material/SyncRounded'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
-import type { ExpenseCategory } from '../../types'
-import type { NewExpenseModalProps } from './types'
-import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
-import ModalHeader from '../../../../components/ModalHeader'
-import FieldLabel from '../../../../components/FieldLabel'
 import CurrencyField from '../../../../components/CurrencyField'
+import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
+import ModalHeader from '../../../../components/ModalHeader'
+import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
+import type { ExpenseCategory } from '../../types'
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
+import type { NewExpenseModalProps } from './types'
 
 const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória').max(500),
@@ -179,13 +180,13 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                             color: 'background.paper',
                             borderColor: EXPENSE_CATEGORY_LABELS[cat].color,
                             fontWeight: 600,
-                            
-                            '&:hover': { bgcolor: EXPENSE_CATEGORY_LABELS[cat].color,  },
+
+                            '&:hover': { bgcolor: EXPENSE_CATEGORY_LABELS[cat].color, },
                           } : {
                             borderColor: 'border.subtle',
                             color: 'text.secondary',
                             fontWeight: 500,
-                            '&:hover': { borderColor: EXPENSE_CATEGORY_LABELS[cat].color,  },
+                            '&:hover': { borderColor: EXPENSE_CATEGORY_LABELS[cat].color, },
                           }}
                         />
                       )
@@ -253,7 +254,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
             </Box>
           </Box>
 
-          
+
 
           {/* Status */}
           <Box>
@@ -274,59 +275,55 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               )}
             />
           </Box>
-
-          {/* Recorrente */}
-          <Controller
-            name="isRecurring"
-            control={control}
-            render={({ field }) => (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                  p: 2,
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'border.subtle',
-                  bgcolor: 'surface.sunken',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SyncRounded sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      Despesa recorrente mensal
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Marque esta opção se a despesa se repete todo mês (aluguel, internet, salários...).
-                    </Typography>
+          <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong" }}>
+            {/* Recorrente */}
+            <Controller
+              name="isRecurring"
+              control={control}
+              render={({ field }) => (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <SyncRounded sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Despesa recorrente mensal
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Marque esta opção se a despesa se repete todo mês (aluguel, internet, salários...).
+                      </Typography>
+                    </Box>
                   </Box>
+                  <Switch
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                  />
                 </Box>
-                <Switch
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
+              )}
+            />
+
+            {/* Número de repetições (apenas quando recorrente) */}
+            <Collapse in={isRecurring}>
+              <Box>
+                <FieldLabel label="Repetir por quantos meses?" />
+                <TextField
+                  {...register('repeatCount', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+                  type="number"
+                  fullWidth
+                  placeholder="Ex.: 12"
+                  inputProps={{ min: 1 }}
+                  error={!!errors.repeatCount}
+                  helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
                 />
               </Box>
-            )}
-          />
-
-          {/* Número de repetições (apenas quando recorrente) */}
-          <Collapse in={isRecurring}>
-            <Box>
-              <FieldLabel label="Repetir por quantos meses?" />
-              <TextField
-                {...register('repeatCount', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
-                type="number"
-                fullWidth
-                placeholder="Ex.: 12"
-                inputProps={{ min: 1 }}
-                error={!!errors.repeatCount}
-                helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
-              />
-            </Box>
-          </Collapse>
+            </Collapse>
+          </Paper>
         </Box>
       </DialogContent>
 

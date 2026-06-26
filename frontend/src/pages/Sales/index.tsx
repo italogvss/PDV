@@ -8,7 +8,9 @@ import { useCreateSale } from '../../hooks/useSales'
 import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
+import { ALL_MODULES } from '../../constants/modules'
 import { useAppSelector } from '../../store'
+import type { AppointmentServiceRef } from '../../types/appointment.types'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
 import CartPanel from './components/CartPanel'
@@ -18,7 +20,7 @@ import ProductCatalog from './components/ProductCatalog'
 import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
 import SelectCustomerModal from './components/SelectCustomerModal'
 import { CardType, CartLine, CustomerSelection, PaymentMethod } from './types'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -44,6 +46,7 @@ export default function SalesPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: products = [], isLoading: loadingProducts } = useProducts()
   const { data: categories = [] } = useProductCategories()
   const { data: services = [], isLoading: loadingServices } = useServices()
@@ -54,6 +57,7 @@ export default function SalesPage() {
   const allowDiscounts = tenantSettings?.operation.allowDiscounts ?? false
   const discountLimitPercent = tenantSettings?.operation.discountLimitPercent ?? 0
   const requireCustomerOnSale = tenantSettings?.operation.requireCustomerOnSale ?? false
+  const customersModuleActive = (tenantSettings?.modules ?? ALL_MODULES).includes('customers')
 
   // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
   const payments = tenantSettings?.payments ?? {
@@ -73,6 +77,22 @@ export default function SalesPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [search])
+
+  useEffect(() => {
+    const state = location.state as { appointmentServices?: AppointmentServiceRef[] } | null
+    if (!state?.appointmentServices?.length) return
+    setCart(
+      state.appointmentServices.map((s) => ({
+        type: 'service' as const,
+        lineId: crypto.randomUUID(),
+        serviceId: s.id,
+        quantity: 1,
+      })),
+    )
+    setCatalogMode('services')
+    navigate('/vendas', { replace: true, state: null })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Garante que o método/tipo de cartão selecionado esteja habilitado nas configurações.
   useEffect(() => {
@@ -244,7 +264,7 @@ export default function SalesPage() {
       <PageHeader
         title="Vender"
         description={`Operador: ${auth.name}`}
-      >
+      >       
         <Button variant="outlined" startIcon={<HistoryOutlined />} onClick={()=>navigate("/historico")}>
           Histórico
         </Button>
@@ -309,6 +329,7 @@ export default function SalesPage() {
         onFinalize={handleFinalize}
         isSubmitting={createSale.isPending}
         requireCustomerOnSale={requireCustomerOnSale}
+        customersModuleActive={customersModuleActive}
       />
 
       <SelectCustomerModal

@@ -107,6 +107,7 @@ export default function NewAppointmentModal({
   defaultDate,
   onCreate,
   requireCustomerOnAppointment,
+  customersModuleActive,
 }: NewAppointmentModalProps) {
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [selectCustomerOpen, setSelectCustomerOpen] = useState(false)
@@ -221,7 +222,7 @@ export default function NewAppointmentModal({
   }
 
   const onSubmit = (data: FormValues) => {
-    if (requireCustomerOnAppointment && !customerId) {
+    if (customersModuleActive && requireCustomerOnAppointment && !customerId) {
       setError('customerName', { message: 'Cliente é obrigatório' })
       return
     }
@@ -244,77 +245,79 @@ export default function NewAppointmentModal({
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1.5 }}
         >
           {/* Cliente + Telefone */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Cliente" required={requireCustomerOnAppointment} />
-              <input type="hidden" {...register('customerName')} />
-              {customerId ? (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: 'border.subtle',
-                    bgcolor: 'background.default',
-                    minHeight: 42,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }} noWrap>
-                    {watch('customerName')}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setValue('customerName', '', { shouldValidate: true })
-                      setValue('phone', '')
-                      setCustomerId(null)
+          {customersModuleActive && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <FieldLabel label="Cliente" required={requireCustomerOnAppointment} />
+                <input type="hidden" {...register('customerName')} />
+                {customerId ? (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.5,
+                      py: 1,
+                      borderRadius: 1,
+                      border: 1,
+                      borderColor: 'border.subtle',
+                      bgcolor: 'background.default',
+                      minHeight: 42,
                     }}
-                    sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
                   >
-                    <CloseRounded fontSize="small" />
-                  </IconButton>
-                </Box>
-              ) : (
-                <>
-                  <Button
-                    variant="outlined"
-                    startIcon={<PersonAddAlt1Rounded />}
-                    onClick={() => setSelectCustomerOpen(true)}
-                    fullWidth
-                    sx={{ whiteSpace: 'nowrap' }}
-                  >
-                    Selecionar cliente
-                  </Button>
-                  {errors.customerName && (
-                    <FormHelperText error sx={{ mt: 0.5 }}>
-                      {errors.customerName.message}
-                    </FormHelperText>
-                  )}
-                </>
-              )}
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Telefone / WhatsApp" />
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    onChange={(e) => field.onChange(formatPhone(e.target.value))}
-                    placeholder="(99) 99999-9999"
-                    fullWidth
-                    error={!!errors.phone}
-                    helperText={errors.phone?.message}
-                  />
+                    <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }} noWrap>
+                      {watch('customerName')}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setValue('customerName', '', { shouldValidate: true })
+                        setValue('phone', '')
+                        setCustomerId(null)
+                      }}
+                      sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
+                    >
+                      <CloseRounded fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Button
+                      variant="outlined"
+                      startIcon={<PersonAddAlt1Rounded />}
+                      onClick={() => setSelectCustomerOpen(true)}
+                      fullWidth
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      Selecionar cliente
+                    </Button>
+                    {errors.customerName && (
+                      <FormHelperText error sx={{ mt: 0.5 }}>
+                        {errors.customerName.message}
+                      </FormHelperText>
+                    )}
+                  </>
                 )}
-              />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <FieldLabel label="Telefone / WhatsApp" />
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                      placeholder="(99) 99999-9999"
+                      fullWidth
+                      error={!!errors.phone}
+                      helperText={errors.phone?.message}
+                    />
+                  )}
+                />
+              </Box>
             </Box>
-          </Box>
+          )}
 
           {/* Serviços */}
           <Box>
@@ -757,7 +760,7 @@ export default function NewAppointmentModal({
         hint="Confirmação enviada por WhatsApp ao salvar"
       />
 
-      <SelectCustomerModal
+      {customersModuleActive && <SelectCustomerModal
         open={selectCustomerOpen}
         onClose={() => setSelectCustomerOpen(false)}
         onSelect={(selected) => {
@@ -767,7 +770,7 @@ export default function NewAppointmentModal({
           setValue('phone', found?.phone ? formatPhone(found.phone) : '')
           setSelectCustomerOpen(false)
         }}
-      />
+      />}
     </Dialog>
   )
 }

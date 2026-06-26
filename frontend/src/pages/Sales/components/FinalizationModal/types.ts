@@ -26,4 +26,5 @@ export interface FinalizationModalProps {
   onFinalize: () => void
   isSubmitting: boolean
   requireCustomerOnSale: boolean
+  customersModuleActive: boolean
 }

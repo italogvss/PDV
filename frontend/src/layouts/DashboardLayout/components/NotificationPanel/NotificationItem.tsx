@@ -7,10 +7,10 @@ interface Props {
   onClick: () => void
 }
 
-const severityColors: Record<NotificationSeverity, { bg: string; icon: string }> = {
-  error: { bg: 'error.soft', icon: 'error.ink' },
-  warning: { bg: 'warning.soft', icon: 'warning.ink' },
-  info: { bg: 'info.soft', icon: 'info.ink' },
+const severityColors: Record<NotificationSeverity, { bg: string; icon: string, border: string }> = {
+  error: { bg: 'error.soft', icon: 'error.ink', border: "error.main" },
+  warning: { bg: 'warning.soft', icon: 'warning.ink', border: "warning.main" },
+  info: { bg: 'info.soft', icon: 'info.ink', border: "info.main" },
 }
 
 export default function NotificationItem({ item, isRead, onClick }: Props) {
@@ -27,31 +27,16 @@ export default function NotificationItem({ item, isRead, onClick }: Props) {
         px: 3,
         py: 2.5,
         cursor: 'pointer',
-        bgcolor: isRead ? 'transparent' : 'action.hover',
         '&:hover': { bgcolor: 'action.selected' },
         transition: 'background-color 0.15s',
       }}
     >
-      {!isRead && (
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 8,            
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            bgcolor: 'secondary.main',
-            flexShrink: 0,
-          }}
-        />
-      )}
-
       <Box
         sx={{
-          width: 50,
-          height: 50,
+          border: "1px solid",
+          borderColor: colors.border,         
+          width: 40,
+          height: 40,
           borderRadius: 1,
           bgcolor: colors.bg,
           display: 'flex',
@@ -64,12 +49,25 @@ export default function NotificationItem({ item, isRead, onClick }: Props) {
       </Box>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+        <Typography variant="body1" noWrap sx={{ fontWeight: 500 }}>
           {item.title}
         </Typography>
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+        <Typography variant="caption" noWrap sx={{ display: 'block', color: "text.tertiary" }}>
           {item.description}
         </Typography>
+      </Box>
+
+      <Box sx={{ flexShrink: 0, width: 8, display: 'flex', justifyContent: 'center' }}>
+        {!isRead && (
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              bgcolor: 'secondary.main',
+            }}
+          />
+        )}
       </Box>
     </Box>
   )

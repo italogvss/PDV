@@ -289,9 +289,6 @@ export default function InventoryPage() {
           </Button>
           
         )}
-        <Button variant="outlined" startIcon={<Help />} onClick={() => navigate("/ajuda?cat=estoque")}>
-            Ajuda
-          </Button>
       </PageHeader>
 
       <PageKpiGrid>

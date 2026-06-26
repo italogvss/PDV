@@ -25,7 +25,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
         },
       }}
     >
-      <Box sx={{borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "border.strong"}}>
+      <Box sx={{borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: product.category?.color ??"border.strong"}}>
       {hasImage ? (
         <Box
           component="img"
@@ -47,7 +47,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
           }}
         >
           {product.category?.name && (
-            <Typography variant="caption" sx={{ fontWeight: 500, color: "GrayText"}}>
+            <Typography variant="caption" sx={{ fontWeight: 800,}}>
               {product.category.name}
             </Typography>
           )}

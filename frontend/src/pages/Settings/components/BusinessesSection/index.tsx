@@ -122,7 +122,7 @@ export default function BusinessesSection() {
         title="Meus negócios"
         subtitle="Você pode gerenciar mais de um estabelecimento"
         action={
-          <Button variant="contained" color="secondary" startIcon={<AddBusiness />} onClick={handleNewBusiness} size="small">
+          <Button variant="contained" color="secondary" startIcon={<AddBusiness />} onClick={handleNewBusiness}>
             Novo negócio
           </Button>
         }

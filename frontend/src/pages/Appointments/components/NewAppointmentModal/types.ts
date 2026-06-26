@@ -17,4 +17,5 @@ export interface NewAppointmentModalProps {
   defaultDate: Dayjs
   onCreate: (appointment: Appointment) => void
   requireCustomerOnAppointment: boolean
+  customersModuleActive: boolean
 }

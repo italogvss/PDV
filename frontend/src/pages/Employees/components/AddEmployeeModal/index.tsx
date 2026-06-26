@@ -10,6 +10,7 @@ import {
   Typography,
   MenuItem,
   Collapse,
+  Paper,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
@@ -231,60 +232,62 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="body1">Criar despesas de salário automaticamente</Typography>
-            <Controller
-              name="autoCreateSalaryExpense"
-              control={control}
-              render={({ field }) => (
-                <Switch checked={field.value} onChange={(_, v) => field.onChange(v)} />
-              )}
-            />
-          </Box>
-
-          <Collapse in={autoCreate} unmountOnExit>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <FieldLabel label="Salário" required />
-                <Controller
-                  name="salary"
-                  control={control}
-                  render={({ field }) => (
-                    <CurrencyField
-                      value={field.value ?? 0}
-                      onChange={field.onChange}
-                      fullWidth
-                      error={!!errors.salary}
-                      helperText={errors.salary?.message}
-                    />
-                  )}
-                />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <FieldLabel label="Dia de pagamento" required />
-                <Controller
-                  name="paymentDay"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      select
-                      fullWidth
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      error={!!errors.paymentDay}
-                      helperText={errors.paymentDay?.message}
-                    >
-                      {PAYMENT_DAYS.map((d) => (
-                        <MenuItem key={d} value={d} >
-                          <Typography variant='body2'> Dia {d}</Typography>
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  )}
-                />
-              </Box>
+          <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong"}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body1">Criar despesas de salário automaticamente</Typography>
+              <Controller
+                name="autoCreateSalaryExpense"
+                control={control}
+                render={({ field }) => (
+                  <Switch checked={field.value} onChange={(_, v) => field.onChange(v)} />
+                )}
+              />
             </Box>
-          </Collapse>
+
+            <Collapse in={autoCreate} unmountOnExit>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <FieldLabel label="Salário" required />
+                  <Controller
+                    name="salary"
+                    control={control}
+                    render={({ field }) => (
+                      <CurrencyField
+                        value={field.value ?? 0}
+                        onChange={field.onChange}
+                        fullWidth
+                        error={!!errors.salary}
+                        helperText={errors.salary?.message}
+                      />
+                    )}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <FieldLabel label="Dia de pagamento" required />
+                  <Controller
+                    name="paymentDay"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        select
+                        fullWidth
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        error={!!errors.paymentDay}
+                        helperText={errors.paymentDay?.message}
+                      >
+                        {PAYMENT_DAYS.map((d) => (
+                          <MenuItem key={d} value={d}>
+                            <Typography variant="body2">Dia {d}</Typography>
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
+                </Box>
+              </Box>
+            </Collapse>
+          </Paper>
         </Box>
       </DialogContent>
 

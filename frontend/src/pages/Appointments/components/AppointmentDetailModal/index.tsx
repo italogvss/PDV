@@ -2,6 +2,7 @@ import BoltRounded from '@mui/icons-material/BoltRounded'
 import CancelRounded from '@mui/icons-material/CancelRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
 import DoneAllRounded from '@mui/icons-material/DoneAllRounded'
+import PointOfSaleRounded from '@mui/icons-material/PointOfSaleRounded'
 import WhatsApp from '@mui/icons-material/WhatsApp'
 import {
   Box,
@@ -16,6 +17,7 @@ import {
 } from '@mui/material'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ModalHeader from '../../../../components/ModalHeader'
 import { formatBRL } from '../../../../utils/currency'
 import {
@@ -42,6 +44,7 @@ export default function AppointmentDetailModal({
 }: AppointmentDetailModalProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const navigate = useNavigate()
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [cached, setCached] = useState(appointment)
 
@@ -148,10 +151,9 @@ export default function AppointmentDetailModal({
 
           {/* Status e profissional */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip size="small" label={meta.label} sx={{ fontWeight: 600, ...toneSx(meta.tone) }} />
+            <Chip label={meta.label} sx={{ fontWeight: 600, ...toneSx(meta.tone) }} />
             {professional && (
               <Chip
-                size="small"
                 variant="outlined"
                 label={professional.name}
                 avatar={
@@ -215,9 +217,24 @@ export default function AppointmentDetailModal({
         ) : (
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {isClosed ? (
-              <Button variant="ghost" onClick={onClose} sx={{ ml: 'auto' }}>
-                Fechar
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
+                
+                <Button variant="ghost" onClick={onClose}>
+                  Fechar
+                </Button>
+                {data.status === 'concluido' && (
+                  <Button
+                    variant="contained"
+                    startIcon={<PointOfSaleRounded />}
+                    onClick={() => {
+                      navigate('/vendas', { state: { appointmentServices: data.services } })
+                      onClose()
+                    }}
+                  >
+                    Criar venda
+                  </Button>
+                )}
+              </Box>
             ) : (
               <>
                 <Button

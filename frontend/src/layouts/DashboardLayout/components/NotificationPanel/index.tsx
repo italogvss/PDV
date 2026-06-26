@@ -1,4 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import {
+  AccountBalanceWalletOutlined,
+  CalendarTodayOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  ErrorOutlined,
+  NotificationsNoneOutlined,
+  RemoveShoppingCartOutlined,
+  ScheduleOutlined,
+  SettingsOutlined,
+  TrendingDownOutlined,
+  WarningAmberOutlined,
+} from '@mui/icons-material'
 import {
   Box,
   Button,
@@ -9,38 +21,29 @@ import {
   Tabs,
   Typography,
 } from '@mui/material'
-import {
-  CheckOutlined,
-  CloseOutlined,
-  NotificationsNoneOutlined,
-  SettingsOutlined,
-} from '@mui/icons-material'
-import {
-  AccountBalanceWalletOutlined,
-  CalendarTodayOutlined,
-  ErrorOutlined,
-  RemoveShoppingCartOutlined,
-  ScheduleOutlined,
-  TrendingDownOutlined,
-  WarningAmberOutlined,
-} from '@mui/icons-material'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAppSelector } from '../../../../store'
 import { buildNotificationItems, useNotifications } from '../../../../hooks/useNotifications'
+import { useAppSelector } from '../../../../store'
 import type { NotificationCategory, NotificationItem as NotificationItemType } from '../../../../types/notification.types'
 import NotificationItem from './NotificationItem'
 
 // Apenas em desenvolvimento — cobre todos os tipos de notificação para visualização
 const DEV_MOCK_ITEMS: NotificationItemType[] = import.meta.env.DEV
   ? [
-      { id: 'mock-out-of-stock',     category: 'estoque',     severity: 'error',   icon: RemoveShoppingCartOutlined, title: '[Mock] Produtos sem estoque',  description: '3 produtos sem estoque',                        route: '/estoque'      },
-      { id: 'mock-critical-stock',   category: 'estoque',     severity: 'error',   icon: ErrorOutlined,              title: '[Mock] Estoque crítico',        description: '5 produtos em nível crítico',                   route: '/estoque'      },
-      { id: 'mock-low-stock',        category: 'estoque',     severity: 'warning', icon: WarningAmberOutlined,       title: '[Mock] Estoque baixo',          description: '2 produtos com estoque baixo',                  route: '/estoque'      },
-      { id: 'mock-negative-stock',   category: 'estoque',     severity: 'error',   icon: TrendingDownOutlined,       title: '[Mock] Estoque negativo',       description: '1 produto com estoque negativo',                route: '/estoque'      },
-      { id: 'mock-overdue-expenses', category: 'financeiro',  severity: 'error',   icon: AccountBalanceWalletOutlined, title: '[Mock] Despesas vencidas',    description: '2 despesas vencidas',                           route: '/despesas'     },
-      { id: 'mock-upcoming-expenses',category: 'financeiro',  severity: 'warning', icon: ScheduleOutlined,           title: '[Mock] Despesas a vencer',      description: '4 despesas vencem nos próximos 7 dias',         route: '/despesas'     },
-      { id: 'mock-appointments',     category: 'agendamentos',severity: 'info',    icon: CalendarTodayOutlined,      title: '[Mock] Agendamentos hoje',      description: '7 agendamentos para hoje',                      route: '/agendamentos' },
-    ]
+    { id: 'mock-out-of-stock', category: 'estoque', severity: 'error', icon: RemoveShoppingCartOutlined, title: '[Mock] Produtos sem estoque', description: '3 produtos sem estoque', route: '/estoque' },
+    { id: 'mock-critical-stock', category: 'estoque', severity: 'error', icon: ErrorOutlined, title: '[Mock] Estoque crítico', description: '5 produtos em nível crítico', route: '/estoque' },
+    { id: 'mock-low-stock', category: 'estoque', severity: 'warning', icon: WarningAmberOutlined, title: '[Mock] Estoque baixo', description: '2 produtos com estoque baixo', route: '/estoque' },
+    { id: 'mock-negative-stock', category: 'estoque', severity: 'error', icon: TrendingDownOutlined, title: '[Mock] Estoque negativo', description: '1 produto com estoque negativo', route: '/estoque' },
+    { id: 'mock-overdue-expenses', category: 'financeiro', severity: 'error', icon: AccountBalanceWalletOutlined, title: '[Mock] Despesas vencidas', description: '2 despesas vencidas', route: '/despesas' },
+    { id: 'mock-upcoming-expenses', category: 'financeiro', severity: 'warning', icon: ScheduleOutlined, title: '[Mock] Despesas a vencer', description: '4 despesas vencem nos próximos 7 dias', route: '/despesas' },
+    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
+    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
+    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
+    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
+    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
+  
+  ]
   : []
 
 interface Props {
@@ -94,7 +97,7 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
             width: 380,
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: 'background.default',
+            bgcolor: 'background.paper',
           },
         },
       }}
@@ -113,7 +116,7 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
         }}
       >
         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          Notificações{unreadCount > 0 ? ` (${unreadCount})` : ''}
+          Notificações <Box component="span" sx={{ color: 'text.tertiary', fontWeight: 400 }}>{unreadCount > 0 ? ` (${unreadCount})` : ''}</Box>
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -147,10 +150,11 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
         scrollButtons={false}
         sx={{
           px: 2,
-          borderBottom: 1,
-          borderColor: 'border.subtle',
           minHeight: 30,
-          '& .MuiTab-root': { minHeight: 40, fontSize: '0.75rem', px: 1.5 },
+          my: 1,
+          '& .MuiTab-root': { minHeight: 40, p: 1, borderRadius: 999},
+          '& .MuiTab-root:hover': { bgcolor: 'action.hover' },
+          '& .MuiTab-root.Mui-selected': { bgcolor: 'action.selected', color: 'text.primary', border: "1px solid", borderColor: "border.strong", },
         }}
       >
         <Tab label="Todas" value="todas" />
@@ -158,44 +162,40 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
           label={`Não lidas${unreadCount > 0 ? ` ${unreadCount}` : ''}`}
           value="nao-lidas"
         />
-        <Tab label="Estoque" value="estoque" />
-        <Tab label="Financeiro" value="financeiro" />
-        {hasAppointments && <Tab label="Agendamentos" value="agendamentos" />}
       </Tabs>
 
       {/* List */}
-      <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        {filteredItems.length === 0 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1.5,
-              height: '100%',
-              minHeight: 200,
-              color: 'text.disabled',
-            }}
-          >
-            <NotificationsNoneOutlined sx={{ fontSize: 40 }} />
-            <Typography variant="body2">Tudo em dia!</Typography>
-          </Box>
-        ) : (
-          filteredItems.map((item) => (
-            <>
-            <NotificationItem
-              key={item.id}
-              item={item}
-              isRead={isRead}
-              onClick={() => handleItemClick(item.route)}
-            />
-            <Divider color="border.subtle" />
-            </>
-          ))
-        )}
-      </Box>
-
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          {filteredItems.length === 0 ? (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1.5,
+                height: '100%',
+                minHeight: 200,
+                color: 'text.disabled',
+              }}
+            >
+              <NotificationsNoneOutlined sx={{ fontSize: 40 }} />
+              <Typography variant="body2">Tudo em dia!</Typography>
+            </Box>
+          ) : (
+            filteredItems.map((item) => (
+              <>
+                <NotificationItem
+                  key={item.id}
+                  item={item}
+                  isRead={isRead}
+                  onClick={() => handleItemClick(item.route)}
+                />
+                <Divider color="border.subtle" />
+              </>
+            ))
+          )}
+        </Box>
       {/* Footer */}
       <Box
         sx={{
@@ -208,9 +208,6 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
           justifyContent: 'space-between',
         }}
       >
-        <Typography variant="caption" color="text.disabled">
-          Notificações em tempo real
-        </Typography>
         <Button
           size="small"
           startIcon={<SettingsOutlined sx={{ fontSize: 14 }} />}

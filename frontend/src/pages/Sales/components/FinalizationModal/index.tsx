@@ -50,6 +50,7 @@ export default function FinalizationModal({
   onFinalize,
   isSubmitting,
   requireCustomerOnSale,
+  customersModuleActive,
 }: FinalizationModalProps) {
   // Teto do desconto: limitado ao percentual configurado no tenant (0% = sem desconto permitido).
   const maxDiscount = allowDiscounts ? (subtotal * discountLimitPercent) / 100 : 0
@@ -61,7 +62,7 @@ export default function FinalizationModal({
   const customerProvided =
     customer.type === 'entity' ||
     (customer.type === 'cpf' && customer.document.trim().length > 0)
-  const customerMissing = requireCustomerOnSale && !customerProvided
+  const customerMissing = customersModuleActive && requireCustomerOnSale && !customerProvided
 
   return (
     <Dialog open={open} onClose={isSubmitting ? undefined : onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
@@ -164,67 +165,71 @@ export default function FinalizationModal({
           <Divider sx={{ borderColor: 'border.subtle' }} />
 
           {/* Cliente */}
-          <FieldLabel label="Cliente" required={requireCustomerOnSale} />
-          {customer.type === 'entity' ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 1.5,
-                py: 1,
-                borderRadius: 1,
-                border: 1,
-                borderColor: 'border.subtle',
-                bgcolor: 'background.default',
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: 0, ml: 1 }}>
-                <Typography variant="body1" sx={{ fontWeight: 600 }} noWrap>
-                  {customer.name}
-                </Typography>
-                {customer.document && (
-                  <Typography variant="caption" color="text.secondary">
-                    {customer.document}
-                  </Typography>
-                )}
-              </Box>
-              <IconButton
-                size="small"
-                onClick={() => onCustomerChange({ type: 'none' })}
-                sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
-              >
-                <CloseRounded fontSize="small" />
-              </IconButton>
-            </Box>
-          ) : (
+          {customersModuleActive && (
             <>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <TextField
-                  label={requireCustomerOnSale ? 'CPF' : 'CPF (opcional)'}
-                  value={customer.type === 'cpf' ? customer.document : ''}
-                  onChange={(e) => {
-                    const val = maskCPF(e.target.value)
-                    onCustomerChange(val ? { type: 'cpf', document: val } : { type: 'none' })
+              <FieldLabel label="Cliente" required={requireCustomerOnSale} />
+              {customer.type === 'entity' ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 1,
+                    border: 1,
+                    borderColor: 'border.subtle',
+                    bgcolor: 'background.default',
                   }}
-                  size="small"
-                  error={customerMissing}
-                  sx={{ flex: 1 }}
-                />
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<PersonAddAlt1Rounded />}
-                  onClick={onOpenCustomerModal}
-                  sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                 >
-                  Adicionar cliente
-                </Button>
-              </Box>
-              {customerMissing && (
-                <FormHelperText error sx={{ mt: 0.5 }}>
-                  Informe um cliente para continuar
-                </FormHelperText>
+                  <Box sx={{ flex: 1, minWidth: 0, ml: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }} noWrap>
+                      {customer.name}
+                    </Typography>
+                    {customer.document && (
+                      <Typography variant="caption" color="text.secondary">
+                        {customer.document}
+                      </Typography>
+                    )}
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => onCustomerChange({ type: 'none' })}
+                    sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
+                  >
+                    <CloseRounded fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <TextField
+                      label={requireCustomerOnSale ? 'CPF' : 'CPF (opcional)'}
+                      value={customer.type === 'cpf' ? customer.document : ''}
+                      onChange={(e) => {
+                        const val = maskCPF(e.target.value)
+                        onCustomerChange(val ? { type: 'cpf', document: val } : { type: 'none' })
+                      }}
+                      size="small"
+                      error={customerMissing}
+                      sx={{ flex: 1 }}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PersonAddAlt1Rounded />}
+                      onClick={onOpenCustomerModal}
+                      sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                      Adicionar cliente
+                    </Button>
+                  </Box>
+                  {customerMissing && (
+                    <FormHelperText error sx={{ mt: 0.5 }}>
+                      Informe um cliente para continuar
+                    </FormHelperText>
+                  )}
+                </>
               )}
             </>
           )}
