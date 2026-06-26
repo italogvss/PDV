@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../../../../store'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import FilterTabs from '../../../../components/FilterTabs'
 import ProductCard from '../ProductCard'
@@ -261,7 +262,8 @@ export default function ProductCatalog({
             rowHeight={48}
             onRowClick={({ row }) =>
               mode === 'products' ? onAddProduct(row.id) : onAddService(row.id)
-            }            
+            }
+            slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
           />
         ) : mode === 'products' ? (
           <Grid container spacing={1}>

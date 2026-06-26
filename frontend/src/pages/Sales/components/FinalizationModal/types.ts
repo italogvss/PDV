@@ -25,4 +25,5 @@ export interface FinalizationModalProps {
   payments: PaymentsSettings
   onFinalize: () => void
   isSubmitting: boolean
+  requireCustomerOnSale: boolean
 }

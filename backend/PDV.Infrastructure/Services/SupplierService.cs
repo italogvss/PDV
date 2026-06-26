@@ -91,7 +91,7 @@ public class SupplierService(
     }
 
     private static SupplierResponse Map(Supplier s) =>
-        new(s.Id, s.Name, s.Phone, s.CreatedAt);
+        new(s.Id, s.Name, s.Phone, s.CreatedAt, s.UpdatedAt);
 
     private static string? NullIfEmpty(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;

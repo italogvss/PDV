@@ -22,6 +22,7 @@ import {
 } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
@@ -374,6 +375,7 @@ export default function ExpensesPage() {
               pageSizeOptions={[10, 25]}
               initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
               onRowDoubleClick={(params) => handleOpenEdit(params.row)}
+              slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
             />
           )}
         </Card>

@@ -351,6 +351,6 @@ public class EmployeeService(
             e.RoleId, e.Role.Name,
             e.Phone,
             await storage.ResolveReadUrlAsync(e.ImageUrl, MediaCategory.Profile, e.UpdatedAt),
-            e.IsActive, e.CreatedAt,
+            e.IsActive, e.CreatedAt, e.UpdatedAt,
             e.Salary, e.PaymentDay, e.AutoCreateSalaryExpense);
 }

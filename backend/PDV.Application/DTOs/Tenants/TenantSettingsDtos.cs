@@ -32,7 +32,13 @@ public record SettingsAddressDto(
 // Seção "Operação / PDV" — também é o corpo do PUT /api/tenants/settings/operation.
 public record OperationSettingsDto(
     bool AllowDiscounts,
-    decimal DiscountLimitPercent);
+    decimal DiscountLimitPercent,
+    bool InventoryControlEnabled,
+    int DefaultMinStock,
+    int DefaultCriticalStock,
+    bool StockFieldsEditable,
+    bool RequireCustomerOnSale,
+    bool RequireCustomerOnAppointment);
 
 // Módulos da operação ativos — também é o corpo do PUT /api/tenants/settings/modules.
 // Strings lowercase: "sales", "inventory", "services", "appointments", "expenses",

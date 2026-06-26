@@ -19,6 +19,7 @@ import CancelRounded from '@mui/icons-material/CancelRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
 import CategoryRounded from '@mui/icons-material/CategoryRounded'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import type { Product, ProductCategory } from '../../types/product.types'
@@ -402,7 +403,8 @@ export default function InventoryPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          onRowDoubleClick={(params) => setEditProduct(params.row)}         
+          onRowDoubleClick={(params) => setEditProduct(params.row)}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>
 

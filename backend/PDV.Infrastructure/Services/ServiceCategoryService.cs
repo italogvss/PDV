@@ -67,6 +67,7 @@ public class ServiceCategoryService(
             ?? throw new NotFoundException("Categoria de serviço não encontrada.");
 
         category.IsActive = false;
+        category.UpdatedAt = DateTime.UtcNow;
         await repository.UpdateAsync(category);
     }
 
@@ -90,5 +91,5 @@ public class ServiceCategoryService(
         await repository.HardDeleteAsync(entity);
     }
 
-    private static ServiceCategoryResponse Map(ServiceCategory c) => new(c.Id, c.Name, c.Color);
+    private static ServiceCategoryResponse Map(ServiceCategory c) => new(c.Id, c.Name, c.Color, c.UpdatedAt);
 }

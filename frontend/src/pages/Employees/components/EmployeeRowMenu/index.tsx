@@ -80,7 +80,7 @@ export default function EmployeeRowMenu({ employee, onEdit }: EmployeeRowMenuPro
       <ConfirmDialog
         open={confirmOpen}
         title="Desativar funcionário?"
-        description={`${employee.name} perderá o acesso ao sistema imediatamente. Você pode reativá-lo a qualquer momento.`}
+        description={`${employee.name} perderá o acesso ao sistema imediatamente. Você pode reativá-lo a qualquer momento nas configurações.`}
         confirmLabel="Desativar"
         isPending={deactivate.isPending}
         onClose={() => setConfirmOpen(false)}

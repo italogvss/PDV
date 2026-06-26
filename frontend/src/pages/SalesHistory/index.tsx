@@ -10,6 +10,7 @@ import {
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import dayjs from 'dayjs'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
@@ -221,7 +222,8 @@ export default function SalesHistoryPage() {
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
           }}
-          onRowDoubleClick={(params) => setSelectedSaleId(params.row.id)}          
+          onRowDoubleClick={(params) => setSelectedSaleId(params.row.id)}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>
 

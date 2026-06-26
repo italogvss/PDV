@@ -148,5 +148,6 @@ public class TenantRoleService(
     private static TenantRoleResponse Map(TenantRole r) =>
         new(r.Id, r.Name, r.Description, r.Color, r.IsDefault,
             r.Employees.Count(e => e.IsActive),
-            r.Permissions.Select(p => p.Permission.ToString()));
+            r.Permissions.Select(p => p.Permission.ToString()),
+            r.UpdatedAt);
 }

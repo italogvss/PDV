@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Box, Card, Chip, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import PageHeader from '../../components/PageHeader'
@@ -235,6 +236,7 @@ export default function LogsPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[25, 50, 100]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>
 

@@ -7,4 +7,5 @@ public record TenantRoleResponse(
     string? Color,
     bool IsDefault,
     int MemberCount,
-    IEnumerable<string> Permissions);
+    IEnumerable<string> Permissions,
+    DateTime UpdatedAt = default);

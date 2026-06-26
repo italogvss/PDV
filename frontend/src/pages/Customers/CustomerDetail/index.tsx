@@ -199,11 +199,10 @@ export default function CustomerDetailPage() {
       </Box>
 
       <ConfirmDialog
-        danger={true}
         open={confirmDelete}
-        title="Excluir cliente?"
-        description={<><strong>{customer.name}</strong> será removido. Esta ação não pode ser desfeita.</>}
-        confirmLabel="Excluir"
+        title="Desativar cliente?"
+        description={<><strong>{customer.name}</strong> será desativado. Esta ação pode ser desfeita nas configurações.</>}
+        confirmLabel="Desativar"
         isPending={deleteCustomer.isPending}
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => {

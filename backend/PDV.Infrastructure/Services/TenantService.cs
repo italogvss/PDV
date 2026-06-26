@@ -143,8 +143,14 @@ public class TenantService(
         var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId)
             ?? throw new NotFoundException("Configurações do tenant não encontradas.");
 
-        settings.AllowDiscounts        = request.AllowDiscounts;
-        settings.DiscountLimitPercent  = request.DiscountLimitPercent;
+        settings.AllowDiscounts                = request.AllowDiscounts;
+        settings.DiscountLimitPercent          = request.DiscountLimitPercent;
+        settings.InventoryControlEnabled       = request.InventoryControlEnabled;
+        settings.DefaultMinStock               = request.DefaultMinStock;
+        settings.DefaultCriticalStock          = request.DefaultCriticalStock;
+        settings.StockFieldsEditable           = request.StockFieldsEditable;
+        settings.RequireCustomerOnSale         = request.RequireCustomerOnSale;
+        settings.RequireCustomerOnAppointment  = request.RequireCustomerOnAppointment;
 
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
@@ -210,7 +216,13 @@ public class TenantService(
                     : JsonSerializer.Deserialize<Dictionary<string, BusinessHoursDayDto>>(s.BusinessHoursJson, JsonOptions)),
             new OperationSettingsDto(
                 s.AllowDiscounts,
-                s.DiscountLimitPercent),
+                s.DiscountLimitPercent,
+                s.InventoryControlEnabled,
+                s.DefaultMinStock,
+                s.DefaultCriticalStock,
+                s.StockFieldsEditable,
+                s.RequireCustomerOnSale,
+                s.RequireCustomerOnAppointment),
             new PaymentsSettingsDto(
                 s.PaymentFeesEnabled,
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),

@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
+import FormHelperText from '@mui/material/FormHelperText'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
 import { formatBRL } from '../../../../utils/currency'
@@ -48,6 +49,7 @@ export default function FinalizationModal({
   payments,
   onFinalize,
   isSubmitting,
+  requireCustomerOnSale,
 }: FinalizationModalProps) {
   // Teto do desconto: limitado ao percentual configurado no tenant (0% = sem desconto permitido).
   const maxDiscount = allowDiscounts ? (subtotal * discountLimitPercent) / 100 : 0
@@ -56,6 +58,10 @@ export default function FinalizationModal({
   const discountPercent = subtotal > 0 ? (clampedDiscount / subtotal) * 100 : 0
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const customerProvided =
+    customer.type === 'entity' ||
+    (customer.type === 'cpf' && customer.document.trim().length > 0)
+  const customerMissing = requireCustomerOnSale && !customerProvided
 
   return (
     <Dialog open={open} onClose={isSubmitting ? undefined : onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
@@ -158,6 +164,7 @@ export default function FinalizationModal({
           <Divider sx={{ borderColor: 'border.subtle' }} />
 
           {/* Cliente */}
+          <FieldLabel label="Cliente" required={requireCustomerOnSale} />
           {customer.type === 'entity' ? (
             <Box
               sx={{
@@ -191,27 +198,35 @@ export default function FinalizationModal({
               </IconButton>
             </Box>
           ) : (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                label="CPF (opcional)"
-                value={customer.type === 'cpf' ? customer.document : ''}
-                onChange={(e) => {
-                  const val = maskCPF(e.target.value)
-                  onCustomerChange(val ? { type: 'cpf', document: val } : { type: 'none' })
-                }}
-                size="small"
-                sx={{ flex: 1 }}
-              />
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<PersonAddAlt1Rounded />}
-                onClick={onOpenCustomerModal}
-                sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-              >
-                Adicionar cliente
-              </Button>
-            </Box>
+            <>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                  label={requireCustomerOnSale ? 'CPF' : 'CPF (opcional)'}
+                  value={customer.type === 'cpf' ? customer.document : ''}
+                  onChange={(e) => {
+                    const val = maskCPF(e.target.value)
+                    onCustomerChange(val ? { type: 'cpf', document: val } : { type: 'none' })
+                  }}
+                  size="small"
+                  error={customerMissing}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<PersonAddAlt1Rounded />}
+                  onClick={onOpenCustomerModal}
+                  sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                >
+                  Adicionar cliente
+                </Button>
+              </Box>
+              {customerMissing && (
+                <FormHelperText error sx={{ mt: 0.5 }}>
+                  Informe um cliente para continuar
+                </FormHelperText>
+              )}
+            </>
           )}
 
           {/* Pagamento */}
@@ -236,7 +251,7 @@ export default function FinalizationModal({
         onSubmit={onFinalize}
         isPending={isSubmitting}
         submitLabel="Concluir venda"
-        submitDisabled={isSubmitting}
+        submitDisabled={isSubmitting || customerMissing}
       />
     </Dialog>
   )

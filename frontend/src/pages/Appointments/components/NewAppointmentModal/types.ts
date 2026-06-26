@@ -16,4 +16,5 @@ export interface NewAppointmentModalProps {
   /** Dia selecionado na agenda — usado como data padrão. */
   defaultDate: Dayjs
   onCreate: (appointment: Appointment) => void
+  requireCustomerOnAppointment: boolean
 }

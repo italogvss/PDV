@@ -19,6 +19,7 @@ import SellRounded from '@mui/icons-material/SellRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import type { Service, ServiceCategory } from '../../types/service.types'
@@ -372,6 +373,7 @@ export default function ServicesPage() {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           onRowDoubleClick={(params) => setEditService(params.row)}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>
 

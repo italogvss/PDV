@@ -10,6 +10,7 @@ import {
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useSuppliers } from '../../hooks/useSuppliers'
 import type { Supplier } from '../../types/supplier.types'
@@ -130,6 +131,7 @@ export default function SuppliersPage() {
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },
           }}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>
 

@@ -8,5 +8,6 @@ public record CustomerResponse(
     string? Document,
     string Note,
     CustomerAddressDto? Address,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );

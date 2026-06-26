@@ -26,6 +26,7 @@ interface BackendCustomer {
   note: string
   address: BackendAddress | null
   createdAt: string
+  updatedAt?: string | null
 }
 
 function mapCustomer(c: BackendCustomer): Customer {
@@ -127,9 +128,9 @@ export const customerService = {
     await api.delete(`/customers/${id}`)
   },
 
-  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+  getInactive: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendCustomer[]>('/customers/inactive')
-    return data.map((c) => ({ id: c.id, name: c.name }))
+    return data.map((c) => ({ id: c.id, name: c.name, updatedAt: c.updatedAt ?? undefined }))
   },
 
   restore: async (id: string): Promise<void> => {

@@ -29,6 +29,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { DeleteOutlineOutlined } from '@mui/icons-material'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useTeamRoles, useDeactivateRole, useSetRolePermissions } from '../../hooks/useTeamRoles'
@@ -313,6 +314,7 @@ export default function EmployeesPage() {
             pageSizeOptions={[10, 25, 50]}
             initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
             onRowDoubleClick={(params) => setEditEmployee(params.row)}
+            slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
           />
         </Card>
 

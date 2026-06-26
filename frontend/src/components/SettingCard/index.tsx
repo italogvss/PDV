@@ -27,6 +27,7 @@ export default function SettingCard({ title, subtitle, action, children, danger,
         sx={{
           px: 4,
           py: 3,
+          minHeight: 70,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: subtitle ? 'flex-start' : 'center',

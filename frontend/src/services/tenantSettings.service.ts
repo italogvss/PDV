@@ -32,9 +32,20 @@ interface BackendBusiness {
   businessHours: BusinessHours | null
 }
 
+interface BackendOperationSettings {
+  allowDiscounts: boolean
+  discountLimitPercent: number
+  inventoryControlEnabled?: boolean
+  defaultMinStock?: number
+  defaultCriticalStock?: number
+  stockFieldsEditable?: boolean
+  requireCustomerOnSale?: boolean
+  requireCustomerOnAppointment?: boolean
+}
+
 interface BackendSettings {
   business: BackendBusiness
-  operation: OperationSettings
+  operation: BackendOperationSettings
   payments: PaymentsSettings
   modules: { modules: OperationModule[] }
 }
@@ -67,7 +78,16 @@ export const tenantSettingsService = {
     const { data } = await api.get<BackendSettings>('/tenants/settings')
     return {
       business: mapBusiness(data.business),
-      operation: data.operation,
+      operation: {
+        allowDiscounts: data.operation.allowDiscounts,
+        discountLimitPercent: data.operation.discountLimitPercent,
+        inventoryControlEnabled: data.operation.inventoryControlEnabled ?? false,
+        defaultMinStock: data.operation.defaultMinStock ?? 5,
+        defaultCriticalStock: data.operation.defaultCriticalStock ?? 2,
+        stockFieldsEditable: data.operation.stockFieldsEditable ?? true,
+        requireCustomerOnSale: data.operation.requireCustomerOnSale ?? false,
+        requireCustomerOnAppointment: data.operation.requireCustomerOnAppointment ?? false,
+      },
       payments: data.payments,
       modules: data.modules.modules,
     }

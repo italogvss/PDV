@@ -39,6 +39,16 @@ public class TenantSettings : BaseEntity
     public bool AllowDiscounts { get; set; } = true;
     public decimal DiscountLimitPercent { get; set; }
 
+    // Controle de estoque mínimo e crítico
+    public bool InventoryControlEnabled { get; set; } = false;
+    public int DefaultMinStock { get; set; } = 5;
+    public int DefaultCriticalStock { get; set; } = 2;
+    public bool StockFieldsEditable { get; set; } = true;
+
+    // Clientes
+    public bool RequireCustomerOnSale { get; set; } = false;
+    public bool RequireCustomerOnAppointment { get; set; } = false;
+
     // Pagamentos — métodos aceitos e taxa por venda (%)
     public bool PaymentFeesEnabled { get; set; } = false;
     public bool PaymentPixEnabled { get; set; } = true;

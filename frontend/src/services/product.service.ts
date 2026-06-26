@@ -29,6 +29,7 @@ interface BackendProduct {
   minCriticalStock?: number | null
   isActive: boolean
   createdAt: string
+  updatedAt?: string | null
   category: ProductCategory | null
   imageUrl?: string | null
 }
@@ -97,9 +98,9 @@ export const productService = {
     await api.delete(`/product-categories/${id}`)
   },
 
-  getInactiveProducts: async (): Promise<{ id: string; name: string }[]> => {
+  getInactiveProducts: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendProduct[]>('/products/inactive')
-    return data.map((p) => ({ id: p.id, name: p.name }))
+    return data.map((p) => ({ id: p.id, name: p.name, updatedAt: p.updatedAt ?? undefined }))
   },
 
   restoreProduct: async (id: string): Promise<void> => {
@@ -110,9 +111,9 @@ export const productService = {
     await api.delete(`/products/${id}/permanent`)
   },
 
-  getInactiveCategories: async (): Promise<{ id: string; name: string }[]> => {
-    const { data } = await api.get<{ id: string; name: string; color?: string }[]>('/product-categories/inactive')
-    return data.map((c) => ({ id: c.id, name: c.name }))
+  getInactiveCategories: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; color?: string; updatedAt?: string }[]>('/product-categories/inactive')
+    return data.map((c) => ({ id: c.id, name: c.name, updatedAt: c.updatedAt ?? undefined }))
   },
 
   restoreCategory: async (id: string): Promise<void> => {

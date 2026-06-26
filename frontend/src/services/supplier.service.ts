@@ -14,6 +14,7 @@ interface BackendSupplier {
   name: string
   phone: string | null
   createdAt: string
+  updatedAt?: string | null
 }
 
 function mapSupplier(s: BackendSupplier): Supplier {
@@ -51,9 +52,9 @@ export const supplierService = {
     await api.delete(`/suppliers/${id}`)
   },
 
-  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+  getInactive: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendSupplier[]>('/suppliers/inactive')
-    return data.map((s) => ({ id: s.id, name: s.name }))
+    return data.map((s) => ({ id: s.id, name: s.name, updatedAt: s.updatedAt ?? undefined }))
   },
 
   restore: async (id: string): Promise<void> => {

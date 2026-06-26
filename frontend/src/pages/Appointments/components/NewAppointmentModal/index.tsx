@@ -1,13 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
-import AddRounded from '@mui/icons-material/AddRounded'
+import CloseRounded from '@mui/icons-material/CloseRounded'
 import ContentCutOutlined from '@mui/icons-material/ContentCutOutlined'
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
 import PaletteRounded from '@mui/icons-material/PaletteRounded'
 import PeopleOutlined from '@mui/icons-material/PeopleOutlined'
+import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded'
 import {
-  Autocomplete,
   Box,
   Button,
   Chip,
@@ -17,7 +17,6 @@ import {
   IconButton,
   InputAdornment,
   TextField,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -29,6 +28,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import SelectCustomerModal from '../../../Sales/components/SelectCustomerModal'
 import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
@@ -52,7 +52,7 @@ const APPOINTMENT_COLORS = [
 ]
 
 const schema = z.object({
-  customerName: z.string().min(1, 'Cliente é obrigatório').max(200),
+  customerName: z.string().max(200),
   phone: z.string()
     .refine(v => !v || [10, 11].includes(v.replace(/\D/g, '').length), 'Telefone inválido'),
   serviceIds: z.array(z.string()).min(1, 'Selecione ao menos um serviço'),
@@ -106,8 +106,10 @@ export default function NewAppointmentModal({
   prefill,
   defaultDate,
   onCreate,
+  requireCustomerOnAppointment,
 }: NewAppointmentModalProps) {
   const [customerId, setCustomerId] = useState<string | null>(null)
+  const [selectCustomerOpen, setSelectCustomerOpen] = useState(false)
   const [durationTouched, setDurationTouched] = useState(false)
   const [priceTouched, setPriceTouched] = useState(false)
   const theme = useTheme()
@@ -121,6 +123,7 @@ export default function NewAppointmentModal({
     reset,
     watch,
     setValue,
+    setError,
     getValues,
     formState: { errors },
   } = useForm<FormValues>({
@@ -218,6 +221,10 @@ export default function NewAppointmentModal({
   }
 
   const onSubmit = (data: FormValues) => {
+    if (requireCustomerOnAppointment && !customerId) {
+      setError('customerName', { message: 'Cliente é obrigatório' })
+      return
+    }
     finalize(data)
   }
 
@@ -239,45 +246,56 @@ export default function NewAppointmentModal({
           {/* Cliente + Telefone */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Cliente" required />
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-                <Controller
-                  name="customerName"
-                  control={control}
-                  render={({ field }) => (
-                    <Autocomplete
-                      freeSolo
-                      fullWidth
-                      options={customers}
-                      getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
-                      inputValue={field.value}
-                      onInputChange={(_, value) => {
-                        field.onChange(value)
-                        const match = customers.find((c) => c.name === value)
-                        setCustomerId(match ? match.id : null)
-                        if (match) setValue('phone', match.phone ?? '')
-                      }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          placeholder="Nome do cliente"
-                          error={!!errors.customerName}
-                          helperText={errors.customerName?.message}
-                        />
-                      )}
-                    />
-                  )}
-                />
-                <Tooltip title="Cadastrar novo cliente">
+              <FieldLabel label="Cliente" required={requireCustomerOnAppointment} />
+              <input type="hidden" {...register('customerName')} />
+              {customerId ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 1,
+                    border: 1,
+                    borderColor: 'border.subtle',
+                    bgcolor: 'background.default',
+                    minHeight: 42,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }} noWrap>
+                    {watch('customerName')}
+                  </Typography>
                   <IconButton
                     size="small"
-                    onClick={() => { onClose(); navigate('/clientes') }}
-                    sx={{ mt: 1 }}
+                    onClick={() => {
+                      setValue('customerName', '', { shouldValidate: true })
+                      setValue('phone', '')
+                      setCustomerId(null)
+                    }}
+                    sx={{ bgcolor: 'error.soft', color: 'error.ink', borderRadius: 999, '&:hover': { bgcolor: 'error.main', color: 'common.white' } }}
                   >
-                    <AddRounded sx={{ fontSize: 18 }} />
+                    <CloseRounded fontSize="small" />
                   </IconButton>
-                </Tooltip>
-              </Box>
+                </Box>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PersonAddAlt1Rounded />}
+                    onClick={() => setSelectCustomerOpen(true)}
+                    fullWidth
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Selecionar cliente
+                  </Button>
+                  {errors.customerName && (
+                    <FormHelperText error sx={{ mt: 0.5 }}>
+                      {errors.customerName.message}
+                    </FormHelperText>
+                  )}
+                </>
+              )}
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Telefone / WhatsApp" />
@@ -737,6 +755,18 @@ export default function NewAppointmentModal({
         submitLabel="Agendar"
         submitDisabled={conflicts.length > 0}
         hint="Confirmação enviada por WhatsApp ao salvar"
+      />
+
+      <SelectCustomerModal
+        open={selectCustomerOpen}
+        onClose={() => setSelectCustomerOpen(false)}
+        onSelect={(selected) => {
+          setValue('customerName', selected.name, { shouldValidate: true })
+          setCustomerId(selected.id)
+          const found = customers.find((c) => c.id === selected.id)
+          setValue('phone', found?.phone ? formatPhone(found.phone) : '')
+          setSelectCustomerOpen(false)
+        }}
       />
     </Dialog>
   )

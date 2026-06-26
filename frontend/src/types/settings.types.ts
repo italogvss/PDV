@@ -61,6 +61,12 @@ export interface BusinessSettings {
 export interface OperationSettings {
   allowDiscounts: boolean
   discountLimitPercent: number
+  inventoryControlEnabled: boolean
+  defaultMinStock: number
+  defaultCriticalStock: number
+  stockFieldsEditable: boolean
+  requireCustomerOnSale: boolean
+  requireCustomerOnAppointment: boolean
 }
 
 // Pagamentos — cada método aceito tem um flag de habilitado e a taxa por venda (%).

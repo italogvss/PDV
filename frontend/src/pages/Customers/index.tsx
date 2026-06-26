@@ -17,9 +17,10 @@ import {
   Typography,
 } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useCustomers, useDeleteCustomer } from '../../hooks/useCustomers'
@@ -42,6 +43,14 @@ export default function CustomersPage() {
   const [addOpen, setAddOpen] = useState(false)
 
   const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if ((location.state as { openNew?: boolean } | null)?.openNew) {
+      setAddOpen(true)
+      window.history.replaceState({}, '')
+    }
+  }, [])
   const { data, isLoading } = useCustomers(1, 200)
   const deleteCustomer = useDeleteCustomer()
 
@@ -249,6 +258,7 @@ export default function CustomersPage() {
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
           onRowClick={(params) => navigate(`/clientes/${params.row.id}`)}
+          slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
           sx={{ cursor: 'pointer' }}
         />
       </Card>

@@ -3,6 +3,8 @@ import {
   Box,
   Button,
   CircularProgress,
+  Collapse,
+  Divider,
   InputAdornment,
   Switch,
   TextField
@@ -45,19 +47,52 @@ export default function OperationSection() {
   const set = (patch: Partial<OperationSettings>) =>
     setForm((f) => (f ? { ...f, ...patch } : f))
 
-  const hasChanges = JSON.stringify(form) !== JSON.stringify(data?.operation)
+  const op = data?.operation
+  const enabledModules = data?.modules ?? ALL_MODULES
+
+  const discountChanged =
+    op?.allowDiscounts !== form.allowDiscounts ||
+    op?.discountLimitPercent !== form.discountLimitPercent
+
+  const inventoryChanged =
+    op?.inventoryControlEnabled !== form.inventoryControlEnabled ||
+    op?.defaultMinStock !== form.defaultMinStock ||
+    op?.defaultCriticalStock !== form.defaultCriticalStock ||
+    op?.stockFieldsEditable !== form.stockFieldsEditable
+
+  const customersChanged =
+    op?.requireCustomerOnSale !== form.requireCustomerOnSale ||
+    op?.requireCustomerOnAppointment !== form.requireCustomerOnAppointment
 
   const handleSave = () => update.mutate(form)
-  const handleCancel = () => data && setForm(data.operation)
+
+  const handleDiscountCancel = () =>
+    op && setForm((f) => f ? { ...f, allowDiscounts: op.allowDiscounts, discountLimitPercent: op.discountLimitPercent } : f)
+
+  const handleInventoryCancel = () =>
+    op && setForm((f) => f ? {
+      ...f,
+      inventoryControlEnabled: op.inventoryControlEnabled,
+      defaultMinStock: op.defaultMinStock,
+      defaultCriticalStock: op.defaultCriticalStock,
+      stockFieldsEditable: op.stockFieldsEditable,
+    } : f)
+
+  const handleCustomersCancel = () =>
+    op && setForm((f) => f ? {
+      ...f,
+      requireCustomerOnSale: op.requireCustomerOnSale,
+      requireCustomerOnAppointment: op.requireCustomerOnAppointment,
+    } : f)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <SettingCard
         title="Vendas e descontos"
         action={
-          hasChanges ? (
+          discountChanged ? (
             <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <Button variant="outlined" size="small" onClick={handleCancel} disabled={update.isPending}>
+              <Button variant="outlined" size="small" onClick={handleDiscountCancel} disabled={update.isPending}>
                 Cancelar
               </Button>
               <Button
@@ -81,8 +116,8 @@ export default function OperationSection() {
             color="secondary"
           />
         </SettingRow>
-
-        <SettingRow label="Limite de desconto" sublabel="Limita o desconto maximo por venda">
+<Collapse in={form.allowDiscounts} unmountOnExit>
+        <SettingRow label="Limite de desconto" sublabel="Limita o desconto máximo por venda">
           <TextField
             size="small"
             type="number"
@@ -95,10 +130,195 @@ export default function OperationSection() {
             }}
           />
         </SettingRow>
+        </Collapse>
       </SettingCard>
+
+      <InventoryCard
+        form={form}
+        set={set}
+        hasChanges={inventoryChanged}
+        onSave={handleSave}
+        onCancel={handleInventoryCancel}
+        isPending={update.isPending}
+      />
+
+      <CustomersCard
+        form={form}
+        set={set}
+        hasChanges={customersChanged}
+        onSave={handleSave}
+        onCancel={handleCustomersCancel}
+        isPending={update.isPending}
+        enabledModules={enabledModules}
+      />
 
       <ModulesCard enabledModules={data?.modules ?? ALL_MODULES} />
     </Box>
+  )
+}
+
+// ─── Card de controle de estoque ─────────────────────────────────────────────
+
+interface InventoryCardProps {
+  form: OperationSettings
+  set: (patch: Partial<OperationSettings>) => void
+  hasChanges: boolean
+  onSave: () => void
+  onCancel: () => void
+  isPending: boolean
+}
+
+function InventoryCard({ form, set, hasChanges, onSave, onCancel, isPending }: InventoryCardProps) {
+  return (
+    <SettingCard
+      title="Estoque"
+      subtitle="Defina valores padrões e regras de edição para os campos de estoque mínimo e crítico."
+      action={
+        hasChanges ? (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button variant="outlined" size="small" onClick={onCancel} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="secondary"
+              startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+              onClick={onSave}
+              disabled={isPending}
+            >
+              Salvar alterações
+            </Button>
+          </Box>
+        ) : undefined
+      }
+    >
+      <Box>
+        <SettingRow
+          label="Controlar estoque mínimo e crítico"
+          sublabel="Ativa valores padrões e regras de edição nos campos de estoque dos produtos"
+        >
+          <Switch
+            checked={form.inventoryControlEnabled}
+            onChange={(e) => set({ inventoryControlEnabled: e.target.checked })}
+            color="secondary"
+          />
+        </SettingRow>
+
+        <Collapse in={form.inventoryControlEnabled} unmountOnExit>
+          <Divider />
+          <SettingRow
+            label="Estoque mínimo padrão"
+            sublabel="Pré-preenchido ao cadastrar um novo produto"
+          >
+            <TextField
+              size="small"
+              type="number"
+              value={form.defaultMinStock}
+              onChange={(e) => set({ defaultMinStock: Number(e.target.value) || 0 })}
+              sx={{ width: 100 }}
+              slotProps={{ htmlInput: { min: 0, step: 1 } }}
+            />
+          </SettingRow>
+          <Divider />
+          <SettingRow
+            label="Estoque crítico padrão"
+            sublabel="Pré-preenchido ao cadastrar um novo produto"
+          >
+            <TextField
+              size="small"
+              type="number"
+              value={form.defaultCriticalStock}
+              onChange={(e) => set({ defaultCriticalStock: Number(e.target.value) || 0 })}
+              sx={{ width: 100 }}
+              slotProps={{ htmlInput: { min: 0, step: 1 } }}
+            />
+          </SettingRow>
+          <Divider />
+          <SettingRow
+            label="Campos editáveis no cadastro e edição"
+            sublabel="Permite alterar estoque mínimo e crítico ao cadastrar ou editar produtos"
+          >
+            <Switch
+              checked={form.stockFieldsEditable}
+              onChange={(e) => set({ stockFieldsEditable: e.target.checked })}
+              color="secondary"
+            />
+          </SettingRow>
+        </Collapse>
+      </Box>
+    </SettingCard>
+  )
+}
+
+// ─── Card de clientes ─────────────────────────────────────────────────────────
+
+interface CustomersCardProps {
+  form: OperationSettings
+  set: (patch: Partial<OperationSettings>) => void
+  hasChanges: boolean
+  onSave: () => void
+  onCancel: () => void
+  isPending: boolean
+  enabledModules: OperationModule[]
+}
+
+function CustomersCard({ form, set, hasChanges, onSave, onCancel, isPending, enabledModules }: CustomersCardProps) {
+  const hasSales = enabledModules.includes('sales')
+  const hasScheduling = enabledModules.includes('services') || enabledModules.includes('appointments')
+
+  if (!hasSales && !hasScheduling) return null
+
+  return (
+    <SettingCard
+      title="Clientes"
+      subtitle="Defina se é obrigatório vincular um cliente nas operações abaixo."
+      action={
+        hasChanges ? (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button variant="outlined" size="small" onClick={onCancel} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="secondary"
+              startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+              onClick={onSave}
+              disabled={isPending}
+            >
+              Salvar alterações
+            </Button>
+          </Box>
+        ) : undefined
+      }
+    >
+      {hasSales && (
+        <SettingRow
+          label="Obrigar cliente em nova venda"
+          sublabel="Impede finalizar uma venda sem informar um cliente cadastrado"
+        >
+          <Switch
+            checked={form.requireCustomerOnSale}
+            onChange={(e) => set({ requireCustomerOnSale: e.target.checked })}
+            color="secondary"
+          />
+        </SettingRow>
+      )}
+      {hasSales && hasScheduling && <Divider />}
+      {hasScheduling && (
+        <SettingRow
+          label="Obrigar cliente em novo agendamento"
+          sublabel="Impede criar um agendamento sem informar um cliente cadastrado"
+        >
+          <Switch
+            checked={form.requireCustomerOnAppointment}
+            onChange={(e) => set({ requireCustomerOnAppointment: e.target.checked })}
+            color="secondary"
+          />
+        </SettingRow>
+      )}
+    </SettingCard>
   )
 }
 

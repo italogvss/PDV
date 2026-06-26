@@ -67,6 +67,15 @@ export function useUpdateModulesSettings() {
   })
 }
 
+export function useInventorySettings() {
+  return useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => tenantSettingsService.get(),
+    select: (data) => data.operation,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 export function useUpdatePaymentsSettings() {
   const queryClient = useQueryClient()
   const showToast = useToast()

@@ -226,7 +226,7 @@ public class CustomerService(
             ? new CustomerAddressDto(c.AddressStreet, c.AddressNumber, c.AddressCity, c.AddressState, c.AddressZipCode)
             : null;
 
-        return new CustomerResponse(c.Id, c.Name, c.Phone, c.Email, c.Document, c.Note, address, c.CreatedAt);
+        return new CustomerResponse(c.Id, c.Name, c.Phone, c.Email, c.Document, c.Note, address, c.CreatedAt, c.UpdatedAt);
     }
 
     private static string? NullIfEmpty(string? value) =>

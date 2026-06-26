@@ -120,6 +120,7 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
       </Menu>
 
       <ConfirmDialog
+        danger={true}
         open={confirmScope !== null}
         title={confirmTitle}
         description={confirmText}

@@ -9,6 +9,7 @@ interface BackendTenantRole {
   isDefault: boolean
   memberCount: number
   permissions: string[]
+  updatedAt?: string | null
 }
 
 function mapRole(r: BackendTenantRole): TenantRole {
@@ -65,9 +66,9 @@ export const teamRolesService = {
     return data
   },
 
-  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+  getInactive: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendTenantRole[]>('/team-roles/inactive')
-    return data.map((r) => ({ id: r.id, name: r.name }))
+    return data.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updatedAt ?? undefined }))
   },
 
   restore: async (id: string): Promise<void> => {

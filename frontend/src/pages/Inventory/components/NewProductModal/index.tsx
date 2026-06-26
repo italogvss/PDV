@@ -26,6 +26,7 @@ import ModalHeader from '../../../../components/ModalHeader'
 import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
 import { useProductCategories } from '../../../../hooks/useProductCategories'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
+import { useInventorySettings } from '../../../../hooks/useTenantSettings'
 import { formatBRL } from '../../../../utils/currency'
 import type { ProductModalProps } from './types'
 
@@ -70,14 +71,14 @@ const schema = z.object({
 
 type ProductForm = z.infer<typeof schema>
 
-function buildDefaults(): ProductForm {
+function buildDefaults(stockDefaults?: { minStock?: number; criticalStock?: number }): ProductForm {
   return {
     name: '',
     costPrice: 0,
     price: 0,
     stock: 0,
-    minStock: '',
-    criticalStock: '',
+    minStock: stockDefaults?.minStock ?? '',
+    criticalStock: stockDefaults?.criticalStock ?? '',
     barcode: '',
     categoryId: null,
   }
@@ -94,6 +95,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isEditing = !!product
+  const { data: inventorySettings } = useInventorySettings()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const uploadImage = useUploadImage('Product', PRODUCTS_QUERY_KEY)
@@ -135,6 +137,9 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
       : 0
   const isPositiveMargin = profitPerUnit >= 0
 
+  const stockFieldsDisabled =
+    !!inventorySettings?.inventoryControlEnabled && !inventorySettings?.stockFieldsEditable
+
   useEffect(() => {
     if (open) {
       if (product) {
@@ -149,7 +154,11 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           categoryId: product.category?.id ?? null,
         })
       } else {
-        reset(buildDefaults())
+        const ctrl = inventorySettings?.inventoryControlEnabled
+        reset(buildDefaults(ctrl ? {
+          minStock: inventorySettings?.defaultMinStock,
+          criticalStock: inventorySettings?.defaultCriticalStock,
+        } : undefined))
       }
       setSelectedFile(null)
       setLocalPreview((prev) => {
@@ -325,6 +334,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                     placeholder="Ex: 10"
                     error={!!errors.minStock}
                     helperText={errors.minStock?.message as string}
+                    disabled={isPending || stockFieldsDisabled}
                     slotProps={{ htmlInput: { min: 0, step: 1 } }}
                   />
                 </Box>
@@ -341,6 +351,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                     placeholder="Ex: 3"
                     error={!!errors.criticalStock}
                     helperText={errors.criticalStock?.message as string}
+                    disabled={isPending || stockFieldsDisabled}
                     slotProps={{ htmlInput: { min: 0, step: 1 } }}
                   />
                 </Box>

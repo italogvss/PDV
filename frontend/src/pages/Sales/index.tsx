@@ -53,6 +53,7 @@ export default function SalesPage() {
   const { data: tenantSettings } = useTenantSettings()
   const allowDiscounts = tenantSettings?.operation.allowDiscounts ?? false
   const discountLimitPercent = tenantSettings?.operation.discountLimitPercent ?? 0
+  const requireCustomerOnSale = tenantSettings?.operation.requireCustomerOnSale ?? false
 
   // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
   const payments = tenantSettings?.payments ?? {
@@ -307,6 +308,7 @@ export default function SalesPage() {
         payments={payments}
         onFinalize={handleFinalize}
         isSubmitting={createSale.isPending}
+        requireCustomerOnSale={requireCustomerOnSale}
       />
 
       <SelectCustomerModal

@@ -71,15 +71,15 @@ export default function CustomerRowMenu({ customer, onNavigate, onDelete }: Cust
           sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
         >
           <DeleteOutlineRounded />
-          Excluir
+          Desativar
         </MenuItem>
       </Menu>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Excluir cliente?"
-        description={<><strong>{customer.name}</strong> será removido permanentemente. Esta ação não pode ser desfeita.</>}
-        confirmLabel="Excluir"
+        title="Desativar cliente?"
+        description={<><strong>{customer.name}</strong> será desativado. Esta ação pode ser desfeita nas configurações.</>}
+        confirmLabel="Desativar"
         onClose={() => setConfirmOpen(false)}
         onConfirm={() => {
           setConfirmOpen(false)

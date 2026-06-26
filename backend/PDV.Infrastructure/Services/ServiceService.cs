@@ -92,6 +92,7 @@ public class ServiceService(
         await auditLogger.LogServiceDeactivatedAsync(service.Id, service.Name);
 
         service.IsActive = false;
+        service.UpdatedAt = DateTime.UtcNow;
         await repository.UpdateAsync(service);
     }
 
@@ -121,7 +122,7 @@ public class ServiceService(
         c is null ? null : new(c.Id, c.Name, c.Color);
 
     private async Task<ServiceResponse> Map(Service s) =>
-        new(s.Id, s.Name, s.Description, s.DurationMinutes, s.Price, s.IsActive, s.CreatedAt,
+        new(s.Id, s.Name, s.Description, s.DurationMinutes, s.Price, s.IsActive, s.CreatedAt, s.UpdatedAt,
             MapCategory(s.Category),
             await storage.ResolveReadUrlAsync(s.ImageUrl, MediaCategory.Service, s.UpdatedAt));
 }

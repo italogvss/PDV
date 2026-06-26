@@ -4,5 +4,6 @@ public record SupplierResponse(
     Guid Id,
     string Name,
     string? Phone,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );

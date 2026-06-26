@@ -20,6 +20,7 @@ interface BackendEmployee {
   avatarUrl?: string | null
   isActive: boolean
   createdAt: string
+  updatedAt?: string | null
   salary?: number | null
   paymentDay?: number | null
   autoCreateSalaryExpense: boolean
@@ -74,9 +75,9 @@ export const employeeService = {
     await api.patch(`/employees/${id}/reactivate`)
   },
 
-  getInactive: async (): Promise<{ id: string; name: string }[]> => {
+  getInactive: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendEmployee[]>('/employees/inactive')
-    return data.map((e) => ({ id: e.id, name: e.name }))
+    return data.map((e) => ({ id: e.id, name: e.name, updatedAt: e.updatedAt ?? undefined }))
   },
 
   hardDelete: async (id: string): Promise<void> => {

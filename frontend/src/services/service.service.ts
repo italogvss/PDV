@@ -15,6 +15,7 @@ interface BackendService {
   durationMinutes?: number | null
   price: number
   isActive: boolean
+  updatedAt?: string | null
   category: ServiceCategory | null
 }
 
@@ -78,9 +79,9 @@ export const serviceService = {
     await api.delete(`/service-categories/${id}`)
   },
 
-  getInactiveServices: async (): Promise<{ id: string; name: string }[]> => {
+  getInactiveServices: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
     const { data } = await api.get<BackendService[]>('/services/inactive')
-    return data.map((s) => ({ id: s.id, name: s.name }))
+    return data.map((s) => ({ id: s.id, name: s.name, updatedAt: s.updatedAt ?? undefined }))
   },
 
   restoreService: async (id: string): Promise<void> => {
@@ -91,9 +92,9 @@ export const serviceService = {
     await api.delete(`/services/${id}/permanent`)
   },
 
-  getInactiveServiceCategories: async (): Promise<{ id: string; name: string }[]> => {
-    const { data } = await api.get<{ id: string; name: string; color?: string }[]>('/service-categories/inactive')
-    return data.map((c) => ({ id: c.id, name: c.name }))
+  getInactiveServiceCategories: async (): Promise<{ id: string; name: string; updatedAt?: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; color?: string; updatedAt?: string }[]>('/service-categories/inactive')
+    return data.map((c) => ({ id: c.id, name: c.name, updatedAt: c.updatedAt ?? undefined }))
   },
 
   restoreServiceCategory: async (id: string): Promise<void> => {

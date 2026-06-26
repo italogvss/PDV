@@ -11,6 +11,7 @@ public record EmployeeResponse(
     string? ImageUrl,
     bool IsActive,
     DateTime CreatedAt,
+    DateTime UpdatedAt,
     decimal? Salary = null,
     int? PaymentDay = null,
     bool AutoCreateSalaryExpense = false);

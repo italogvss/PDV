@@ -70,6 +70,7 @@ public class ProductCategoryService(
             ?? throw new NotFoundException("Categoria não encontrada.");
 
         category.IsActive = false;
+        category.UpdatedAt = DateTime.UtcNow;
         await repository.UpdateAsync(category);
     }
 
@@ -93,5 +94,5 @@ public class ProductCategoryService(
         await repository.HardDeleteAsync(entity);
     }
 
-    private static ProductCategoryResponse Map(ProductCategory c) => new(c.Id, c.Name, c.Color);
+    private static ProductCategoryResponse Map(ProductCategory c) => new(c.Id, c.Name, c.Color, c.UpdatedAt);
 }

@@ -77,15 +77,15 @@ export default function SupplierRowMenu({ supplier, onEdit }: SupplierRowMenuPro
           sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
         >
           <DeleteOutlineRounded />
-          Excluir
+          Desativar
         </MenuItem>
       </Menu>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Excluir fornecedor?"
-        description={<><strong>{supplier.name}</strong> será removido permanentemente. Esta ação não pode ser desfeita.</>}
-        confirmLabel="Excluir"
+        title="Desativar fornecedor?"
+        description={<><strong>{supplier.name}</strong> será desativado. Esta ação pode ser desfeita nas configurações.</>}
+        confirmLabel="Desativar"
         isPending={deleteSupplier.isPending}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleDelete}

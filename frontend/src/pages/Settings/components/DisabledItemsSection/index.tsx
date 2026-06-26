@@ -13,7 +13,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
 import DeleteForeverOutlined from '@mui/icons-material/DeleteForeverOutlined'
-import InboxOutlined from '@mui/icons-material/InboxOutlined'
+import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import RestoreOutlined from '@mui/icons-material/RestoreOutlined'
 import SettingCard from '../../../../components/SettingCard'
@@ -28,7 +28,7 @@ import { useInactiveSuppliers, useRestoreSupplier, useHardDeleteSupplier } from 
 import { useInactiveEmployees, useReactivateEmployee, useHardDeleteEmployee } from '../../../../hooks/useEmployees'
 import { useInactiveRoles, useRestoreRole, useHardDeleteRole } from '../../../../hooks/useTeamRoles'
 
-type InactiveItem = { id: string; name: string }
+type InactiveItem = { id: string; name: string; updatedAt?: string }
 
 interface ConfirmState {
   items: InactiveItem[]
@@ -46,14 +46,6 @@ const TAB_OPTIONS = [
   { id: 'cargos', label: 'Cargos' },
 ]
 
-function NoRowsOverlay() {
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 5, color: 'text.tertiary' }}>
-      <InboxOutlined sx={{ fontSize: 36 }} />
-      <Typography variant="body2">Nenhum item desativado</Typography>
-    </Box>
-  )
-}
 
 interface InactiveItemRowMenuProps {
   onRestore: () => void
@@ -260,7 +252,16 @@ export default function DisabledItemsSection() {
         <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
       ),
     },
-    
+    {
+      field: 'updatedAt',
+      headerName: 'Data de cancelamento',
+      width: 180,
+      sortable: true,
+      renderCell: ({ row }) =>
+        row.updatedAt
+          ? new Date(row.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : '—',
+    },
     {
       field: 'rowActions',
       headerName: '',
@@ -278,42 +279,42 @@ export default function DisabledItemsSection() {
     },
   ]
 
+  const headerActions = hasSelection ? (
+    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+      <Button
+        size="small"
+        variant="outlined"
+        startIcon={<RestoreOutlined />}
+        onClick={handleBulkRestore}
+      >
+        Reativar
+      </Button>
+      <Button
+        size="small"
+        variant="outlined"
+        color="error"
+        startIcon={<DeleteForeverOutlined />}
+        onClick={handleBulkDelete}
+      >
+        Excluir
+      </Button>
+    </Box>
+  ) : undefined
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3,}}>
       <SettingCard
         title="Itens desativados"
         subtitle="Restaure itens desativados ou exclua-os definitivamente."
+        action={headerActions}
       >
         <Box sx={{ px: 2, pt: 3, pb: 2, display: 'flex', flexDirection: 'column', gap: 2, }}>
-          <Box sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
-            <ChipSelect
-              size="large"
-              options={TAB_OPTIONS}
-              value={TAB_OPTIONS[tabIndex].id}
-              onChange={handleTabChange}
-            />
-            {hasSelection && (
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<RestoreOutlined />}
-                  onClick={handleBulkRestore}
-                >
-                  Reativar
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteForeverOutlined />}
-                  onClick={handleBulkDelete}
-                >
-                  Excluir
-                </Button>
-              </Box>
-            )}
-          </Box>
+          <ChipSelect
+            size="large"
+            options={TAB_OPTIONS}
+            value={TAB_OPTIONS[tabIndex].id}
+            onChange={handleTabChange}
+          />
 
           <DataGrid
             rows={currentTab.items ?? []}
@@ -326,7 +327,7 @@ export default function DisabledItemsSection() {
             autoHeight
             pageSizeOptions={[10, 25, 50]}
             sx={{border: "1px solid", borderColor: "border.subtle",display: 'flex',}}
-            slots={{ noRowsOverlay: NoRowsOverlay }}
+            slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
           />
         </Box>
       </SettingCard>
