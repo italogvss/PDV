@@ -15,9 +15,9 @@ import {
 import { useNavigate } from 'react-router-dom'
 import ModalHeader from '../../../../components/ModalHeader'
 import { DataGrid, type GridColDef, type GridRowParams } from '@mui/x-data-grid'
-import DataGridNoRowsOverlay from '../../../components/DataGridNoRowsOverlay'
 import { useCustomers } from '../../../../hooks/useCustomers'
 import type { SelectCustomerModalProps } from './types'
+import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 
 const columns: GridColDef[] = [
   { field: 'name', headerName: 'Nome', flex: 1 },
