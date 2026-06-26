@@ -4,20 +4,13 @@ import {
   Menu,
   MenuItem,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
   Tooltip,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
 import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
+import ConfirmDialog from '../../../../components/ConfirmDialog'
 import type { ExpenseRowMenuProps } from './types'
 
 type DeleteScope = 'single' | 'future' | 'all'
@@ -25,8 +18,6 @@ type DeleteScope = 'single' | 'future' | 'all'
 export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid, onDelete, onDeleteSeries }: ExpenseRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmScope, setConfirmScope] = useState<DeleteScope | null>(null)
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const handleClose = () => setAnchor(null)
   const isSeries = expense.isRecurring && expense.repeatCount != null
@@ -128,26 +119,14 @@ export default function ExpenseRowMenu({ expense, canManage, onEdit, onMarkPaid,
         )}
       </Menu>
 
-      <Dialog
+      <ConfirmDialog
         open={confirmScope !== null}
+        title={confirmTitle}
+        description={confirmText}
+        confirmLabel="Excluir"
         onClose={() => setConfirmScope(null)}
-        maxWidth="xs"
-        fullWidth
-        fullScreen={isMobile}
-      >
-        <DialogTitle>{confirmTitle}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{confirmText}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outlined" size="small" onClick={() => setConfirmScope(null)}>
-            Cancelar
-          </Button>
-          <Button variant="contained" color="error" size="small" onClick={handleConfirm}>
-            Excluir
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirm}
+      />
     </>
   )
 }

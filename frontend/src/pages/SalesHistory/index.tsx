@@ -3,11 +3,6 @@ import {
   Box,
   Button,
   Card,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
   Typography,
   ToggleButton,
   ToggleButtonGroup,
@@ -20,13 +15,16 @@ import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import PageHeader from '../../components/PageHeader'
-import type { FilterState, SaleRecord, SaleStatus, SalePaymentMethod } from './types'
+import ConfirmDialog from '../../components/ConfirmDialog'
+import type { FilterState, SaleRecord, SalePaymentMethod } from './types'
+import { SALE_STATUS_MAP } from './types'
 import StatusChip from './components/StatusChip'
 import PaymentChip from './components/PaymentChip'
 import FiltersPopover from './components/FiltersPopover'
 import RowActionsMenu from './components/RowActionsMenu'
 import SaleDetailModal from './components/SaleDetailModal'
 import { SaleListItem } from '../../types/sale.types'
+import { PAYMENT_METHOD_LABELS } from '../../constants/payment'
 
 const DATE_RANGE_DAYS = [7, 14, 30, 90] as const
 
@@ -34,18 +32,6 @@ const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
   payment: 'Todos',
   operator: 'Todos',
-}
-
-const STATUS_MAP: Record<string, SaleStatus> = {
-  Active: 'Ativo',
-  Cancelled: 'Cancelado',
-}
-
-const PAYMENT_MAP: Record<string, SalePaymentMethod> = {
-  Cash: 'Dinheiro',
-  PIX: 'Pix',
-  CreditCard: 'Crédito',
-  DebitCard: 'Débito',
 }
 
 function formatTime(iso: string): string {
@@ -64,10 +50,10 @@ function mapToRecord(s: SaleListItem): SaleRecord {
     time: formatTime(s.createdAt),
     customer: s.customerName ?? '—',
     operator: s.operatorName,
-    payment: PAYMENT_MAP[s.paymentMethod] ?? (s.paymentMethod as SalePaymentMethod),
+    payment: (PAYMENT_METHOD_LABELS[s.paymentMethod] ?? s.paymentMethod) as SalePaymentMethod,
     total: s.total,
     discount: s.discount,
-    status: STATUS_MAP[s.status] ?? 'Ativo',
+    status: SALE_STATUS_MAP[s.status] ?? 'Ativo',
     amountPaid: s.total,
     change: 0,
     isInstallment: s.isInstallment,
@@ -254,34 +240,20 @@ export default function SalesHistoryPage() {
         onCancel={setCancelId}
       />
 
-      <Dialog open={cancelId !== null} onClose={() => setCancelId(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Cancelar venda</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Esta ação irá cancelar a venda e devolver os itens ao estoque. Não pode ser desfeita.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button variant="outlined" size="small" onClick={() => setCancelId(null)}>
-            Voltar
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            size="small"
-            disabled={cancelSale.isPending}
-            startIcon={cancelSale.isPending ? <CircularProgress size={14} color="inherit" /> : undefined}
-            onClick={async () => {
-              if (!cancelId) return
-              await cancelSale.mutateAsync(cancelId)
-              setCancelId(null)
-              setSelectedSaleId(null)
-            }}
-          >
-            {cancelSale.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={cancelId !== null}
+        title="Cancelar venda?"
+        description="Esta ação irá cancelar a venda e devolver os itens ao estoque. Não pode ser desfeita."
+        confirmLabel="Confirmar cancelamento"
+        isPending={cancelSale.isPending}
+        onClose={() => setCancelId(null)}
+        onConfirm={async () => {
+          if (!cancelId) return
+          await cancelSale.mutateAsync(cancelId)
+          setCancelId(null)
+          setSelectedSaleId(null)
+        }}
+      />
     </Box>
   )
 }

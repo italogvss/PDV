@@ -1,23 +1,11 @@
 import { useState } from 'react'
-import {
-  IconButton,
-  Menu,
-  MenuItem,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material'
+import { IconButton, Menu, MenuItem, Divider } from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import EditRounded from '@mui/icons-material/EditRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import { useDeleteSupplier } from '../../../../hooks/useSuppliers'
+import ConfirmDialog from '../../../../components/ConfirmDialog'
 import type { SupplierRowMenuProps } from './types'
 
 function toWhatsAppUrl(phone: string): string {
@@ -30,8 +18,6 @@ export default function SupplierRowMenu({ supplier, onEdit }: SupplierRowMenuPro
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const deleteSupplier = useDeleteSupplier()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const handleClose = () => setAnchor(null)
 
@@ -95,29 +81,15 @@ export default function SupplierRowMenu({ supplier, onEdit }: SupplierRowMenuPro
         </MenuItem>
       </Menu>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth fullScreen={isMobile}>
-        <DialogTitle>Excluir fornecedor?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <strong>{supplier.name}</strong> será removido permanentemente. Esta ação não pode ser
-            desfeita.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outlined" size="small" onClick={() => setConfirmOpen(false)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            size="small"
-            onClick={handleDelete}
-            disabled={deleteSupplier.isPending}
-          >
-            {deleteSupplier.isPending ? 'Excluindo...' : 'Excluir'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Excluir fornecedor?"
+        description={<><strong>{supplier.name}</strong> será removido permanentemente. Esta ação não pode ser desfeita.</>}
+        confirmLabel="Excluir"
+        isPending={deleteSupplier.isPending}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }

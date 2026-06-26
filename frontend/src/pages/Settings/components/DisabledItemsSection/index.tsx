@@ -4,9 +4,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
   Divider,
   IconButton,
   Menu,
@@ -19,9 +16,8 @@ import DeleteForeverOutlined from '@mui/icons-material/DeleteForeverOutlined'
 import InboxOutlined from '@mui/icons-material/InboxOutlined'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import RestoreOutlined from '@mui/icons-material/RestoreOutlined'
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import SettingCard from '../../../../components/SettingCard'
-import ModalHeader from '../../../../components/ModalHeader'
+import ConfirmDialog from '../../../../components/ConfirmDialog'
 import ChipSelect from '../../../../components/ChipSelect'
 import { useInactiveProducts, useRestoreProduct, useHardDeleteProduct } from '../../../../hooks/useProducts'
 import { useInactiveProductCategories, useRestoreProductCategory, useHardDeleteProductCategory } from '../../../../hooks/useProductCategories'
@@ -335,61 +331,30 @@ export default function DisabledItemsSection() {
         </Box>
       </SettingCard>
 
-      <Dialog open={!!confirm} onClose={handleCloseConfirm} maxWidth="sm" fullWidth>
-        {confirm && (
-          <>
-            <ModalHeader
-              title="Excluir definitivamente"
-              subtitle={
-                confirm.items.length === 1
-                  ? 'Esta ação não pode ser desfeita.'
-                  : `${confirm.items.length} itens serão excluídos permanentemente.`
-              }
-              onClose={handleCloseConfirm}
-            />
-            <DialogContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1.5,
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: 'error.soft',
-                  color: 'error.ink',
-                }}
-              >
-                <WarningAmberRounded sx={{ fontSize: 22, mt: 0.25, flexShrink: 0 }} />
-                <Typography variant="body2">
-                  {confirm.items.length === 1 ? (
-                    <>
-                      O item <strong>{confirm.items[0].name}</strong> será removido permanentemente
-                      do banco de dados e não poderá ser recuperado.
-                    </>
-                  ) : (
-                    <>
-                      Os <strong>{confirm.items.length} itens selecionados</strong> serão removidos
-                      permanentemente do banco de dados e não poderão ser recuperados.
-                    </>
-                  )}
-                </Typography>
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button variant="ghost" onClick={handleCloseConfirm}>
-                Cancelar
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<DeleteForeverOutlined />}
-                onClick={handleConfirmDelete}
-              >
-                Excluir
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+      <ConfirmDialog
+        open={!!confirm}
+        title="Excluir definitivamente"
+        subtitle={
+          confirm
+            ? confirm.items.length === 1
+              ? 'Esta ação não pode ser desfeita.'
+              : `${confirm.items.length} itens serão excluídos permanentemente.`
+            : undefined
+        }
+        description={
+          confirm ? (
+            confirm.items.length === 1 ? (
+              <>O item <strong>{confirm.items[0].name}</strong> será removido permanentemente do banco de dados e não poderá ser recuperado.</>
+            ) : (
+              <>Os <strong>{confirm.items.length} itens selecionados</strong> serão removidos permanentemente do banco de dados e não poderão ser recuperados.</>
+            )
+          ) : ''
+        }
+        confirmLabel="Excluir"
+        danger
+        onClose={handleCloseConfirm}
+        onConfirm={handleConfirmDelete}
+      />
     </Box>
   )
 }

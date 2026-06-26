@@ -196,8 +196,8 @@ export default function AppointmentDetailModal({
       <Box sx={{ p: 2 }}>
         {confirmingCancel ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              Cancelar este agendamento?
+            <Typography variant="body2" sx={{ fontWeight: 400, ml: 2.5, mt: 1 }}>
+              Tem certeza que deseja cancelar este agendamento? Essa ação não podera ser desfeita
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
               <Button variant="ghost" size="small" onClick={() => setConfirmingCancel(false)}>

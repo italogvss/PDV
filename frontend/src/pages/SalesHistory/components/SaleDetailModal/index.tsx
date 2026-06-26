@@ -24,21 +24,9 @@ import { formatBRL } from '../../../../utils/currency'
 import StatusChip from '../StatusChip'
 import PaymentChip from '../PaymentChip'
 import type { SaleDetailModalProps } from './types'
-import type { SaleStatus, SalePaymentMethod } from '../../types'
-import { PAYMENT_METHODS } from '../../../Settings/types'
-import { PAYMENT_METHOD_LABELS } from '../../../Reports/components/chartHelpers'
-
-const STATUS_MAP: Record<string, SaleStatus> = {
-  Active: 'Ativo',
-  Cancelled: 'Cancelado',
-}
-
-const PAYMENT_MAP: Record<string, SalePaymentMethod> = {
-  Cash: 'Dinheiro',
-  PIX: 'Pix',
-  CreditCard: 'Crédito',
-  DebitCard: 'Débito',
-}
+import type { SalePaymentMethod } from '../../types'
+import { SALE_STATUS_MAP } from '../../types'
+import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -66,8 +54,8 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-  const status = sale ? (STATUS_MAP[sale.status] ?? 'Ativo') : null
-  const payment = sale ? (PAYMENT_MAP[sale.paymentMethod] ?? (sale.paymentMethod as SalePaymentMethod)) : null
+  const status = sale ? (SALE_STATUS_MAP[sale.status] ?? 'Ativo') : null
+  const payment = sale ? ((PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod) as SalePaymentMethod) : null
 
   return (
     <Dialog open={saleId !== null} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>

@@ -1,20 +1,10 @@
 import { useState } from 'react'
-import {
-  IconButton,
-  Menu,
-  MenuItem,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-} from '@mui/material'
+import { IconButton, Menu, MenuItem, Divider } from '@mui/material'
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded'
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import WhatsApp from '@mui/icons-material/WhatsApp'
+import ConfirmDialog from '../../../../components/ConfirmDialog'
 import type { Customer } from '../../../../types/customers.types'
 
 interface CustomerRowMenuProps {
@@ -57,8 +47,8 @@ export default function CustomerRowMenu({ customer, onNavigate, onDelete }: Cust
         onClick={(e) => e.stopPropagation()}
       >
         {customer.phone && (
-          <MenuItem onClick={handleWhatsApp}>
-            <WhatsApp sx={{ fontSize: 18, color: '#25D366', mr: 1 }} />
+          <MenuItem onClick={handleWhatsApp} sx={{ color: 'success.main', '& svg': { color: 'success.main' } }}>
+            <WhatsApp />
             WhatsApp
           </MenuItem>
         )}
@@ -68,7 +58,7 @@ export default function CustomerRowMenu({ customer, onNavigate, onDelete }: Cust
             onNavigate()
           }}
         >
-          <OpenInNewRounded sx={{ fontSize: 18, mr: 1 }} />
+          <OpenInNewRounded />
           Ver detalhes
         </MenuItem>
         <Divider sx={{ my: 0.5 }} />
@@ -78,36 +68,24 @@ export default function CustomerRowMenu({ customer, onNavigate, onDelete }: Cust
             handleClose()
             setConfirmOpen(true)
           }}
-          sx={{ color: 'error.main' }}
+          sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
         >
-          <DeleteOutlineRounded sx={{ fontSize: 18, color: 'error.main', mr: 1 }} />
-          Deletar
+          <DeleteOutlineRounded />
+          Excluir
         </MenuItem>
       </Menu>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Deletar cliente?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <strong>{customer.name}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => {
-              setConfirmOpen(false)
-              onDelete()
-            }}
-          >
-            Deletar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Excluir cliente?"
+        description={<><strong>{customer.name}</strong> será removido permanentemente. Esta ação não pode ser desfeita.</>}
+        confirmLabel="Excluir"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false)
+          onDelete()
+        }}
+      />
     </>
   )
 }

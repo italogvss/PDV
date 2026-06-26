@@ -14,19 +14,13 @@ import SearchIcon from '@mui/icons-material/Search'
 import type { CreateTenantFormData, FormErrors } from '../types'
 import { viacepService } from '../../../services/viacep.service'
 import { maskCEP } from '../../../utils/masks'
+import { STATES } from '../../../constants/address'
 
 interface StepEnderecoProps {
   data: CreateTenantFormData
   onChange: (patch: Partial<CreateTenantFormData>) => void
   errors: FormErrors
 }
-
-const STATES = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
-  'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
-  'RS','RO','RR','SC','SP','SE','TO',
-]
-
 
 export default function StepEndereco({ data, onChange, errors }: StepEnderecoProps) {
   const [searching, setSearching] = useState(false)

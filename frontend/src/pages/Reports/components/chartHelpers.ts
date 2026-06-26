@@ -1,4 +1,5 @@
 import type { Theme } from '@mui/material'
+export { PAYMENT_METHOD_LABELS } from '../../../constants/payment'
 
 const compactFormatter = new Intl.NumberFormat('pt-BR', {
   notation: 'compact',
@@ -9,14 +10,6 @@ const compactFormatter = new Intl.NumberFormat('pt-BR', {
 /** Formato curto para eixos (ex.: "R$ 1,2 mil"). */
 export function formatCompactBRL(value: number | null): string {
   return `R$ ${compactFormatter.format(value ?? 0)}`
-}
-
-/** Rótulos PT-BR para o enum PaymentMethod do backend. */
-export const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  Cash: 'Dinheiro',
-  PIX: 'PIX',
-  CreditCard: 'Crédito',
-  DebitCard: 'Débito',
 }
 
 /** Paleta categórica (até 10 cores distintas) a partir dos tokens do tema. */

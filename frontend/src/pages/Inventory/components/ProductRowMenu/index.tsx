@@ -66,16 +66,16 @@ export default function ProductRowMenu({ product, canManage, onEdit, onAdjustSto
               sx={{ color: 'error.main', '& svg': { color: 'error.main' } }}
             >
               <DeleteOutlineRounded />
-              Excluir
+              Desativar
             </MenuItem>,
           ]
         ) : (
           <Box sx={{ px: 2, py: 1.5, maxWidth: 220 }}>
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-              Excluir produto?
+              Desativar produto?
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-              Essa ação não pode ser desfeita.
+              Você podera reativar nas configurações depois
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button size="small" variant="ghost" onClick={handleClose} sx={{ flex: 1 }}>
@@ -88,7 +88,7 @@ export default function ProductRowMenu({ product, canManage, onEdit, onAdjustSto
                 onClick={handleDeleteConfirm}
                 sx={{ flex: 1 }}
               >
-                Excluir
+                Desativar
               </Button>
             </Box>
           </Box>

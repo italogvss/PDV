@@ -2,6 +2,11 @@ export type SaleStatus = 'Ativo' | 'Cancelado'
 
 export type SalePaymentMethod = 'Pix' | 'Dinheiro' | 'Crédito' | 'Débito'
 
+export const SALE_STATUS_MAP: Record<string, SaleStatus> = {
+  Active:    'Ativo',
+  Cancelled: 'Cancelado',
+}
+
 export interface SaleRecord {
   id: string
   time: string

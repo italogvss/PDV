@@ -98,7 +98,7 @@ public class CustomerService(
 
         // Sales (IgnoreQueryFilters not needed — Sales have TenantId global filter)
         var sales = await context.Sales
-            .Where(s => s.CustomerId == id)
+            .Where(s => s.CustomerId == id && s.Status == SaleStatus.Active)
             .Include(s => s.Items)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
