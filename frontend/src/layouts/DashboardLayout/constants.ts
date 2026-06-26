@@ -13,6 +13,7 @@ import {
   MiscellaneousServicesOutlined,
   CalendarMonthOutlined,
   HistoryOutlined,
+  MailOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import type { Permission } from '../../types/employee.types'
@@ -26,6 +27,8 @@ export interface NavItem {
   requiredPermission?: Permission
   // Item só aparece se o módulo estiver ativo no tenant. Sem módulo = sempre visível.
   module?: OperationModule
+  // Item restrito ao papel Owner — não aparece para Employee.
+  ownerOnly?: boolean
 }
 
 export interface NavSection {
@@ -97,7 +100,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Fornecedores', path: '/fornecedores', icon: LocalShippingOutlined, module: 'suppliers' },
       { label: 'Configurações', path: '/configuracoes', icon: SettingsOutlined },
       { label: 'Ajuda', path: '/ajuda', icon: HelpOutlineOutlined },
-      
+      { label: 'Contato', path: '/contato', icon: MailOutlined, ownerOnly: true },
     ],
   },
 ]

@@ -1,3 +1,4 @@
+import React from 'react'
 import { Box, Chip, FormHelperText, Skeleton, Typography } from '@mui/material'
 import type { ChipSelectProps } from './types'
 
@@ -39,9 +40,10 @@ export default function ChipSelect({
         {options.map((opt) => {
           const selected = value === opt.id
           const hasColor = Boolean(opt.color)
+          const hasIcon = Boolean(opt.icon)
 
           const label =
-            colorMode === 'dot' && hasColor ? (
+            colorMode === 'dot' && hasColor && !hasIcon ? (
               <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: opt.color }} />
                 {opt.label}
@@ -59,6 +61,7 @@ export default function ChipSelect({
                   borderColor: opt.color,
                   fontWeight: 600,
                   '&:hover': { bgcolor: opt.color },
+                  '& .MuiChip-icon': { color: 'common.white', fontSize: '1.3rem' },
                 }
               : {
                   cursor: 'pointer',
@@ -67,12 +70,14 @@ export default function ChipSelect({
                   borderColor: 'text.primary',
                   fontWeight: 600,
                   '&:hover': { bgcolor: 'text.primary' },
+                  '& .MuiChip-icon': { color: 'background.paper', fontSize: '1.3rem' },
                 }
 
           return (
             <Chip
               key={opt.id}
               label={label}
+              icon={hasIcon ? (opt.icon as React.ReactElement) : undefined}
               size={size}
               clickable
               onClick={() => onChange(nullable && selected ? null : opt.id)}
@@ -80,7 +85,12 @@ export default function ChipSelect({
               sx={
                 selected
                   ? selectedSx
-                  : { cursor: 'pointer', borderColor: 'border.subtle', color: 'text.secondary' }
+                  : {
+                      cursor: 'pointer',
+                      borderColor: 'border.subtle',
+                      color: 'text.secondary',
+                      '& .MuiChip-icon': { color:  'text.secondary', fontSize: '1.3rem' },
+                    }
               }
             />
           )

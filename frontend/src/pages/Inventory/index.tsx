@@ -1,43 +1,43 @@
-import { useState, useMemo } from 'react'
+import { Help, Widgets } from '@mui/icons-material'
+import AddRounded from '@mui/icons-material/AddRounded'
+import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
+import CancelRounded from '@mui/icons-material/CancelRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
+import SearchRounded from '@mui/icons-material/SearchRounded'
+import SellRounded from '@mui/icons-material/SellRounded'
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import {
   Box,
   Button,
   Card,
-  TextField,
   InputAdornment,
-  Select,
   MenuItem,
+  Select,
+  TextField,
   Typography,
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
-import SearchRounded from '@mui/icons-material/SearchRounded'
-import FilterListRounded from '@mui/icons-material/FilterListRounded'
-import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
-import SellRounded from '@mui/icons-material/SellRounded'
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
-import CancelRounded from '@mui/icons-material/CancelRounded'
-import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
-import CategoryRounded from '@mui/icons-material/CategoryRounded'
-import { DataGrid } from '@mui/x-data-grid'
-import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
-import { formatBRL } from '../../utils/currency'
-import type { Product, ProductCategory } from '../../types/product.types'
-import { STOCK_LEVELS } from '../../types/product.types'
-import { getStockLevel } from './utils'
-import StockLevelCell from './components/StockLevelCell'
+import { DataGrid } from '@mui/x-data-grid'
+import { useMemo, useState } from 'react'
+import CategoryFormModal from '../../components/CategoryFormModal'
+import CategoryStrip from '../../components/CategoryStrip'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
+import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
-import FiltersPopover from '../../components/FiltersPopover'
-import ProductRowMenu from './components/ProductRowMenu'
-import ProductModal from './components/NewProductModal'
-import CategoryStrip from '../../components/CategoryStrip'
-import CategoryFormModal from '../../components/CategoryFormModal'
-import AdjustStockModal from './components/AdjustStockModal'
-import { useProducts, useDeleteProduct } from '../../hooks/useProducts'
-import { useProductCategories, useDeleteProductCategory, useCreateProductCategory, useUpdateProductCategory } from '../../hooks/useProductCategories'
+import { useCreateProductCategory, useDeleteProductCategory, useProductCategories, useUpdateProductCategory } from '../../hooks/useProductCategories'
+import { useDeleteProduct, useProducts } from '../../hooks/useProducts'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
-import { Widgets } from '@mui/icons-material'
+import type { Product, ProductCategory } from '../../types/product.types'
+import { STOCK_LEVELS } from '../../types/product.types'
+import { formatBRL } from '../../utils/currency'
+import AdjustStockModal from './components/AdjustStockModal'
+import ProductModal from './components/NewProductModal'
+import ProductRowMenu from './components/ProductRowMenu'
+import StockLevelCell from './components/StockLevelCell'
+import { getStockLevel } from './utils'
+import { useNavigate } from 'react-router-dom'
 
 export default function InventoryPage() {
   const { data: products = [], isLoading: isLoadingProducts } = useProducts()
@@ -48,7 +48,7 @@ export default function InventoryPage() {
   const updateCategory = useUpdateProductCategory()
   const { hasPermission } = useUserPermissions()
   const canManage = hasPermission('ManageStock')
-
+  const navigate = useNavigate();
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('Todos')
   const [levelFilter, setLevelFilter] = useState('Todos')
@@ -165,7 +165,7 @@ export default function InventoryPage() {
                   flexShrink: 0,
                 }}
               />
-              <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary'}}>
+              <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
                 {row.category.name}
               </Typography>
             </Box>
@@ -220,7 +220,7 @@ export default function InventoryPage() {
             {row.stock}
           </Typography>
         ),
-      },     
+      },
       {
         field: 'level',
         headerName: 'Nível',
@@ -282,12 +282,16 @@ export default function InventoryPage() {
       <PageHeader
         title="Estoque"
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
-      >
+      >       
         {canManage && (
           <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
             Novo produto
           </Button>
+          
         )}
+        <Button variant="outlined" startIcon={<Help />} onClick={() => navigate("/ajuda?cat=estoque")}>
+            Ajuda
+          </Button>
       </PageHeader>
 
       <PageKpiGrid>
@@ -347,7 +351,7 @@ export default function InventoryPage() {
             placeholder="Buscar produto ou código..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ m:1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken'} }}
+            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken' } }}
             slotProps={{
               input: {
                 startAdornment: (

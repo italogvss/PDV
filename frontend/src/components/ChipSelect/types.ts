@@ -1,7 +1,10 @@
+import type React from 'react'
+
 export interface ChipSelectOption {
   id: string
   label: string
   color?: string
+  icon?: React.ReactNode
 }
 
 export interface ChipSelectProps {

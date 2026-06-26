@@ -22,6 +22,7 @@ import LoginPage from '../pages/Login'
 import OnboardingTenant from '../pages/CreateTenant'
 import ChangePasswordPage from '../pages/ChangePassword'
 import LogsPage from '../pages/Logs'
+import ContactPage from '../pages/Contact'
 
 export const router = createBrowserRouter([
   {
@@ -141,6 +142,7 @@ export const router = createBrowserRouter([
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'assinatura/retorno', element: <SubscriptionReturnPage /> },
           { path: 'ajuda', element: <HelpPage /> },
+          { path: 'contato', element: <ContactPage /> },
         ],
       },
     ],

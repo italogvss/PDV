@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<AppointmentServiceItem> AppointmentServiceItems => Set<AppointmentServiceItem>();
     public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
 
     // Cobrança/assinaturas. Plan e WebhookEvent são GLOBAIS; Subscription/GatewayCustomer/Payment
     // são scoped por UserId (Owner) — nenhuma recebe HasQueryFilter de tenant (ver OnModelCreating).
@@ -93,6 +94,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<AuditLog>()
             .HasQueryFilter(l => l.TenantId == tenantContext.TenantId);
+
+        modelBuilder.Entity<ContactMessage>()
+            .HasQueryFilter(c => c.TenantId == tenantContext.TenantId && c.IsActive);
 
         // Entidades de cobrança NÃO recebem query filter de tenant: a cobrança pertence ao Owner
         // (UserId) e cobre todas as lojas dele; o webhook (anônimo) precisa lê-las sem tenant context.
