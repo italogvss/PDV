@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import AddRounded from '@mui/icons-material/AddRounded'
 import AutoFixHighRounded from '@mui/icons-material/AutoFixHighRounded'
 import QrCodeScannerRounded from '@mui/icons-material/QrCodeScannerRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
@@ -6,6 +7,7 @@ import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import {
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   InputAdornment,
@@ -14,7 +16,7 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import ChipSelect from '../../../../components/ChipSelect'
@@ -192,51 +194,80 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const currentImageUrl =
     localPreview ?? (removeExisting ? null : product?.imageUrl ?? null)
 
+  const [isSavingAndNew, setIsSavingAndNew] = useState(false)
+  const saveModeRef = useRef<'save' | 'saveAndNew'>('save')
+
   const onSubmit = async (data: ProductForm) => {
-    const minStockVal = typeof data.minStock === 'number' ? data.minStock : undefined
-    const criticalStockVal = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
-    const categoryId = data.categoryId || null
-
-    let entityId: string
-    if (isEditing) {
-      const updated = await updateProduct.mutateAsync({
-        id: product.id,
-        name: data.name,
-        barcode: data.barcode || undefined,
-        price: data.price,
-        purchasePrice: data.costPrice,
-        stock: data.stock,
-        minStock: minStockVal,
-        minCriticalStock: criticalStockVal,
-        categoryId,
-      })
-      entityId = updated.id
-    } else {
-      const created = await createProduct.mutateAsync({
-        name: data.name,
-        barcode: data.barcode || undefined,
-        price: data.price,
-        purchasePrice: data.costPrice,
-        stock: data.stock,
-        minStock: minStockVal,
-        minCriticalStock: criticalStockVal,
-        categoryId,
-      })
-      entityId = created.id
-    }
-
-    // Produto salvo. Trata a imagem (erro aqui não bloqueia o fechamento — já há toast próprio).
+    const mode = saveModeRef.current
+    if (mode === 'saveAndNew') setIsSavingAndNew(true)
     try {
-      if (selectedFile) {
-        await uploadImage.mutateAsync({ file: selectedFile, entityId })
-      } else if (isEditing && removeExisting && product?.imageUrl) {
-        await removeImage.mutateAsync(entityId)
-      }
-    } catch {
-      /* o hook de mídia já exibiu o toast de erro */
-    }
+      const minStockVal = typeof data.minStock === 'number' ? data.minStock : undefined
+      const criticalStockVal = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
+      const categoryId = data.categoryId || null
 
-    onClose()
+      let entityId: string
+      if (isEditing) {
+        const updated = await updateProduct.mutateAsync({
+          id: product.id,
+          name: data.name,
+          barcode: data.barcode || undefined,
+          price: data.price,
+          purchasePrice: data.costPrice,
+          stock: data.stock,
+          minStock: minStockVal,
+          minCriticalStock: criticalStockVal,
+          categoryId,
+        })
+        entityId = updated.id
+      } else {
+        const created = await createProduct.mutateAsync({
+          name: data.name,
+          barcode: data.barcode || undefined,
+          price: data.price,
+          purchasePrice: data.costPrice,
+          stock: data.stock,
+          minStock: minStockVal,
+          minCriticalStock: criticalStockVal,
+          categoryId,
+        })
+        entityId = created.id
+      }
+
+      // Produto salvo. Trata a imagem (erro aqui não bloqueia o fechamento — já há toast próprio).
+      try {
+        if (selectedFile) {
+          await uploadImage.mutateAsync({ file: selectedFile, entityId })
+        } else if (isEditing && removeExisting && product?.imageUrl) {
+          await removeImage.mutateAsync(entityId)
+        }
+      } catch {
+        /* o hook de mídia já exibiu o toast de erro */
+      }
+
+      if (mode === 'saveAndNew') {
+        const ctrl = inventorySettings?.inventoryControlEnabled
+        reset(buildDefaults(ctrl ? {
+          minStock: inventorySettings?.defaultMinStock,
+          criticalStock: inventorySettings?.defaultCriticalStock,
+        } : undefined))
+        setSelectedFile(null)
+        setLocalPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev)
+          return null
+        })
+        setRemoveExisting(false)
+      } else {
+        onClose()
+      }
+    } finally {
+      saveModeRef.current = 'save'
+      if (mode === 'saveAndNew') setIsSavingAndNew(false)
+    }
+  }
+
+  const handleSaveAndNew = () => {
+    saveModeRef.current = 'saveAndNew'
+    handleSubmit(onSubmit)()
   }
 
   const handleClose = () => {
@@ -502,6 +533,22 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
         onCancel={handleClose}
         isPending={isPending}
         submitLabel={isEditing ? 'Salvar alterações' : 'Salvar'}
+        extraActions={
+          !isEditing ? (
+            <Button
+              variant="contained"
+              disabled={isPending}
+              onClick={handleSaveAndNew}
+              startIcon={
+                isSavingAndNew
+                  ? <CircularProgress size={14} color="inherit" />
+                  : <AddRounded />
+              }
+            >
+              Salvar e Novo
+            </Button>
+          ) : undefined
+        }
       />
     </Dialog>
   )

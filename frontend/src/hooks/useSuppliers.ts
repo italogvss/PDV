@@ -18,6 +18,18 @@ export function useSuppliers(page = 1, pageSize = 100, search?: string) {
   })
 }
 
+export function useSupplier(id: string) {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  return useQuery({
+    queryKey: [...QUERY_KEY, id],
+    queryFn: () => supplierService.getById(id),
+    enabled:
+      Boolean(id) &&
+      isModuleEnabled('suppliers') &&
+      (hasPermission('ViewSuppliers') || hasPermission('ManageSuppliers')),
+  })
+}
+
 export function useCreateSupplier() {
   const queryClient = useQueryClient()
   const showToast = useToast()
@@ -41,8 +53,9 @@ export function useUpdateSupplier() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateSupplierPayload }) =>
       supplierService.update(id, payload),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, id] })
       showToast('Fornecedor atualizado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao atualizar fornecedor.'),

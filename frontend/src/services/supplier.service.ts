@@ -13,15 +13,34 @@ interface BackendSupplier {
   id: string
   name: string
   phone: string | null
+  email: string | null
+  document: string | null
+  addressStreet: string | null
+  addressNumber: string | null
+  addressCity: string | null
+  addressState: string | null
+  addressZipCode: string | null
   createdAt: string
   updatedAt?: string | null
 }
 
 function mapSupplier(s: BackendSupplier): Supplier {
+  const hasAddress = s.addressStreet || s.addressNumber || s.addressCity || s.addressState || s.addressZipCode
   return {
     id: s.id,
     name: s.name,
     phone: s.phone,
+    email: s.email,
+    document: s.document,
+    address: hasAddress
+      ? {
+          street: s.addressStreet,
+          number: s.addressNumber,
+          city: s.addressCity,
+          state: s.addressState,
+          zipCode: s.addressZipCode,
+        }
+      : null,
     createdAt: s.createdAt,
   }
 }
@@ -36,6 +55,11 @@ export const supplierService = {
       params: { page, pageSize, search: search || undefined },
     })
     return { data: data.data.map(mapSupplier), totalCount: data.totalCount }
+  },
+
+  getById: async (id: string): Promise<Supplier> => {
+    const { data } = await api.get<BackendSupplier>(`/suppliers/${id}`)
+    return mapSupplier(data)
   },
 
   create: async (payload: CreateSupplierPayload): Promise<Supplier> => {

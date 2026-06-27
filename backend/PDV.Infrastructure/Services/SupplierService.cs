@@ -37,6 +37,13 @@ public class SupplierService(
             TenantId = tenantContext.TenantId,
             Name = request.Name,
             Phone = NullIfEmpty(request.Phone),
+            Email = NullIfEmpty(request.Email),
+            Document = NullIfEmpty(request.Document),
+            AddressStreet = NullIfEmpty(request.AddressStreet),
+            AddressNumber = NullIfEmpty(request.AddressNumber),
+            AddressCity = NullIfEmpty(request.AddressCity),
+            AddressState = NullIfEmpty(request.AddressState),
+            AddressZipCode = NullIfEmpty(request.AddressZipCode),
         };
 
         await repository.AddAsync(supplier);
@@ -52,6 +59,13 @@ public class SupplierService(
 
         supplier.Name = request.Name;
         supplier.Phone = NullIfEmpty(request.Phone);
+        supplier.Email = NullIfEmpty(request.Email);
+        supplier.Document = NullIfEmpty(request.Document);
+        supplier.AddressStreet = NullIfEmpty(request.AddressStreet);
+        supplier.AddressNumber = NullIfEmpty(request.AddressNumber);
+        supplier.AddressCity = NullIfEmpty(request.AddressCity);
+        supplier.AddressState = NullIfEmpty(request.AddressState);
+        supplier.AddressZipCode = NullIfEmpty(request.AddressZipCode);
         supplier.UpdatedAt = DateTime.UtcNow;
 
         await repository.UpdateAsync(supplier);
@@ -91,7 +105,9 @@ public class SupplierService(
     }
 
     private static SupplierResponse Map(Supplier s) =>
-        new(s.Id, s.Name, s.Phone, s.CreatedAt, s.UpdatedAt);
+        new(s.Id, s.Name, s.Phone, s.Email, s.Document,
+            s.AddressStreet, s.AddressNumber, s.AddressCity, s.AddressState, s.AddressZipCode,
+            s.CreatedAt, s.UpdatedAt);
 
     private static string? NullIfEmpty(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;

@@ -27,6 +27,7 @@ export default function FormModalActions({
   submitDisabled,
   showRequiredHint = true,
   hint,
+  extraActions,
 }: FormModalActionsProps) {
   const leftHint = hint ?? (showRequiredHint ? defaultHint : null)
   return (
@@ -40,6 +41,7 @@ export default function FormModalActions({
         <Button variant="ghost" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
+        {extraActions}
         <Button
           type={formId ? 'submit' : 'button'}
           form={formId}

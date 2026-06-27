@@ -15,6 +15,7 @@ import ReportsPage from '../pages/Reports'
 import CustomersPage from '../pages/Customers'
 import CustomerDetailPage from '../pages/Customers/CustomerDetail'
 import SuppliersPage from '../pages/Suppliers'
+import SupplierDetailPage from '../pages/Suppliers/SupplierDetail'
 import SettingsPage from '../pages/Settings'
 import SubscriptionReturnPage from '../pages/SubscriptionReturn'
 import HelpPage from '../pages/Help'
@@ -125,11 +126,24 @@ export const router = createBrowserRouter([
           },
           {
             path: 'fornecedores',
-            element: (
-              <PermissionGuard permission="ViewSuppliers">
-                <SuppliersPage />
-              </PermissionGuard>
-            ),
+            children: [
+              {
+                index: true,
+                element: (
+                  <PermissionGuard permission="ViewSuppliers">
+                    <SuppliersPage />
+                  </PermissionGuard>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <PermissionGuard permission="ViewSuppliers">
+                    <SupplierDetailPage />
+                  </PermissionGuard>
+                ),
+              },
+            ],
           },
           {
             path: 'logs',

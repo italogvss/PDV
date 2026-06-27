@@ -15,4 +15,6 @@ export interface FormModalActionsProps {
   showRequiredHint?: boolean
   /** Dica customizada à esquerda (substitui a de obrigatórios quando presente). */
   hint?: React.ReactNode
+  /** Ações extras renderizadas entre Cancelar e o botão primário. */
+  extraActions?: React.ReactNode
 }
