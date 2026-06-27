@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Box, Avatar, Typography, IconButton, Popover, CircularProgress, Button, Divider } from '@mui/material'
-import { UnfoldMore, Check, AddBusiness } from '@mui/icons-material'
+import { Box, Avatar, Typography, IconButton, Popover, CircularProgress, Button, Divider, Tooltip } from '@mui/material'
+import { UnfoldMore, Check, AddBusiness, Settings } from '@mui/icons-material'
 import { useAppSelector, useAppDispatch } from '../../../../store'
 import { setTenant } from '../../../../store/slices/auth.slice'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
@@ -204,15 +204,27 @@ export default function StoreSelector() {
         ))}
         <>
           <Divider sx={{ mx: 0.5 }} />
+          <Box sx={{display: "flex"}}>
           <Button
             variant="contained"
             size="small"
+            fullWidth
             startIcon={<AddBusiness sx={{ fontSize: 16 }} />}
             onClick={handleCreateStore}
             sx={{ mx: 0.5, mb: 0.5 }}
           >
             Criar nova loja
           </Button>
+          <Tooltip title="Ir para meus negócios">
+          <Button            
+            size="small"
+            onClick={()=>navigate("/configuracoes?tab=negocios")}
+            sx={{ mx: 0.5, mb: 0.5 }}
+          >
+            <Settings sx={{ fontSize: 16 }} />
+          </Button>
+          </Tooltip>
+          </Box>
         </>
       </Popover>
     </Box>

@@ -59,9 +59,9 @@ export default function FinalizationModal({
   const discountPercent = subtotal > 0 ? (clampedDiscount / subtotal) * 100 : 0
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const customerProvided =
-    customer.type === 'entity' ||
-    (customer.type === 'cpf' && customer.document.trim().length > 0)
+  const customerProvided = requireCustomerOnSale
+    ? customer.type === 'entity'
+    : customer.type === 'entity' || (customer.type === 'cpf' && customer.document.trim().length > 0)
   const customerMissing = customersModuleActive && requireCustomerOnSale && !customerProvided
 
   return (
@@ -226,7 +226,7 @@ export default function FinalizationModal({
                   </Box>
                   {customerMissing && (
                     <FormHelperText error sx={{ mt: 0.5 }}>
-                      Informe um cliente para continuar
+                      Selecione um cliente da lista para continuar
                     </FormHelperText>
                   )}
                 </>

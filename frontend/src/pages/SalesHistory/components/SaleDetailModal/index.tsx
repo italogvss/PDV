@@ -1,32 +1,33 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Box,
-  Typography,
-  Button,
-  Divider,
-  CircularProgress,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material'
-import CloseRounded from '@mui/icons-material/CloseRounded'
 import BlockRounded from '@mui/icons-material/BlockRounded'
+import CloseRounded from '@mui/icons-material/CloseRounded'
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
+import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 import { useSaleDetail } from '../../../../hooks/useSales'
 import { formatBRL } from '../../../../utils/currency'
-import StatusChip from '../StatusChip'
-import PaymentChip from '../PaymentChip'
-import type { SaleDetailModalProps } from './types'
 import type { SalePaymentMethod } from '../../types'
 import { SALE_STATUS_MAP } from '../../types'
-import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
+import PaymentChip from '../PaymentChip'
+import StatusChip from '../StatusChip'
+import type { SaleDetailModalProps } from './types'
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -124,41 +125,41 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
             </Box>
 
             <Divider />
-
-            <Box sx={{ px: 3, py: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Itens
-              </Typography>
-              <Table size="small" sx={{ mt: 1 }}>
-                <TableHead sx={{  }}>
-                  <TableRow >
-                    <TableCell align="left" sx={{ pl: 1, color: 'text.tertiary', fontSize: 11 }}>Produto</TableCell>
-                    <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Qtd</TableCell>
-                    <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Unit.</TableCell>
-                    <TableCell align="center" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Total</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sale.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell sx={{ pl: 0, border: 0 }}>
-                        <Typography variant="body2">{item.productName}</Typography>
-                      </TableCell>
-                      <TableCell align="center" sx={{ border: 0 }}>
-                        <Typography variant="body2">{item.quantity}</Typography>
-                      </TableCell>
-                      <TableCell align="right" sx={{ border: 0 }}>
-                        <Typography variant="body2">{formatBRL(item.unitPrice)}</Typography>
-                      </TableCell>
-                      <TableCell align="right" sx={{ pr: 0, border: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatBRL(item.subtotal)}</Typography>
-                      </TableCell>
+            <Typography variant="caption" sx={{ pl: 3, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Itens
+            </Typography>
+            <Paper sx={{ backgroundColor: "surface.sunken", border: 1, borderColor: "border.strong", m: 2 }}>
+              <Box sx={{ p: 2 }}>
+                <Table size="small">
+                  <TableHead sx={{}}>
+                    <TableRow >
+                      <TableCell align="left" sx={{ pl: 1, color: 'text.tertiary', fontSize: 11 }}>Produto</TableCell>
+                      <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Qtd</TableCell>
+                      <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Unit.</TableCell>
+                      <TableCell align="center" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Total</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-
+                  </TableHead>
+                  <TableBody>                    
+                    {sale.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell sx={{ pl: 0, border: 0 }}>
+                          <Typography variant="body2">{item.productName}</Typography>
+                        </TableCell>
+                        <TableCell align="center" sx={{ border: 0 }}>
+                          <Typography variant="body2">{item.quantity}</Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ border: 0 }}>
+                          <Typography variant="body2">{formatBRL(item.unitPrice)}</Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ pr: 0, border: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatBRL(item.subtotal)}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Paper>
             <Divider />
 
             <Box sx={{ px: 3, py: 2 }}>
