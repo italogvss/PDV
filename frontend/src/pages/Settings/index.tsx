@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   // ── Pessoal ──
   { id: 'perfil',       label: 'Meu perfil',     subtitle: 'Informações pessoais',        icon: PersonOutlineOutlined,     type: 'user' },
   { id: 'assinatura',   label: 'Assinatura',     subtitle: 'Planos e cobranças',          icon: WorkspacePremiumOutlined,  type: 'user', ownerOnly: true },
-  { id: 'faturas',      label: 'Faturas',        subtitle: 'Métodos e histórico',         icon: CreditCardOutlined,        type: 'user', ownerOnly: true },
+  { id: 'pagamentos', label: 'Pagamentos',     subtitle: 'Histórico de cobranças',    icon: CreditCardOutlined,        type: 'user', ownerOnly: true },
   { id: 'seguranca',    label: 'Segurança',      subtitle: 'Autenticação e privacidade',  icon: SecurityOutlined,          type: 'user' },
   { id: 'negocios',     label: 'Meus negócios',  subtitle: 'Gerenciamento de empresas',   icon: StorefrontOutlined,        type: 'user', ownerOnly: true  },
   { id: 'aparencia',    label: 'Aparência',      subtitle: 'Estilo e temas',              icon: TuneOutlined,              type: 'user' },
@@ -45,7 +45,6 @@ const NAV_ITEMS: NavItem[] = [
   // ── Negócio ──
   { id: 'negocio',    label: 'Negócio',        subtitle: 'Dados, endereço e horário', icon: StorefrontOutlined,        type: 'business' },
   { id: 'operacao',   label: 'Operação',       subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined,      type: 'business' },
-  { id: 'pagamentos', label: 'Pagamentos',     subtitle: 'Maquininhas e métodos',     icon: CreditCardOutlined,        type: 'business' },
   { id: 'fiscal',     label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ',            icon: ReceiptLongOutlined,       type: 'business' },
   { id: 'backup',      label: 'Backup & dados',    subtitle: 'Exportação e retenção',         icon: BackupOutlined,            type: 'business' },
   { id: 'desativados', label: 'Itens desativados', subtitle: 'Restaurar ou excluir itens',    icon: ArchiveOutlined,           type: 'business', ownerOnly: true },

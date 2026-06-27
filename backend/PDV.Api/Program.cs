@@ -124,6 +124,7 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 
 // Assinaturas / cobrança
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IPaymentHistoryService, PaymentHistoryService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 builder.Services.AddScoped<IBillingWebhookService, BillingWebhookService>();
 builder.Services.AddScoped<PlanSeeder>();
