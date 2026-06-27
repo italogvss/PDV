@@ -4,7 +4,7 @@ import {
   HelpOutlineOutlined,
   NotificationsNoneOutlined,
   PersonOutlined,
-  SecurityOutlined,
+  TuneOutlined,
   WorkspacePremiumOutlined
 } from '@mui/icons-material'
 import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
@@ -35,7 +35,7 @@ const BASE_ACCOUNT_ITEMS: AccountItem[] = [
 ]
 
 const SECURITY_ITEMS: AccountItem[] = [
-  { label: 'Segurança', icon: SecurityOutlined, tab: 'seguranca' },
+  { label: 'Aparência', icon: TuneOutlined, tab: 'aparencia' },
   { label: 'Notificações', icon: NotificationsNoneOutlined, tab: 'notificacoes' },
 ]
 

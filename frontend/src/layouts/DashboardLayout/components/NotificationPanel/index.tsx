@@ -24,7 +24,6 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { buildNotificationItems, useNotifications } from '../../../../hooks/useNotifications'
-import { useAppSelector } from '../../../../store'
 import type { NotificationCategory, NotificationItem as NotificationItemType } from '../../../../types/notification.types'
 import NotificationItem from './NotificationItem'
 
@@ -42,7 +41,7 @@ const DEV_MOCK_ITEMS: NotificationItemType[] = import.meta.env.DEV
     { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
     { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
     { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-  
+
   ]
   : []
 
@@ -57,13 +56,10 @@ type TabValue = 'todas' | 'nao-lidas' | NotificationCategory
 
 export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead }: Props) {
   const navigate = useNavigate()
-  const modules = useAppSelector((s) => s.auth.modules)
   const [tab, setTab] = useState<TabValue>('todas')
 
   const { data: counts } = useNotifications()
   const allItems = [...(counts ? buildNotificationItems(counts) : []), ...DEV_MOCK_ITEMS]
-
-  const hasAppointments = modules.includes('appointments')
 
   const filteredItems = allItems.filter((item) => {
     if (tab === 'todas') return true
@@ -152,9 +148,9 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
           px: 2,
           minHeight: 30,
           my: 1,
-          '& .MuiTab-root': { minHeight: 40, p: 1, borderRadius: 999},
+          '& .MuiTab-root': { minHeight: 40, p: 1, borderRadius: 999 },
           '& .MuiTab-root:hover': { bgcolor: 'action.hover' },
-          '& .MuiTab-root.Mui-selected': { bgcolor: 'action.selected', color: 'text.primary', border: "1px solid", borderColor: "border.strong", },
+          '& .MuiTab-root.Mui-selected': { borderRadius: 999, bgcolor: 'action.selected', color: 'text.primary', border: "1px solid", borderColor: "border.strong", },
         }}
       >
         <Tab label="Todas" value="todas" />
@@ -165,37 +161,37 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
       </Tabs>
 
       {/* List */}
-        <Box sx={{ flex: 1, overflowY: 'auto' }}>
-          {filteredItems.length === 0 ? (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1.5,
-                height: '100%',
-                minHeight: 200,
-                color: 'text.disabled',
-              }}
-            >
-              <NotificationsNoneOutlined sx={{ fontSize: 40 }} />
-              <Typography variant="body2">Tudo em dia!</Typography>
-            </Box>
-          ) : (
-            filteredItems.map((item) => (
-              <>
-                <NotificationItem
-                  key={item.id}
-                  item={item}
-                  isRead={isRead}
-                  onClick={() => handleItemClick(item.route)}
-                />
-                <Divider color="border.subtle" />
-              </>
-            ))
-          )}
-        </Box>
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        {filteredItems.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              height: '100%',
+              minHeight: 200,
+              color: 'text.disabled',
+            }}
+          >
+            <NotificationsNoneOutlined sx={{ fontSize: 40 }} />
+            <Typography variant="body2">Tudo em dia!</Typography>
+          </Box>
+        ) : (
+          filteredItems.map((item) => (
+            <>
+              <NotificationItem
+                key={item.id}
+                item={item}
+                isRead={isRead}
+                onClick={() => handleItemClick(item.route)}
+              />
+              <Divider color="border.subtle" />
+            </>
+          ))
+        )}
+      </Box>
       {/* Footer */}
       <Box
         sx={{

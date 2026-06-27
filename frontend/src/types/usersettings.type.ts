@@ -26,7 +26,7 @@ export interface NotificationPrefs {
   newSales: boolean
   stockAlerts: boolean
   invoices: boolean
-  teamActivity: boolean
+  appointments: boolean
 }
 
 export interface UserSettings {

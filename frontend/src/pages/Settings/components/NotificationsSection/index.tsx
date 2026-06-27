@@ -6,16 +6,14 @@ import {
   useUserSettings,
 } from '../../../../hooks/useUserSettings'
 import type { NotificationPrefs } from '../../../../types/usersettings.type'
+import type { OperationModule } from '../../../../constants/modules'
+import { useAppSelector } from '../../../../store'
 
-const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string }[] = [
-  //{ key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado' },
-  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo' },
-  { key: 'invoices', label: 'Contas e faturas', sublabel: 'Vencimentos e cobranças' },
-  {
-    key: 'teamActivity',
-    label: 'Atividade da equipe',
-    sublabel: 'Funcionários batem ponto, fechamento de caixa',
-  },
+const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string; module: OperationModule }[] = [
+  //{ key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado', module: 'sales' },
+  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', module: 'inventory' },
+  { key: 'invoices', label: 'Alertas de despesas', sublabel: 'Despesas vencidas e a vencer', module: 'expenses' },
+  { key: 'appointments', label: 'Agendamentos', sublabel: 'Lembretes de agendamentos do dia', module: 'appointments' },
 ]
 
 export default function NotificationsSection() {
@@ -23,6 +21,9 @@ export default function NotificationsSection() {
   const update = useUpdateNotificationSettings()
   const [form, setForm] = useState<NotificationPrefs | null>(null)
   const initialized = useRef(false)
+  const modules = useAppSelector((s) => s.auth.modules)
+
+  const visibleEvents = EVENTS.filter((e) => modules.includes(e.module))
 
   useEffect(() => {
     if (data && !initialized.current) {
@@ -43,7 +44,7 @@ export default function NotificationsSection() {
     setForm((f) => (f ? { ...f, [key]: !f[key] } : f))
 
   const hasChanges =
-    !!data && EVENTS.some((e) => form[e.key] !== data.notifications[e.key])
+    !!data && visibleEvents.some((e) => form[e.key] !== data.notifications[e.key])
 
   const handleSave = () => {
     if (form) update.mutate(form)
@@ -107,7 +108,7 @@ export default function NotificationsSection() {
         </Typography>
       </Box>
 
-      {EVENTS.map((event, idx) => (
+      {visibleEvents.map((event, idx) => (
         <Box key={event.key}>
           <Box
             sx={{
@@ -135,7 +136,7 @@ export default function NotificationsSection() {
               />
             </Box>
           </Box>
-          {idx < EVENTS.length - 1 && <Divider />}
+          {idx < visibleEvents.length - 1 && <Divider />}
         </Box>
       ))}
     </Paper>

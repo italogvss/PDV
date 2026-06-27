@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react'
-import { Badge, IconButton } from '@mui/material'
-import { NotificationsNoneOutlined } from '@mui/icons-material'
-import { useAppSelector } from '../../../../store'
+import { NotificationsNone } from '@mui/icons-material'
+import { IconButton } from '@mui/material'
+import { useCallback, useMemo, useState } from 'react'
 import { buildNotificationItems, useNotifications } from '../../../../hooks/useNotifications'
+import { useAppSelector } from '../../../../store'
 import NotificationPanel from '../NotificationPanel'
 
 function buildHash(counts: unknown): string {
@@ -46,32 +46,16 @@ export default function NotificationButton() {
         size="small"
         sx={{
           color: 'text.tertiary',
-          border: 1,
-          borderColor: 'border.subtle',
+          border: isRead ? 2 : 1,
+          borderColor: isRead ? "secondary.main" : 'border.subtle',
           borderRadius: 2,
           bgcolor: 'background.paper',
           width: 36,
           height: 36,
         }}
       >
-        <Badge
-          variant="dot"
-          color="secondary"
-          invisible={isRead}
-          sx={{
-            '& .MuiBadge-dot': {
-              width: 7,
-              height: 7,
-              minWidth: 7,
-              top: 1,
-              right: 1,
-            },
-          }}
-        >
-          <NotificationsNoneOutlined sx={{ fontSize: 18 }} />
-        </Badge>
+        <NotificationsNone sx={{ fontSize: 18, color: isRead ? "secondary.main" : "border.subtle" }} />
       </IconButton>
-
       <NotificationPanel
         open={open}
         onClose={handleClose}

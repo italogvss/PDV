@@ -15,7 +15,7 @@ public class UserSettingsConfiguration : IEntityTypeConfiguration<UserSettings>
         builder.Property(us => us.NotifyNewSales).HasDefaultValue(true);
         builder.Property(us => us.NotifyStockAlerts).HasDefaultValue(true);
         builder.Property(us => us.NotifyInvoices).HasDefaultValue(true);
-        builder.Property(us => us.NotifyTeamActivity).HasDefaultValue(true);
+        builder.Property(us => us.NotifyAppointments).HasDefaultValue(true);
 
         builder.HasOne(us => us.User)
             .WithOne(u => u.Settings)

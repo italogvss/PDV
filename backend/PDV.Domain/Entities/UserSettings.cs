@@ -16,5 +16,5 @@ public class UserSettings : BaseEntity
     public bool NotifyNewSales { get; set; } = true;
     public bool NotifyStockAlerts { get; set; } = true;
     public bool NotifyInvoices { get; set; } = true;
-    public bool NotifyTeamActivity { get; set; } = true;
+    public bool NotifyAppointments { get; set; } = true;
 }

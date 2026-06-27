@@ -20,15 +20,17 @@ public class NotificationService(
         var today = DateTime.UtcNow.Date;
         var userSettings = await GetUserSettingsAsync();
 
-        var stock = userSettings?.NotifyStockAlerts == false
+        var stock = userSettings?.NotifyStockAlerts == false || !await IsModuleEnabledAsync(OperationModule.Inventory)
             ? new StockNotifications(0, 0, 0, 0)
             : await GetStockNotificationsAsync();
 
-        var financial = userSettings?.NotifyInvoices == false
+        var financial = userSettings?.NotifyInvoices == false || !await IsModuleEnabledAsync(OperationModule.Expenses)
             ? new FinancialNotifications(0, 0)
             : await GetFinancialNotificationsAsync(today);
 
-        var appointments = await GetAppointmentNotificationsAsync(today);
+        var appointments = userSettings?.NotifyAppointments == false
+            ? new AppointmentNotifications(0)
+            : await GetAppointmentNotificationsAsync(today);
 
         return new NotificationResponse(stock, financial, appointments);
     }

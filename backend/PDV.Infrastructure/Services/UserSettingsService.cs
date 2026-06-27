@@ -40,7 +40,7 @@ public class UserSettingsService(
         settings.NotifyNewSales = request.NewSales;
         settings.NotifyStockAlerts = request.StockAlerts;
         settings.NotifyInvoices = request.Invoices;
-        settings.NotifyTeamActivity = request.TeamActivity;
+        settings.NotifyAppointments = request.Appointments;
         settings.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
@@ -71,5 +71,5 @@ public class UserSettingsService(
         new(
             new AppearanceSettingsDto(s.Theme.ToString(), s.AccentColor, s.TextSize),
             new NotificationSettingsDto(
-                s.NotifyNewSales, s.NotifyStockAlerts, s.NotifyInvoices, s.NotifyTeamActivity));
+                s.NotifyNewSales, s.NotifyStockAlerts, s.NotifyInvoices, s.NotifyAppointments));
 }

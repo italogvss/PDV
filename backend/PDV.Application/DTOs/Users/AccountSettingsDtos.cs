@@ -16,4 +16,4 @@ public record NotificationSettingsDto(
     bool NewSales,
     bool StockAlerts,
     bool Invoices,
-    bool TeamActivity);
+    bool Appointments);

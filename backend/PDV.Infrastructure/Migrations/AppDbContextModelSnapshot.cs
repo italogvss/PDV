@@ -1666,7 +1666,7 @@ namespace PDV.Infrastructure.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(true);
 
-                    b.Property<bool>("NotifyTeamActivity")
+                    b.Property<bool>("NotifyAppointments")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(true);
