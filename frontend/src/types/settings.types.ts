@@ -85,37 +85,10 @@ export interface PaymentsSettings {
 
 export type TaxRegime = 'simples' | 'presumido' | 'real' | 'mei'
 
-export interface FiscalSettings {
-  taxRegime: TaxRegime
-  cfop: string
-  csosn: string
-  nfceSerie: string
-  nfceNextNumber: number
-  autoEmitNfce: boolean
-  offlineContingency: boolean
-}
-
 export type BusinessHours = Record<DayOfWeek, BusinessHoursDay>
 
 export type HoursPreset = 'comercial' | 'estendido' | '24horas' | 'personalizado'
 
 export type BackupFrequency = 'daily' | 'weekly' | 'monthly'
 export type RetentionDays = 7 | 14 | 30 | 90
-
-export interface BackupSettings {
-  autoBackup: boolean
-  frequency: BackupFrequency
-  backupTime: string
-  retentionDays: RetentionDays
-}
-
-export interface AdvancedSettings {
-  apiPublicKey: string
-  webhookUrl: string
-  devMode: boolean
-  auditLogs: boolean
-  storeId: string
-  appVersion: string
-}
-
 

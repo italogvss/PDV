@@ -1,13 +1,19 @@
 import {
   AccessTimeRounded,
   AttachMoneyRounded,
+  CalendarMonthOutlined,
+  EmailOutlined,
   LocalOfferOutlined,
+  LocationOnOutlined,
+  PhoneOutlined,
   ReceiptLongOutlined,
 } from '@mui/icons-material'
 import { Box, Skeleton } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageKpiCard, { PageKpiGrid } from '../../../components/PageKpiCard'
+import DetailProfileHeader from '../../../components/DetailProfileHeader'
+import type { DetailMetaItem } from '../../../components/DetailProfileHeader/types'
 import { useCustomer, useCustomerStats, useDeleteCustomer, useUpdateCustomer } from '../../../hooks/useCustomers'
 import { viacepService } from '../../../services/viacep.service'
 import type { UpdateCustomerPayload } from '../../../types/customers.types'
@@ -15,9 +21,10 @@ import { formatBRL } from '../../../utils/currency'
 import CustomerAppointmentsPanel from './components/CustomerAppointmentsPanel'
 import CustomerInfoCard from './components/CustomerInfoCard'
 import type { FormState } from './components/CustomerInfoCard'
-import CustomerProfileHeader from './components/CustomerProfileHeader'
 import CustomerRecentSales from './components/CustomerRecentSales'
 import CustomerTopProducts from './components/CustomerTopProducts'
+import CustomerSpendTimeline from './components/CustomerSpendTimeline'
+import CustomerCategoryPie from './components/CustomerCategoryPie'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import { formatMemberSince, formatRelativeDate } from './components/helpers'
 
@@ -120,7 +127,16 @@ export default function CustomerDetailPage() {
   }, [customer])
 
   const kpiLastPurchase = stats?.lastPurchaseDate ? formatRelativeDate(stats.lastPurchaseDate) : '—'
-  const memberSinceLabel = customer?.createdAt ? `Cliente desde ${formatMemberSince(customer.createdAt)}` : ''
+
+  const meta = useMemo<DetailMetaItem[]>(() => {
+    if (!customer) return []
+    const items: DetailMetaItem[] = []
+    if (customer.email) items.push({ icon: EmailOutlined, text: customer.email })
+    if (customer.phone) items.push({ icon: PhoneOutlined, text: customer.phone })
+    if (locationLabel) items.push({ icon: LocationOnOutlined, text: locationLabel })
+    if (customer.createdAt) items.push({ icon: CalendarMonthOutlined, text: `Cliente desde ${formatMemberSince(customer.createdAt)}` })
+    return items
+  }, [customer, locationLabel])
 
   if (customerLoading) {
     return (
@@ -138,13 +154,13 @@ export default function CustomerDetailPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-      <CustomerProfileHeader
-        customer={customer}
-        stats={stats}
+      <DetailProfileHeader
+        name={customer.name}
+        avatarColor="success.main"
+        meta={meta}
         isEditing={isEditing}
         isSaving={updateCustomer.isPending}
-        locationLabel={locationLabel}
-        memberSinceLabel={memberSinceLabel}
+        deleteLabel="Excluir"
         onEdit={() => setIsEditing(true)}
         onCancel={handleCancel}
         onSave={handleSave}
@@ -178,7 +194,10 @@ export default function CustomerDetailPage() {
         />
       </PageKpiGrid>
 
+      <CustomerSpendTimeline stats={stats} statsLoading={statsLoading} />
+
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1fr 340px' } }}>
+        
         <CustomerInfoCard
           customer={customer}
           form={form}
@@ -190,14 +209,31 @@ export default function CustomerDetailPage() {
           cepError={cepError}
           setCepError={setCepError}
         />
-        <CustomerAppointmentsPanel stats={stats} statsLoading={statsLoading} />
+        <CustomerTopProducts stats={stats} statsLoading={statsLoading} />
+
+      </Box>
+
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+        <CustomerCategoryPie
+          title="Categorias de produto"
+          subtitle="Gasto por categoria · todos os períodos"
+          data={stats?.productCategories}
+          loading={statsLoading}
+          emptyText="Nenhum produto comprado"
+        />
+        <CustomerCategoryPie
+          title="Categorias de serviço"
+          subtitle="Gasto por categoria · atendimentos"
+          data={stats?.serviceCategories}
+          loading={statsLoading}
+          emptyText="Nenhum serviço realizado"
+        />
       </Box>
 
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '2fr 3fr' } }}>
-        <CustomerTopProducts stats={stats} statsLoading={statsLoading} />
+        <CustomerAppointmentsPanel stats={stats} statsLoading={statsLoading} />
         <CustomerRecentSales stats={stats} statsLoading={statsLoading} />
       </Box>
-
       <ConfirmDialog
         open={confirmDelete}
         title="Desativar cliente?"

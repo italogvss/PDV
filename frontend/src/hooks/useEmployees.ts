@@ -17,6 +17,28 @@ export function useEmployees(page = 1, pageSize = 50) {
   })
 }
 
+export function useEmployee(id: string) {
+  const { hasPermission } = useUserPermissions()
+  return useQuery({
+    queryKey: [...QUERY_KEY, id],
+    queryFn: () => employeeService.getById(id),
+    enabled:
+      Boolean(id) &&
+      (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
+  })
+}
+
+export function useEmployeeStats(id: string) {
+  const { hasPermission } = useUserPermissions()
+  return useQuery({
+    queryKey: [...QUERY_KEY, id, 'stats'],
+    queryFn: () => employeeService.getStats(id),
+    enabled:
+      Boolean(id) &&
+      (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
+  })
+}
+
 export function useCreateEmployee() {
   const queryClient = useQueryClient()
   const showToast = useToast()
@@ -40,8 +62,9 @@ export function useUpdateEmployee() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateEmployeePayload }) =>
       employeeService.update(id, payload),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, id] })
       showToast('Funcionário atualizado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao atualizar funcionário.'),

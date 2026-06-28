@@ -3,22 +3,20 @@ import {
   LocationOnOutlined,
   PersonOutlineRounded,
   PhoneOutlined,
-  SearchRounded,
   StarRounded,
 } from '@mui/icons-material'
 import {
   Box,
-  Button,
-  CircularProgress,
   MenuItem,
   Select,
   TextField,
   Typography,
 } from '@mui/material'
-import { ReactNode } from 'react'
 import SettingCard from '../../../../components/SettingCard'
+import DetailFieldCell, { DetailFieldValue } from '../../../../components/DetailFieldCell'
+import AddressEditFields from '../../../../components/AddressEditFields'
 import type { Customer } from '../../../../types/customers.types'
-import { formatPhone, maskCEP, maskDocument } from '../../../../utils/masks'
+import { formatPhone, maskDocument } from '../../../../utils/masks'
 import { STATES } from '../../../../constants/address'
 
 export interface FormState {
@@ -64,7 +62,7 @@ export default function CustomerInfoCard({
     >
       {isEditing && (
         <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-          <FieldCell label="Nome completo">
+          <DetailFieldCell label="Nome completo">
             <TextField
               size="small"
               fullWidth
@@ -72,12 +70,12 @@ export default function CustomerInfoCard({
               onChange={(e) => set('name')(e.target.value)}
               placeholder="Nome do cliente"
             />
-          </FieldCell>
+          </DetailFieldCell>
         </Box>
       )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, borderColor: 'divider' }}>
-        <FieldCell label="Telefone / WhatsApp" borderRight>
+        <DetailFieldCell label="Telefone / WhatsApp" borderRight>
           {isEditing ? (
             <TextField
               size="small"
@@ -87,10 +85,10 @@ export default function CustomerInfoCard({
               placeholder="(00) 00000-0000"
             />
           ) : (
-            <FieldValue value={customer.phone} icon={<PhoneOutlined sx={{ fontSize: 14 }} />} />
+            <DetailFieldValue value={customer.phone} icon={<PhoneOutlined sx={{ fontSize: 14 }} />} />
           )}
-        </FieldCell>
-        <FieldCell label="E-mail">
+        </DetailFieldCell>
+        <DetailFieldCell label="E-mail">
           {isEditing ? (
             <TextField
               size="small"
@@ -101,13 +99,13 @@ export default function CustomerInfoCard({
               type="email"
             />
           ) : (
-            <FieldValue value={customer.email} icon={<EmailOutlined sx={{ fontSize: 14 }} />} />
+            <DetailFieldValue value={customer.email} icon={<EmailOutlined sx={{ fontSize: 14 }} />} />
           )}
-        </FieldCell>
+        </DetailFieldCell>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, borderColor: 'divider' }}>
-        <FieldCell label="Documento (CPF / CNPJ)" borderRight>
+        <DetailFieldCell label="Documento (CPF / CNPJ)" borderRight>
           {isEditing ? (
             <TextField
               size="small"
@@ -117,10 +115,10 @@ export default function CustomerInfoCard({
               placeholder="000.000.000-00"
             />
           ) : (
-            <FieldValue value={customer.document} icon={<PersonOutlineRounded sx={{ fontSize: 14 }} />} />
+            <DetailFieldValue value={customer.document} icon={<PersonOutlineRounded sx={{ fontSize: 14 }} />} />
           )}
-        </FieldCell>
-        <FieldCell label="Cidade / Estado">
+        </DetailFieldCell>
+        <DetailFieldCell label="Cidade / Estado">
           {isEditing ? (
             <Box sx={{ display: 'flex', gap: 1 }}>
               <TextField
@@ -142,67 +140,24 @@ export default function CustomerInfoCard({
               </Select>
             </Box>
           ) : (
-            <FieldValue value={locationLabel} icon={<LocationOnOutlined sx={{ fontSize: 14 }} />} />
+            <DetailFieldValue value={locationLabel} icon={<LocationOnOutlined sx={{ fontSize: 14 }} />} />
           )}
-        </FieldCell>
+        </DetailFieldCell>
       </Box>
 
       {isEditing && (
-        <Box sx={{ px: 4, py: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <Box>
-            <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', display: 'block', mb: 0.75 }}>
-              CEP
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-              <TextField
-                size="small"
-                sx={{ width: 160 }}
-                value={form.zipCode}
-                onChange={(e) => { setCepError(''); set('zipCode')(maskCEP(e.target.value)) }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleCepSearch() }}
-                placeholder="00000-000"
-                error={!!cepError}
-                helperText={cepError}
-              />
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={searching ? <CircularProgress size={14} color="inherit" /> : <SearchRounded />}
-                onClick={handleCepSearch}
-                disabled={searching}
-                sx={{ mt: '2px', flexShrink: 0 }}
-              >
-                Buscar endereço
-              </Button>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', display: 'block', mb: 0.75 }}>
-                Rua / Logradouro
-              </Typography>
-              <TextField
-                size="small"
-                fullWidth
-                value={form.street}
-                onChange={(e) => set('street')(e.target.value)}
-                placeholder="Rua das Flores"
-              />
-            </Box>
-            <Box sx={{ width: 100 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', display: 'block', mb: 0.75 }}>
-                Número
-              </Typography>
-              <TextField
-                size="small"
-                fullWidth
-                value={form.number}
-                onChange={(e) => set('number')(e.target.value)}
-                placeholder="123"
-              />
-            </Box>
-          </Box>
-        </Box>
+        <AddressEditFields
+          zipCode={form.zipCode}
+          street={form.street}
+          number={form.number}
+          onZipCodeChange={set('zipCode')}
+          onStreetChange={set('street')}
+          onNumberChange={set('number')}
+          onCepSearch={handleCepSearch}
+          searching={searching}
+          cepError={cepError}
+          onCepErrorClear={() => setCepError('')}
+        />
       )}
 
       <Box sx={{ px: 4, py: 3 }}>
@@ -241,43 +196,5 @@ export default function CustomerInfoCard({
         )}
       </Box>
     </SettingCard>
-  )
-}
-
-function FieldCell({
-  label,
-  children,
-  borderRight,
-}: {
-  label: string
-  children: ReactNode
-  borderRight?: boolean
-}) {
-  return (
-    <Box
-      sx={{
-        px: 4,
-        py: 2.5,
-        ...(borderRight && { borderRight: '1px solid', borderColor: 'divider' }),
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', display: 'block', mb: 0.75 }}
-      >
-        {label}
-      </Typography>
-      {children}
-    </Box>
-  )
-}
-
-function FieldValue({ value, icon }: { value: string | null | undefined; icon?: ReactNode }) {
-  if (!value) return <Typography variant="body2" color="text.disabled">—</Typography>
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-      {icon && <Box sx={{ color: 'text.tertiary', lineHeight: 0 }}>{icon}</Box>}
-      <Typography variant="body2">{value}</Typography>
-    </Box>
   )
 }

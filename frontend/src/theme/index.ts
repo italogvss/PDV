@@ -1,18 +1,3 @@
-/**
- * Tema principal — Zelo (light, neutral + green accent).
- *
- * Uso:
- *   import { ThemeProvider, CssBaseline } from '@mui/material';
- *   import { zeloTheme, loadGeistFont } from './theme';
- *
- *   loadGeistFont();
- *
- *   <ThemeProvider theme={zeloTheme}>
- *     <CssBaseline />
- *     <App />
- *   </ThemeProvider>
- */
-
 import { createTheme, type ThemeOptions } from '@mui/material/styles';
 import { ptBR } from '@mui/material/locale';
 
@@ -122,9 +107,4 @@ export function createAppTheme(
   });
 }
 
-/** Tema padrão (light, tamanho base) — mantido para imports existentes. */
-export const zeloTheme = createAppTheme('light', BASE_FONT_SIZE);
-
 export { colors, customShadows, radius, fontFamily, fontFamilyMono, loadGeistFont };
-export type { AppColors } from './palette';
-export type { CustomShadows } from './shape';

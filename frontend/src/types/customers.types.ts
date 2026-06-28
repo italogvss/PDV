@@ -1,10 +1,3 @@
-export interface CustomerMetrics {
-  total: number
-  withPhone: number
-  withEmail: number
-  withDocument: number
-}
-
 export interface CreateCustomerPayload {
   name: string
   phone: string | null

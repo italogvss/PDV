@@ -10,7 +10,10 @@ public record CustomerCrmStatsResponse(
     IEnumerable<CustomerRecentSaleDto> RecentSales,
     CustomerAppointmentCountsDto AppointmentCounts,
     CustomerNextAppointmentDto? NextAppointment,
-    IEnumerable<CustomerTopServiceDto> TopServices
+    IEnumerable<CustomerTopServiceDto> TopServices,
+    IEnumerable<CustomerMonthlySpendDto> MonthlySpend,
+    IEnumerable<CustomerCategorySliceDto> ProductCategories,
+    IEnumerable<CustomerCategorySliceDto> ServiceCategories
 );
 
 public record CustomerTopProductDto(string ProductName, int Quantity, decimal TotalSpent, int MaxQuantity);
@@ -35,3 +38,8 @@ public record CustomerNextAppointmentDto(
 );
 
 public record CustomerTopServiceDto(string ServiceName, int Count, int MaxCount);
+
+// Month no formato "yyyy-MM"; série contínua (meses sem compra vêm com Total = 0).
+public record CustomerMonthlySpendDto(string Month, decimal Total);
+
+public record CustomerCategorySliceDto(string Name, decimal Total);

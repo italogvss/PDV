@@ -11,6 +11,7 @@ import SalesHistoryPage from '../pages/SalesHistory'
 import InventoryPage from '../pages/Inventory'
 import ExpensesPage from '../pages/Expenses'
 import EmployeesPage from '../pages/Employees'
+import EmployeeDetailPage from '../pages/Employees/EmployeeDetail'
 import ReportsPage from '../pages/Reports'
 import CustomersPage from '../pages/Customers'
 import CustomerDetailPage from '../pages/Customers/CustomerDetail'
@@ -89,11 +90,24 @@ export const router = createBrowserRouter([
           },
           {
             path: 'funcionarios',
-            element: (
-              <PermissionGuard permission="ViewEmployees">
-                <EmployeesPage />
-              </PermissionGuard>
-            ),
+            children: [
+              {
+                index: true,
+                element: (
+                  <PermissionGuard permission="ViewEmployees">
+                    <EmployeesPage />
+                  </PermissionGuard>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <PermissionGuard permission="ViewEmployees">
+                    <EmployeeDetailPage />
+                  </PermissionGuard>
+                ),
+              },
+            ],
           },
           {
             path: 'relatorios',

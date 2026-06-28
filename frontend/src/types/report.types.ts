@@ -7,11 +7,6 @@ export interface RangePreset {
   unit: RangeUnit
 }
 
-export interface DateRangeParams {
-  startDate: string
-  endDate: string
-}
-
 export type GroupBy = 'day' | 'week' | 'month'
 
 export interface SalesMetrics {

@@ -100,6 +100,8 @@ public class CustomerService(
         var sales = await context.Sales
             .Where(s => s.CustomerId == id && s.Status == SaleStatus.Active)
             .Include(s => s.Items)
+                .ThenInclude(i => i.Product!)
+                    .ThenInclude(p => p.Category)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
@@ -127,6 +129,18 @@ public class CustomerService(
 
         var topProductDtos = topProducts
             .Select(p => new CustomerTopProductDto(p.Name, p.Qty, p.Total, maxQty));
+
+        // Linha do tempo de gastos: Σ Total por mês (últimos 12 meses, sem ir antes da 1ª compra)
+        var monthlySpend = BuildMonthlySpend(activeSales);
+
+        // Distribuição de gasto por categoria de produto (linhas de produto das vendas)
+        var productCategories = activeSales
+            .SelectMany(s => s.Items)
+            .Where(i => i.ProductId != null)
+            .GroupBy(i => i.Product?.Category?.Name ?? "Sem categoria")
+            .Select(g => new CustomerCategorySliceDto(g.Key, g.Sum(i => i.Subtotal)))
+            .OrderByDescending(c => c.Total)
+            .ToList();
 
         var recentSales = sales.Take(20).Select(s =>
         {
@@ -185,11 +199,59 @@ public class CustomerService(
         var topServiceDtos = topServices
             .Select(s => new CustomerTopServiceDto(s.Name, s.Count, maxServiceCount));
 
+        // Distribuição de gasto por categoria de serviço (atendimentos não cancelados).
+        // AppointmentServiceItem só guarda a cor da categoria, não o nome → resolve via Service.Category.
+        var consumedServiceItems = appointments
+            .Where(a => a.Status != AppointmentStatus.Cancelado)
+            .SelectMany(a => a.ServiceItems)
+            .ToList();
+
+        var serviceIds = consumedServiceItems.Select(si => si.ServiceId).Distinct().ToList();
+        var serviceCategoryNames = await context.Services
+            .Where(s => serviceIds.Contains(s.Id))
+            .Select(s => new { s.Id, CategoryName = s.Category != null ? s.Category.Name : null })
+            .ToDictionaryAsync(s => s.Id, s => s.CategoryName);
+
+        var serviceCategories = consumedServiceItems
+            .GroupBy(si => serviceCategoryNames.TryGetValue(si.ServiceId, out var name) && name != null
+                ? name
+                : "Sem categoria")
+            .Select(g => new CustomerCategorySliceDto(g.Key, g.Sum(si => si.Price)))
+            .OrderByDescending(c => c.Total)
+            .ToList();
+
         return new CustomerCrmStatsResponse(
             totalSales, totalSpent, averageTicket, lastPurchaseDate, preferredPaymentMethod,
             topProductDtos, recentSales,
-            appointmentCounts, nextAppointmentDto, topServiceDtos
+            appointmentCounts, nextAppointmentDto, topServiceDtos,
+            monthlySpend, productCategories, serviceCategories
         );
+    }
+
+    private static List<CustomerMonthlySpendDto> BuildMonthlySpend(List<Sale> sales)
+    {
+        if (sales.Count == 0) return [];
+
+        var now = DateTime.UtcNow;
+        var currentMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var firstSale = sales.Min(s => s.CreatedAt);
+        var firstMonth = new DateTime(firstSale.Year, firstSale.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // Janela: últimos 12 meses, mas nunca antes da primeira compra do cliente
+        var windowStart = currentMonth.AddMonths(-11);
+        var start = firstMonth > windowStart ? firstMonth : windowStart;
+
+        var totalsByMonth = sales
+            .GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1, 0, 0, 0, DateTimeKind.Utc))
+            .ToDictionary(g => g.Key, g => g.Sum(s => s.Total));
+
+        var result = new List<CustomerMonthlySpendDto>();
+        for (var month = start; month <= currentMonth; month = month.AddMonths(1))
+        {
+            totalsByMonth.TryGetValue(month, out var total);
+            result.Add(new CustomerMonthlySpendDto(month.ToString("yyyy-MM"), total));
+        }
+        return result;
     }
 
     public Task<int> PurgeAllAsync() => repository.PurgeAllAsync();

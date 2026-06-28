@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tenantSettingsService } from '../services/tenantSettings.service'
-import type { BusinessSettings, OperationSettings, PaymentsSettings } from '../types/settings.types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { OperationModule } from '../constants/modules'
+import { tenantSettingsService } from '../services/tenantSettings.service'
 import { useAppDispatch } from '../store'
 import { setModules } from '../store/slices/auth.slice'
-import { useToast } from './useToast'
+import type { BusinessSettings, OperationSettings, PaymentsSettings } from '../types/settings.types'
 import { useApiError } from './useApiError'
+import { useToast } from './useToast'
 import { useUserPermissions } from './useUserPermissions'
 
 const QUERY_KEY = ['tenant-settings'] as const
@@ -73,20 +73,5 @@ export function useInventorySettings() {
     queryFn: () => tenantSettingsService.get(),
     select: (data) => data.operation,
     staleTime: 5 * 60 * 1000,
-  })
-}
-
-export function useUpdatePaymentsSettings() {
-  const queryClient = useQueryClient()
-  const showToast = useToast()
-  const handleError = useApiError()
-
-  return useMutation({
-    mutationFn: (payload: PaymentsSettings) => tenantSettingsService.updatePayments(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      showToast('Configurações salvas!', 'success')
-    },
-    onError: (error) => handleError(error, 'Erro ao salvar configurações.'),
   })
 }

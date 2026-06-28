@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Employees;
 using PDV.Application.Helpers;
@@ -8,6 +9,7 @@ using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
+using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
@@ -21,6 +23,7 @@ public class EmployeeService(
     IAuditLogger auditLogger,
     IExpenseRepository expenseRepository,
     IEmployeeSalaryLinkRepository salaryLinkRepository,
+    AppDbContext context,
     IValidator<CreateEmployeeRequest> createValidator,
     IValidator<UpdateEmployeeRequest> updateValidator,
     IValidator<ResetEmployeePasswordRequest> resetPasswordValidator) : IEmployeeService
@@ -275,6 +278,74 @@ public class EmployeeService(
         await expenseRepository.ClearEmployeeReferenceAsync(id);
 
         await employeeRepository.HardDeleteAsync(employee);
+    }
+
+    public async Task<EmployeePerformanceStatsResponse> GetPerformanceStatsAsync(Guid id)
+    {
+        var employee = await employeeRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException("Funcionário não encontrado.");
+
+        var now = DateTime.UtcNow;
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var windowStart = now.Date.AddDays(-364); // janela de 365 dias (inclui hoje)
+        var userId = employee.UserId;
+
+        // ── Vendas operadas por este funcionário (Sale.OperatorId == Employee.UserId) ──
+        // Sales têm filtro global só por tenant. Se UserId é null (User hard-deletado), retorna vazio.
+        var salesWindow = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                && s.CreatedAt >= windowStart
+                && userId != null && s.OperatorId == userId)
+            .Select(s => new { s.Total, s.CreatedAt })
+            .ToListAsync();
+
+        var monthSales = salesWindow.Where(s => s.CreatedAt >= monthStart).ToList();
+        var salesThisMonth = monthSales.Sum(s => s.Total);
+        var salesCountThisMonth = monthSales.Count;
+
+        var dailySales = salesWindow
+            .GroupBy(s => s.CreatedAt.Date)
+            .Select(g => new EmployeeDailySalesDto(g.Key.ToString("yyyy-MM-dd"), g.Sum(x => x.Total), g.Count()))
+            .OrderBy(d => d.Date)
+            .ToList();
+
+        // ── Agendamentos do funcionário (janela de 365 dias, para o gráfico) ──
+        var apptWindow = await context.Appointments
+            .Where(a => a.EmployeeId == id && a.Start >= windowStart)
+            .Select(a => new { a.Start, a.Status })
+            .ToListAsync();
+
+        var monthAppointments = apptWindow.Where(a => a.Start >= monthStart).ToList();
+        var appointmentsThisMonth = monthAppointments.Count;
+        var monthCancelled = monthAppointments.Count(a => a.Status == AppointmentStatus.Cancelado);
+
+        var dailyAppointments = apptWindow
+            .GroupBy(a => a.Start.Date)
+            .Select(g => new EmployeeDailyAppointmentsDto(
+                g.Key.ToString("yyyy-MM-dd"),
+                g.Count(a => a.Status == AppointmentStatus.Concluido),
+                g.Count(a => a.Status == AppointmentStatus.Cancelado),
+                g.Count(a => a.Status == AppointmentStatus.EmAtendimento),
+                g.Count(a => a.Status == AppointmentStatus.Pendente || a.Status == AppointmentStatus.Confirmado)))
+            .OrderBy(d => d.Date)
+            .ToList();
+
+        // ── Cancelamento histórico (contagens agregadas em SQL) ──
+        var lifetimeTotal = await context.Appointments.CountAsync(a => a.EmployeeId == id);
+        var lifetimeCancelled = await context.Appointments
+            .CountAsync(a => a.EmployeeId == id && a.Status == AppointmentStatus.Cancelado);
+
+        var cancellation = new EmployeeCancellationDto(
+            monthCancelled, appointmentsThisMonth, lifetimeCancelled, lifetimeTotal);
+
+        return new EmployeePerformanceStatsResponse(
+            salesThisMonth,
+            salesCountThisMonth,
+            appointmentsThisMonth,
+            cancellation,
+            employee.Salary,
+            dailySales,
+            dailyAppointments);
     }
 
     // ─── Salary expense helpers ────────────────────────────────────────────────

@@ -44,6 +44,37 @@ function mapEmployee(e: BackendEmployee): Employee {
   }
 }
 
+export interface EmployeeDailySales {
+  date: string // "yyyy-MM-dd"
+  total: number
+  count: number
+}
+
+export interface EmployeeDailyAppointments {
+  date: string // "yyyy-MM-dd"
+  completed: number
+  cancelled: number
+  inProgress: number
+  scheduled: number
+}
+
+export interface EmployeeCancellation {
+  monthCancelled: number
+  monthTotal: number
+  totalCancelled: number
+  total: number
+}
+
+export interface EmployeePerformanceStats {
+  salesThisMonth: number
+  salesCountThisMonth: number
+  appointmentsThisMonth: number
+  cancellation: EmployeeCancellation
+  monthlySalary: number | null
+  dailySales: EmployeeDailySales[]
+  dailyAppointments: EmployeeDailyAppointments[]
+}
+
 export const employeeService = {
   getAll: async (page = 1, pageSize = 50): Promise<{ data: Employee[]; totalCount: number }> => {
     const { data } = await api.get<PaginatedResponse<BackendEmployee>>('/employees', {
@@ -55,6 +86,11 @@ export const employeeService = {
   getById: async (id: string): Promise<Employee> => {
     const { data } = await api.get<BackendEmployee>(`/employees/${id}`)
     return mapEmployee(data)
+  },
+
+  getStats: async (id: string): Promise<EmployeePerformanceStats> => {
+    const { data } = await api.get<EmployeePerformanceStats>(`/employees/${id}/stats`)
+    return data
   },
 
   create: async (payload: CreateEmployeePayload): Promise<Employee> => {

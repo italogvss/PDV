@@ -1,6 +1,5 @@
 export type {
   ExpenseCategory,
-  ExpenseCategoryChip,
   Expense,
 } from '../../types/expense.types'
 

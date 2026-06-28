@@ -1,13 +1,15 @@
+import { CalendarMonthOutlined, EmailOutlined, LocationOnOutlined, PhoneOutlined } from '@mui/icons-material'
 import { Box, Skeleton } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ConfirmDialog from '../../../components/ConfirmDialog'
+import DetailProfileHeader from '../../../components/DetailProfileHeader'
+import type { DetailMetaItem } from '../../../components/DetailProfileHeader/types'
 import { useSupplier, useDeleteSupplier, useUpdateSupplier } from '../../../hooks/useSuppliers'
 import { viacepService } from '../../../services/viacep.service'
 import type { UpdateSupplierPayload } from '../../../types/supplier.types'
 import SupplierInfoCard from './components/SupplierInfoCard'
 import type { FormState } from './components/SupplierInfoCard'
-import SupplierProfileHeader from './components/SupplierProfileHeader'
 
 function buildForm(supplier: {
   name: string
@@ -98,6 +100,19 @@ export default function SupplierDetailPage() {
     return null
   }, [supplier])
 
+  const meta = useMemo<DetailMetaItem[]>(() => {
+    if (!supplier) return []
+    const items: DetailMetaItem[] = []
+    if (supplier.email) items.push({ icon: EmailOutlined, text: supplier.email })
+    if (supplier.phone) items.push({ icon: PhoneOutlined, text: supplier.phone })
+    if (locationLabel) items.push({ icon: LocationOnOutlined, text: locationLabel })
+    items.push({
+      icon: CalendarMonthOutlined,
+      text: `Fornecedor desde ${new Date(supplier.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+    })
+    return items
+  }, [supplier, locationLabel])
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -111,11 +126,13 @@ export default function SupplierDetailPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <SupplierProfileHeader
-        supplier={supplier}
+      <DetailProfileHeader
+        name={supplier.name}
+        avatarColor="primary.main"
+        meta={meta}
         isEditing={isEditing}
         isSaving={updateSupplier.isPending}
-        locationLabel={locationLabel}
+        deleteLabel="Desativar"
         onEdit={() => setIsEditing(true)}
         onCancel={handleCancel}
         onSave={handleSave}

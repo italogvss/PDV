@@ -30,6 +30,14 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/stats")]
+    [RequirePermission(Permission.ViewEmployees)]
+    public async Task<IActionResult> GetStats(Guid id)
+    {
+        var result = await service.GetPerformanceStatsAsync(id);
+        return Ok(result);
+    }
+
     [HttpPost]
     [RequirePermission(Permission.ManageEmployees)]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)

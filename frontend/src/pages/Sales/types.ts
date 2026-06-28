@@ -1,5 +1,3 @@
-export type { Product } from '../../types/product.types'
-
 export interface ProductCartLine {
   type: 'product'
   productId: string

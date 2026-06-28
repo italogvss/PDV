@@ -31,12 +31,12 @@ import { DeleteOutlineOutlined } from '@mui/icons-material'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
+import { useNavigate } from 'react-router-dom'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useTeamRoles, useDeactivateRole, useSetRolePermissions } from '../../hooks/useTeamRoles'
 import EmployeeAvatar from './components/EmployeeAvatar'
 import PageHeader from '../../components/PageHeader'
 import AddEmployeeModal from './components/AddEmployeeModal'
-import EditEmployeeModal from './components/EditEmployeeModal'
 import EmployeeRowMenu from './components/EmployeeRowMenu'
 import RoleFormModal from './components/RoleFormModal'
 import SettingCard from '../../components/SettingCard'
@@ -66,8 +66,9 @@ function getInitials(name: string): string {
 export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [roleModal, setRoleModal] = useState<{ open: boolean; role?: TenantRole | null }>({ open: false })
+
+  const navigate = useNavigate()
 
   const { data, isLoading } = useEmployees(1, 200)
   const employees = data?.data ?? []
@@ -256,7 +257,7 @@ export default function EmployeesPage() {
         filterable: false,
         disableColumnMenu: true,
         renderCell: ({ row }) => (
-          <EmployeeRowMenu employee={row} onEdit={() => setEditEmployee(row)} />
+          <EmployeeRowMenu employee={row} onEdit={() => navigate(`/funcionarios/${row.id}`)} />
         ),
       },
     ],
@@ -313,8 +314,9 @@ export default function EmployeesPage() {
             disableRowSelectionOnClick
             pageSizeOptions={[10, 25, 50]}
             initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            onRowDoubleClick={(params) => setEditEmployee(params.row)}
+            onRowClick={(params) => navigate(`/funcionarios/${params.row.id}`)}
             slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
+            sx={{ cursor: 'pointer' }}
           />
         </Card>
 
@@ -577,14 +579,6 @@ export default function EmployeesPage() {
       </Paper>
 
       <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} />
-
-      {editEmployee && (
-        <EditEmployeeModal
-          employee={editEmployee}
-          open={true}
-          onClose={() => setEditEmployee(null)}
-        />
-      )}
 
       <RoleFormModal
         open={roleModal.open}

@@ -1,5 +1,5 @@
-import dayjs, { type Dayjs } from 'dayjs'
 import type { SchedulerEvent, SchedulerEventColor, SchedulerResource } from '@mui/x-scheduler/models'
+import dayjs, { type Dayjs } from 'dayjs'
 import type {
   Appointment,
   AppointmentServiceRef,
@@ -75,11 +75,6 @@ export function endIso(start: string, durationMinutes: number): string {
   return dayjs(start).add(durationMinutes, 'minute').toISOString()
 }
 
-export function minutesOfDay(iso: string): number {
-  const d = dayjs(iso)
-  return d.hour() * 60 + d.minute()
-}
-
 export function formatHM(iso: string): string {
   return dayjs(iso).format('HH:mm')
 }
@@ -93,17 +88,6 @@ export function isSameDay(iso: string, day: Dayjs): boolean {
   return dayjs(iso).isSame(day, 'day')
 }
 
-// ─── Serviços ────────────────────────────────────────────────────────────────
-
-export function sumServices(services: AppointmentServiceRef[]): {
-  duration: number
-  price: number
-} {
-  return services.reduce(
-    (acc, s) => ({ duration: acc.duration + s.durationMinutes, price: acc.price + s.price }),
-    { duration: 0, price: 0 },
-  )
-}
 
 // ─── Consultas sobre a lista ─────────────────────────────────────────────────
 
@@ -165,14 +149,6 @@ export function computeKpis(
     revenue,
     bookedMin,
   }
-}
-
-/** Ocupação (0–100) de um profissional no dia, contando só não cancelados. */
-export function occupancyForPro(appts: Appointment[], employeeId: string, day: Dayjs): number {
-  const minutes = appointmentsOfDay(appts, day)
-    .filter((a) => a.employeeId === employeeId && a.status !== 'cancelado')
-    .reduce((sum, a) => sum + a.durationMinutes, 0)
-  return Math.min(100, Math.round((minutes / EXPEDIENTE_MIN) * 100))
 }
 
 export function bookedMinutesForPro(appts: Appointment[], employeeId: string, day: Dayjs): number {

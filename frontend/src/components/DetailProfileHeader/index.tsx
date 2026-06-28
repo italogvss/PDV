@@ -1,49 +1,35 @@
 import {
-  CalendarMonthOutlined,
   CheckRounded,
   DeleteOutlineRounded,
   EditRounded,
-  EmailOutlined,
-  LocationOnOutlined,
-  PhoneOutlined,
 } from '@mui/icons-material'
 import { Avatar, Box, Button, CircularProgress, Typography } from '@mui/material'
-import type { Supplier } from '../../../../types/supplier.types'
+import type { DetailProfileHeaderProps } from './types'
 
 function getInitials(name: string) {
   return name
+    .trim()
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()
 }
 
-function formatMemberSince(createdAt: string) {
-  return new Date(createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-}
-
-interface Props {
-  supplier: Supplier
-  isEditing: boolean
-  isSaving: boolean
-  locationLabel: string | null
-  onEdit: () => void
-  onCancel: () => void
-  onSave: () => void
-  onDeleteClick: () => void
-}
-
-export default function SupplierProfileHeader({
-  supplier,
+export default function DetailProfileHeader({
+  name,
+  avatarColor,
+  titleAdornment,
+  meta,
   isEditing,
   isSaving,
-  locationLabel,
   onEdit,
   onCancel,
   onSave,
   onDeleteClick,
-}: Props) {
+  deleteLabel = 'Desativar',
+}: DetailProfileHeaderProps) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -53,40 +39,25 @@ export default function SupplierProfileHeader({
             height: 56,
             fontSize: 18,
             fontWeight: 700,
-            bgcolor: 'primary.main',
+            bgcolor: avatarColor,
             color: 'common.white',
             flexShrink: 0,
           }}
         >
-          {getInitials(supplier.name)}
+          {getInitials(name)}
         </Avatar>
         <Box>
-          <Typography variant="h2">{supplier.name}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography variant="h2">{name}</Typography>
+            {titleAdornment}
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
-            {supplier.email && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <EmailOutlined sx={{ fontSize: 13, color: 'text.tertiary' }} />
-                <Typography variant="caption" color="text.secondary">{supplier.email}</Typography>
+            {meta.map(({ icon: Icon, text }, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Icon sx={{ fontSize: 13, color: 'text.tertiary' }} />
+                <Typography variant="caption" color="text.secondary">{text}</Typography>
               </Box>
-            )}
-            {supplier.phone && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PhoneOutlined sx={{ fontSize: 13, color: 'text.tertiary' }} />
-                <Typography variant="caption" color="text.secondary">{supplier.phone}</Typography>
-              </Box>
-            )}
-            {locationLabel && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <LocationOnOutlined sx={{ fontSize: 13, color: 'text.tertiary' }} />
-                <Typography variant="caption" color="text.secondary">{locationLabel}</Typography>
-              </Box>
-            )}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarMonthOutlined sx={{ fontSize: 13, color: 'text.tertiary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Fornecedor desde {formatMemberSince(supplier.createdAt)}
-              </Typography>
-            </Box>
+            ))}
           </Box>
         </Box>
       </Box>
@@ -117,7 +88,7 @@ export default function SupplierProfileHeader({
               startIcon={<DeleteOutlineRounded />}
               onClick={onDeleteClick}
             >
-              Desativar
+              {deleteLabel}
             </Button>
             <Button variant="outlined" size="small" startIcon={<EditRounded />} onClick={onEdit}>
               Editar

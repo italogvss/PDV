@@ -79,6 +79,16 @@ export interface CustomerTopService {
   maxCount: number
 }
 
+export interface CustomerMonthlySpend {
+  month: string // "yyyy-MM"
+  total: number
+}
+
+export interface CustomerCategorySlice {
+  name: string
+  total: number
+}
+
 export interface CustomerCrmStats {
   totalSales: number
   totalSpent: number
@@ -90,6 +100,9 @@ export interface CustomerCrmStats {
   appointmentCounts: CustomerAppointmentCounts
   nextAppointment: CustomerNextAppointment | null
   topServices: CustomerTopService[]
+  monthlySpend: CustomerMonthlySpend[]
+  productCategories: CustomerCategorySlice[]
+  serviceCategories: CustomerCategorySlice[]
 }
 
 export const customerService = {

@@ -57,15 +57,6 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   cancelado: 'Cancelado',
 }
 
-/** Ordem de exibição dos status (picker de situação, etc). */
-export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  'pendente',
-  'confirmado',
-  'em_atendimento',
-  'concluido',
-  'cancelado',
-]
-
 export interface CreateAppointmentPayload {
   customerId: string | null
   customerName: string
