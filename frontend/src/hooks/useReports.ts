@@ -15,6 +15,10 @@ const TOP_PRODUCTS_KEY = (start: string, end: string, limit: number) =>
   ['reports', 'top-products', start, end, limit] as const
 const BY_CATEGORY_KEY = (start: string, end: string) =>
   ['reports', 'expenses-by-category', start, end] as const
+const REVENUE_BY_TYPE_KEY = (start: string, end: string) =>
+  ['reports', 'revenue-by-type', start, end] as const
+const CUSTOMER_NEW_VS_RETURNING_KEY = (start: string, end: string, groupBy: GroupBy) =>
+  ['reports', 'customers-new-vs-returning', start, end, groupBy] as const
 
 export function useSalesMetrics(startDate: string, endDate: string) {
   const { hasPermission, isModuleEnabled } = useUserPermissions()
@@ -66,6 +70,24 @@ export function useExpensesByCategory(startDate: string, endDate: string) {
   return useQuery({
     queryKey: BY_CATEGORY_KEY(startDate, endDate),
     queryFn: () => reportService.getExpensesByCategory(startDate, endDate),
+    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+  })
+}
+
+export function useRevenueByType(startDate: string, endDate: string) {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  return useQuery({
+    queryKey: REVENUE_BY_TYPE_KEY(startDate, endDate),
+    queryFn: () => reportService.getRevenueByType(startDate, endDate),
+    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+  })
+}
+
+export function useCustomerNewVsReturning(startDate: string, endDate: string, groupBy: GroupBy) {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  return useQuery({
+    queryKey: CUSTOMER_NEW_VS_RETURNING_KEY(startDate, endDate, groupBy),
+    queryFn: () => reportService.getCustomerNewVsReturning(startDate, endDate, groupBy),
     enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
   })
 }

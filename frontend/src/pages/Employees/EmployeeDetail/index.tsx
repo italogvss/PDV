@@ -15,9 +15,9 @@ import DetailProfileHeader from '../../../components/DetailProfileHeader'
 import type { DetailMetaItem } from '../../../components/DetailProfileHeader/types'
 import PageKpiCard, { PageKpiGrid } from '../../../components/PageKpiCard'
 import {
+  useDeactivateEmployee,
   useEmployee,
   useEmployeeStats,
-  useDeactivateEmployee,
   useResetEmployeePassword,
   useUpdateEmployee,
 } from '../../../hooks/useEmployees'
@@ -28,8 +28,8 @@ import CancellationRateKpi from './components/CancellationRateKpi'
 import EmployeeAppointmentsChart from './components/EmployeeAppointmentsChart'
 import EmployeeInfoCard from './components/EmployeeInfoCard'
 import EmployeeSalesChart from './components/EmployeeSalesChart'
-import SalaryVsRevenueCard from './components/SalaryVsRevenueCard'
 import type { EmployeeFormErrors, EmployeeFormState } from './types'
+import SalaryVsRevenueCard from './components/SalaryVsRevenueCard'
 
 function buildForm(employee: Employee): EmployeeFormState {
   return {
@@ -158,6 +158,7 @@ export default function EmployeeDetailPage() {
         onDeleteClick={() => setConfirmDelete(true)}
       />
 
+
       <PageKpiGrid>
         <PageKpiCard
           icon={AttachMoneyRounded}
@@ -179,22 +180,25 @@ export default function EmployeeDetailPage() {
         />
         <CancellationRateKpi cancellation={stats?.cancellation} isLoading={statsLoading} />
       </PageKpiGrid>
-
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1fr 350px' } }}>
+        <EmployeeInfoCard
+          employee={employee}
+          form={form}
+          isEditing={isEditing}
+          set={set}
+          memberSince={memberSince}
+          errors={errors}
+        />
+        <SalaryVsRevenueCard stats={stats} statsLoading={statsLoading} />        
+      </Box>
       <EmployeeSalesChart stats={stats} statsLoading={statsLoading} />
 
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '360px 1fr' } }}>
-        <SalaryVsRevenueCard stats={stats} statsLoading={statsLoading} />
+
         <EmployeeAppointmentsChart stats={stats} statsLoading={statsLoading} />
       </Box>
 
-      <EmployeeInfoCard
-        employee={employee}
-        form={form}
-        isEditing={isEditing}
-        set={set}
-        memberSince={memberSince}
-        errors={errors}
-      />
+
 
       <ConfirmDialog
         open={confirmDelete}

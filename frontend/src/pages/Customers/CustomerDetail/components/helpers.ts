@@ -39,7 +39,13 @@ export function formatRelativeDate(dateStr: string) {
   const diffDays = Math.floor(diffHours / 24)
   if (diffDays < 30) return `há ${diffDays} dia${diffDays !== 1 ? 's' : ''}`
   const diffMonths = Math.floor(diffDays / 30)
-  return `há ${diffMonths} ${diffMonths !== 1 ? 'meses' : 'mês'}`
+  if (diffMonths < 12) {
+    const remainingDays = diffDays % 30
+    const monthStr = `${diffMonths} ${diffMonths !== 1 ? 'meses' : 'mês'}`
+    if (remainingDays === 0) return `há ${monthStr}`
+    return `há ${monthStr} e ${remainingDays} dia${remainingDays !== 1 ? 's' : ''}`
+  }
+  return `em ${date.getFullYear()}`
 }
 
 export function formatAppointmentDate(dateStr: string) {

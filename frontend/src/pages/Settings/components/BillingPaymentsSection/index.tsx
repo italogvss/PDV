@@ -1,171 +1,200 @@
-import { useState } from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  IconButton,
-  TextField,
-  Paper,
-  Divider,
-} from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
-import CheckIcon from '@mui/icons-material/Check'
-import SettingCard from '../../../../components/SettingCard'
-import SettingRow from '../../../../components/SettingRow'
+import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined'
+import { Box, Chip, CircularProgress, Divider, Paper, Typography } from '@mui/material'
+import type { GridColDef } from '@mui/x-data-grid'
+import { DataGrid } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
+import { usePaymentHistory } from '../../../../hooks/useBilling'
+import type { UserPayment } from '../../../../types/billing.types'
 
-interface PaymentMethod {
-  id: string
-  type: 'visa' | 'mc' | 'pix'
-  label: string
-  detail: string
-  subtitle: string
-  isPrimary?: boolean
+// --- helpers ---
+function formatAmount(cents: number) {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: '1', type: 'visa', label: '•••• •••• •••• 4218', detail: 'Marcos Almeida • Expira 09/27', subtitle: '', isPrimary: true },
-  { id: '2', type: 'mc', label: '•••• •••• •••• 7732', detail: 'Café da Esquina LTDA • Expira 03/29', subtitle: '' },
-  { id: '3', type: 'pix', label: 'marcos.almeida@cafedaesquina.com.br', detail: 'Chave Pix • E-mail', subtitle: '' },
-]
+function formatDate(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('pt-BR')
+}
 
-function CardBadge({ type }: { type: 'visa' | 'mc' | 'pix' }) {
-  if (type === 'visa') {
-    return (
-      <Box sx={{
-        px: 1.5, py: 0.75, borderRadius: 1, bgcolor: '#1a1f71',
-        display: 'flex', alignItems: 'center', minWidth: 52,
-      }}>
-        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 13, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          VISA
-        </Typography>
-      </Box>
-    )
-  }
-  if (type === 'mc') {
-    return (
-      <Box sx={{
-        px: 1.5, py: 0.75, borderRadius: 1, bgcolor: '#eb5c29',
-        display: 'flex', alignItems: 'center', minWidth: 52, justifyContent: 'center',
-      }}>
-        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 11 }}>MC</Typography>
-      </Box>
-    )
-  }
+// --- card brand badge ---
+interface BadgeBoxProps { color: string; text: string; italic?: boolean }
+
+function BadgeBox({ color, text, italic }: BadgeBoxProps) {
   return (
     <Box sx={{
-      px: 1.5, py: 0.75, borderRadius: 1, bgcolor: '#32bcad',
-      display: 'flex', alignItems: 'center', minWidth: 52, justifyContent: 'center',
+      px: 1.5, py: 0.75, borderRadius: 1, bgcolor: color,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minWidth: 52, flexShrink: 0,
     }}>
-      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 11 }}>PIX</Typography>
+      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12, fontStyle: italic ? 'italic' : 'normal', letterSpacing: '-0.5px', lineHeight: 1 }}>
+        {text}
+      </Typography>
     </Box>
   )
 }
 
-export default function BillingPaymentsSection() {
-  const [companyName, setCompanyName] = useState('Café da Esquina LTDA ME')
-  const [cnpj, setCnpj] = useState('32.456.789/0001-12')
-  const [address, setAddress] = useState('Rua Augusta, 1480 — São Paulo/SP')
-  const [cep, setCep] = useState('01304-001')
-  const [hasChanges, setHasChanges] = useState(false)
+function CardBrandBadge({ method, brand }: { method: string; brand: string | null }) {
+  if (method === 'Pix') return <BadgeBox color="#32bcad" text="PIX" />
+  const b = (brand ?? '').toLowerCase()
+  if (b.includes('visa')) return <BadgeBox color="#1a1f71" text="VISA" italic />
+  if (b.includes('master') || b === 'mc') return <BadgeBox color="#eb5c29" text="MC" />
+  if (b.includes('amex') || b.includes('american')) return <BadgeBox color="#007bc1" text="AMEX" />
+  if (b.includes('elo')) return <BadgeBox color="#00a4e0" text="ELO" />
+  if (b.includes('hiper')) return <BadgeBox color="#e6462e" text="HIPER" />
+  return <BadgeBox color="#555" text={(brand ?? 'Card').substring(0, 4).toUpperCase()} />
+}
 
-  const handleChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setter(e.target.value)
-    setHasChanges(true)
+// --- status ---
+const STATUS_LABELS: Record<string, string> = {
+  Paid: 'Pago',
+  Pending: 'Pendente',
+  Refunded: 'Reembolsado',
+  Disputed: 'Contestado',
+  Expired: 'Expirado',
+  Cancelled: 'Cancelado',
+}
+
+const STATUS_COLORS: Record<string, { bgcolor: string; color: string }> = {
+  Paid: { bgcolor: 'success.soft', color: 'success.ink' },
+  Pending: { bgcolor: 'warning.soft', color: 'warning.ink' },
+  Refunded: { bgcolor: 'info.soft', color: 'info.ink' },
+  Disputed: { bgcolor: 'error.soft', color: 'error.ink' },
+  Expired: { bgcolor: 'action.hover', color: 'text.secondary' },
+  Cancelled: { bgcolor: 'action.hover', color: 'text.secondary' },
+}
+
+function StatusChip({ status }: { status: string }) {
+  const sx = STATUS_COLORS[status] ?? { bgcolor: 'action.hover', color: 'text.secondary' }
+  return <Chip label={STATUS_LABELS[status] ?? status} size="small" sx={{ ...sx, fontWeight: 600 }} />
+}
+
+// --- kind ---
+const KIND_LABELS: Record<string, string> = {
+  CardSubscription: 'Assinatura',
+  PixSubscription: 'Assinatura',
+  OneOffCheckout: 'Avulso',
+}
+
+// --- columns ---
+const columns: GridColDef<UserPayment>[] = [
+  {
+    field: 'method',
+    headerName: 'Método',
+    flex: 1.8,
+    minWidth: 220,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, height: '100%' }}>
+        <CardBrandBadge method={row.method} brand={row.cardBrand} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+            {row.method === 'Pix'
+              ? 'Pagamento via PIX'
+              : `•••• •••• •••• ${row.cardLastFour ?? '????'}`}
+          </Typography>
+        </Box>
+      </Box>
+    ),
+  },
+  {
+    field: 'kind',
+    headerName: 'Tipo',
+    width: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Typography variant="body2" color="text.secondary">
+        {KIND_LABELS[row.kind] ?? row.kind}
+      </Typography>
+    ),
+  },
+  {
+    field: 'amountCents',
+    headerName: 'Valor',
+    width: 130,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        {formatAmount(row.amountCents)}
+      </Typography>
+    ),
+  },
+  {
+    field: 'status',
+    headerName: 'Status',
+    width: 140,
+    sortable: false,
+    renderCell: ({ row }) => <StatusChip status={row.status} />,
+  },
+  {
+    field: 'paidAt',
+    headerName: 'Pago em',
+    width: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Typography variant="body2" color="text.secondary">
+        {formatDate(row.paidAt ?? row.createdAt)}
+      </Typography>
+    ),
+  },
+  {
+    field: 'receiptUrl',
+    headerName: '',
+    width: 48,
+    sortable: false,
+    renderCell: ({ row }) =>
+      row.receiptUrl ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <OpenInNewOutlined sx={{ fontSize: 16, color: 'text.tertiary' }} />
+        </Box>
+      ) : null,
+  },
+]
+
+export default function BillingPaymentSection() {
+  const { data, isLoading } = usePaymentHistory()
+  const payments = data?.data ?? []
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    )
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ px: 4, py: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-              Métodos de pagamento
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Como cobramos sua assinatura
-            </Typography>
-          </Box>
-          <Button variant="outlined" size="small" startIcon={<AddIcon />}>
-            Adicionar
-          </Button>
-        </Box>
-        <Divider />
-        {PAYMENT_METHODS.map((method, idx) => (
-          <Box key={method.id}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                px: 4,
-                py: 2.5,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CardBadge type={method.type} />
-                <Box>
-                  <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                    {method.label}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {method.detail}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {method.isPrimary ? (
-                  <Chip
-                    label="Principal"
-                    size="small"
-                    sx={{ bgcolor: 'success.soft', color: 'success.ink', fontWeight: 600 }}
-                  />
-                ) : (
-                  <Button variant="text" size="small" sx={{ color: 'text.secondary' }}>
-                    Tornar principal
-                  </Button>
-                )}
-                <IconButton size="small">
-                  <MoreHorizIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-            {idx < PAYMENT_METHODS.length - 1 && <Divider />}
-          </Box>
-        ))}
-      </Paper>
-
-      <SettingCard
-        title="Dados de cobrança"
-        subtitle="Aparece nas notas fiscais da assinatura"
-        action={
-          hasChanges ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              size="small"
-              startIcon={<CheckIcon />}
-              onClick={() => setHasChanges(false)}
-            >
-              Salvar
-            </Button>
-          ) : undefined
-        }
-      >
-        <SettingRow label="Razão social">
-          <TextField size="small" value={companyName} onChange={handleChange(setCompanyName)} sx={{ width: 340 }} />
-        </SettingRow>
-        <SettingRow label="CNPJ">
-          <TextField size="small" value={cnpj} onChange={handleChange(setCnpj)} sx={{ width: 340 }} />
-        </SettingRow>
-        <SettingRow label="Endereço de cobrança">
-          <TextField size="small" value={address} onChange={handleChange(setAddress)} sx={{ width: 340 }} />
-        </SettingRow>
-        <SettingRow label="CEP">
-          <TextField size="small" value={cep} onChange={handleChange(setCep)} sx={{ width: 160 }} />
-        </SettingRow>
-      </SettingCard>
-    </Box>
+    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <Box sx={{ px: 4, py: 3 }}>
+        <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
+          Histórico de cobranças
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Pagamentos realizados na sua assinatura
+        </Typography>
+      </Box>
+      <Divider />
+      <DataGrid
+        rows={payments}
+        columns={columns}
+        rowHeight={72}
+        autoHeight
+        disableColumnMenu
+        disableRowSelectionOnClick
+        getRowClassName={({ row }) => (row.receiptUrl ? 'has-receipt' : '')}
+        onRowClick={({ row }) => {
+          if (row.receiptUrl) window.open(row.receiptUrl, '_blank', 'noopener,noreferrer')
+        }}
+        initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+        pageSizeOptions={[10, 25, 50]}
+        slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
+        sx={{
+          border: 0,
+          borderRadius: 0,
+          '& .MuiDataGrid-columnHeaders': { bgcolor: 'background.paper' },
+          '& .has-receipt': { cursor: 'pointer' },
+          '& .has-receipt:hover': { bgcolor: 'surface.raised' },
+        }}
+      />
+    </Paper>
   )
 }

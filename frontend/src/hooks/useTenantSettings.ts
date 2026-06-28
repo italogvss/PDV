@@ -67,6 +67,21 @@ export function useUpdateModulesSettings() {
   })
 }
 
+export function useUpdatePaymentsSettings() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+
+  return useMutation({
+    mutationFn: (payload: PaymentsSettings) => tenantSettingsService.updatePayments(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      showToast('Configurações salvas!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao salvar configurações de pagamento.'),
+  })
+}
+
 export function useInventorySettings() {
   return useQuery({
     queryKey: QUERY_KEY,

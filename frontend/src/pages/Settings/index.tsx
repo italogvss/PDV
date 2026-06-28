@@ -7,7 +7,6 @@ import AdvancedSection from './components/AdvancedSection'
 import DisabledItemsSection from './components/DisabledItemsSection'
 import AppearanceSection from './components/AppearanceSection'
 import BackupSection from './components/BackupSection'
-import BillingPaymentsSection from './components/BillingPaymentsSection'
 import BusinessSection from './components/BusinessSection'
 import BusinessesSection from './components/BusinessesSection'
 import FiscalSection from './components/FiscalSection'
@@ -20,6 +19,7 @@ import SubscriptionSection from './components/SubscriptionSection'
 import { type SettingsTab } from './types'
 import PrivacySection from './components/PrivacySection'
 import UseTermsSection from './components/UseTermsSection'
+import BillingPaymentsSection from './components/BillingPaymentsSection'
 
 interface NavItem {
   id: SettingsTab
@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   // ── Pessoal ──
   { id: 'perfil',       label: 'Meu perfil',     subtitle: 'Informações pessoais',        icon: PersonOutlineOutlined,     type: 'user' },
   { id: 'assinatura',   label: 'Assinatura',     subtitle: 'Planos e cobranças',          icon: WorkspacePremiumOutlined,  type: 'user', ownerOnly: true },
-  { id: 'pagamentos', label: 'Pagamentos',     subtitle: 'Histórico de cobranças',    icon: CreditCardOutlined,        type: 'user', ownerOnly: true },
+  { id: 'faturas', label: 'Faturas',     subtitle: 'Histórico de cobranças',    icon: CreditCardOutlined,        type: 'user', ownerOnly: true },
   { id: 'seguranca',    label: 'Segurança',      subtitle: 'Autenticação e privacidade',  icon: SecurityOutlined,          type: 'user' },
   { id: 'negocios',     label: 'Meus negócios',  subtitle: 'Gerenciamento de empresas',   icon: StorefrontOutlined,        type: 'user', ownerOnly: true  },
   { id: 'aparencia',    label: 'Aparência',      subtitle: 'Estilo e temas',              icon: TuneOutlined,              type: 'user' },
@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'negocio',    label: 'Negócio',        subtitle: 'Dados, endereço e horário', icon: StorefrontOutlined,        type: 'business' },
   { id: 'operacao',   label: 'Operação',       subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined,      type: 'business' },
   { id: 'fiscal',     label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ',            icon: ReceiptLongOutlined,       type: 'business' },
+  { id: 'pagamentos', label: 'Pagamentos', subtitle: 'Métodos de Pagamento', icon: CreditCardOutlined, type: 'business', ownerOnly: true},
   { id: 'backup',      label: 'Backup & dados',    subtitle: 'Exportação e retenção',         icon: BackupOutlined,            type: 'business' },
   { id: 'desativados', label: 'Itens desativados', subtitle: 'Restaurar ou excluir itens',    icon: ArchiveOutlined,           type: 'business', ownerOnly: true },
   { id: 'avancado',    label: 'Avançado',          subtitle: 'Desenvolvedor e API',           icon: FiberManualRecordOutlined, type: 'business' },

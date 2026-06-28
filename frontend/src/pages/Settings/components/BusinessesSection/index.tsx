@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import {
   AddBusiness,
   BlockOutlined,
   DeleteForeverOutlined,
   EventBusyOutlined,
   FileDownloadOutlined,
+  Settings,
 } from '@mui/icons-material'
 import {
   Avatar,
@@ -18,20 +18,21 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAppDispatch, useAppSelector } from '../../../../store'
-import { setTenant } from '../../../../store/slices/auth.slice'
-import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
-import { useDeactivateTenant } from '../../../../hooks/useDeactivateTenant'
-import { useTenantSettings } from '../../../../hooks/useTenantSettings'
-import { reportService } from '../../../../services/report.service'
-import { useToast } from '../../../../hooks/useToast'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import ConfirmPhraseDialog from '../../../../components/ConfirmPhraseDialog'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import ConfirmPhraseDialog from '../../../../components/ConfirmPhraseDialog'
-import { EXPORT_CATEGORIES } from '../../types'
+import { useDeactivateTenant } from '../../../../hooks/useDeactivateTenant'
+import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
+import { useTenantSettings } from '../../../../hooks/useTenantSettings'
+import { useToast } from '../../../../hooks/useToast'
+import { reportService } from '../../../../services/report.service'
+import { useAppDispatch, useAppSelector } from '../../../../store'
+import { setTenant } from '../../../../store/slices/auth.slice'
 import type { TenantListItem } from '../../../../types/tenant.types'
+import { EXPORT_CATEGORIES } from '../../types'
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
@@ -133,42 +134,62 @@ export default function BusinessesSection() {
             label={tenant.name}
             sublabel={tenant.role === 'Owner' ? 'Proprietário' : 'Funcionário'}
           >
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar
-                variant="rounded"
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: 'accent.600',
-                  color: 'common.white',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  borderRadius: 1.5,
-                  flexShrink: 0,
-                }}
-              >
-                {getInitials(tenant.name)}
-              </Avatar>
               {tenant.tenantId === tenantId ? (
-                <Chip
-                  label="Ativo"
-                  size="small"
-                  sx={{ bgcolor: 'success.soft', color: 'success.ink', fontWeight: 600 }}
-                />
+                <>
+                  <Chip
+                    label="Ativo"
+                    size="small"
+                    sx={{ bgcolor: 'success.soft', color: 'success.ink', fontWeight: 600 }}
+                  />
+                  <IconButton
+                    onClick={() => navigate("/configuracoes?tab=negocio")}
+                    sx={{
+                      color: 'text.tertiary',
+                      border: 1,
+                      borderColor: 'border.subtle',
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                      width: 36,
+                      height: 36,
+                    }}>
+                    <Settings />
+                  </IconButton>
+                </>
               ) : (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled={switchTenant.isPending}
-                  onClick={() => switchTenant.mutate(tenant.tenantId)}
-                  endIcon={
-                    switchTenant.isPending && switchTenant.variables === tenant.tenantId
-                      ? <CircularProgress size={14} />
-                      : undefined
-                  }
-                >
-                  Acessar
-                </Button>
+                <>
+                  <Avatar
+                    variant="rounded"
+                    src={tenant.logoUrl ?? undefined}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: 'accent.600',
+                      color: 'common.white',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      borderRadius: 1.5,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {getInitials(tenant.name)}
+                  </Avatar>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={switchTenant.isPending}
+                    onClick={() => switchTenant.mutate(tenant.tenantId)}
+                    endIcon={
+                      switchTenant.isPending && switchTenant.variables === tenant.tenantId
+                        ? <CircularProgress size={14} />
+                        : undefined
+                    }
+                  >
+                    Acessar
+                  </Button>
+                </>
               )}
             </Box>
           </SettingRow>

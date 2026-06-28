@@ -41,5 +41,10 @@ public interface IReportService
 
     Task<byte[]> ExportTeamCsvAsync();
 
+    Task<RevenueByTypeResponse> GetRevenueByTypeAsync(DateTime startDate, DateTime endDate);
+
+    Task<List<CustomerNewVsReturningPoint>> GetCustomerNewVsReturningAsync(
+        DateTime startDate, DateTime endDate, string groupBy);
+
     Task<byte[]> ExportForTenantAsync(Guid tenantId, string category);
 }

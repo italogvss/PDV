@@ -690,6 +690,82 @@ public class ReportService(AppDbContext context) : IReportService
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
+    public async Task<RevenueByTypeResponse> GetRevenueByTypeAsync(DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        var items = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CreatedAt >= start
+                     && s.CreatedAt <= end)
+            .SelectMany(s => s.Items.Select(i => new { i.ServiceId, i.Subtotal }))
+            .ToListAsync();
+
+        var servicesRevenue = items.Where(i => i.ServiceId != null).Sum(i => i.Subtotal);
+        var productsRevenue = items.Where(i => i.ServiceId == null).Sum(i => i.Subtotal);
+
+        return new RevenueByTypeResponse(servicesRevenue, productsRevenue);
+    }
+
+    public async Task<List<CustomerNewVsReturningPoint>> GetCustomerNewVsReturningAsync(
+        DateTime startDate, DateTime endDate, string groupBy)
+    {
+        var gb = groupBy.ToLower();
+        if (gb is not ("day" or "week" or "month" or "year"))
+            throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
+
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // Vendas com cliente identificado no período
+        var salesInRange = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CustomerId != null
+                     && s.CreatedAt >= start
+                     && s.CreatedAt <= end)
+            .Select(s => new { CustomerId = s.CustomerId!.Value, s.CreatedAt })
+            .ToListAsync();
+
+        if (salesInRange.Count == 0)
+            return EnumerateBuckets(startDate, endDate, gb)
+                .Select(b => new CustomerNewVsReturningPoint(b.Label, 0, 0))
+                .ToList();
+
+        var customerIds = salesInRange.Select(s => s.CustomerId).Distinct().ToList();
+
+        // Primeira venda de cada cliente em todo o histórico do tenant
+        var firstSaleDates = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CustomerId != null
+                     && customerIds.Contains(s.CustomerId!.Value))
+            .GroupBy(s => s.CustomerId!.Value)
+            .Select(g => new { CustomerId = g.Key, FirstSale = g.Min(s => s.CreatedAt) })
+            .ToListAsync();
+
+        var firstSaleMap = firstSaleDates.ToDictionary(x => x.CustomerId, x => x.FirstSale);
+
+        var classified = salesInRange.Select(s => new
+        {
+            s.CustomerId,
+            s.CreatedAt,
+            // Novo = a primeira venda de todos os tempos está no mesmo bucket deste registro
+            IsNew = firstSaleMap.TryGetValue(s.CustomerId, out var first)
+                    && BucketKey(first, gb) == BucketKey(s.CreatedAt, gb),
+        }).ToList();
+
+        var result = new List<CustomerNewVsReturningPoint>();
+        foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
+        {
+            var inBucket = classified.Where(c => BucketKey(c.CreatedAt, gb) == key).ToList();
+            var newCount = inBucket.Where(c => c.IsNew).Select(c => c.CustomerId).Distinct().Count();
+            var returningCount = inBucket.Where(c => !c.IsNew).Select(c => c.CustomerId).Distinct().Count();
+            result.Add(new CustomerNewVsReturningPoint(label, newCount, returningCount));
+        }
+
+        return result;
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────
 
     // Escapa um campo de texto para CSV: duplica aspas, envolve em aspas quando há vírgula/aspas/quebra

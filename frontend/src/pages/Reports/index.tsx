@@ -17,8 +17,7 @@ import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
-import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
-import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import PercentRounded from '@mui/icons-material/PercentRounded'
 import { formatBRL } from '../../utils/currency'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
@@ -29,6 +28,8 @@ import {
   useSalesByPaymentMethod,
   useTopProducts,
   useExpensesByCategory,
+  useRevenueByType,
+  useCustomerNewVsReturning,
 } from '../../hooks/useReports'
 import type { RangePreset, GroupBy } from '../../types/report.types'
 import FinancialBarChart from './components/FinancialBarChart'
@@ -38,6 +39,8 @@ import OperatorRankingChart from './components/OperatorRankingChart'
 import TopProductsChart from './components/TopProductsChart'
 import PaymentMethodPieChart from './components/PaymentMethodPieChart'
 import ExpensesByCategoryPieChart from './components/ExpensesByCategoryPieChart'
+import RevenueByTypeDonut from './components/RevenueByTypeDonut'
+import CustomerNewVsReturningChart from './components/CustomerNewVsReturningChart'
 
 // Janelas móveis a partir de hoje (sem snap pro início do mês).
 const RANGE_PRESETS: RangePreset[] = [
@@ -72,6 +75,12 @@ export default function ReportsPage() {
     [start, end],
   )
 
+  // Período anterior equivalente: mesma duração, deslocado para trás
+  const prevEnd = useMemo(() => start.subtract(1, 'day'), [start])
+  const prevStart = useMemo(() => prevEnd.subtract(daysSpan - 1, 'day'), [prevEnd, daysSpan])
+  const prevStartDate = prevStart.format('YYYY-MM-DD')
+  const prevEndDate = prevEnd.format('YYYY-MM-DD')
+
   // Ao trocar o período, reajusta a granularidade para uma escala adequada.
   // Alternar o toggle manualmente não mexe no span, então a escolha do usuário persiste.
   useEffect(() => {
@@ -89,17 +98,30 @@ export default function ReportsPage() {
     endDate,
     groupBy,
   )
+  const { data: prevFinancial, isLoading: prevFinancialLoading } = useFinancialSummary(
+    prevStartDate,
+    prevEndDate,
+    groupBy,
+  )
   const { data: byOperator, isLoading: operatorLoading } = useSalesByOperator(startDate, endDate)
   const { data: byPayment, isLoading: paymentLoading } = useSalesByPaymentMethod(startDate, endDate)
   const { data: topProducts, isLoading: productsLoading } = useTopProducts(startDate, endDate)
   const { data: byCategory, isLoading: categoryLoading } = useExpensesByCategory(startDate, endDate)
+  const { data: revenueByType, isLoading: revenueByTypeLoading } = useRevenueByType(startDate, endDate)
+  const { data: newVsReturning, isLoading: newVsReturningLoading } = useCustomerNewVsReturning(
+    startDate,
+    endDate,
+    groupBy,
+  )
 
-  const cancellationRate = useMemo(() => {
-    if (!metrics) return null
-    const total = metrics.totalSales + metrics.cancelledCount
-    if (total === 0) return null
-    return ((metrics.cancelledCount / total) * 100).toFixed(1)
-  }, [metrics])
+  // Margem de lucro média = resultado líquido total / receita total
+  const avgProfitMargin = useMemo(() => {
+    if (!financial || financial.length === 0) return null
+    const totalRevenue = financial.reduce((sum, d) => sum + d.revenue, 0)
+    const totalNetResult = financial.reduce((sum, d) => sum + d.netResult, 0)
+    if (totalRevenue === 0) return null
+    return ((totalNetResult / totalRevenue) * 100).toFixed(1)
+  }, [financial])
 
   const handlePresetSelect = (preset: RangePreset) => {
     // Para dias, descontamos N-1 (a janela inclui hoje) → exatamente N dias.
@@ -192,14 +214,10 @@ export default function ReportsPage() {
             value={formatBRL(metrics?.averageTicket ?? 0)}
           />
           <PageKpiCard
-            icon={ReceiptLongRounded}
-            label="Cancelamentos"
-            value={String(metrics?.cancelledCount ?? 0)}
-            badge={
-              cancellationRate !== null
-                ? { label: `${cancellationRate}% do total`, color: 'error', icon: TrendingDownRounded }
-                : undefined
-            }
+            icon={PercentRounded}
+            label="Margem de lucro média"
+            value={avgProfitMargin !== null ? `${avgProfitMargin}%` : '—'}
+            isLoading={financialLoading}
           />
         </PageKpiGrid>
       )}
@@ -241,8 +259,19 @@ export default function ReportsPage() {
           <AccumulatedProfitChart data={financial ?? []} loading={financialLoading} />
         </Box>
 
+        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 8' } }}>
+          <RevenueLineChart
+            data={financial ?? []}
+            prevData={prevFinancial ?? []}
+            loading={financialLoading || prevFinancialLoading}
+          />
+        </Box>
+        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 4' } }}>
+          <RevenueByTypeDonut data={revenueByType} loading={revenueByTypeLoading} />
+        </Box>
+
         <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
-          <RevenueLineChart data={financial ?? []} loading={financialLoading} />
+          <CustomerNewVsReturningChart data={newVsReturning ?? []} loading={newVsReturningLoading} />
         </Box>
         <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
           <PaymentMethodPieChart data={byPayment ?? []} loading={paymentLoading} />

@@ -1,166 +1,48 @@
-import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined'
-import { Box, Chip, CircularProgress, Divider, Paper, Typography } from '@mui/material'
-import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef } from '@mui/x-data-grid'
-import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
-import { usePaymentHistory } from '../../../../hooks/useBilling'
-import type { UserPayment } from '../../../../types/billing.types'
+import CheckIcon from '@mui/icons-material/Check'
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Collapse,
+  InputAdornment,
+  Switch,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+import SettingCard from '../../../../components/SettingCard'
+import SettingRow from '../../../../components/SettingRow'
+import {
+  useTenantSettings,
+  useUpdatePaymentsSettings,
+} from '../../../../hooks/useTenantSettings'
+import type { PaymentMethodConfig, PaymentsSettings } from '../../../../types/settings.types'
+import FieldLabel from '../../../../components/FieldLabel'
 
-// --- helpers ---
-function formatAmount(cents: number) {
-  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('pt-BR')
-}
-
-function formatPeriod(start: string | null, end: string | null) {
-  if (start && end) return `${formatDate(start)} – ${formatDate(end)}`
-  if (start) return formatDate(start)
-  return null
-}
-
-// --- card brand badge ---
-interface BadgeBoxProps { color: string; text: string; italic?: boolean }
-
-function BadgeBox({ color, text, italic }: BadgeBoxProps) {
-  return (
-    <Box sx={{
-      px: 1.5, py: 0.75, borderRadius: 1, bgcolor: color,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minWidth: 52, flexShrink: 0,
-    }}>
-      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12, fontStyle: italic ? 'italic' : 'normal', letterSpacing: '-0.5px', lineHeight: 1 }}>
-        {text}
-      </Typography>
-    </Box>
-  )
-}
-
-function CardBrandBadge({ method, brand }: { method: string; brand: string | null }) {
-  if (method === 'Pix') return <BadgeBox color="#32bcad" text="PIX" />
-  const b = (brand ?? '').toLowerCase()
-  if (b.includes('visa')) return <BadgeBox color="#1a1f71" text="VISA" italic />
-  if (b.includes('master') || b === 'mc') return <BadgeBox color="#eb5c29" text="MC" />
-  if (b.includes('amex') || b.includes('american')) return <BadgeBox color="#007bc1" text="AMEX" />
-  if (b.includes('elo')) return <BadgeBox color="#00a4e0" text="ELO" />
-  if (b.includes('hiper')) return <BadgeBox color="#e6462e" text="HIPER" />
-  return <BadgeBox color="#555" text={(brand ?? 'Card').substring(0, 4).toUpperCase()} />
-}
-
-// --- status ---
-const STATUS_LABELS: Record<string, string> = {
-  Paid: 'Pago',
-  Pending: 'Pendente',
-  Refunded: 'Reembolsado',
-  Disputed: 'Contestado',
-  Expired: 'Expirado',
-  Cancelled: 'Cancelado',
-}
-
-const STATUS_COLORS: Record<string, { bgcolor: string; color: string }> = {
-  Paid:      { bgcolor: 'success.soft', color: 'success.ink' },
-  Pending:   { bgcolor: 'warning.soft', color: 'warning.ink' },
-  Refunded:  { bgcolor: 'info.soft',    color: 'info.ink' },
-  Disputed:  { bgcolor: 'error.soft',   color: 'error.ink' },
-  Expired:   { bgcolor: 'action.hover', color: 'text.secondary' },
-  Cancelled: { bgcolor: 'action.hover', color: 'text.secondary' },
-}
-
-function StatusChip({ status }: { status: string }) {
-  const sx = STATUS_COLORS[status] ?? { bgcolor: 'action.hover', color: 'text.secondary' }
-  return <Chip label={STATUS_LABELS[status] ?? status} size="small" sx={{ ...sx, fontWeight: 600 }} />
-}
-
-// --- kind ---
-const KIND_LABELS: Record<string, string> = {
-  CardSubscription: 'Assinatura',
-  PixSubscription:  'Assinatura',
-  OneOffCheckout:   'Avulso',
-}
-
-// --- columns ---
-const columns: GridColDef<UserPayment>[] = [
-  {
-    field: 'method',
-    headerName: 'Método',
-    flex: 1.8,
-    minWidth: 220,
-    sortable: false,
-    renderCell: ({ row }) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, height: '100%' }}>
-        <CardBrandBadge method={row.method} brand={row.cardBrand} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
-            {row.method === 'Pix'
-              ? 'Pagamento via PIX'
-              : `•••• •••• •••• ${row.cardLastFour ?? '????'}`}
-          </Typography>
-        </Box>
-      </Box>
-    ),
-  },
-  {
-    field: 'kind',
-    headerName: 'Tipo',
-    width: 120,
-    sortable: false,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" color="text.secondary">
-        {KIND_LABELS[row.kind] ?? row.kind}
-      </Typography>
-    ),
-  },
-  {
-    field: 'amountCents',
-    headerName: 'Valor',
-    width: 130,
-    sortable: false,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {formatAmount(row.amountCents)}
-      </Typography>
-    ),
-  },
-  {
-    field: 'status',
-    headerName: 'Status',
-    width: 140,
-    sortable: false,
-    renderCell: ({ row }) => <StatusChip status={row.status} />,
-  },
-  {
-    field: 'paidAt',
-    headerName: 'Pago em',
-    width: 120,
-    sortable: false,
-    renderCell: ({ row }) => (
-      <Typography variant="body2" color="text.secondary">
-        {formatDate(row.paidAt ?? row.createdAt)}
-      </Typography>
-    ),
-  },
-  {
-    field: 'receiptUrl',
-    headerName: '',
-    width: 48,
-    sortable: false,
-    renderCell: ({ row }) =>
-      row.receiptUrl ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <OpenInNewOutlined sx={{ fontSize: 16, color: 'text.tertiary' }} />
-        </Box>
-      ) : null,
-  },
+const PAYMENT_METHODS: Array<{
+  key: keyof Omit<PaymentsSettings, 'feesEnabled'>
+  label: string
+}> = [
+  { key: 'cardCredit', label: 'Cartão de Crédito' },
+  { key: 'cardDebit', label: 'Cartão de Débito' },
+  { key: 'pix', label: 'Pix' },
+  { key: 'cash', label: 'Dinheiro' },
 ]
 
 export default function PaymentsSection() {
-  const { data, isLoading } = usePaymentHistory()
-  const payments = data?.data ?? []
+  const { data, isLoading } = useTenantSettings()
+  const update = useUpdatePaymentsSettings()
+  const [form, setForm] = useState<PaymentsSettings | null>(null)
+  const initialized = useRef(false)
 
-  if (isLoading) {
+  useEffect(() => {
+    if (data && !initialized.current) {
+      setForm(data.payments)
+      initialized.current = true
+    }
+  }, [data])
+
+  if (isLoading || !form) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
         <CircularProgress size={28} />
@@ -168,39 +50,175 @@ export default function PaymentsSection() {
     )
   }
 
+  const set = (patch: Partial<PaymentsSettings>) =>
+    setForm((f) => (f ? { ...f, ...patch } : f))
+
+  const setMethod = (
+    key: keyof Omit<PaymentsSettings, 'feesEnabled'>,
+    patch: Partial<PaymentMethodConfig>,
+  ) => setForm((f) => (f ? { ...f, [key]: { ...f[key], ...patch } } : f))
+
+  const original = data?.payments
+  const hasChanges =
+    original?.feesEnabled !== form.feesEnabled ||
+    PAYMENT_METHODS.some(
+      ({ key }) =>
+        original?.[key].enabled !== form[key].enabled ||
+        original?.[key].fee !== form[key].fee,
+    )
+
+  const handleSave = () => update.mutate(form)
+  const handleCancel = () =>
+    original &&
+    setForm({
+      feesEnabled: original.feesEnabled,
+      pix: { ...original.pix },
+      cardCredit: { ...original.cardCredit },
+      cardDebit: { ...original.cardDebit },
+      cash: { ...original.cash },
+    })
+
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-      <Box sx={{ px: 4, py: 3 }}>
-        <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-          Histórico de cobranças
+    <SettingCard
+      title="Formas de pagamento"
+      subtitle="Configure os métodos de pagamento aceitos nas vendas."
+      action={
+        hasChanges ? (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
+              disabled={update.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="secondary"
+              startIcon={
+                update.isPending ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : (
+                  <CheckIcon />
+                )
+              }
+              onClick={handleSave}
+              disabled={update.isPending}
+            >
+              Salvar alterações
+            </Button>
+          </Box>
+        ) : undefined
+      }
+    >
+      <SettingRow
+        label="Cobrar taxa por venda"
+        sublabel="Ativa um campo de taxa (%) por forma de pagamento"
+      >
+        <Switch
+          checked={form.feesEnabled}
+          onChange={(e) => set({ feesEnabled: e.target.checked })}
+          color="secondary"
+          disabled={update.isPending}
+        />
+      </SettingRow>
+
+      <Box sx={{ px: 4, py: 2.5 }}>
+        <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+          Métodos disponíveis
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Pagamentos realizados na sua assinatura
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, mb: 2 }}>
+          Selecione os métodos aceitos na finalização de venda
         </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+          {PAYMENT_METHODS.map(({ key, label }) => (
+            <PaymentMethodCard
+              key={key}
+              label={label}
+              config={form[key]}
+              feesEnabled={form.feesEnabled}
+              onToggle={(enabled) => setMethod(key, { enabled })}
+              onFeeChange={(fee) => setMethod(key, { fee })}
+              isPending={update.isPending}
+            />
+          ))}
+        </Box>
       </Box>
-      <Divider />
-      <DataGrid
-        rows={payments}
-        columns={columns}
-        rowHeight={72}
-        autoHeight
-        disableColumnMenu
-        disableRowSelectionOnClick
-        getRowClassName={({ row }) => (row.receiptUrl ? 'has-receipt' : '')}
-        onRowClick={({ row }) => {
-          if (row.receiptUrl) window.open(row.receiptUrl, '_blank', 'noopener,noreferrer')
-        }}
-        initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-        pageSizeOptions={[10, 25, 50]}
-        slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
-        sx={{
-          border: 0,
-          borderRadius: 0,
-          '& .MuiDataGrid-columnHeaders': { bgcolor: 'background.paper' },
-          '& .has-receipt': { cursor: 'pointer' },
-          '& .has-receipt:hover': { bgcolor: 'surface.raised' },
-        }}
-      />
-    </Paper>
+    </SettingCard>
+  )
+}
+
+interface PaymentMethodCardProps {
+  label: string
+  config: PaymentMethodConfig
+  feesEnabled: boolean
+  onToggle: (enabled: boolean) => void
+  onFeeChange: (fee: number) => void
+  isPending: boolean
+}
+
+function PaymentMethodCard({
+  label,
+  config,
+  feesEnabled,
+  onToggle,
+  onFeeChange,
+  isPending,
+}: PaymentMethodCardProps) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        px: 2,
+        py: 2,
+        minHeight: 72,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: config.enabled ? 'secondary.main' : 'border.subtle',
+        bgcolor: config.enabled ? 'secondary.soft' : 'transparent',
+        transition: 'background-color 0.15s ease, border-color 0.15s ease',
+        minWidth: 140,
+        flex: '1 1 140px',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: config.enabled ? 600 : 500,
+            color: config.enabled ? 'secondary.ink' : 'text.primary',
+          }}
+        >
+          {label}
+        </Typography>
+        <Switch
+          checked={config.enabled}
+          onChange={(e) => onToggle(e.target.checked)}
+          color="secondary"
+          disabled={isPending}
+        />
+      </Box>
+
+      <Collapse in={feesEnabled && config.enabled} unmountOnExit sx={{ mt: 'auto' }}>
+        <Box sx={{ pt: 1.5 }}>
+          <FieldLabel label="Taxa por venda" />
+          <TextField
+            size="small"
+            type="number"
+            value={config.fee}
+            onChange={(e) => onFeeChange(Number(e.target.value) || 0)}
+            fullWidth
+            disabled={isPending}
+            slotProps={{
+              htmlInput: { min: 0, max: 100, step: 0.1 },
+              input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+            }}
+          />
+        </Box>
+      </Collapse>
+    </Box>
   )
 }
