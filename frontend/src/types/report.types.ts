@@ -1,7 +1,10 @@
-export interface MonthPreset {
+export type RangeUnit = 'day' | 'month'
+
+export interface RangePreset {
   label: string
   key: string
-  months: number
+  amount: number
+  unit: RangeUnit
 }
 
 export interface DateRangeParams {
@@ -23,6 +26,7 @@ export interface FinancialSummaryPoint {
   label: string
   revenue: number
   cost: number
+  fees: number
   expenses: number
   grossProfit: number
   netResult: number

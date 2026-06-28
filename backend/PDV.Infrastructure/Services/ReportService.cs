@@ -10,54 +10,6 @@ namespace PDV.Infrastructure.Services;
 
 public class ReportService(AppDbContext context) : IReportService
 {
-    public async Task<List<SalesChartPoint>> GetSalesChartAsync(
-        DateTime startDate, DateTime endDate, string groupBy)
-    {
-        var start = startDate.Date;
-        var end = endDate.Date.AddDays(1).AddTicks(-1);
-
-        var sales = await context.Sales
-            .Where(s => s.Status == SaleStatus.Active
-                     && s.CreatedAt >= start
-                     && s.CreatedAt <= end)
-            .Select(s => new
-            {
-                s.CreatedAt,
-                s.Total,
-                Cost = s.Items.Sum(i =>
-                    i.PurchasePriceSnapshot.HasValue
-                        ? i.PurchasePriceSnapshot.Value * i.Quantity
-                        : 0m)
-            })
-            .ToListAsync();
-
-        return groupBy.ToLower() switch
-        {
-            "day" => FillDays(
-                sales.GroupBy(s => s.CreatedAt.Date)
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
-                startDate.Date, endDate.Date),
-
-            "week" => FillWeeks(
-                sales.GroupBy(s => GetMonday(s.CreatedAt))
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
-                GetMonday(startDate), GetMonday(endDate)),
-
-            "month" => FillMonths(
-                sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
-                new DateTime(startDate.Year, startDate.Month, 1),
-                new DateTime(endDate.Year, endDate.Month, 1)),
-
-            "year" => FillYears(
-                sales.GroupBy(s => s.CreatedAt.Year)
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
-                startDate.Year, endDate.Year),
-
-            _ => throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.")
-        };
-    }
-
     public async Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
         DateTime startDate, DateTime endDate, string groupBy)
     {
@@ -68,6 +20,9 @@ public class ReportService(AppDbContext context) : IReportService
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
+        // NOTA (fuso): CreatedAt é gravado em UTC e aqui é filtrado/agrupado sem conversão de fuso,
+        // igual ao resto da aplicação (ExpenseService.GetChartAsync). Vendas perto da meia-noite podem
+        // cair no dia/bucket vizinho. Corrigir exige normalizar o fuso do tenant em toda a aplicação.
         var sales = await context.Sales
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
@@ -76,10 +31,16 @@ public class ReportService(AppDbContext context) : IReportService
             {
                 s.CreatedAt,
                 s.Total,
-                Cost = s.Items.Sum(i =>
-                    i.PurchasePriceSnapshot.HasValue
-                        ? i.PurchasePriceSnapshot.Value * i.Quantity
-                        : 0m)
+                s.FeeAmount,
+                // O lucro considera serviços (custo zero legítimo) e produtos COM custo cadastrado.
+                // Produtos sem snapshot de preço de compra são ignorados, para não inflar o lucro com
+                // custo zero. A receita total (s.Total) continua cheia para a linha "Receita".
+                ProfitRevenue = s.Items
+                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                    .Sum(i => i.Subtotal),
+                Cost = s.Items
+                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
             })
             .ToListAsync();
 
@@ -91,7 +52,11 @@ public class ReportService(AppDbContext context) : IReportService
 
         var salesByBucket = sales
             .GroupBy(s => BucketKey(s.CreatedAt, gb))
-            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), Cost: g.Sum(s => s.Cost)));
+            .ToDictionary(g => g.Key, g => (
+                Revenue: g.Sum(s => s.Total),
+                ProfitRevenue: g.Sum(s => s.ProfitRevenue),
+                Cost: g.Sum(s => s.Cost),
+                Fees: g.Sum(s => s.FeeAmount)));
 
         var expensesByBucket = expenses
             .GroupBy(e => BucketKey(e.DueDate, gb))
@@ -100,11 +65,13 @@ public class ReportService(AppDbContext context) : IReportService
         var result = new List<FinancialSummaryPoint>();
         foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
         {
-            var (revenue, cost) = salesByBucket.GetValueOrDefault(key);
+            var (revenue, profitRevenue, cost, fees) = salesByBucket.GetValueOrDefault(key);
             var expenseTotal = expensesByBucket.GetValueOrDefault(key);
-            var grossProfit = revenue - cost;
-            var netResult = grossProfit - expenseTotal;
-            result.Add(new FinancialSummaryPoint(label, revenue, cost, expenseTotal, grossProfit, netResult));
+            // Lucro bruto = receita dos itens contados (serviços + produtos com custo) menos o custo.
+            // Produtos sem custo cadastrado ficam de fora para não inflar o lucro.
+            var grossProfit = profitRevenue - cost;
+            var netResult = grossProfit - fees - expenseTotal;
+            result.Add(new FinancialSummaryPoint(label, revenue, cost, fees, expenseTotal, grossProfit, netResult));
         }
 
         return result;
@@ -182,20 +149,40 @@ public class ReportService(AppDbContext context) : IReportService
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
+        // Só itens de produto (ServiceId nulo) — o gráfico é "Top produtos vendidos".
+        // Cada item carrega o desconto da venda e o subtotal de todos os itens, para ratear o desconto.
         var items = await context.Sales
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .SelectMany(s => s.Items)
-            .Select(i => new { i.ProductName, i.Quantity, i.Subtotal })
+            .SelectMany(s => s.Items
+                .Where(i => i.ProductId != null)
+                .Select(i => new
+                {
+                    i.ProductName,
+                    i.Quantity,
+                    i.Subtotal,
+                    s.Discount,
+                    ItemsTotal = s.Items.Sum(x => x.Subtotal),
+                }))
             .ToListAsync();
 
+        // Receita líquida por produto = Subtotal − parte proporcional do desconto da venda
+        // (rateado pelo peso do item no total da venda).
         return items
+            .Select(i => new
+            {
+                i.ProductName,
+                i.Quantity,
+                NetRevenue = i.ItemsTotal > 0
+                    ? i.Subtotal - i.Discount * (i.Subtotal / i.ItemsTotal)
+                    : i.Subtotal,
+            })
             .GroupBy(i => i.ProductName)
             .Select(g => new TopProductResponse(
                 g.Key,
                 g.Sum(i => i.Quantity),
-                g.Sum(i => i.Subtotal)))
+                g.Sum(i => i.NetRevenue)))
             .OrderByDescending(r => r.Revenue)
             .Take(limit)
             .ToList();
@@ -266,8 +253,8 @@ public class ReportService(AppDbContext context) : IReportService
             sb.AppendLine(
                 $"{s.Id}," +
                 $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
-                $"\"{s.OperatorName}\"," +
-                $"\"{s.CustomerName ?? ""}\"," +
+                $"{CsvField(s.OperatorName)}," +
+                $"{CsvField(s.CustomerName)}," +
                 $"{s.PaymentMethod}," +
                 $"{status}," +
                 $"{s.Total:F2}");
@@ -301,8 +288,8 @@ public class ReportService(AppDbContext context) : IReportService
             sb.AppendLine(
                 $"{s.Id}," +
                 $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
-                $"\"{s.OperatorName}\"," +
-                $"\"{s.CustomerName ?? ""}\"," +
+                $"{CsvField(s.OperatorName)}," +
+                $"{CsvField(s.CustomerName)}," +
                 $"{s.PaymentMethod}," +
                 $"{status}," +
                 $"{s.Total:F2}");
@@ -325,9 +312,9 @@ public class ReportService(AppDbContext context) : IReportService
         {
             var ativo = p.IsActive ? "Sim" : "Não";
             sb.AppendLine(
-                $"\"{p.Name}\"," +
-                $"{p.Barcode ?? ""}," +
-                $"{p.NCM ?? ""}," +
+                $"{CsvField(p.Name)}," +
+                $"{CsvField(p.Barcode)}," +
+                $"{CsvField(p.NCM)}," +
                 $"{p.Stock}," +
                 $"{p.Price:F2}," +
                 $"{ativo}");
@@ -361,15 +348,15 @@ public class ReportService(AppDbContext context) : IReportService
         foreach (var c in customers)
         {
             sb.AppendLine(
-                $"\"{c.Name}\"," +
-                $"{c.Phone ?? ""}," +
-                $"{c.Email ?? ""}," +
-                $"{c.Document ?? ""}," +
-                $"\"{c.AddressStreet ?? ""}\"," +
-                $"{c.AddressNumber ?? ""}," +
-                $"\"{c.AddressCity ?? ""}\"," +
-                $"{c.AddressState ?? ""}," +
-                $"{c.AddressZipCode ?? ""}," +
+                $"{CsvField(c.Name)}," +
+                $"{CsvField(c.Phone)}," +
+                $"{CsvField(c.Email)}," +
+                $"{CsvField(c.Document)}," +
+                $"{CsvField(c.AddressStreet)}," +
+                $"{CsvField(c.AddressNumber)}," +
+                $"{CsvField(c.AddressCity)}," +
+                $"{CsvField(c.AddressState)}," +
+                $"{CsvField(c.AddressZipCode)}," +
                 $"{c.CreatedAt:dd/MM/yyyy}");
         }
 
@@ -399,11 +386,11 @@ public class ReportService(AppDbContext context) : IReportService
         {
             var ativo = s.IsActive ? "Sim" : "Não";
             sb.AppendLine(
-                $"\"{s.Name}\"," +
-                $"\"{s.Description ?? ""}\"," +
+                $"{CsvField(s.Name)}," +
+                $"{CsvField(s.Description)}," +
                 $"{s.Price:F2}," +
                 $"{s.DurationMinutes?.ToString() ?? ""}," +
-                $"\"{s.CategoryName}\"," +
+                $"{CsvField(s.CategoryName)}," +
                 $"{ativo}," +
                 $"{s.CreatedAt:dd/MM/yyyy}");
         }
@@ -435,7 +422,7 @@ public class ReportService(AppDbContext context) : IReportService
             var pago = e.IsPaid ? "Sim" : "Não";
             var recorrente = e.IsRecurring ? "Sim" : "Não";
             sb.AppendLine(
-                $"\"{e.Description}\"," +
+                $"{CsvField(e.Description)}," +
                 $"{e.Category}," +
                 $"{e.Amount:F2}," +
                 $"{e.DueDate:dd/MM/yyyy}," +
@@ -455,9 +442,15 @@ public class ReportService(AppDbContext context) : IReportService
             {
                 s.CreatedAt,
                 s.Total,
-                Cost = s.Items.Sum(i => i.PurchasePriceSnapshot.HasValue
-                    ? i.PurchasePriceSnapshot.Value * i.Quantity
-                    : 0m),
+                s.FeeAmount,
+                // Serviços + produtos com custo entram no lucro; produtos sem custo cadastrado ficam
+                // de fora (igual ao GetFinancialSummaryAsync).
+                ProfitRevenue = s.Items
+                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                    .Sum(i => i.Subtotal),
+                Cost = s.Items
+                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
             })
             .ToListAsync();
 
@@ -467,7 +460,11 @@ public class ReportService(AppDbContext context) : IReportService
 
         var salesByMonth = sales
             .GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), Cost: g.Sum(s => s.Cost)));
+            .ToDictionary(g => g.Key, g => (
+                Revenue: g.Sum(s => s.Total),
+                ProfitRevenue: g.Sum(s => s.ProfitRevenue),
+                Cost: g.Sum(s => s.Cost),
+                Fees: g.Sum(s => s.FeeAmount)));
 
         var expensesByMonth = expenses
             .GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
@@ -476,18 +473,19 @@ public class ReportService(AppDbContext context) : IReportService
         var allMonths = salesByMonth.Keys.Union(expensesByMonth.Keys).OrderBy(d => d).ToList();
 
         var sb = new StringBuilder();
-        sb.AppendLine("Mês,Receita,Custo,Despesas,Lucro Bruto,Resultado Líquido");
+        sb.AppendLine("Mês,Receita,Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
 
         foreach (var month in allMonths)
         {
-            var (revenue, cost) = salesByMonth.GetValueOrDefault(month);
+            var (revenue, profitRevenue, cost, fees) = salesByMonth.GetValueOrDefault(month);
             var expTotal = expensesByMonth.GetValueOrDefault(month);
-            var grossProfit = revenue - cost;
-            var netResult = grossProfit - expTotal;
+            var grossProfit = profitRevenue - cost;
+            var netResult = grossProfit - fees - expTotal;
             sb.AppendLine(
                 $"{month:MM/yyyy}," +
                 $"{revenue:F2}," +
                 $"{cost:F2}," +
+                $"{fees:F2}," +
                 $"{expTotal:F2}," +
                 $"{grossProfit:F2}," +
                 $"{netResult:F2}");
@@ -519,10 +517,10 @@ public class ReportService(AppDbContext context) : IReportService
         {
             var ativo = e.IsActive ? "Sim" : "Não";
             sb.AppendLine(
-                $"\"{e.UserName}\"," +
-                $"{e.UserEmail}," +
-                $"{e.Phone ?? ""}," +
-                $"\"{e.RoleName}\"," +
+                $"{CsvField(e.UserName)}," +
+                $"{CsvField(e.UserEmail)}," +
+                $"{CsvField(e.Phone)}," +
+                $"{CsvField(e.RoleName)}," +
                 $"{ativo}," +
                 $"{e.CreatedAt:dd/MM/yyyy}");
         }
@@ -561,7 +559,7 @@ public class ReportService(AppDbContext context) : IReportService
         foreach (var s in sales)
         {
             var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
-            sb.AppendLine($"{s.Id},{s.CreatedAt:dd/MM/yyyy HH:mm},\"{s.OperatorName}\",\"{s.CustomerName ?? ""}\"," +
+            sb.AppendLine($"{s.Id},{s.CreatedAt:dd/MM/yyyy HH:mm},{CsvField(s.OperatorName)},{CsvField(s.CustomerName)}," +
                           $"{s.PaymentMethod},{status},{s.Total:F2}");
         }
         return Encoding.UTF8.GetBytes(sb.ToString());
@@ -579,7 +577,7 @@ public class ReportService(AppDbContext context) : IReportService
         var sb = new StringBuilder();
         sb.AppendLine("Produto,Código de Barras,NCM,Estoque,Preço,Ativo");
         foreach (var p in products)
-            sb.AppendLine($"\"{p.Name}\",{p.Barcode ?? ""},{p.NCM ?? ""},{p.Stock},{p.Price:F2},{(p.IsActive ? "Sim" : "Não")}");
+            sb.AppendLine($"{CsvField(p.Name)},{CsvField(p.Barcode)},{CsvField(p.NCM)},{p.Stock},{p.Price:F2},{(p.IsActive ? "Sim" : "Não")}");
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
@@ -595,8 +593,8 @@ public class ReportService(AppDbContext context) : IReportService
         var sb = new StringBuilder();
         sb.AppendLine("Nome,Telefone,E-mail,CPF/CNPJ,Rua,Número,Cidade,Estado,CEP,Cadastrado em");
         foreach (var c in customers)
-            sb.AppendLine($"\"{c.Name}\",{c.Phone ?? ""},{c.Email ?? ""},{c.Document ?? ""},\"{c.AddressStreet ?? ""}\"," +
-                          $"{c.AddressNumber ?? ""},\"{c.AddressCity ?? ""}\",{c.AddressState ?? ""},{c.AddressZipCode ?? ""},{c.CreatedAt:dd/MM/yyyy}");
+            sb.AppendLine($"{CsvField(c.Name)},{CsvField(c.Phone)},{CsvField(c.Email)},{CsvField(c.Document)},{CsvField(c.AddressStreet)}," +
+                          $"{CsvField(c.AddressNumber)},{CsvField(c.AddressCity)},{CsvField(c.AddressState)},{CsvField(c.AddressZipCode)},{c.CreatedAt:dd/MM/yyyy}");
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
@@ -612,8 +610,8 @@ public class ReportService(AppDbContext context) : IReportService
         var sb = new StringBuilder();
         sb.AppendLine("Nome,Descrição,Preço,Duração (min),Categoria,Ativo,Cadastrado em");
         foreach (var s in services)
-            sb.AppendLine($"\"{s.Name}\",\"{s.Description ?? ""}\"," +
-                          $"{s.Price:F2},{s.DurationMinutes?.ToString() ?? ""},\"{s.CategoryName}\"," +
+            sb.AppendLine($"{CsvField(s.Name)},{CsvField(s.Description)}," +
+                          $"{s.Price:F2},{s.DurationMinutes?.ToString() ?? ""},{CsvField(s.CategoryName)}," +
                           $"{(s.IsActive ? "Sim" : "Não")},{s.CreatedAt:dd/MM/yyyy}");
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
@@ -630,7 +628,7 @@ public class ReportService(AppDbContext context) : IReportService
         var sb = new StringBuilder();
         sb.AppendLine("Descrição,Categoria,Valor,Vencimento,Pago,Data de Pagamento,Recorrente");
         foreach (var e in expenses)
-            sb.AppendLine($"\"{e.Description}\",{e.Category},{e.Amount:F2},{e.DueDate:dd/MM/yyyy}," +
+            sb.AppendLine($"{CsvField(e.Description)},{e.Category},{e.Amount:F2},{e.DueDate:dd/MM/yyyy}," +
                           $"{(e.IsPaid ? "Sim" : "Não")},{(e.PaidAt.HasValue ? e.PaidAt.Value.ToString("dd/MM/yyyy") : "")},{(e.IsRecurring ? "Sim" : "Não")}");
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
@@ -640,7 +638,14 @@ public class ReportService(AppDbContext context) : IReportService
         var sales = await context.Sales
             .IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantId && s.Status == SaleStatus.Active)
-            .Select(s => new { s.CreatedAt, s.Total, Cost = s.Items.Sum(i => i.PurchasePriceSnapshot.HasValue ? i.PurchasePriceSnapshot.Value * i.Quantity : 0m) })
+            .Select(s => new
+            {
+                s.CreatedAt,
+                s.Total,
+                s.FeeAmount,
+                ProfitRevenue = s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
+                Cost = s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
+            })
             .ToListAsync();
 
         var expenses = await context.Expenses
@@ -650,19 +655,20 @@ public class ReportService(AppDbContext context) : IReportService
             .ToListAsync();
 
         var salesByMonth  = sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), Cost: g.Sum(s => s.Cost)));
+            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), ProfitRevenue: g.Sum(s => s.ProfitRevenue), Cost: g.Sum(s => s.Cost), Fees: g.Sum(s => s.FeeAmount)));
         var expensesByMonth = expenses.GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 
         var allMonths = salesByMonth.Keys.Union(expensesByMonth.Keys).OrderBy(d => d).ToList();
 
         var sb = new StringBuilder();
-        sb.AppendLine("Mês,Receita,Custo,Despesas,Lucro Bruto,Resultado Líquido");
+        sb.AppendLine("Mês,Receita,Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
         foreach (var month in allMonths)
         {
-            var (revenue, cost) = salesByMonth.GetValueOrDefault(month);
+            var (revenue, profitRevenue, cost, fees) = salesByMonth.GetValueOrDefault(month);
             var expTotal = expensesByMonth.GetValueOrDefault(month);
-            sb.AppendLine($"{month:MM/yyyy},{revenue:F2},{cost:F2},{expTotal:F2},{revenue - cost:F2},{revenue - cost - expTotal:F2}");
+            var grossProfit = profitRevenue - cost;
+            sb.AppendLine($"{month:MM/yyyy},{revenue:F2},{cost:F2},{fees:F2},{expTotal:F2},{grossProfit:F2},{grossProfit - fees - expTotal:F2}");
         }
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
@@ -680,11 +686,23 @@ public class ReportService(AppDbContext context) : IReportService
         var sb = new StringBuilder();
         sb.AppendLine("Nome,E-mail,Telefone,Cargo,Ativo,Cadastrado em");
         foreach (var e in employees)
-            sb.AppendLine($"\"{e.UserName}\",{e.UserEmail},{e.Phone ?? ""},\"{e.RoleName}\",{(e.IsActive ? "Sim" : "Não")},{e.CreatedAt:dd/MM/yyyy}");
+            sb.AppendLine($"{CsvField(e.UserName)},{CsvField(e.UserEmail)},{CsvField(e.Phone)},{CsvField(e.RoleName)},{(e.IsActive ? "Sim" : "Não")},{e.CreatedAt:dd/MM/yyyy}");
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────
+
+    // Escapa um campo de texto para CSV: duplica aspas, envolve em aspas quando há vírgula/aspas/quebra
+    // de linha, e neutraliza injeção de fórmula (=, +, -, @) prefixando uma aspa simples.
+    private static string CsvField(string? value)
+    {
+        var v = value ?? "";
+        if (v.Length > 0 && v[0] is '=' or '+' or '-' or '@')
+            v = "'" + v;
+        if (v.IndexOfAny(['"', ',', '\n', '\r']) >= 0)
+            v = "\"" + v.Replace("\"", "\"\"") + "\"";
+        return v;
+    }
 
     private static (DateTime Start, DateTime End) ResolveDateRange(
         string? period, DateTime? startDate, DateTime? endDate)
@@ -716,61 +734,6 @@ public class ReportService(AppDbContext context) : IReportService
             "monthly" => "Este mês",
             _         => $"{start:dd/MM/yyyy} – {end:dd/MM/yyyy}"
         };
-
-    private static List<SalesChartPoint> FillDays(
-        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
-        DateTime start, DateTime end)
-    {
-        var result = new List<SalesChartPoint>();
-        for (var d = start; d <= end; d = d.AddDays(1))
-        {
-            var v = data.GetValueOrDefault(d);
-            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count, v.Cost));
-        }
-        return result;
-    }
-
-    private static List<SalesChartPoint> FillWeeks(
-        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
-        DateTime start, DateTime end)
-    {
-        var result = new List<SalesChartPoint>();
-        for (var d = start; d <= end; d = d.AddDays(7))
-        {
-            var v = data.GetValueOrDefault(d);
-            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count, v.Cost));
-        }
-        return result;
-    }
-
-    private static List<SalesChartPoint> FillMonths(
-        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
-        DateTime start, DateTime end)
-    {
-        var months = new[] {
-            "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-            "Jul", "Ago", "Set", "Out", "Nov", "Dez"
-        };
-        var result = new List<SalesChartPoint>();
-        for (var d = start; d <= end; d = d.AddMonths(1))
-        {
-            var v = data.GetValueOrDefault(d);
-            result.Add(new($"{months[d.Month - 1]}/{d.Year}", v.Total, v.Count, v.Cost));
-        }
-        return result;
-    }
-
-    private static List<SalesChartPoint> FillYears(
-        Dictionary<int, (decimal Total, int Count, decimal Cost)> data,
-        int start, int end)
-    {
-        return Enumerable.Range(start, end - start + 1)
-            .Select(y => {
-                var v = data.GetValueOrDefault(y);
-                return new SalesChartPoint(y.ToString(), v.Total, v.Count, v.Cost);
-            })
-            .ToList();
-    }
 
     private static DateTime GetMonday(DateTime date)
     {

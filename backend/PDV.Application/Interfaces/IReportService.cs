@@ -4,9 +4,6 @@ namespace PDV.Application.Interfaces;
 
 public interface IReportService
 {
-    Task<List<SalesChartPoint>> GetSalesChartAsync(
-        DateTime startDate, DateTime endDate, string groupBy);
-
     Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
         DateTime startDate, DateTime endDate, string groupBy);
 

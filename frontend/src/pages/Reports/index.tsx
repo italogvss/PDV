@@ -12,14 +12,12 @@ import {
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
 import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
 import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
 import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import { formatBRL } from '../../utils/currency'
 import PageHeader from '../../components/PageHeader'
@@ -32,7 +30,7 @@ import {
   useTopProducts,
   useExpensesByCategory,
 } from '../../hooks/useReports'
-import type { MonthPreset, GroupBy } from '../../types/report.types'
+import type { RangePreset, GroupBy } from '../../types/report.types'
 import FinancialBarChart from './components/FinancialBarChart'
 import AccumulatedProfitChart from './components/AccumulatedProfitChart'
 import RevenueLineChart from './components/RevenueLineChart'
@@ -41,43 +39,47 @@ import TopProductsChart from './components/TopProductsChart'
 import PaymentMethodPieChart from './components/PaymentMethodPieChart'
 import ExpensesByCategoryPieChart from './components/ExpensesByCategoryPieChart'
 
-const MONTH_PRESETS: MonthPreset[] = [
-  { label: 'Último mês',       key: '1m',  months: 1  },
-  { label: 'Últimos 2 meses',  key: '2m',  months: 2  },
-  { label: 'Últimos 3 meses',  key: '3m',  months: 3  },
-  { label: 'Últimos 6 meses',  key: '6m',  months: 6  },
-  { label: 'Últimos 12 meses', key: '12m', months: 12 },
+// Janelas móveis a partir de hoje (sem snap pro início do mês).
+const RANGE_PRESETS: RangePreset[] = [
+  { label: 'Últimos 7 dias',   key: '7d',  amount: 7,  unit: 'day'   },
+  { label: 'Últimos 30 dias',  key: '30d', amount: 30, unit: 'day'   },
+  { label: 'Últimos 3 meses',  key: '3m',  amount: 3,  unit: 'month' },
+  { label: 'Últimos 6 meses',  key: '6m',  amount: 6,  unit: 'month' },
+  { label: 'Últimos 12 meses', key: '12m', amount: 12, unit: 'month' },
 ]
 
-function suggestGroupBy(monthsSpan: number): GroupBy {
-  if (monthsSpan <= 1) return 'day'
-  if (monthsSpan <= 6) return 'week'
+// Acima deste tamanho, agrupar por dia gera rótulos demais no eixo X.
+const MAX_DAYS_FOR_DAY_GROUPING = 62
+
+function suggestGroupBy(daysSpan: number): GroupBy {
+  if (daysSpan <= 31) return 'day'
+  if (daysSpan <= 92) return 'week'
   return 'month'
 }
 
 export default function ReportsPage() {
   const [dateAnchor, setDateAnchor] = useState<HTMLElement | null>(null)
-  const [startMonth, setStartMonth] = useState<Dayjs>(dayjs().subtract(1, 'month'))
-  const [endMonth, setEndMonth] = useState<Dayjs>(dayjs())
-  const [selectedPreset, setSelectedPreset] = useState<string | null>('1m')
-  const [groupBy, setGroupBy] = useState<GroupBy>('week')
+  const [start, setStart] = useState<Dayjs>(dayjs().subtract(29, 'day'))
+  const [end, setEnd] = useState<Dayjs>(dayjs())
+  const [selectedPreset, setSelectedPreset] = useState<string | null>('30d')
+  const [groupBy, setGroupBy] = useState<GroupBy>('day')
 
-  const startDate = startMonth.startOf('month').format('YYYY-MM-DD')
-  const endDate = endMonth.endOf('month').format('YYYY-MM-DD')
+  const startDate = start.format('YYYY-MM-DD')
+  const endDate = end.format('YYYY-MM-DD')
 
-  const monthsSpan = useMemo(
-    () => endMonth.startOf('month').diff(startMonth.startOf('month'), 'month') + 1,
-    [startMonth, endMonth],
+  const daysSpan = useMemo(
+    () => end.startOf('day').diff(start.startOf('day'), 'day') + 1,
+    [start, end],
   )
 
   // Ao trocar o período, reajusta a granularidade para uma escala adequada.
   // Alternar o toggle manualmente não mexe no span, então a escolha do usuário persiste.
   useEffect(() => {
-    setGroupBy(suggestGroupBy(monthsSpan))
-  }, [monthsSpan])
+    setGroupBy(suggestGroupBy(daysSpan))
+  }, [daysSpan])
 
   const presetLabel = useMemo(
-    () => MONTH_PRESETS.find((p) => p.key === selectedPreset)?.label ?? 'Personalizado',
+    () => RANGE_PRESETS.find((p) => p.key === selectedPreset)?.label ?? 'Personalizado',
     [selectedPreset],
   )
 
@@ -99,16 +101,13 @@ export default function ReportsPage() {
     return ((metrics.cancelledCount / total) * 100).toFixed(1)
   }, [metrics])
 
-  const handlePresetSelect = (preset: MonthPreset) => {
-    setStartMonth(dayjs().subtract(preset.months, 'month'))
-    setEndMonth(dayjs())
+  const handlePresetSelect = (preset: RangePreset) => {
+    // Para dias, descontamos N-1 (a janela inclui hoje) → exatamente N dias.
+    const back = preset.unit === 'day' ? preset.amount - 1 : preset.amount
+    setStart(dayjs().subtract(back, preset.unit))
+    setEnd(dayjs())
     setSelectedPreset(preset.key)
     setDateAnchor(null)
-  }
-
-  const handleExportPDF = () => {
-    // TODO: Implementar exportação em PDF
-    console.log('Exportar relatório em PDF')
   }
 
   return (
@@ -124,36 +123,31 @@ export default function ReportsPage() {
         </Button>
         <DatePicker
           label="De"
-          views={['month', 'year']}
-          openTo="month"
-          format="MM/YYYY"
-          value={startMonth}
+          format="DD/MM/YYYY"
+          value={start}
+          maxDate={end}
           onChange={(val) => {
             if (val) {
-              setStartMonth(val)
+              setStart(val)
               setSelectedPreset(null)
             }
           }}
-          slotProps={{ textField: { sx: { width: 140 } } }}
+          slotProps={{ textField: { sx: { width: 150 } } }}
         />
         <DatePicker
           label="Até"
-          views={['month', 'year']}
-          openTo="month"
-          format="MM/YYYY"
-          value={endMonth}
-          minDate={startMonth}
+          format="DD/MM/YYYY"
+          value={end}
+          minDate={start}
+          maxDate={dayjs()}
           onChange={(val) => {
             if (val) {
-              setEndMonth(val)
+              setEnd(val)
               setSelectedPreset(null)
             }
           }}
-          slotProps={{ textField: { sx: { width: 140 } } }}
+          slotProps={{ textField: { sx: { width: 150 } } }}
         />
-        <Button variant="contained" startIcon={<FileDownloadOutlined />} onClick={handleExportPDF}>
-          Exportar PDF
-        </Button>
       </PageHeader>
 
       <Menu
@@ -163,7 +157,7 @@ export default function ReportsPage() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        {MONTH_PRESETS.map((preset) => (
+        {RANGE_PRESETS.map((preset) => (
           <MenuItem
             key={preset.key}
             onClick={() => handlePresetSelect(preset)}
@@ -191,7 +185,6 @@ export default function ReportsPage() {
             icon={ShoppingCartRounded}
             label="Total de vendas"
             value={String(metrics?.totalSales ?? 0)}
-            badge={{ label: presetLabel.toLowerCase(), color: 'success', icon: TrendingUpRounded }}
           />
           <PageKpiCard
             icon={LocalFireDepartmentRounded}
@@ -224,7 +217,9 @@ export default function ReportsPage() {
             if (value) setGroupBy(value as GroupBy)
           }}
         >
-          <ToggleButton value="day">Dia</ToggleButton>
+          <ToggleButton value="day" disabled={daysSpan > MAX_DAYS_FOR_DAY_GROUPING}>
+            Dia
+          </ToggleButton>
           <ToggleButton value="week">Semana</ToggleButton>
           <ToggleButton value="month">Mês</ToggleButton>
         </ToggleButtonGroup>

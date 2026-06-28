@@ -33,16 +33,6 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("sales/chart")]
-    public async Task<IActionResult> GetSalesChart(
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate,
-        [FromQuery] string groupBy = "day")
-    {
-        var result = await service.GetSalesChartAsync(startDate, endDate, groupBy);
-        return Ok(result);
-    }
-
     [HttpGet("financial-summary")]
     public async Task<IActionResult> GetFinancialSummary(
         [FromQuery] DateTime startDate,

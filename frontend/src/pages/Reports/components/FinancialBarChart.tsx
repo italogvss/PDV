@@ -20,7 +20,7 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
   return (
     <ChartCard
       title="Receita × Resultado líquido"
-      subtitle="Receita − custo dos produtos − despesas"
+      subtitle="Resultado = margem (itens com custo) − taxas − despesas"
       loading={loading}
       isEmpty={data.length === 0}
     >
