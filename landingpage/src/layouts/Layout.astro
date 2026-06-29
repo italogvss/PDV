@@ -1,0 +1,92 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  canonicalURL?: string;
+  ogImage?: string;
+}
+
+const { title, description, canonicalURL, ogImage } = Astro.props;
+const gaId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
+
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1916" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- marca html.js antes da pintura: reveal só esconde quando há JS -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonicalURL && <link rel="canonical" href={canonicalURL} />}
+
+    <!-- Preload das fontes principais (display + body) -->
+    <link rel="preload" href="/fonts/Coolvetica-Rg.otf" as="font" type="font/otf" crossorigin />
+    <link rel="preload" href="/fonts/Geist.ttf" as="font" type="font/ttf" crossorigin />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    {canonicalURL && <meta property="og:url" content={canonicalURL} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <!-- GA4 — só carrega se PUBLIC_GA_MEASUREMENT_ID estiver definido -->
+    {gaId && (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+        <script define:vars={{ gaId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </>
+    )}
+  </head>
+  <body>
+    <slot />
+
+    <!-- Reveal no scroll: adiciona .in-view quando o elemento entra na viewport -->
+    <script>
+      const reveal = () => {
+        const els = document.querySelectorAll('[data-reveal]');
+        if (!('IntersectionObserver' in window) || els.length === 0) {
+          els.forEach((el) => el.classList.add('in-view'));
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('in-view');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { threshold: 0, rootMargin: '0px 0px -10% 0px' }
+        );
+        els.forEach((el) => io.observe(el));
+        // rede de segurança: qualquer elemento já acima/dentro da viewport aparece
+        requestAnimationFrame(() => {
+          els.forEach((el) => {
+            if (el.getBoundingClientRect().top < window.innerHeight * 0.92) {
+              el.classList.add('in-view');
+              io.unobserve(el);
+            }
+          });
+        });
+      };
+      if (document.readyState !== 'loading') reveal();
+      else document.addEventListener('DOMContentLoaded', reveal);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,228 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import Accordion from '../components/Accordion.astro';
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+
+const categorias = [
+  {
+    id: 'inicio', titulo: 'Primeiros passos',
+    itens: [
+      { q: 'Preciso instalar alguma coisa?', a: 'Não. O Ka$hing roda no navegador do celular, tablet ou computador. É só criar a conta e começar a vender.' },
+      { q: 'Funciona sem internet?', a: 'O caixa continua registrando vendas mesmo se a internet cair, e sincroniza tudo automaticamente quando a conexão volta.' },
+      { q: 'Quanto tempo leva pra começar a usar?', a: 'Cerca de 2 minutos pra criar a conta. Você pode cadastrar produtos aos poucos ou importar de uma planilha.' },
+      { q: 'Preciso de um equipamento especial?', a: 'Não. Funciona com o que você já tem. Se quiser, dá pra conectar leitor de código de barras e impressora de recibo.' },
+    ],
+  },
+  {
+    id: 'recursos', titulo: 'Funcionalidades',
+    itens: [
+      { q: 'Dá pra controlar o estoque?', a: 'Sim. Cada venda dá baixa automática e o sistema avisa quando um produto está acabando.' },
+      { q: 'Tem agendamento de horários?', a: 'Tem. Seus clientes marcam por um link e recebem lembrete no WhatsApp. Ideal pra barbearia, salão e petshop.' },
+      { q: 'Consigo ver quanto lucrei de verdade?', a: 'Sim. Você lança as despesas e o Ka$hing mostra o lucro real — vendas menos custos —, não só o que entrou no caixa.' },
+      { q: 'Posso colocar meus funcionários pra usar?', a: 'Pode. Cada um tem o próprio acesso, com permissão por módulo. Você decide quem vê relatório, custo e configuração.' },
+    ],
+  },
+  {
+    id: 'planos', titulo: 'Planos e cobrança',
+    itens: [
+      { q: 'O teste grátis pede cartão?', a: 'Não. São 14 dias sem cartão cadastrado. Quando acabam, você escolhe se quer continuar. Veja os <a href="/preco">planos e preços</a>.' },
+      { q: 'Tem fidelidade ou multa de cancelamento?', a: 'Nenhuma. Cancela quando quiser, direto no painel, e usa até o fim do período já pago.' },
+      { q: 'Tem taxa por venda?', a: 'Não. Você paga só a mensalidade do plano. O Ka$hing não fica com nenhuma fatia das suas vendas.' },
+      { q: 'Posso trocar de plano depois?', a: 'Sim, a qualquer momento. Subir ou descer de plano é imediato e o valor é ajustado de forma proporcional.' },
+    ],
+  },
+  {
+    id: 'dados', titulo: 'Segurança e dados',
+    itens: [
+      { q: 'Meus dados ficam seguros?', a: 'Ficam. Tudo é armazenado com criptografia e backup automático. Só você e quem você autorizar têm acesso à sua loja.' },
+      { q: 'Se eu cancelar, perco meus dados?', a: 'Você pode exportar seus dados antes de sair. Mantemos a conta acessível por um período pra você baixar o que precisar.' },
+      { q: 'Outra loja pode ver meus números?', a: 'Jamais. Cada loja é totalmente isolada — seus dados nunca se misturam com os de outro comércio.' },
+    ],
+  },
+];
+
+const totalPerguntas = categorias.reduce((n, c) => n + c.itens.length, 0);
+let runningIndex = 0;
+---
+
+<Layout
+  title="FAQ — Perguntas frequentes sobre o Ka$hing"
+  description="Respostas rápidas sobre funcionamento, planos, cobrança e segurança do Ka$hing. Busque a sua dúvida e volte a vender."
+>
+  <Navbar />
+
+  <main>
+    <!-- ===== HERO + BUSCA ===== -->
+    <section class="faq-hero">
+      <div class="container faq-hero-inner">
+        <p class="eyebrow" data-reveal>Central de ajuda</p>
+        <h1 class="faq-hero-title" data-reveal>Como podemos ajudar?</h1>
+        <p class="faq-hero-sub" data-reveal>
+          {totalPerguntas} respostas curtas, sem juridiquês. Procure a sua dúvida abaixo.
+        </p>
+        <div class="faq-search" data-reveal>
+          <svg class="faq-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            id="faq-search"
+            class="faq-search-input"
+            placeholder="Buscar por palavra-chave… (ex.: estoque, cartão, cancelar)"
+            aria-label="Buscar nas perguntas frequentes"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CATEGORIAS ===== -->
+    <section class="faq-list">
+      <div class="container">
+        {categorias.map((cat) => {
+          const start = runningIndex;
+          runningIndex += cat.itens.length;
+          return (
+            <div class="faq-cat" data-cat>
+              <h2 class="faq-cat-title" data-reveal>{cat.titulo}</h2>
+              <Accordion items={cat.itens} startReveal={start} />
+            </div>
+          );
+        })}
+        <p class="faq-empty" id="faq-empty" hidden>
+          Nada encontrado pra essa busca. Tente outra palavra ou
+          <a href="#contato">fale com a gente</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== CTA DUPLA SAÍDA ===== -->
+    <section class="faq-cta" id="contato">
+      <div class="container">
+        <div class="faq-cta-card" data-reveal>
+          <div class="faq-cta-col">
+            <h3 class="faq-cta-h">Ainda com dúvida?</h3>
+            <p class="faq-cta-p">A gente responde rápido, de gente pra gente. Sem robô, sem fila eterna.</p>
+            <a href="https://wa.me/" class="faq-cta-ghost">Falar com a gente →</a>
+          </div>
+          <div class="faq-cta-divider" aria-hidden="true"></div>
+          <div class="faq-cta-col">
+            <h3 class="faq-cta-h">Já resolveu?</h3>
+            <p class="faq-cta-p">Então não perca tempo. Crie a conta e registre sua primeira venda hoje.</p>
+            <a href={`${appUrl}/cadastro`} class="btn-brand">Criar conta grátis</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  /* ===== HERO ===== */
+  .faq-hero { padding-block: var(--space-12) var(--space-8); }
+  .faq-hero-inner { text-align: center; max-width: 46rem; margin-inline: auto; }
+  .faq-hero-inner .eyebrow { justify-content: center; }
+  .faq-hero-title { font-size: clamp(var(--text-4xl), 6.5vw, var(--text-6xl)); letter-spacing: -0.03em; margin: var(--space-4) 0; }
+  .faq-hero-sub { font-size: var(--text-xl); color: var(--color-text-muted); margin-bottom: var(--space-7); }
+
+  .faq-search {
+    position: relative;
+    display: flex; align-items: center;
+    max-width: 38rem; margin-inline: auto;
+  }
+  .faq-search-icon {
+    position: absolute; left: var(--space-5);
+    width: 22px; height: 22px; color: var(--color-text-faint);
+    pointer-events: none;
+  }
+  .faq-search-input {
+    width: 100%;
+    font-family: var(--font-body); font-size: var(--text-lg);
+    color: var(--color-ink);
+    padding: var(--space-4) var(--space-5) var(--space-4) var(--space-12);
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  }
+  .faq-search-input::placeholder { color: var(--color-text-faint); }
+  .faq-search-input:focus-visible {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 4px rgba(37, 207, 63, 0.16);
+  }
+
+  /* ===== LISTA ===== */
+  .faq-list { padding-bottom: var(--space-12); }
+  .faq-cat { margin-bottom: var(--space-10); max-width: 52rem; margin-inline: auto; }
+  .faq-cat.is-hidden { display: none; }
+  .faq-cat-title { font-size: var(--text-2xl); margin-bottom: var(--space-4); }
+  .faq-empty {
+    max-width: 52rem; margin: var(--space-6) auto 0;
+    text-align: center; font-size: var(--text-lg); color: var(--color-text-muted);
+  }
+  .faq-empty a { color: var(--color-brand-deep); font-weight: var(--weight-medium); }
+
+  /* item escondido pela busca */
+  :global(.acc-item.is-hidden) { display: none; }
+
+  /* ===== CTA DUPLA ===== */
+  .faq-cta { padding-block: var(--space-6) var(--space-14); }
+  .faq-cta-card {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: var(--space-8);
+    align-items: center;
+    padding: var(--space-10);
+    background:
+      radial-gradient(120% 130% at 0% 0%, rgba(37, 207, 63, 0.1), transparent 55%),
+      var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+  }
+  .faq-cta-col { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .faq-cta-h { font-size: var(--text-2xl); }
+  .faq-cta-p { font-size: var(--text-base); color: var(--color-text-muted); }
+  .faq-cta-ghost { font-weight: var(--weight-semibold); color: var(--color-brand-deep); margin-top: var(--space-1); }
+  .faq-cta-ghost:hover { text-decoration: underline; }
+  .faq-cta-divider { width: 1px; height: 100%; min-height: 90px; background: var(--color-line); }
+
+  @media (max-width: 720px) {
+    .faq-cta-card { grid-template-columns: 1fr; gap: var(--space-6); padding: var(--space-7); }
+    .faq-cta-divider { width: 100%; height: 1px; min-height: 0; }
+  }
+</style>
+
+<script>
+  const norm = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  const input = document.getElementById('faq-search') as HTMLInputElement | null;
+  const empty = document.getElementById('faq-empty');
+  const cats = document.querySelectorAll<HTMLElement>('.faq-cat');
+
+  input?.addEventListener('input', () => {
+    const q = norm(input.value.trim());
+    let anyVisible = false;
+
+    cats.forEach((cat) => {
+      let catVisible = false;
+      cat.querySelectorAll<HTMLElement>('.acc-item').forEach((item) => {
+        const text = norm(item.textContent ?? '');
+        const match = q === '' || text.includes(q);
+        item.classList.toggle('is-hidden', !match);
+        if (match) catVisible = true;
+      });
+      cat.classList.toggle('is-hidden', !catVisible);
+      if (catVisible) anyVisible = true;
+    });
+
+    if (empty) empty.hidden = anyVisible || q === '';
+  });
+</script>

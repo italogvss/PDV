@@ -15,6 +15,7 @@ services:
     depends_on:
       - api
       - frontend
+      - landingpage
     restart: unless-stopped
 
   # -- API .NET (estagio final de producao) -------------------
@@ -44,6 +45,18 @@ services:
         VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     container_name: pdv-frontend
+    restart: unless-stopped
+
+  # -- Landing page (build estatico servido por nginx) -------
+  landingpage:
+    build:
+      context: ./landingpage
+      dockerfile: Dockerfile
+      target: final
+      args:
+        PUBLIC_APP_URL: ${APP_URL}
+        PUBLIC_GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID}
+    container_name: pdv-landingpage
     restart: unless-stopped
 
   # -- Banco de dados MySQL -----------------------------------

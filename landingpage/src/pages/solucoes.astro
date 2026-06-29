@@ -1,0 +1,342 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import CtaFinal from '../components/CtaFinal.astro';
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+
+const modulos = [
+  {
+    id: 'vendas', tag: 'PDV', nome: 'Vendas',
+    titulo: 'Um caixa rápido que qualquer um aprende',
+    desc: 'O coração do Ka$hing. Registra a venda em segundos, do balcão ou do celular, com o produto saindo do estoque na hora.',
+    capacidades: [
+      'Busca por nome, código ou leitor de código de barras',
+      'Desconto por item ou no total, com ou sem senha',
+      'Dinheiro, Pix, cartão ou fiado — tudo numa tela',
+      'Recibo enviado no WhatsApp do cliente',
+    ],
+    segmentos: ['Mercadinho', 'Lanchonete', 'Adega'],
+    img: 'https://placehold.co/720x520/1a1916/5ee074.png?text=Tela+de+Vendas',
+    icon: '<path d="M3 11.4 11.4 3H20a1 1 0 0 1 1 1v8.6l-8.4 8.4a1.5 1.5 0 0 1-2.1 0L3 13.5a1.5 1.5 0 0 1 0-2.1Z"/><circle cx="16.4" cy="7.6" r="1.4"/>',
+  },
+  {
+    id: 'estoque', tag: 'Controle', nome: 'Estoque',
+    titulo: 'O estoque que se conta sozinho',
+    desc: 'Cada venda dá baixa automática. Você para de descobrir que acabou só quando o cliente pede.',
+    capacidades: [
+      'Baixa automática a cada venda',
+      'Alerta de produto acabando',
+      'Entrada de mercadoria em lote',
+      'Custo e margem por produto',
+    ],
+    segmentos: ['Mercadinho', 'Petshop', 'Farmácia'],
+    img: 'https://placehold.co/720x520/14a82e/eafff0.png?text=Estoque',
+    icon: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
+  },
+  {
+    id: 'relatorios', tag: 'Analytics', nome: 'Relatórios',
+    titulo: 'As respostas que a planilha nunca deu',
+    desc: 'Quanto entrou, o que mais vende e o horário de pico — em gráficos que você entende sem ser contador.',
+    capacidades: [
+      'Faturamento por dia, semana e mês',
+      'Ranking de produtos e categorias',
+      'Horários e dias mais movimentados',
+      'Comparação com períodos anteriores',
+    ],
+    segmentos: ['Todos os segmentos'],
+    img: 'https://placehold.co/720x520/1a1916/25cf3f.png?text=Relatorios',
+    icon: '<path d="M5 19V5"/><path d="M5 19h14"/><path d="M9 19v-4.5"/><path d="M14 19v-8"/><path d="M19 19V8.5"/>',
+  },
+  {
+    id: 'agenda', tag: 'Agendamentos', nome: 'Agenda',
+    titulo: 'Agenda cheia, sem caderninho e sem ligação',
+    desc: 'Seus clientes marcam pelo link, recebem lembrete e você abre o dia já sabendo quem vem.',
+    capacidades: [
+      'Link de agendamento para o cliente marcar sozinho',
+      'Lembrete automático por WhatsApp',
+      'Agenda por profissional e por serviço',
+      'Bloqueio de horários e folgas',
+    ],
+    segmentos: ['Barbearia', 'Salão de beleza', 'Petshop'],
+    img: 'https://placehold.co/720x520/14a82e/eafff0.png?text=Agenda',
+    icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3.5v3M16 3.5v3"/>',
+  },
+  {
+    id: 'despesas', tag: 'Financeiro', nome: 'Despesas',
+    titulo: 'Saiba se sobrou no fim do mês',
+    desc: 'Lança as contas, anexa o comprovante e o Ka$hing mostra o lucro de verdade — não só o que entrou.',
+    capacidades: [
+      'Lançamento de despesas fixas e variáveis',
+      'Comprovante anexado em cada conta',
+      'Lucro real = vendas menos despesas',
+      'Contas a pagar com data de vencimento',
+    ],
+    segmentos: ['Todos os segmentos'],
+    img: 'https://placehold.co/720x520/1a1916/5ee074.png?text=Financeiro',
+    icon: '<path d="M6 3h12v18l-2.2-1.4L13.6 21 12 19.6 10.4 21l-1.6-1.4L6 21V3Z"/><path d="M9.5 8.5h5M9.5 12.5h5"/>',
+  },
+  {
+    id: 'equipe', tag: 'Acesso', nome: 'Equipe',
+    titulo: 'Cada um vê só o que precisa ver',
+    desc: 'Coloque a equipe pra vender sem expor relatório, custo e configuração. Você manda, eles operam.',
+    capacidades: [
+      'Perfis de dono e funcionário',
+      'Permissão por módulo e por ação',
+      'Histórico de quem fez cada venda',
+      'Bloqueio de desconto e cancelamento',
+    ],
+    segmentos: ['Qualquer loja com equipe'],
+    img: 'https://placehold.co/720x520/14a82e/eafff0.png?text=Equipe',
+    icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.6 2.5-5.6 5.5-5.6s5.5 2 5.5 5.6"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6M17.5 14.6c2.3.5 3.8 2.4 3.8 5.4"/>',
+  },
+];
+---
+
+<Layout
+  title="Soluções — O que o Ka$hing faz pela sua loja"
+  description="Conheça módulo a módulo: PDV, estoque, relatórios, agenda, financeiro e equipe. Veja com telas reais o que o Ka$hing resolve no seu comércio."
+>
+  <Navbar />
+
+  <main>
+    <!-- ===== HERO ===== -->
+    <section class="sol-hero">
+      <div class="container sol-hero-grid">
+        <div class="sol-hero-copy">
+          <p class="eyebrow">O produto por dentro</p>
+          <h1 class="sol-hero-title">Tudo que sua loja faz no dia, num app só</h1>
+          <p class="sol-hero-sub">
+            Você chegou pra avaliar — então vamos direto ao ponto. Cada módulo abaixo
+            resolve uma parte real do seu comércio, com tela de verdade, não promessa.
+          </p>
+          <div class="sol-hero-actions">
+            <a href={`${appUrl}/cadastro`} class="btn-brand">Criar conta grátis</a>
+            <a href="#vendas" class="sol-hero-link">Começar pelos módulos ↓</a>
+          </div>
+        </div>
+        <div class="sol-hero-cluster" aria-hidden="true">
+          <div class="cluster-glow"></div>
+          <img class="cluster-card c-back" src="https://placehold.co/420x300/14a82e/eafff0.png?text=Relatorios" alt="" />
+          <img class="cluster-card c-front" src="https://placehold.co/460x320/1a1916/5ee074.png?text=Vendas" alt="" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ÍNDICE STICKY ===== -->
+    <nav class="sol-index" aria-label="Módulos">
+      <div class="container">
+        <div class="sol-index-bar">
+          {modulos.map((m) => (
+            <a href={`#${m.id}`} class="sol-index-pill" data-spy={m.id}>{m.nome}</a>
+          ))}
+        </div>
+      </div>
+    </nav>
+
+    <!-- ===== MÓDULOS ===== -->
+    {modulos.map((m, i) => (
+      <section id={m.id} class:list={['modulo', { alt: i % 2 === 1 }]}>
+        <div class="container modulo-grid">
+          <div class="modulo-text" data-reveal>
+            <div class="modulo-head">
+              <span class="modulo-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={m.icon} />
+              </span>
+              <span class="modulo-tag">{m.tag}</span>
+            </div>
+            <h2 class="modulo-title">{m.titulo}</h2>
+            <p class="modulo-desc">{m.desc}</p>
+            <ul class="modulo-caps">
+              {m.capacidades.map((c) => <li>{c}</li>)}
+            </ul>
+            <div class="modulo-segs">
+              {m.segmentos.map((s) => <span class="modulo-seg">{s}</span>)}
+            </div>
+          </div>
+          <div class="modulo-shot" data-reveal style="--reveal-delay: 90ms">
+            <div class="modulo-shot-glow" aria-hidden="true"></div>
+            <img src={m.img} alt={`Tela de ${m.nome} do Ka$hing`} loading="lazy" />
+          </div>
+        </div>
+      </section>
+    ))}
+
+    <CtaFinal
+      titulo="Já dá pra ver que cabe na sua loja"
+      subtitulo="Crie a conta e teste cada módulo com os seus próprios produtos. 14 dias, sem cartão."
+    />
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  /* ===== HERO ===== */
+  .sol-hero { padding-block: var(--space-10) var(--space-8); }
+  .sol-hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+    gap: var(--space-10);
+  }
+  .sol-hero-title {
+    font-size: clamp(var(--text-4xl), 6vw, var(--text-6xl));
+    letter-spacing: -0.03em;
+    margin: var(--space-4) 0 var(--space-5);
+  }
+  .sol-hero-sub { font-size: var(--text-xl); color: var(--color-text-muted); max-width: 32rem; margin-bottom: var(--space-6); }
+  .sol-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-5); }
+  .sol-hero-link { font-weight: var(--weight-medium); font-size: var(--text-lg); color: var(--color-ink); transition: color var(--dur-fast) var(--ease-out); }
+  .sol-hero-link:hover { color: var(--color-brand-deep); }
+
+  .sol-hero-cluster { position: relative; min-height: 340px; }
+  .cluster-glow {
+    position: absolute; inset: 10% 10% 0 10%;
+    background: radial-gradient(60% 60% at 50% 50%, rgba(37, 207, 63, 0.5), transparent 70%);
+    filter: blur(50px);
+  }
+  .cluster-card {
+    position: absolute;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-lg);
+  }
+  .c-back { width: 70%; top: 4%; right: 0; transform: rotate(3deg); }
+  .c-front { width: 78%; bottom: 0; left: 0; transform: rotate(-2deg); box-shadow: var(--shadow-glow); }
+
+  /* ===== ÍNDICE STICKY (barra flutuante, estilo navbar) ===== */
+  .sol-index {
+    position: sticky;
+    top: 84px;
+    z-index: 90;
+    padding-block: var(--space-3);
+    pointer-events: none; /* só a barra interna captura clique */
+  }
+  .sol-index-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    padding: var(--space-1);
+    pointer-events: auto;
+    background: rgba(251, 251, 247, 0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sol-index-bar::-webkit-scrollbar { display: none; }
+  .sol-index-pill {
+    flex-shrink: 0;
+    font-family: var(--font-body);
+    font-weight: var(--weight-medium);
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .sol-index-pill:hover { color: var(--color-ink); background: var(--color-cloud); }
+  .sol-index-pill.active { color: var(--color-brand-deep); background: var(--color-mint); }
+
+  /* ===== MÓDULOS ===== */
+  .modulo { padding-block: var(--space-12); scroll-margin-top: 150px; }
+  .modulo.alt { background: var(--color-cloud); }
+  .modulo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.05fr;
+    align-items: center;
+    gap: var(--space-10);
+  }
+  .modulo.alt .modulo-text { order: 2; }
+  .modulo.alt .modulo-shot { order: 1; }
+
+  .modulo-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .modulo-icon {
+    display: grid; place-items: center;
+    width: 48px; height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--color-mint); color: var(--color-brand-deep);
+  }
+  .modulo-icon svg { width: 26px; height: 26px; }
+  .modulo-tag {
+    font-weight: var(--weight-semibold); font-size: var(--text-xs);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--color-brand-deep); background: var(--color-mint);
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-full);
+  }
+  .modulo-title { font-size: clamp(var(--text-3xl), 3.6vw, var(--text-5xl)); margin-bottom: var(--space-4); }
+  .modulo-desc { font-size: var(--text-lg); color: var(--color-text-muted); max-width: 34rem; margin-bottom: var(--space-5); }
+  .modulo-caps { display: grid; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .modulo-caps li { position: relative; padding-left: var(--space-7); font-size: var(--text-base); color: var(--color-ink); }
+  .modulo-caps li::before {
+    content: '✓'; position: absolute; left: 0; top: -1px;
+    display: grid; place-items: center;
+    width: 20px; height: 20px;
+    color: var(--color-on-brand); background: var(--color-brand);
+    border-radius: var(--radius-full); font-size: 11px; font-weight: var(--weight-bold);
+  }
+  .modulo-segs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .modulo-seg {
+    font-size: var(--text-sm); color: var(--color-text-muted);
+    background: var(--color-card); border: 1px solid var(--color-line);
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-full);
+  }
+
+  .modulo-shot { position: relative; }
+  .modulo-shot-glow {
+    position: absolute; inset: 12% 6% -8% 6%;
+    background: radial-gradient(60% 60% at 50% 60%, rgba(37, 207, 63, 0.4), transparent 70%);
+    filter: blur(46px);
+  }
+  .modulo-shot img {
+    position: relative;
+    width: 100%; height: auto;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-lg);
+  }
+
+  @media (max-width: 920px) {
+    .sol-hero-grid { grid-template-columns: 1fr; gap: var(--space-10); }
+    .sol-hero-cluster { min-height: 300px; max-width: 30rem; }
+    .modulo-grid { grid-template-columns: 1fr; gap: var(--space-7); }
+    .modulo.alt .modulo-text { order: 0; }
+    .modulo.alt .modulo-shot { order: 0; }
+    .modulo { padding-block: var(--space-10); }
+  }
+</style>
+
+<script>
+  // scrollspy: marca o módulo visível no índice
+  const spy = () => {
+    const pills = new Map<string, Element>();
+    document.querySelectorAll('.sol-index-pill').forEach((p) => {
+      const id = p.getAttribute('data-spy');
+      if (id) pills.set(id, p);
+    });
+    const sections = document.querySelectorAll('.modulo');
+    if (!('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            pills.forEach((p) => p.classList.remove('active'));
+            pills.get(e.target.id)?.classList.add('active');
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
+    sections.forEach((s) => io.observe(s));
+  };
+  if (document.readyState !== 'loading') spy();
+  else document.addEventListener('DOMContentLoaded', spy);
+</script>

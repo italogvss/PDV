@@ -1,0 +1,135 @@
+---
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+const ano = new Date().getFullYear();
+
+const colunas = [
+  {
+    titulo: 'Produto',
+    links: [
+      { label: 'Soluções', href: '/solucoes' },
+      { label: 'Preço', href: '/preco' },
+      { label: 'FAQ', href: '/faq' },
+    ],
+  },
+  {
+    titulo: 'Empresa',
+    links: [
+      { label: 'Sobre', href: '#' },
+      { label: 'Contato', href: '#' },
+      { label: 'Blog', href: '#' },
+    ],
+  },
+  {
+    titulo: 'Legal',
+    links: [
+      { label: 'Termos de uso', href: '#' },
+      { label: 'Privacidade', href: '#' },
+    ],
+  },
+];
+---
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="/logo-black.png" alt="Ka$hing" class="footer-logo" width="140" height="36" />
+        <p class="footer-tagline">
+          O ponto de venda que faz a sua loja soar <span>cha-ching</span>.
+          Gestão e vendas para o pequeno comércio brasileiro.
+        </p>
+        <a href={`${appUrl}/cadastro`} class="btn-brand footer-cta">Criar conta grátis</a>
+      </div>
+
+      <nav class="footer-cols" aria-label="Rodapé">
+        {colunas.map((col) => (
+          <div class="footer-col">
+            <h3 class="footer-col-title">{col.titulo}</h3>
+            <ul>
+              {col.links.map((l) => (
+                <li><a href={l.href} class="footer-link">{l.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© {ano} Ka$hing. Todos os direitos reservados.</p>
+      <p class="footer-made">Feito no Brasil 🇧🇷</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--color-ink);
+    color: var(--color-on-ink-muted);
+    padding-block: var(--space-12) var(--space-6);
+    border-top-left-radius: var(--radius-2xl);
+    border-top-right-radius: var(--radius-2xl);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 2fr;
+    gap: var(--space-10);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid rgba(247, 247, 241, 0.1);
+  }
+  .footer-logo {
+    height: 30px;
+    width: auto;
+    /* logo preto → branco para superfície escura */
+    filter: brightness(0) invert(1);
+    margin-bottom: var(--space-4);
+  }
+  .footer-tagline {
+    max-width: 26rem;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    margin-bottom: var(--space-5);
+  }
+  .footer-tagline span { color: var(--color-brand-light); font-weight: var(--weight-medium); }
+  .footer-cta { padding: var(--space-3) var(--space-5); }
+
+  .footer-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+  .footer-col-title {
+    font-family: var(--font-body);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-sm);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-on-ink);
+    margin-bottom: var(--space-4);
+  }
+  .footer-col ul { display: flex; flex-direction: column; gap: var(--space-3); }
+  .footer-link {
+    font-size: var(--text-base);
+    color: var(--color-on-ink-muted);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .footer-link:hover { color: var(--color-brand-light); }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding-top: var(--space-6);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 760px) {
+    .footer-grid { grid-template-columns: 1fr; gap: var(--space-8); }
+    .footer-cols { gap: var(--space-5); }
+  }
+  @media (max-width: 440px) {
+    .footer-cols { grid-template-columns: 1fr 1fr; }
+  }
+</style>

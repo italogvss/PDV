@@ -39,10 +39,32 @@
       "Bash(Format-List)",
       "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add AddTenantScheduledDeletion -p PDV.Infrastructure -s PDV.Api)",
       "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef database update -p PDV.Infrastructure -s PDV.Api)",
-      "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add AddSupplierEmailAddressFields -p PDV.Infrastructure -s PDV.Api)"
+      "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add AddSupplierEmailAddressFields -p PDV.Infrastructure -s PDV.Api)",
+      "Bash(node screenshot.mjs http://localhost:4322 home-v1)",
+      "Bash(node \"C:/Users/Italo/AppData/Local/Temp/claude/c--Users-Italo-Documents-Projetos-PDV-Ultra/43e22baa-aa68-496a-b6d4-46401340198b/scratchpad/shot.mjs\" http://localhost:4322 screenshot-3-home-v2.png)",
+      "Bash(node _shot.mjs http://localhost:4322 screenshot-3-home-v2.png)",
+      "Bash(node _shot.mjs http://localhost:4322 screenshot-4-home-mobile.png 390)",
+      "Bash(node _shot.mjs http://localhost:4322/_iconpreview.html screenshot-5-icons.png 900)",
+      "Bash(node _shot.mjs http://localhost:4322 screenshot-6-home-v3.png)",
+      "Bash(node _shot.mjs http://localhost:4322 screenshot-7-home-v4.png)",
+      "Bash(node _shot.mjs http://localhost:4322 screenshot-8-mobile-v2.png 390)",
+      "Bash(node -e \"let f='_shot.mjs',s=require\\('fs'\\).readFileSync\\(f,'utf8'\\);s=s.replace\\('await page.evaluate\\(\\(\\) => window.scrollTo\\(0, 0\\)\\);','await page.evaluate\\(\\(\\) => { document.querySelectorAll\\(\\\\'[data-reveal]\\\\'\\).forEach\\(\\(el\\) => el.classList.add\\(\\\\'in-view\\\\'\\)\\); }\\);\\\\nawait new Promise\\(\\(r\\) => setTimeout\\(r, 400\\)\\);\\\\nawait page.evaluate\\(\\(\\) => window.scrollTo\\(0, 0\\)\\);'\\);require\\('fs'\\).writeFileSync\\(f,s\\);\")",
+      "Bash(curl -s -o /dev/null -w \"solucoes:%{http_code} \" http://localhost:4322/solucoes)",
+      "Bash(curl -s -o /dev/null -w \"preco:%{http_code} \" http://localhost:4322/preco)",
+      "Bash(curl -s -o /dev/null -w \"faq:%{http_code}\\\\n\" http://localhost:4322/faq)",
+      "Bash(node -e 'const f='\\\\''/c/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs'\\\\'',fs=require\\('\\\\''fs'\\\\''\\);let s=fs.readFileSync\\(f,'\\\\''utf8'\\\\''\\);if\\(!s.includes\\('\\\\''in-view'\\\\''\\)\\){s=s.replace\\('\\\\''await page.evaluate\\(\\(\\) => window.scrollTo\\(0, 0\\)\\);'\\\\'','\\\\''await page.evaluate\\(\\(\\) => { document.querySelectorAll\\(String.raw`[data-reveal]`\\).forEach\\(\\(el\\) => el.classList.add\\(\"in-view\"\\)\\); }\\);\\\\nawait new Promise\\(\\(r\\) => setTimeout\\(r, 400\\)\\);\\\\nawait page.evaluate\\(\\(\\) => window.scrollTo\\(0, 0\\)\\);'\\\\''\\);fs.writeFileSync\\(f,s\\);}console.log\\('\\\\''patched'\\\\''\\);')",
+      "Bash(node /c/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs http://localhost:4322/solucoes screenshot-9-solucoes.png)",
+      "Bash(node C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs http://localhost:4322/solucoes screenshot-10-solucoes.png)",
+      "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/preco screenshot-11-preco.png)",
+      "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/faq screenshot-12-faq.png)",
+      "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_verify.mjs\")",
+      "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/preco screenshot-15-preco-mobile.png 390)",
+      "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/solucoes screenshot-16-solucoes-mobile.png 390)",
+      "Bash(node screenshot.mjs http://localhost:4322 hero-chaching-check)"
     ]
   },
   "enabledPlugins": {
-    "frontend-design@claude-code-plugins": true
+    "frontend-design@claude-code-plugins": true,
+    "svg-logo-designer@rknall-custom-skills": true
   }
 }

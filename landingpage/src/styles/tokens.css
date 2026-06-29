@@ -1,0 +1,110 @@
+/* ============================================================
+   Ka$hing — Design Tokens
+   ÚNICA fonte de verdade para cores, tipografia, espaçamento,
+   bordas e sombras. Nunca hardcodar esses valores nos componentes.
+   ============================================================ */
+
+:root {
+  /* ---------- Cores: marca ---------- */
+  --color-brand: #25cf3f;        /* verde "cha-ching" — CTAs, destaques */
+  --color-brand-light: #5ee074;  /* verde claro — hovers suaves, detalhes */
+  --color-brand-dark: #15a82e;   /* verde profundo — hover de CTA, bordas */
+  --color-brand-deep: #0e7d22;   /* verde muito escuro — texto sobre mint */
+
+  /* ---------- Cores: tinta / neutros quentes ---------- */
+  --color-ink: #1a1916;          /* quase-preto quente — texto e superfícies escuras */
+  --color-ink-soft: #2a2925;     /* superfície escura elevada */
+  --color-text: #1a1916;         /* texto principal */
+  --color-text-muted: #6b6a62;   /* texto secundário */
+  --color-text-faint: #9a988e;   /* legendas, metadados */
+
+  /* ---------- Cores: superfícies ---------- */
+  --color-surface: #fbfbf7;      /* fundo da página — papel quente, muito claro */
+  --color-cloud: #f2f1ea;        /* superfície de card tonal */
+  --color-card: #ffffff;         /* card elevado */
+  --color-mint: #e7f9ea;         /* tonal verde claro — superfície de destaque */
+  --color-mint-deep: #d2f3d8;    /* mint um tom acima */
+  --color-line: #e8e7df;         /* divisórias e bordas sutis */
+  --color-line-strong: #d8d7cd;
+
+  /* ---------- Cores: acento quente (uso pontual) ---------- */
+  --color-accent: #ffb23e;       /* mel/âmbar — um único pop por seção, no máximo */
+  --color-accent-soft: #fff0d6;
+
+  /* ---------- Cores: sobre superfícies ---------- */
+  --color-on-brand: #08210d;     /* texto sobre verde — verde-quase-preto, legível */
+  --color-on-ink: #f7f7f1;       /* texto sobre tinta escura */
+  --color-on-ink-muted: #a8a79c;
+
+  /* ---------- Tipografia: famílias ---------- */
+  --font-display: 'Coolvetica', 'Arial Narrow', system-ui, sans-serif;
+  --font-display-compressed: 'Coolvetica Compressed', 'Coolvetica', system-ui, sans-serif;
+  --font-body: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* ---------- Escala de texto ---------- */
+  --text-xs: 0.75rem;     /* 12 */
+  --text-sm: 0.875rem;    /* 14 */
+  --text-base: 1rem;      /* 16 */
+  --text-lg: 1.125rem;    /* 18 */
+  --text-xl: 1.375rem;    /* 22 */
+  --text-2xl: 1.75rem;    /* 28 */
+  --text-3xl: 2.25rem;    /* 36 */
+  --text-4xl: 3rem;       /* 48 */
+  --text-5xl: 4rem;       /* 64 */
+  --text-6xl: 5.5rem;     /* 88 */
+  --text-7xl: 7rem;       /* 112 */
+
+  /* ---------- Pesos ---------- */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------- Espaçamento ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+  --space-12: 5rem;
+  --space-14: 6rem;
+  --space-16: 8rem;
+
+  /* ---------- Bordas (Material You — arredondamento generoso) ---------- */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 40px;
+  --radius-2xl: 56px;
+  --radius-full: 999px;
+
+  /* ---------- Sombras (camadas com tint quente, baixa opacidade) ---------- */
+  --shadow-sm:
+    0 1px 2px rgba(26, 25, 22, 0.04),
+    0 2px 8px rgba(26, 25, 22, 0.05);
+  --shadow-md:
+    0 4px 12px rgba(26, 25, 22, 0.06),
+    0 14px 30px rgba(26, 25, 22, 0.08);
+  --shadow-lg:
+    0 8px 24px rgba(26, 25, 22, 0.08),
+    0 32px 64px rgba(26, 25, 22, 0.12);
+  /* brilho "money" sob telas de produto */
+  --shadow-glow:
+    0 24px 70px -18px rgba(37, 207, 63, 0.5),
+    0 12px 32px -12px rgba(26, 25, 22, 0.18);
+
+  /* ---------- Layout ---------- */
+  --container-max: 1200px;
+  --container-pad: var(--space-5);
+
+  /* ---------- Movimento (spring easing) ---------- */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+}

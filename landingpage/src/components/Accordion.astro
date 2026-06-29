@@ -1,0 +1,117 @@
+---
+interface Item {
+  q: string;
+  a: string;
+}
+interface Props {
+  items: Item[];
+  startReveal?: number;
+}
+const { items, startReveal = 0 } = Astro.props;
+---
+
+<div class="accordion">
+  {items.map((item, i) => (
+    <div class="acc-item" data-reveal style={`--reveal-delay: ${(startReveal + i) * 55}ms`}>
+      <button class="acc-trigger" aria-expanded="false" data-q={item.q}>
+        <span class="acc-q">{item.q}</span>
+        <span class="acc-icon" aria-hidden="true"></span>
+      </button>
+      <div class="acc-panel">
+        <div class="acc-panel-inner">
+          <p class="acc-a" set:html={item.a} />
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .accordion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .acc-item {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  }
+  .acc-item.open {
+    border-color: var(--color-mint-deep);
+    box-shadow: var(--shadow-md);
+  }
+  .acc-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    width: 100%;
+    text-align: left;
+    padding: var(--space-5) var(--space-6);
+    font-family: var(--font-body);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-lg);
+    color: var(--color-ink);
+  }
+  .acc-icon {
+    position: relative;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-full);
+    background: var(--color-mint);
+    transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-spring);
+  }
+  .acc-icon::before,
+  .acc-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 11px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-deep);
+    transform: translate(-50%, -50%);
+    transition: transform var(--dur-base) var(--ease-spring), opacity var(--dur-fast);
+  }
+  .acc-icon::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .acc-trigger:hover .acc-icon { background: var(--color-mint-deep); }
+  .acc-item.open .acc-icon { background: var(--color-brand); transform: rotate(180deg); }
+  .acc-item.open .acc-icon::before,
+  .acc-item.open .acc-icon::after { background: var(--color-on-brand); }
+  .acc-item.open .acc-icon::after { opacity: 0; }
+
+  /* animação de altura via grid-template-rows 0fr -> 1fr */
+  .acc-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--dur-slow) var(--ease-out);
+  }
+  .acc-item.open .acc-panel { grid-template-rows: 1fr; }
+  .acc-panel-inner { overflow: hidden; min-height: 0; }
+  .acc-a {
+    padding: 0 var(--space-6) var(--space-6);
+    margin-top: calc(-1 * var(--space-1));
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--color-text-muted);
+  }
+  .acc-a :global(a) { color: var(--color-brand-deep); font-weight: var(--weight-medium); }
+  .acc-a :global(a:hover) { text-decoration: underline; }
+</style>
+
+<script>
+  // delega para todos os acordeões da página (Astro deduplica este script)
+  document.addEventListener('click', (ev) => {
+    const trigger = (ev.target as HTMLElement).closest('.acc-trigger');
+    if (!trigger) return;
+    const item = trigger.closest('.acc-item');
+    if (!item) return;
+    const open = item.classList.toggle('open');
+    trigger.setAttribute('aria-expanded', String(open));
+  });
+</script>

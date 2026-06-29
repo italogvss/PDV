@@ -1,0 +1,127 @@
+---
+interface Props {
+  titulo?: string;
+  subtitulo?: string;
+}
+const {
+  titulo = 'Sua primeira venda registrada hoje',
+  subtitulo = 'Crie sua conta em 2 minutos. Sem cartão, sem instalação, sem fidelidade.',
+} = Astro.props;
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+---
+
+<section class="cta-final">
+  <div class="container">
+    <div class="cta-card" data-reveal>
+      <div class="cta-ka" aria-hidden="true">$</div>
+      <div class="cta-body">
+        <p class="cta-eyebrow">Comece agora</p>
+        <h2 class="cta-title">{titulo}</h2>
+        <p class="cta-sub">{subtitulo}</p>
+        <div class="cta-actions">
+          <a href={`${appUrl}/cadastro`} class="btn-brand cta-btn">Criar conta grátis</a>
+          <a href="/preco" class="cta-ghost">Ver planos e preços →</a>
+        </div>
+        <ul class="cta-reassure">
+          <li>14 dias grátis</li>
+          <li>Sem cartão de crédito</li>
+          <li>Cancela quando quiser</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-final {
+    padding-block: var(--space-14);
+  }
+  .cta-card {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(94, 224, 116, 0.22), transparent 55%),
+      var(--color-ink);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-12) var(--space-10);
+    box-shadow: var(--shadow-lg);
+  }
+  /* "$" gigante de fundo — assinatura cha-ching */
+  .cta-ka {
+    position: absolute;
+    right: -2%;
+    bottom: -38%;
+    font-family: var(--font-display-compressed);
+    font-size: clamp(18rem, 30vw, 30rem);
+    line-height: 0.8;
+    color: var(--color-brand);
+    opacity: 0.14;
+    pointer-events: none;
+    user-select: none;
+  }
+  .cta-body { position: relative; max-width: 36rem; }
+  .cta-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-sm);
+    color: var(--color-brand-light);
+    margin-bottom: var(--space-4);
+  }
+  .cta-eyebrow::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand);
+    box-shadow: 0 0 0 4px rgba(37, 207, 63, 0.25);
+  }
+  .cta-title {
+    color: var(--color-on-ink);
+    font-size: clamp(var(--text-4xl), 5.5vw, var(--text-6xl));
+    margin-bottom: var(--space-4);
+  }
+  .cta-sub {
+    color: var(--color-on-ink-muted);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-6);
+    max-width: 30rem;
+  }
+  .cta-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    margin-bottom: var(--space-6);
+  }
+  .cta-btn { padding: var(--space-4) var(--space-6); font-size: var(--text-lg); }
+  .cta-ghost {
+    font-family: var(--font-body);
+    font-weight: var(--weight-medium);
+    color: var(--color-on-ink);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .cta-ghost:hover { color: var(--color-brand-light); }
+  .cta-reassure {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+  }
+  .cta-reassure li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-on-ink-muted);
+  }
+  .cta-reassure li::before {
+    content: '✓';
+    color: var(--color-brand);
+    font-weight: var(--weight-bold);
+  }
+
+  @media (max-width: 640px) {
+    .cta-card { padding: var(--space-8) var(--space-5); }
+  }
+</style>

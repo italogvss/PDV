@@ -1,0 +1,283 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import CtaFinal from '../components/CtaFinal.astro';
+import PlanCard from '../components/PlanCard.astro';
+import Accordion from '../components/Accordion.astro';
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+
+const planos = [
+  {
+    nome: 'Essencial', descricao: 'Pra quem está começando a organizar as vendas.',
+    mensal: 39, anual: 32,
+    itens: ['PDV completo', 'Controle de estoque', 'Controle de despesas', 'Até 2 usuários'],
+    destaque: false,
+  },
+  {
+    nome: 'Profissional', descricao: 'O queridinho de quem já vende todo dia.',
+    mensal: 79, anual: 65,
+    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Até 6 usuários'],
+    destaque: true,
+  },
+  {
+    nome: 'Avançado', descricao: 'Pra operação com mais de um caixa.',
+    mensal: 149, anual: 124,
+    itens: ['Tudo do Profissional', 'Múltiplas lojas', 'Usuários ilimitados', 'Suporte dedicado'],
+    destaque: false,
+  },
+];
+
+const recursos = [
+  { nome: 'PDV / Caixa rápido', e: true, p: true, a: true },
+  { nome: 'Controle de estoque', e: true, p: true, a: true },
+  { nome: 'Controle de despesas', e: true, p: true, a: true },
+  { nome: 'Relatórios e analytics', e: false, p: true, a: true },
+  { nome: 'Agenda e agendamentos', e: false, p: true, a: true },
+  { nome: 'Recibo no WhatsApp', e: true, p: true, a: true },
+  { nome: 'Usuários inclusos', e: '2', p: '6', a: 'Ilimitados' },
+  { nome: 'Múltiplas lojas', e: false, p: false, a: true },
+  { nome: 'Suporte', e: 'E-mail', p: 'Prioritário', a: 'Dedicado' },
+];
+
+const cobranca = [
+  { q: 'O que acontece quando o teste grátis acaba?', a: 'Nada automático. Os 14 dias correm sem cartão cadastrado — quando acabam, você escolhe um plano pra continuar. Sem cobrança surpresa.' },
+  { q: 'Consigo cancelar quando quiser?', a: 'Sim. Não tem fidelidade nem multa. Cancela direto no painel e usa até o fim do período já pago.' },
+  { q: 'Quais formas de pagamento vocês aceitam?', a: 'Cartão de crédito e Pix. No plano anual o Pix sai à vista; no mensal, a cobrança é recorrente no cartão.' },
+  { q: 'Tem taxa por venda ou por transação?', a: 'Não. Você paga só a mensalidade do plano. O que a loja vende é da loja — o Ka$hing não fica com nenhuma fatia.' },
+];
+---
+
+<Layout
+  title="Preço — Planos do Ka$hing a partir de R$ 32/mês"
+  description="Planos simples e sem pegadinha pro pequeno comércio. 14 dias grátis, sem cartão e sem fidelidade. Pague mensal ou anual com 2 meses grátis."
+>
+  <Navbar />
+
+  <main>
+    <!-- ===== HERO + TOGGLE ===== -->
+    <section class="pre-hero">
+      <div class="container">
+        <div class="pre-hero-head" data-reveal>
+          <p class="eyebrow">Preço sem pegadinha</p>
+          <h1 class="pre-hero-title">Um preço justo pra quem cuida de cada centavo</h1>
+          <p class="pre-hero-sub">
+            14 dias grátis, sem cartão e sem fidelidade. Escolha o plano só quando o
+            teste já tiver convencido você.
+          </p>
+        </div>
+
+        <div class="pre-toggle-wrap" data-reveal>
+          <div class="pre-toggle" id="billing-toggle" role="group" aria-label="Período de cobrança">
+            <span class="pre-toggle-thumb" aria-hidden="true"></span>
+            <button class="pre-toggle-btn active" data-period="mensal" aria-pressed="true">Mensal</button>
+            <button class="pre-toggle-btn" data-period="anual" aria-pressed="false">Anual</button>
+          </div>
+          <span class="pre-toggle-save">2 meses grátis no anual</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PLANOS ===== -->
+    <section class="pre-planos">
+      <div class="container">
+        <div class="pre-grid">
+          {planos.map((p, i) => (
+            <PlanCard
+              nome={p.nome}
+              descricao={p.descricao}
+              mensal={p.mensal}
+              anual={p.anual}
+              itens={p.itens}
+              destaque={p.destaque}
+              ctaHref={`${appUrl}/cadastro`}
+              revealDelay={i * 80}
+            />
+          ))}
+        </div>
+        <p class="pre-note">Todos os planos incluem os 14 dias de teste grátis, sem cartão.</p>
+      </div>
+    </section>
+
+    <!-- ===== TABELA COMPARATIVA ===== -->
+    <section class="pre-tabela section">
+      <div class="container">
+        <div class="pre-tabela-head" data-reveal>
+          <p class="eyebrow">Compare em detalhe</p>
+          <h2 class="pre-tabela-title">Tudo que entra em cada plano</h2>
+        </div>
+        <div class="tabela-scroll" data-reveal>
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th class="t-rec">Recurso</th>
+                <th>Essencial</th>
+                <th class="t-dest">Profissional</th>
+                <th>Avançado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recursos.map((r) => (
+                <tr>
+                  <td class="t-rec">{r.nome}</td>
+                  {[r.e, r.p, r.a].map((v, idx) => (
+                    <td class:list={[{ 't-dest': idx === 1 }]}>
+                      {v === true && <span class="t-yes" aria-label="incluído">✓</span>}
+                      {v === false && <span class="t-no" aria-label="não incluído">—</span>}
+                      {typeof v === 'string' && <span class="t-txt">{v}</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COBRANÇA (FAQ) ===== -->
+    <section class="pre-cob section">
+      <div class="container pre-cob-grid">
+        <div class="pre-cob-head" data-reveal>
+          <p class="eyebrow">Sobre a cobrança</p>
+          <h2 class="pre-cob-title">As dúvidas de dinheiro, resolvidas</h2>
+          <p class="pre-cob-sub">As perguntas mais comuns antes de assinar. Se faltar alguma, é só falar com a gente.</p>
+        </div>
+        <div class="pre-cob-acc">
+          <Accordion items={cobranca} />
+        </div>
+      </div>
+    </section>
+
+    <CtaFinal
+      titulo="Comece pelo teste — o preço você decide depois"
+      subtitulo="14 dias pra usar tudo com os dados da sua loja. Sem cartão agora, sem fidelidade nunca."
+    />
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  /* ===== HERO ===== */
+  .pre-hero { padding-block: var(--space-12) var(--space-6); }
+  .pre-hero-head { text-align: center; max-width: 44rem; margin-inline: auto; }
+  .pre-hero-title { font-size: clamp(var(--text-4xl), 6vw, var(--text-6xl)); letter-spacing: -0.03em; margin: var(--space-4) 0; }
+  .pre-hero-head .eyebrow { justify-content: center; }
+  .pre-hero-sub { font-size: var(--text-xl); color: var(--color-text-muted); }
+
+  /* ===== TOGGLE ===== */
+  .pre-toggle-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+    margin-top: var(--space-8);
+  }
+  .pre-toggle {
+    position: relative;
+    display: inline-flex;
+    padding: var(--space-1);
+    background: var(--color-cloud);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+  }
+  .pre-toggle-thumb {
+    position: absolute;
+    top: var(--space-1); bottom: var(--space-1);
+    left: var(--space-1);
+    width: calc(50% - var(--space-1));
+    background: var(--color-brand);
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 12px -3px rgba(37, 207, 63, 0.6);
+    transition: transform var(--dur-base) var(--ease-spring);
+  }
+  .pre-toggle.is-anual .pre-toggle-thumb { transform: translateX(100%); }
+  .pre-toggle-btn {
+    position: relative;
+    z-index: 1;
+    min-width: 7rem;
+    padding: var(--space-2) var(--space-5);
+    font-family: var(--font-body);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    transition: color var(--dur-base) var(--ease-out);
+  }
+  .pre-toggle-btn.active { color: var(--color-on-brand); }
+  .pre-toggle-save {
+    font-size: var(--text-sm); font-weight: var(--weight-medium);
+    color: var(--color-brand-deep);
+    background: var(--color-mint);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+  }
+
+  /* ===== PLANOS ===== */
+  .pre-planos { padding-block: var(--space-8) var(--space-6); }
+  .pre-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: stretch; }
+  .pre-note { text-align: center; margin-top: var(--space-6); font-size: var(--text-sm); color: var(--color-text-muted); }
+
+  /* ===== TABELA ===== */
+  .pre-tabela-head { text-align: center; margin-bottom: var(--space-8); }
+  .pre-tabela-head .eyebrow { justify-content: center; }
+  .pre-tabela-title { font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl)); margin-top: var(--space-3); }
+  .tabela-scroll { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--color-line); box-shadow: var(--shadow-sm); }
+  .tabela { width: 100%; border-collapse: collapse; background: var(--color-card); min-width: 640px; }
+  .tabela th, .tabela td { padding: var(--space-4) var(--space-5); text-align: center; }
+  .tabela thead th {
+    font-family: var(--font-display); font-weight: var(--weight-regular);
+    font-size: var(--text-xl); color: var(--color-ink);
+    border-bottom: 1px solid var(--color-line);
+  }
+  .tabela .t-rec { text-align: left; font-family: var(--font-body); }
+  .tabela tbody td { font-size: var(--text-base); border-bottom: 1px solid var(--color-line); }
+  .tabela tbody tr:last-child td { border-bottom: none; }
+  .tabela tbody td.t-rec { color: var(--color-ink); font-weight: var(--weight-medium); }
+  .tabela .t-dest { background: rgba(231, 249, 234, 0.5); }
+  .tabela thead .t-dest { color: var(--color-brand-deep); }
+  .t-yes { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--color-brand); color: var(--color-on-brand); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .t-no { color: var(--color-text-faint); }
+  .t-txt { font-weight: var(--weight-medium); color: var(--color-ink); }
+
+  /* ===== COBRANÇA ===== */
+  .pre-cob-grid { display: grid; grid-template-columns: 0.9fr 1.3fr; gap: var(--space-10); align-items: start; }
+  .pre-cob-title { font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl)); margin: var(--space-3) 0 var(--space-4); }
+  .pre-cob-sub { font-size: var(--text-lg); color: var(--color-text-muted); }
+
+  @media (max-width: 880px) {
+    .pre-grid { grid-template-columns: 1fr; max-width: 26rem; margin-inline: auto; }
+    .pre-cob-grid { grid-template-columns: 1fr; gap: var(--space-6); }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('billing-toggle');
+  const btns = toggle?.querySelectorAll<HTMLButtonElement>('.pre-toggle-btn');
+  const cards = document.querySelectorAll<HTMLElement>('.plan-card');
+
+  const setPeriod = (period: string) => {
+    toggle?.classList.toggle('is-anual', period === 'anual');
+    btns?.forEach((b) => {
+      const on = b.dataset.period === period;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    cards.forEach((card) => {
+      const amount = card.querySelector<HTMLElement>('.plan-amount');
+      const billing = card.querySelector<HTMLElement>('.plan-billing');
+      if (!amount) return;
+      const value = period === 'anual' ? card.dataset.anual : card.dataset.mensal;
+      amount.textContent = value ?? '';
+      // re-dispara a animação de troca
+      amount.classList.remove('flip');
+      void amount.offsetWidth;
+      amount.classList.add('flip');
+      if (billing) {
+        billing.textContent = period === 'anual'
+          ? 'por mês, cobrado anualmente'
+          : 'cobrança mensal, cancela quando quiser';
+      }
+    });
+  };
+
+  btns?.forEach((b) => b.addEventListener('click', () => setPeriod(b.dataset.period ?? 'mensal')));
+</script>

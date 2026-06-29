@@ -1,0 +1,201 @@
+---
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
+
+const links = [
+  { label: 'Início', href: '/' },
+  { label: 'Soluções', href: '/solucoes' },
+  { label: 'Preço', href: '/preco' },
+  { label: 'FAQ', href: '/faq' },
+];
+
+const current = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? current === '/' : current.startsWith(href);
+---
+
+<header class="nav-wrap">
+  <nav class="nav container" aria-label="Navegação principal">
+    <a href="/" class="brand" aria-label="Ka$hing — página inicial">
+      <img src="/logo-black.png" alt="Ka$hing" class="brand-logo" width="120" height="32" />
+    </a>
+
+    <ul class="nav-links">
+      {links.map((l) => (
+        <li>
+          <a href={l.href} class:list={['nav-link', { active: isActive(l.href) }]}>
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="nav-actions">
+      <a href={`${appUrl}/login`} class="nav-login">Entrar</a>
+      <a href={`${appUrl}/cadastro`} class="btn-brand">Criar conta grátis</a>
+    </div>
+
+    <button class="nav-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-mobile">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="nav-mobile" id="nav-mobile" hidden>
+    <ul>
+      {links.map((l) => (
+        <li><a href={l.href} class:list={['nav-link', { active: isActive(l.href) }]}>{l.label}</a></li>
+      ))}
+    </ul>
+    <a href={`${appUrl}/cadastro`} class="btn-brand btn-block">Criar conta grátis</a>
+    <a href={`${appUrl}/login`} class="nav-login">Entrar</a>
+  </div>
+</header>
+
+<style>
+  .nav-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-2);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+    background: rgba(251, 251, 247, 0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .brand-logo {
+    height: 26px;
+    width: auto;
+    transition: transform var(--dur-base) var(--ease-spring);
+  }
+  .brand:hover .brand-logo { transform: scale(1.04); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-inline: auto;
+  }
+  .nav-link {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--weight-medium);
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    transition: color var(--dur-fast) var(--ease-out),
+                background-color var(--dur-fast) var(--ease-out);
+  }
+  .nav-link:hover { color: var(--color-ink); background: var(--color-cloud); }
+  .nav-link.active { color: var(--color-brand-deep); background: var(--color-mint); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+  }
+  .nav-login {
+    font-family: var(--font-body);
+    font-weight: var(--weight-medium);
+    font-size: var(--text-base);
+    color: var(--color-ink);
+    padding: var(--space-2) var(--space-2);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .nav-login:hover { color: var(--color-brand-deep); }
+
+  /* Botão de marca (reutilizado) */
+  :global(.btn-brand) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-base);
+    color: var(--color-on-brand);
+    background: var(--color-brand);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-full);
+    box-shadow: 0 6px 16px -6px rgba(37, 207, 63, 0.6);
+    transition: transform var(--dur-base) var(--ease-spring),
+                background-color var(--dur-fast) var(--ease-out),
+                box-shadow var(--dur-base) var(--ease-out);
+  }
+  :global(.btn-brand:hover) {
+    background: var(--color-brand-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px -8px rgba(37, 207, 63, 0.7);
+  }
+  :global(.btn-brand:active) { transform: translateY(0); }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+  }
+  .nav-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-ink);
+    transition: transform var(--dur-base) var(--ease-spring), opacity var(--dur-fast);
+  }
+  .nav-toggle[aria-expanded='true'] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
+  .nav-toggle[aria-expanded='true'] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .nav-mobile {
+    margin: var(--space-3) var(--container-pad) 0;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+  .nav-mobile ul { display: flex; flex-direction: column; gap: var(--space-1); }
+  .nav-mobile .nav-link { font-size: var(--text-lg); padding: var(--space-3) var(--space-4); }
+  .nav-mobile .nav-login { text-align: center; }
+  .btn-block { width: 100%; }
+
+  @media (max-width: 880px) {
+    .nav-links,
+    .nav-actions { display: none; }
+    .nav-toggle { display: flex; }
+    .nav { padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5); }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
+  const panel = document.getElementById('nav-mobile');
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    toggle.setAttribute('aria-label', open ? 'Abrir menu' : 'Fechar menu');
+    if (panel) panel.hidden = open;
+  });
+</script>
