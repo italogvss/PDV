@@ -2,7 +2,6 @@ import { Box, Card, CardContent, Divider, Skeleton, Typography, useTheme } from 
 import { PieChart } from '@mui/x-charts/PieChart'
 import type { CustomerCategorySlice } from '../../../../services/customer.service'
 import { formatBRL } from '../../../../utils/currency'
-import { categoricalColors } from '../../../../utils/chart'
 
 interface Props {
   title: string
@@ -14,13 +13,12 @@ interface Props {
 
 export default function CustomerCategoryPie({ title, subtitle, data, loading, emptyText }: Props) {
   const theme = useTheme()
-  const colors = categoricalColors(theme)
 
   const slices = (data ?? []).map((d, i) => ({
     id: d.name,
     value: d.total,
     label: d.name,
-    color: colors[i % colors.length],
+    color: d.color ?? theme.palette.secondary.main,
   }))
 
   return (

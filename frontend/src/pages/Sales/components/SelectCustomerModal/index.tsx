@@ -58,7 +58,7 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={isMobile}>
       <ModalHeader title="Selecionar cliente" onClose={onClose} />
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
             placeholder="Buscar por nome, CPF ou telefone..."
@@ -71,7 +71,7 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
           <Tooltip title="Cadastrar novo cliente">
             <IconButton
               onClick={() => { onClose(); navigate('/clientes', { state: { openNew: true } }) }}
-              sx={{ border: 1, borderColor: 'border.subtle', borderRadius: 1.5 }}
+              sx={{ border: 1, borderColor: 'border.subtle', borderRadius: 1 }}
             >
               <PersonAddRounded sx={{ fontSize: 20 }} />
             </IconButton>
@@ -91,7 +91,7 @@ export default function SelectCustomerModal({ open, onClose, onSelect }: SelectC
             columns={columns}
             onRowClick={handleRowClick}
             hideFooter
-            disableColumnMenu
+            disableColumnMenu            
             disableRowSelectionOnClick={false}
             slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
             sx={{ cursor: 'pointer', '& .MuiDataGrid-row:hover': { cursor: 'pointer' } }}

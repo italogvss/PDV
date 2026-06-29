@@ -266,7 +266,7 @@ export default function EmployeesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Funcionários" description={`${employees.length} membros na equipe`}>
+      <PageHeader title="Funcionários" description={`${employees.length} membros na equipe  • Gerencie permissões e mebros da equipe`}>
         <Button variant="contained" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Novo funcionário
         </Button>

@@ -47,7 +47,7 @@ export default function ProductCard({ product, onAdd }: ProductCardProps) {
           }}
         >
           {product.category?.name && (
-            <Typography variant="caption" sx={{ fontWeight: 800,}}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: "text.tertiary"}}>
               {product.category.name}
             </Typography>
           )}

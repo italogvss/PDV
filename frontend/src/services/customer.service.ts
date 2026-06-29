@@ -87,6 +87,7 @@ export interface CustomerMonthlySpend {
 export interface CustomerCategorySlice {
   name: string
   total: number
+  color?: string
 }
 
 export interface CustomerCrmStats {

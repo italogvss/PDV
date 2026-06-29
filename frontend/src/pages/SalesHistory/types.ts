@@ -10,6 +10,7 @@ export const SALE_STATUS_MAP: Record<string, SaleStatus> = {
 export interface SaleRecord {
   id: string
   time: string
+  rawTime: string
   customer: string
   operator: string
   payment: SalePaymentMethod

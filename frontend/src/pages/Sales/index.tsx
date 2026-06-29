@@ -1,18 +1,20 @@
-import { HistoryOutlined } from '@mui/icons-material'
-import { Box, Button } from '@mui/material'
+import { CloseRounded, Help, HistoryOutlined, PersonAddAlt1Rounded, PersonRounded } from '@mui/icons-material'
+import { Box, Button, IconButton, TextField, Typography } from '@mui/material'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import { ALL_MODULES } from '../../constants/modules'
 import { useProductCategories } from '../../hooks/useProductCategories'
 import { useProducts } from '../../hooks/useProducts'
 import { useCreateSale } from '../../hooks/useSales'
 import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
-import { ALL_MODULES } from '../../constants/modules'
 import { useAppSelector } from '../../store'
 import type { AppointmentServiceRef } from '../../types/appointment.types'
 import type { Product } from '../../types/product.types'
 import type { Service } from '../../types/service.types'
+import { maskCPF } from '../../utils/masks'
 import CartPanel from './components/CartPanel'
 import { EnrichedCartLine } from './components/CartPanel/types'
 import FinalizationModal from './components/FinalizationModal'
@@ -20,7 +22,6 @@ import ProductCatalog from './components/ProductCatalog'
 import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
 import SelectCustomerModal from './components/SelectCustomerModal'
 import { CardType, CartLine, CustomerSelection, PaymentMethod } from './types'
-import { useLocation, useNavigate } from 'react-router-dom'
 
 function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
   if (method === 'cash') return 'Cash'
@@ -68,6 +69,11 @@ export default function SalesPage() {
     cash: { enabled: true, fee: 0 },
   }
 
+  const customerProvided = requireCustomerOnSale
+    ? customer.type === 'entity'
+    : customer.type === 'entity' || (customer.type === 'cpf' && customer.document.trim().length > 0)
+  const customerMissing = customersModuleActive && requireCustomerOnSale && !customerProvided
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -91,7 +97,7 @@ export default function SalesPage() {
     )
     setCatalogMode('services')
     navigate('/vendas', { replace: true, state: null })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Garante que o método/tipo de cartão selecionado esteja habilitado nas configurações.
@@ -261,14 +267,67 @@ export default function SalesPage() {
         gap: 4,
       }}
     >
-      <PageHeader
-        title="Vender"
-        description={`Operador: ${auth.name}`}
-      >       
-        <Button variant="outlined" startIcon={<HistoryOutlined />} onClick={()=>navigate("/historico")}>
+      <PageHeader title="Vender" description={`Operador: ${auth.name}`} showHelp={false}>
+        {customersModuleActive && (
+          customer.type === 'entity' ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.5,
+                borderRadius: 1.5,
+                border: 1,
+                borderColor: 'secondary.main',
+                height: 36,
+                maxWidth: 220,
+              }}
+            >
+              <PersonRounded sx={{ fontSize: 16, color: 'secondary.main', flexShrink: 0 }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: 'secondary.main', flex: 1 }} noWrap>
+                {customer.name}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setCustomer({ type: 'none' })}
+                sx={{ p: 0.25, color: 'error.ink', flexShrink: 0 }}
+              >
+                <CloseRounded sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Box>
+          ) : (
+            <>
+            <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PersonAddAlt1Rounded />}
+                onClick={() => setCustomerModalOpen(true)}
+              >
+                Adicionar cliente
+              </Button>
+              <TextField
+                placeholder={requireCustomerOnSale ? 'CPF *' : 'CPF (opcional)'}
+                size="small"
+                value={customer.type === 'cpf' ? customer.document : ''}
+                onChange={(e) => {
+                  const val = maskCPF(e.target.value)
+                  setCustomer(val ? { type: 'cpf', document: val } : { type: 'none' })
+                }}
+                sx={{ width: 160 }}
+                slotProps={{ htmlInput: { maxLength: 14 } }}
+              />
+              
+            </>
+          )
+        )}
+        <Button variant="outlined" startIcon={<HistoryOutlined />} onClick={() => navigate('/historico')}>
           Histórico
         </Button>
+        <Button variant="outlined" startIcon={<Help />} onClick={() => navigate("/ajuda")}>
+          Ajuda
+        </Button>
       </PageHeader>
+
       <Box
         sx={{
           flex: { md: 1 },
@@ -297,11 +356,24 @@ export default function SalesPage() {
           onRestart={handleRestart}
           lines={cartLines}
           subtotal={subtotal}
-          total={subtotal}
           onIncrement={handleAdd}
           onDecrement={handleDecrement}
           onRemove={handleRemoveFromCart}
           onFinalize={() => setFinalizationOpen(true)}
+          customerMissing={customerMissing}
+          discountAmount={discountAmount}
+          onDiscountChange={setDiscountAmount}
+          allowDiscounts={allowDiscounts}
+          discountLimitPercent={discountLimitPercent}
+          method={method}
+          onMethodChange={setMethod}
+          cardType={cardType}
+          onCardTypeChange={setCardType}
+          installments={installments}
+          onInstallmentsChange={setInstallments}
+          cashReceived={cashReceived}
+          onCashReceivedChange={setCashReceived}
+          payments={payments}
         />
       </Box>
 
@@ -311,25 +383,12 @@ export default function SalesPage() {
         lines={cartLines}
         subtotal={subtotal}
         discountAmount={discountAmount}
-        onDiscountChange={setDiscountAmount}
-        allowDiscounts={allowDiscounts}
-        discountLimitPercent={discountLimitPercent}
         customer={customer}
-        onCustomerChange={setCustomer}
-        onOpenCustomerModal={() => setCustomerModalOpen(true)}
         method={method}
-        onMethodChange={setMethod}
         cardType={cardType}
-        onCardTypeChange={setCardType}
         installments={installments}
-        onInstallmentsChange={setInstallments}
-        cashReceived={cashReceived}
-        onCashReceivedChange={setCashReceived}
-        payments={payments}
         onFinalize={handleFinalize}
         isSubmitting={createSale.isPending}
-        requireCustomerOnSale={requireCustomerOnSale}
-        customersModuleActive={customersModuleActive}
       />
 
       <SelectCustomerModal

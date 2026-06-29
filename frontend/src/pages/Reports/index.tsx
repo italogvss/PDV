@@ -1,4 +1,9 @@
-import { useState, useMemo, useEffect } from 'react'
+import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
+import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
+import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
+import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
+import PercentRounded from '@mui/icons-material/PercentRounded'
+import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
 import {
   Box,
   Button,
@@ -10,44 +15,36 @@ import {
   Typography,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers'
-import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import ArrowDropDownRounded from '@mui/icons-material/ArrowDropDownRounded'
-import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded'
-import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
-import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
-import PercentRounded from '@mui/icons-material/PercentRounded'
-import { formatBRL } from '../../utils/currency'
+import dayjs from 'dayjs'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import {
-  useSalesMetrics,
+  useCustomerNewVsReturning,
   useFinancialSummary,
+  useRevenueByType,
   useSalesByOperator,
   useSalesByPaymentMethod,
-  useTopProducts,
-  useExpensesByCategory,
-  useRevenueByType,
-  useCustomerNewVsReturning,
+  useSalesMetrics,
+  useTopProducts
 } from '../../hooks/useReports'
-import type { RangePreset, GroupBy } from '../../types/report.types'
-import FinancialBarChart from './components/FinancialBarChart'
+import type { GroupBy, RangePreset } from '../../types/report.types'
+import { formatBRL } from '../../utils/currency'
 import AccumulatedProfitChart from './components/AccumulatedProfitChart'
-import RevenueLineChart from './components/RevenueLineChart'
+import FinancialBarChart from './components/FinancialBarChart'
 import OperatorRankingChart from './components/OperatorRankingChart'
-import TopProductsChart from './components/TopProductsChart'
 import PaymentMethodPieChart from './components/PaymentMethodPieChart'
-import ExpensesByCategoryPieChart from './components/ExpensesByCategoryPieChart'
 import RevenueByTypeDonut from './components/RevenueByTypeDonut'
-import CustomerNewVsReturningChart from './components/CustomerNewVsReturningChart'
+import RevenueLineChart from './components/RevenueLineChart'
+import TopProductsChart from './components/TopProductsChart'
 
 // Janelas móveis a partir de hoje (sem snap pro início do mês).
 const RANGE_PRESETS: RangePreset[] = [
-  { label: 'Últimos 7 dias',   key: '7d',  amount: 7,  unit: 'day'   },
-  { label: 'Últimos 30 dias',  key: '30d', amount: 30, unit: 'day'   },
-  { label: 'Últimos 3 meses',  key: '3m',  amount: 3,  unit: 'month' },
-  { label: 'Últimos 6 meses',  key: '6m',  amount: 6,  unit: 'month' },
+  { label: 'Últimos 7 dias', key: '7d', amount: 7, unit: 'day' },
+  { label: 'Últimos 30 dias', key: '30d', amount: 30, unit: 'day' },
+  { label: 'Últimos 3 meses', key: '3m', amount: 3, unit: 'month' },
+  { label: 'Últimos 6 meses', key: '6m', amount: 6, unit: 'month' },
   { label: 'Últimos 12 meses', key: '12m', amount: 12, unit: 'month' },
 ]
 
@@ -106,13 +103,7 @@ export default function ReportsPage() {
   const { data: byOperator, isLoading: operatorLoading } = useSalesByOperator(startDate, endDate)
   const { data: byPayment, isLoading: paymentLoading } = useSalesByPaymentMethod(startDate, endDate)
   const { data: topProducts, isLoading: productsLoading } = useTopProducts(startDate, endDate)
-  const { data: byCategory, isLoading: categoryLoading } = useExpensesByCategory(startDate, endDate)
   const { data: revenueByType, isLoading: revenueByTypeLoading } = useRevenueByType(startDate, endDate)
-  const { data: newVsReturning, isLoading: newVsReturningLoading } = useCustomerNewVsReturning(
-    startDate,
-    endDate,
-    groupBy,
-  )
 
   // Margem de lucro média = resultado líquido total / receita total
   const avgProfitMargin = useMemo(() => {
@@ -154,7 +145,7 @@ export default function ReportsPage() {
               setSelectedPreset(null)
             }
           }}
-          slotProps={{ textField: { sx: { width: 150 } } }}
+          slotProps={{ textField: { sx: { width: 180 } } }}
         />
         <DatePicker
           label="Até"
@@ -168,7 +159,7 @@ export default function ReportsPage() {
               setSelectedPreset(null)
             }
           }}
-          slotProps={{ textField: { sx: { width: 150 } } }}
+          slotProps={{ textField: { sx: { width: 180 } } }}
         />
       </PageHeader>
 
@@ -223,9 +214,9 @@ export default function ReportsPage() {
       )}
 
       {/* Granularidade das séries temporais */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          Agrupar por:
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: "end", gap: 1 }}>
+        <Typography variant="body2" color="text.secondary">
+          Agrupar por
         </Typography>
         <ToggleButtonGroup
           size="small"
@@ -269,10 +260,6 @@ export default function ReportsPage() {
         <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 4' } }}>
           <RevenueByTypeDonut data={revenueByType} loading={revenueByTypeLoading} />
         </Box>
-
-        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
-          <CustomerNewVsReturningChart data={newVsReturning ?? []} loading={newVsReturningLoading} />
-        </Box>
         <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
           <PaymentMethodPieChart data={byPayment ?? []} loading={paymentLoading} />
         </Box>
@@ -282,10 +269,6 @@ export default function ReportsPage() {
         </Box>
         <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
           <TopProductsChart data={topProducts ?? []} loading={productsLoading} />
-        </Box>
-
-        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
-          <ExpensesByCategoryPieChart data={byCategory ?? []} loading={categoryLoading} />
         </Box>
       </Box>
     </Box>

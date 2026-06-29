@@ -1,5 +1,5 @@
 import { SearchOutlined, GridViewRounded, TableRowsRounded, Inventory2Outlined, MiscellaneousServicesRounded, AddRounded } from '@mui/icons-material'
-import { Box, Button, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../../../../store'
@@ -121,7 +121,7 @@ export default function ProductCatalog({
                 flexShrink: 0,
               }}
             />
-            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ fontWeight: 500, color: "text.tertiary" }}>
               {row.category.name}
             </Typography>
           </Box>
@@ -207,6 +207,7 @@ export default function ProductCatalog({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <FilterTabs value={category} onChange={onCategoryChange} options={tabs} />
         </Box>
+        <Tooltip title="Alterne a visualização dos itens">
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -217,6 +218,7 @@ export default function ProductCatalog({
           <ToggleButton value="cards"><GridViewRounded sx={{ fontSize: 18 }} /></ToggleButton>
           <ToggleButton value="list"><TableRowsRounded sx={{ fontSize: 18 }} /></ToggleButton>
         </ToggleButtonGroup>
+        </Tooltip>
       </Box>
 
       <Box

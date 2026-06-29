@@ -244,7 +244,7 @@ export default function ExpensesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle financeiro`}>
+      <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle e acompanhamento de despesas`}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Button
             variant="outlined"

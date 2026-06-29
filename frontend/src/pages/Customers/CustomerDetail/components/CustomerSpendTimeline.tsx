@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Divider, Skeleton, Typography, useTheme } from '@mui/material'
-import { LineChart } from '@mui/x-charts/LineChart'
+import { BarChart } from '@mui/x-charts/BarChart'
 import type { CustomerCrmStats } from '../../../../services/customer.service'
 import { formatBRL } from '../../../../utils/currency'
 import { formatCompactBRL } from '../../../../utils/chart'
@@ -37,22 +37,21 @@ export default function CustomerSpendTimeline({ stats, statsLoading }: Props) {
         {statsLoading ? (
           <Skeleton variant="rounded" height={260} />
         ) : data.length > 0 ? (
-          <LineChart
+          <BarChart
             height={260}
-            xAxis={[{ scaleType: 'point', data: labels }]}
-            yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+            borderRadius={10}
+            xAxis={[{ scaleType: 'band', data: labels, tickPlacement: 'end' }]}
+            yAxis={[{ width: 70,valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
             series={[
               {
+              
                 data: totals,
                 label: 'Gasto',
-                color: theme.palette.success.main,
-                area: true,
-                showMark: data.length === 1,
-                valueFormatter: (v) => formatBRL(v ?? 0),
+                color: theme.palette.secondary.main,
+                valueFormatter: (v: number | null) => formatBRL(v ?? 0),
               },
             ]}
             margin={{ left: 16 }}
-            sx={{ '& .MuiAreaElement-root': { fillOpacity: 0.15 } }}
           />
         ) : (
           <Box sx={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -55,6 +55,7 @@ export default function PaymentSection({
           <ToggleButton
             key={value}
             value={value}
+            size="small"
           >
             <Icon sx={{ fontSize: 16 }} />
             {label}

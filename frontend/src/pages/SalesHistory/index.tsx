@@ -29,6 +29,21 @@ import { PAYMENT_METHOD_LABELS } from '../../constants/payment'
 
 const DATE_RANGE_DAYS = [7, 14, 30, 90] as const
 
+const SORT_OPTIONS = [
+  { value: 'time-desc', label: 'Data (mais recente)' },
+  { value: 'time-asc', label: 'Data (mais antiga)' },
+  { value: 'payment-asc', label: 'Pagamento (A → Z)' },
+  { value: 'payment-desc', label: 'Pagamento (Z → A)' },
+  { value: 'status-asc', label: 'Status (A → Z)' },
+  { value: 'status-desc', label: 'Status (Z → A)' },
+  { value: 'customer-asc', label: 'Cliente (A → Z)' },
+  { value: 'customer-desc', label: 'Cliente (Z → A)' },
+  { value: 'operator-asc', label: 'Operador (A → Z)' },
+  { value: 'operator-desc', label: 'Operador (Z → A)' },
+  { value: 'total-asc', label: 'Valor (menor → maior)' },
+  { value: 'total-desc', label: 'Valor (maior → menor)' },
+]
+
 const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
   payment: 'Todos',
@@ -49,6 +64,7 @@ function mapToRecord(s: SaleListItem): SaleRecord {
   return {
     id: s.id,
     time: formatTime(s.createdAt),
+    rawTime: s.createdAt,
     customer: s.customerName ?? '—',
     operator: s.operatorName,
     payment: (PAYMENT_METHOD_LABELS[s.paymentMethod] ?? s.paymentMethod) as SalePaymentMethod,
@@ -68,6 +84,7 @@ export default function SalesHistoryPage() {
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null)
   const [cancelId, setCancelId] = useState<string | null>(null)
   const [selectedDays, setSelectedDays] = useState(30)
+  const [sortBy, setSortBy] = useState('time-desc')
 
   const endDateStr = dayjs().format('YYYY-MM-DD')
   const startDateStr = useMemo(
@@ -95,21 +112,36 @@ export default function SalesHistoryPage() {
     [filters],
   )
 
-  const rows = useMemo(
-    () =>
-      sales.filter(
-        (row) =>
-          (filters.status === 'Todos' || row.status === filters.status) &&
-          (filters.payment === 'Todos' || row.payment === filters.payment) &&
-          (filters.operator === 'Todos' || row.operator === filters.operator),
-      ),
-    [sales, filters],
-  )
+  const rows = useMemo(() => {
+    const filtered = sales.filter(
+      (row) =>
+        (filters.status === 'Todos' || row.status === filters.status) &&
+        (filters.payment === 'Todos' || row.payment === filters.payment) &&
+        (filters.operator === 'Todos' || row.operator === filters.operator),
+    )
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'time-asc':  return a.rawTime.localeCompare(b.rawTime)
+        case 'time-desc': return b.rawTime.localeCompare(a.rawTime)
+        case 'payment-asc':  return a.payment.localeCompare(b.payment, 'pt-BR')
+        case 'payment-desc': return b.payment.localeCompare(a.payment, 'pt-BR')
+        case 'status-asc':   return a.status.localeCompare(b.status, 'pt-BR')
+        case 'status-desc':  return b.status.localeCompare(a.status, 'pt-BR')
+        case 'customer-asc':  return a.customer.localeCompare(b.customer, 'pt-BR')
+        case 'customer-desc': return b.customer.localeCompare(a.customer, 'pt-BR')
+        case 'operator-asc':  return a.operator.localeCompare(b.operator, 'pt-BR')
+        case 'operator-desc': return b.operator.localeCompare(a.operator, 'pt-BR')
+        case 'total-asc':  return a.total - b.total
+        case 'total-desc': return b.total - a.total
+        default: return 0
+      }
+    })
+  }, [sales, filters, sortBy])
 
   const columns: GridColDef[] = useMemo(
     () => [
       {
-        field: 'id',
+        field: 'time',
         headerName: 'Pedido',
         width: 120,
         renderCell: ({ row }) => (
@@ -188,7 +220,13 @@ export default function SalesHistoryPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Vendas" description="Histórico completo de vendas realizadas para o período">
+      <PageHeader
+        title="Vendas"
+        description="Histórico completo de vendas realizadas para o período"
+        sortOptions={SORT_OPTIONS}
+        sortValue={sortBy}
+        onSortChange={setSortBy}
+      >
         <ToggleButtonGroup
           exclusive
           size="small"

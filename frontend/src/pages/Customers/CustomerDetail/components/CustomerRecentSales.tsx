@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Typography } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
@@ -36,18 +36,7 @@ const salesColumns: GridColDef<CustomerRecentSale>[] = [
     width: 110,
     renderCell: ({ row }) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            bgcolor: PAYMENT_COLORS[row.paymentMethod] ?? 'text.disabled',
-            flexShrink: 0,
-          }}
-        />
-        <Typography variant="body2">
-          {PAYMENT_METHOD_LABELS[row.paymentMethod] ?? row.paymentMethod}
-        </Typography>
+        <Chip label={PAYMENT_METHOD_LABELS[row.paymentMethod] ?? row.paymentMethod}/>
       </Box>
     ),
   },
@@ -70,7 +59,7 @@ interface Props {
 
 export default function CustomerRecentSales({ stats, statsLoading }: Props) {
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+    <Card variant="outlined" sx={{ borderRadius: 2, overflowY: 'auto', maxHeight: 390 }}>
       <CardContent sx={{ pb: '16px !important' }}>
         <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Compras recentes</Typography>

@@ -137,12 +137,12 @@ public class CustomerService(
         var productCategories = activeSales
             .SelectMany(s => s.Items)
             .Where(i => i.ProductId != null)
-            .GroupBy(i => i.Product?.Category?.Name ?? "Sem categoria")
-            .Select(g => new CustomerCategorySliceDto(g.Key, g.Sum(i => i.Subtotal)))
+            .GroupBy(i => new { Name = i.Product?.Category?.Name ?? "Sem categoria", Color = i.Product?.Category?.Color })
+            .Select(g => new CustomerCategorySliceDto(g.Key.Name, g.Sum(i => i.Subtotal), g.Key.Color))
             .OrderByDescending(c => c.Total)
             .ToList();
 
-        var recentSales = sales.Take(20).Select(s =>
+        var recentSales = sales.Take(10).Select(s =>
         {
             var itemsSummary = s.Items.Count > 0
                 ? string.Join(" + ", s.Items.Take(2).Select(i => i.ProductName))
@@ -207,16 +207,16 @@ public class CustomerService(
             .ToList();
 
         var serviceIds = consumedServiceItems.Select(si => si.ServiceId).Distinct().ToList();
-        var serviceCategoryNames = await context.Services
+        var serviceCategoryInfo = await context.Services
             .Where(s => serviceIds.Contains(s.Id))
-            .Select(s => new { s.Id, CategoryName = s.Category != null ? s.Category.Name : null })
-            .ToDictionaryAsync(s => s.Id, s => s.CategoryName);
+            .Select(s => new { s.Id, CategoryName = s.Category != null ? s.Category.Name : null, CategoryColor = s.Category != null ? s.Category.Color : null })
+            .ToDictionaryAsync(s => s.Id);
 
         var serviceCategories = consumedServiceItems
-            .GroupBy(si => serviceCategoryNames.TryGetValue(si.ServiceId, out var name) && name != null
-                ? name
-                : "Sem categoria")
-            .Select(g => new CustomerCategorySliceDto(g.Key, g.Sum(si => si.Price)))
+            .GroupBy(si => serviceCategoryInfo.TryGetValue(si.ServiceId, out var info) && info.CategoryName != null
+                ? new { Name = info.CategoryName, Color = info.CategoryColor }
+                : new { Name = "Sem categoria", Color = (string?)null })
+            .Select(g => new CustomerCategorySliceDto(g.Key.Name, g.Sum(si => si.Price), g.Key.Color))
             .OrderByDescending(c => c.Total)
             .ToList();
 

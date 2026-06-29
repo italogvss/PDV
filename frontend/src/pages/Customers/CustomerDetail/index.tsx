@@ -27,6 +27,7 @@ import CustomerSpendTimeline from './components/CustomerSpendTimeline'
 import CustomerCategoryPie from './components/CustomerCategoryPie'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import { formatMemberSince, formatRelativeDate } from './components/helpers'
+import { useUserPermissions } from '../../../hooks/useUserPermissions'
 
 function buildForm(customer: {
   name: string
@@ -75,6 +76,7 @@ export default function CustomerDetailPage() {
   const navigate = useNavigate()
   const { data: customer, isLoading: customerLoading } = useCustomer(id!)
   const { data: stats, isLoading: statsLoading } = useCustomerStats(id!)
+  const { isModuleEnabled } = useUserPermissions()
   const updateCustomer = useUpdateCustomer()
   const deleteCustomer = useDeleteCustomer()
 
@@ -193,9 +195,6 @@ export default function CustomerDetailPage() {
           isLoading={statsLoading}
         />
       </PageKpiGrid>
-
-      <CustomerSpendTimeline stats={stats} statsLoading={statsLoading} />
-
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1fr 340px' } }}>
         
         <CustomerInfoCard
@@ -210,10 +209,11 @@ export default function CustomerDetailPage() {
           setCepError={setCepError}
         />
         <CustomerTopProducts stats={stats} statsLoading={statsLoading} />
-
       </Box>
-
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+      
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' } }}>
+        <CustomerRecentSales stats={stats} statsLoading={statsLoading} />
+        <CustomerSpendTimeline stats={stats} statsLoading={statsLoading} />
         <CustomerCategoryPie
           title="Categorias de produto"
           subtitle="Gasto por categoria · todos os períodos"
@@ -221,19 +221,21 @@ export default function CustomerDetailPage() {
           loading={statsLoading}
           emptyText="Nenhum produto comprado"
         />
-        <CustomerCategoryPie
-          title="Categorias de serviço"
-          subtitle="Gasto por categoria · atendimentos"
-          data={stats?.serviceCategories}
-          loading={statsLoading}
-          emptyText="Nenhum serviço realizado"
-        />
+        
       </Box>
 
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '2fr 3fr' } }}>
-        <CustomerAppointmentsPanel stats={stats} statsLoading={statsLoading} />
-        <CustomerRecentSales stats={stats} statsLoading={statsLoading} />
-      </Box>
+      {isModuleEnabled('services') && isModuleEnabled('appointments') && (
+        <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '2fr 3fr' } }}>
+          <CustomerCategoryPie
+            title="Categorias de serviço"
+            subtitle="Gasto por categoria · atendimentos"
+            data={stats?.serviceCategories}
+            loading={statsLoading}
+            emptyText="Nenhum serviço realizado"
+          />
+          <CustomerAppointmentsPanel stats={stats} statsLoading={statsLoading} />
+        </Box>
+      )}
       <ConfirmDialog
         open={confirmDelete}
         title="Desativar cliente?"

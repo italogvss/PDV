@@ -42,4 +42,4 @@ public record CustomerTopServiceDto(string ServiceName, int Count, int MaxCount)
 // Month no formato "yyyy-MM"; série contínua (meses sem compra vêm com Total = 0).
 public record CustomerMonthlySpendDto(string Month, decimal Total);
 
-public record CustomerCategorySliceDto(string Name, decimal Total);
+public record CustomerCategorySliceDto(string Name, decimal Total, string? Color);
