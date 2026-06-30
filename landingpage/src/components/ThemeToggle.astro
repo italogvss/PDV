@@ -1,0 +1,162 @@
+---
+/**
+ * Alternador de tema (claro/escuro).
+ * Botão flutuante fixo no canto inferior direito — aparece em todas as
+ * páginas (renderizado no Layout). Inverte apenas a paleta neutra via o
+ * atributo data-theme no <html>; as cores de marca (verde) permanecem.
+ *
+ * O ícone visível indica o tema para o qual o clique vai mudar:
+ *  - tema claro  → mostra a lua  (clique = ir para o escuro)
+ *  - tema escuro → mostra o sol  (clique = ir para o claro)
+ */
+---
+
+<button
+  id="theme-toggle"
+  class="theme-toggle"
+  type="button"
+  aria-label="Alternar tema claro e escuro"
+  title="Alternar tema"
+>
+  <!-- Sol — visível no tema escuro -->
+  <svg
+    class="icon icon-sun"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="4.1" />
+    <path d="M12 2.4v2.3M12 19.3v2.3M21.6 12h-2.3M4.7 12H2.4M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6M18.8 18.8l-1.6-1.6M6.8 6.8 5.2 5.2" />
+  </svg>
+
+  <!-- Lua — visível no tema claro -->
+  <svg
+    class="icon icon-moon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M20.5 14.6A8.2 8.2 0 0 1 9.4 3.5a0.6 0.6 0 0 0-.83-.74 9.3 9.3 0 1 0 12.67 12.67 0.6 0.6 0 0 0-.74-.83Z" />
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    position: fixed;
+    right: clamp(var(--space-4), 4vw, var(--space-6));
+    bottom: clamp(var(--space-4), 4vw, var(--space-6));
+    z-index: 200; /* acima da navbar (z-index 100) */
+
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-full);
+
+    color: var(--color-ink);
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-md);
+
+    transition:
+      transform var(--dur-base) var(--ease-spring),
+      background-color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  .theme-toggle:hover {
+    transform: translateY(-3px);
+    color: var(--color-brand-deep);
+    border-color: var(--color-brand);
+    background: var(--color-mint);
+    box-shadow: var(--shadow-lg);
+  }
+  .theme-toggle:active {
+    transform: translateY(-1px) scale(0.96);
+  }
+
+  /* No escuro, o "verde profundo" do hover fica pouco legível —
+     usa o verde claro da marca. */
+  :global(html[data-theme='dark']) .theme-toggle:hover {
+    color: var(--color-brand-light);
+  }
+
+  .icon {
+    grid-area: 1 / 1; /* empilha os dois ícones no mesmo lugar */
+    width: 24px;
+    height: 24px;
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      transform var(--dur-base) var(--ease-spring);
+  }
+
+  /* Tema claro (padrão): mostra a lua, esconde o sol */
+  .icon-sun {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.4);
+  }
+  .icon-moon {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+
+  /* Tema escuro: mostra o sol, esconde a lua */
+  :global(html[data-theme='dark']) .icon-sun {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+  :global(html[data-theme='dark']) .icon-moon {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.4);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-toggle,
+    .icon {
+      transition: opacity var(--dur-fast) linear;
+    }
+    .theme-toggle:hover { transform: none; }
+  }
+</style>
+
+<script>
+  const STORAGE_KEY = 'theme';
+  const btn = document.getElementById('theme-toggle');
+
+  const apply = (theme: string) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    btn?.setAttribute(
+      'aria-label',
+      theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'
+    );
+  };
+
+  btn?.addEventListener('click', () => {
+    const next =
+      document.documentElement.getAttribute('data-theme') === 'dark'
+        ? 'light'
+        : 'dark';
+    localStorage.setItem(STORAGE_KEY, next);
+    apply(next);
+  });
+
+  // sincroniza o aria-label com o tema já pintado pelo script anti-flash
+  apply(document.documentElement.getAttribute('data-theme') ?? 'light');
+
+  // acompanha mudança da preferência do sistema enquanto o usuário não escolheu
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', (e) => {
+      if (!localStorage.getItem(STORAGE_KEY)) apply(e.matches ? 'dark' : 'light');
+    });
+</script>

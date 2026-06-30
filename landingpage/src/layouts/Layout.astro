@@ -9,6 +9,7 @@ interface Props {
 const { title, description, canonicalURL, ogImage } = Astro.props;
 const gaId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
 
+import ThemeToggle from '../components/ThemeToggle.astro';
 import '../styles/global.css';
 ---
 
@@ -23,6 +24,19 @@ import '../styles/global.css';
     <!-- marca html.js antes da pintura: reveal só esconde quando há JS -->
     <script is:inline>
       document.documentElement.classList.add('js');
+    </script>
+
+    <!-- tema antes da pintura: evita flash do tema errado (FOUC) -->
+    <script is:inline>
+      (() => {
+        const saved = localStorage.getItem('theme');
+        const theme =
+          saved ||
+          (window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
     </script>
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -54,6 +68,9 @@ import '../styles/global.css';
   </head>
   <body>
     <slot />
+
+    <!-- Alternador de tema flutuante — presente em todas as páginas -->
+    <ThemeToggle />
 
     <!-- Reveal no scroll: adiciona .in-view quando o elemento entra na viewport -->
     <script>

@@ -65,7 +65,7 @@ const isActive = (href: string) =>
     justify-content: space-between;
     gap: var(--space-5);
     padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
-    background: rgba(251, 251, 247, 0.72);
+    background: var(--color-glass);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--color-line);
@@ -79,11 +79,14 @@ const isActive = (href: string) =>
     flex-shrink: 0;
   }
   .brand-logo {
-    height: 26px;
+    margin-top: 6px;
+    height: 40px;
     width: auto;
     transition: transform var(--dur-base) var(--ease-spring);
   }
   .brand:hover .brand-logo { transform: scale(1.04); }
+  /* logo preto → branco no tema escuro */
+  :global(html[data-theme='dark']) .brand-logo { filter: brightness(0) invert(1); }
 
   .nav-links {
     display: flex;

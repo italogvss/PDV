@@ -12,8 +12,9 @@
   --color-brand-deep: #0e7d22;   /* verde muito escuro — texto sobre mint */
 
   /* ---------- Cores: tinta / neutros quentes ---------- */
-  --color-ink: #1a1916;          /* quase-preto quente — texto e superfícies escuras */
+  --color-ink: #1a1916;          /* quase-preto quente — usado como TEXTO (títulos, links) */
   --color-ink-soft: #2a2925;     /* superfície escura elevada */
+  --color-ink-surface: #1a1916;  /* superfície intencionalmente escura (footer, card CTA) — NÃO inverte no dark */
   --color-text: #1a1916;         /* texto principal */
   --color-text-muted: #6b6a62;   /* texto secundário */
   --color-text-faint: #9a988e;   /* legendas, metadados */
@@ -22,6 +23,7 @@
   --color-surface: #fbfbf7;      /* fundo da página — papel quente, muito claro */
   --color-cloud: #f2f1ea;        /* superfície de card tonal */
   --color-card: #ffffff;         /* card elevado */
+  --color-glass: rgba(251, 251, 247, 0.72); /* navbar translúcida sobre a página */
   --color-mint: #e7f9ea;         /* tonal verde claro — superfície de destaque */
   --color-mint-deep: #d2f3d8;    /* mint um tom acima */
   --color-line: #e8e7df;         /* divisórias e bordas sutis */
@@ -107,4 +109,44 @@
   --dur-fast: 140ms;
   --dur-base: 240ms;
   --dur-slow: 420ms;
+}
+
+/* ============================================================
+   Tema escuro
+   Inverte APENAS a paleta neutra (superfícies + texto). As cores
+   de marca (verde) ficam intactas — fazem parte da identidade.
+   Ativado por [data-theme="dark"] no <html> (ver Layout.astro).
+   ============================================================ */
+:root[data-theme='dark'] {
+  /* ---------- Superfícies: claras → escuras quentes ---------- */
+  --color-surface: #100f0d;      /* fundo da página — quase-preto quente */
+  --color-cloud: #1b1a16;        /* superfície tonal elevada */
+  --color-card: #201f1b;         /* card elevado — acima do fundo */
+  --color-glass: rgba(20, 19, 16, 0.72); /* navbar translúcida no escuro */
+  --color-line: #322f29;         /* divisórias sutis sobre escuro */
+  --color-line-strong: #423f37;
+
+  /* ---------- Tonais verdes: mantêm o matiz, escurecidos ---------- */
+  --color-mint: #16271b;         /* superfície verde escura */
+  --color-mint-deep: #1f3a26;
+
+  /* ---------- Texto: escuro → claro quente ---------- */
+  --color-ink: #f1f0e7;          /* títulos e links (mesmo papel de texto) */
+  --color-text: #f1f0e7;         /* texto principal */
+  --color-text-muted: #b1afa2;   /* texto secundário */
+  --color-text-faint: #807e73;   /* legendas, metadados */
+
+  /* sombras mais profundas para dar elevação sobre fundo escuro */
+  --shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md:
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    0 14px 30px rgba(0, 0, 0, 0.5);
+  --shadow-lg:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 32px 64px rgba(0, 0, 0, 0.6);
+
+  /* --color-ink-surface, --color-on-ink, --color-on-ink-muted e toda a
+     paleta de marca (--color-brand*) permanecem como no :root. */
 }
