@@ -8,41 +8,38 @@ import Accordion from '../components/Accordion.astro';
 
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 
+// `slug` é o ponto de entrada do trial no app (?plano=<slug>) — mapeia para o plano do backend.
 const planos = [
   {
     nome: 'Essencial', descricao: 'Pra quem está começando a organizar as vendas.',
+    slug: 'essencial',
     mensal: 39, anual: 32,
     itens: ['PDV completo', 'Controle de estoque', 'Controle de despesas', 'Até 2 usuários'],
     destaque: false,
   },
   {
     nome: 'Profissional', descricao: 'O queridinho de quem já vende todo dia.',
+    slug: 'profissional',
     mensal: 79, anual: 65,
-    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Até 6 usuários'],
+    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Usuários ilimitados'],
     destaque: true,
-  },
-  {
-    nome: 'Avançado', descricao: 'Pra operação com mais de um caixa.',
-    mensal: 149, anual: 124,
-    itens: ['Tudo do Profissional', 'Múltiplas lojas', 'Usuários ilimitados', 'Suporte dedicado'],
-    destaque: false,
   },
 ];
 
 const recursos = [
-  { nome: 'PDV / Caixa rápido', e: true, p: true, a: true },
-  { nome: 'Controle de estoque', e: true, p: true, a: true },
-  { nome: 'Controle de despesas', e: true, p: true, a: true },
-  { nome: 'Relatórios e analytics', e: false, p: true, a: true },
-  { nome: 'Agenda e agendamentos', e: false, p: true, a: true },
-  { nome: 'Recibo no WhatsApp', e: true, p: true, a: true },
-  { nome: 'Usuários inclusos', e: '2', p: '6', a: 'Ilimitados' },
-  { nome: 'Múltiplas lojas', e: false, p: false, a: true },
-  { nome: 'Suporte', e: 'E-mail', p: 'Prioritário', a: 'Dedicado' },
+  { nome: 'PDV / Caixa rápido', e: true, p: true },
+  { nome: 'Controle de estoque', e: true, p: true },
+  { nome: 'Controle de despesas', e: true, p: true },
+  { nome: 'Relatórios e analytics', e: false, p: true },
+  { nome: 'Agenda e agendamentos', e: false, p: true },
+  { nome: 'Recibo no WhatsApp', e: true, p: true },
+  { nome: 'Usuários inclusos', e: '2', p: 'Ilimitados' },
+  { nome: 'Múltiplas lojas', e: false, p: true },
+  { nome: 'Suporte', e: 'E-mail', p: 'Prioritário' },
 ];
 
 const cobranca = [
-  { q: 'O que acontece quando o teste grátis acaba?', a: 'Nada automático. Os 14 dias correm sem cartão cadastrado — quando acabam, você escolhe um plano pra continuar. Sem cobrança surpresa.' },
+  { q: 'O que acontece quando o teste grátis acaba?', a: 'Nada automático. Os 30 dias correm sem cartão cadastrado — quando acabam, você escolhe um plano pra continuar. Sem cobrança surpresa.' },
   { q: 'Consigo cancelar quando quiser?', a: 'Sim. Não tem fidelidade nem multa. Cancela direto no painel e usa até o fim do período já pago.' },
   { q: 'Quais formas de pagamento vocês aceitam?', a: 'Cartão de crédito e Pix. No plano anual o Pix sai à vista; no mensal, a cobrança é recorrente no cartão.' },
   { q: 'Tem taxa por venda ou por transação?', a: 'Não. Você paga só a mensalidade do plano. O que a loja vende é da loja — o Ka$hing não fica com nenhuma fatia.' },
@@ -51,7 +48,7 @@ const cobranca = [
 
 <Layout
   title="Preço — Planos do Ka$hing a partir de R$ 32/mês"
-  description="Planos simples e sem pegadinha pro pequeno comércio. 14 dias grátis, sem cartão e sem fidelidade. Pague mensal ou anual com 2 meses grátis."
+  description="Planos simples e sem pegadinha pro pequeno comércio. 30 dias grátis, sem cartão e sem fidelidade. Pague mensal ou anual com 2 meses grátis."
 >
   <Navbar />
 
@@ -63,7 +60,7 @@ const cobranca = [
           <p class="eyebrow">Preço sem pegadinha</p>
           <h1 class="pre-hero-title">Um preço justo pra quem cuida de cada centavo</h1>
           <p class="pre-hero-sub">
-            14 dias grátis, sem cartão e sem fidelidade. Escolha o plano só quando o
+            30 dias grátis, sem cartão e sem fidelidade. Escolha o plano só quando o
             teste já tiver convencido você.
           </p>
         </div>
@@ -91,12 +88,12 @@ const cobranca = [
               anual={p.anual}
               itens={p.itens}
               destaque={p.destaque}
-              ctaHref={`${appUrl}/cadastro`}
+              ctaHref={`${appUrl}/login?plano=${p.slug}`}
               revealDelay={i * 80}
             />
           ))}
         </div>
-        <p class="pre-note">Todos os planos incluem os 14 dias de teste grátis, sem cartão.</p>
+        <p class="pre-note">Todos os planos incluem os 30 dias de teste grátis, sem cartão.</p>
       </div>
     </section>
 
@@ -114,14 +111,13 @@ const cobranca = [
                 <th class="t-rec">Recurso</th>
                 <th>Essencial</th>
                 <th class="t-dest">Profissional</th>
-                <th>Avançado</th>
               </tr>
             </thead>
             <tbody>
               {recursos.map((r) => (
                 <tr>
                   <td class="t-rec">{r.nome}</td>
-                  {[r.e, r.p, r.a].map((v, idx) => (
+                  {[r.e, r.p].map((v, idx) => (
                     <td class:list={[{ 't-dest': idx === 1 }]}>
                       {v === true && <span class="t-yes" aria-label="incluído">✓</span>}
                       {v === false && <span class="t-no" aria-label="não incluído">—</span>}
@@ -152,7 +148,7 @@ const cobranca = [
 
     <CtaFinal
       titulo="Comece pelo teste — o preço você decide depois"
-      subtitulo="14 dias pra usar tudo com os dados da sua loja. Sem cartão agora, sem fidelidade nunca."
+      subtitulo="30 dias pra usar tudo com os dados da sua loja. Sem cartão agora, sem fidelidade nunca."
     />
   </main>
 
@@ -212,8 +208,15 @@ const cobranca = [
   }
 
   /* ===== PLANOS ===== */
-  .pre-planos { padding-block: var(--space-8) var(--space-6); }
-  .pre-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: stretch; }
+  .pre-planos { padding-block: var(--space-10) var(--space-8); }
+  .pre-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: stretch;
+    max-width: 56rem;
+    margin-inline: auto;
+  }
   .pre-note { text-align: center; margin-top: var(--space-6); font-size: var(--text-sm); color: var(--color-text-muted); }
 
   /* ===== TABELA ===== */

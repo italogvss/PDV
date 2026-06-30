@@ -28,7 +28,7 @@ const categorias = [
   {
     id: 'planos', titulo: 'Planos e cobrança',
     itens: [
-      { q: 'O teste grátis pede cartão?', a: 'Não. São 14 dias sem cartão cadastrado. Quando acabam, você escolhe se quer continuar. Veja os <a href="/preco">planos e preços</a>.' },
+      { q: 'O teste grátis pede cartão?', a: 'Não. São 30 dias sem cartão cadastrado. Quando acabam, você escolhe se quer continuar. Veja os <a href="/preco">planos e preços</a>.' },
       { q: 'Tem fidelidade ou multa de cancelamento?', a: 'Nenhuma. Cancela quando quiser, direto no painel, e usa até o fim do período já pago.' },
       { q: 'Tem taxa por venda?', a: 'Não. Você paga só a mensalidade do plano. O Ka$hing não fica com nenhuma fatia das suas vendas.' },
       { q: 'Posso trocar de plano depois?', a: 'Sim, a qualquer momento. Subir ou descer de plano é imediato e o valor é ajustado de forma proporcional.' },
@@ -112,7 +112,7 @@ let runningIndex = 0;
           <div class="faq-cta-col">
             <h3 class="faq-cta-h">Já resolveu?</h3>
             <p class="faq-cta-p">Então não perca tempo. Crie a conta e registre sua primeira venda hoje.</p>
-            <a href={`${appUrl}/cadastro`} class="btn-brand">Criar conta grátis</a>
+            <a href={`${appUrl}/login?plano=profissional`} class="btn-brand">Criar conta grátis</a>
           </div>
         </div>
       </div>

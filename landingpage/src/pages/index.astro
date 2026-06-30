@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import CtaFinal from '../components/CtaFinal.astro';
+import MeshGradient from '../components/MeshGradient.astro';
 
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 
@@ -69,25 +70,22 @@ const depoimentos = [
   },
 ];
 
+// `slug` é o ponto de entrada do trial no app (?plano=<slug>).
 const planos = [
   {
-    nome: 'Essencial', preco: '39', descricao: 'Pra quem está começando a organizar as vendas.',
+    nome: 'Essencial', preco: '39', slug: 'essencial', descricao: 'Pra quem está começando a organizar as vendas.',
     itens: ['PDV completo', 'Controle de estoque', 'Até 2 usuários'], destaque: false,
   },
   {
-    nome: 'Profissional', preco: '79', descricao: 'O queridinho de quem já vende todo dia.',
-    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Até 6 usuários'], destaque: true,
-  },
-  {
-    nome: 'Avançado', preco: '149', descricao: 'Pra operação com mais de um caixa.',
-    itens: ['Tudo do Profissional', 'Múltiplas lojas', 'Usuários ilimitados'], destaque: false,
+    nome: 'Profissional', preco: '79', slug: 'profissional', descricao: 'O queridinho de quem já vende todo dia.',
+    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Usuários ilimitados'], destaque: true,
   },
 ];
 ---
 
 <Layout
   title="Ka$hing — O PDV que faz sua loja soar cha-ching"
-  description="Ponto de venda, estoque, agenda e relatórios num app só. Feito para o pequeno comércio brasileiro. 14 dias grátis, sem cartão."
+  description="Ponto de venda, estoque, agenda e relatórios num app só. Feito para o pequeno comércio brasileiro. 30 dias grátis, sem cartão."
 >
   <Navbar />
 
@@ -102,18 +100,18 @@ const planos = [
             <span class="word" style="--wi: 1">sua</span>{' '}
             <span class="word" style="--wi: 2">loja</span>{' '}
             <span class="word" style="--wi: 3">soar</span>{' '}
-            <span class="word hero-chaching shimmer" style="--wi: 4">cha-ching</span>
+            <span class="word hero-chaching shimmer" style="--wi: 4">Ka-shing</span>
           </h1>
           <p class="hero-sub">
             Caixa, estoque, agenda e relatórios num app só. Simples o bastante
             pro dia a dia — completo o bastante pra fazer o negócio crescer.
           </p>
           <div class="hero-actions">
-            <a href={`${appUrl}/cadastro`} class="btn-brand hero-btn">Criar conta grátis</a>
+            <a href={`${appUrl}/login?plano=profissional`} class="btn-brand hero-btn">Criar conta grátis</a>
             <a href="/solucoes" class="hero-secondary">Ver o que faz →</a>
           </div>
           <ul class="hero-reassure">
-            <li>14 dias grátis</li>
+            <li>30 dias grátis</li>
             <li>Sem cartão</li>
             <li>Pronto em 2 minutos</li>
           </ul>
@@ -254,8 +252,16 @@ const planos = [
         </div>
         <div class="planos-grid">
           {planos.map((p, i) => (
-            <article class:list={['plano', { 'plano-destaque': p.destaque }]} data-reveal style={`--reveal-delay: ${i * 80}ms`}>
-              {p.destaque && <span class="plano-badge">Mais escolhido</span>}
+            <article class:list={['plano', { 'plano-destaque': p.destaque, 'border-trail': p.destaque }]} data-reveal style={`--reveal-delay: ${i * 80}ms`}>
+              {p.destaque && <MeshGradient class="plano-bg" speed={1.1} intensity={0.7} />}
+              {p.destaque && (
+                <span class="plano-badge">
+                  <svg class="plano-badge-star" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                    <path d="M12 2l2.6 6.9L21.5 12l-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z" />
+                  </svg>
+                  Mais escolhido
+                </span>
+              )}
               <h3 class="plano-nome">{p.nome}</h3>
               <p class="plano-desc">{p.descricao}</p>
               <p class="plano-preco">
@@ -264,7 +270,7 @@ const planos = [
               <ul class="plano-itens">
                 {p.itens.map((i) => <li>{i}</li>)}
               </ul>
-              <a href={`${appUrl}/cadastro`} class:list={['plano-cta', { 'btn-brand': p.destaque }]}>
+              <a href={`${appUrl}/login?plano=${p.slug}`} class:list={['plano-cta', { 'btn-brand': p.destaque }]}>
                 Começar teste grátis
               </a>
             </article>
@@ -306,20 +312,22 @@ const planos = [
   }
   .hero-chaching {
     color: var(--color-brand-deep);
+    border: var(--color-brand-light),
+    border 2,
     white-space: nowrap;
     padding-bottom: 0.12em;
     /* tokens do shimmer: sheen verde-claro sobre verde profundo */
-    --shimmer-base: var(--color-brand-deep);
-    --shimmer-glow: #e6ffee;
-    --shimmer-dur: 3.2s;
+    --shimmer-base: var(--color-brand);
+    --shimmer-glow: var(--color-brand-light);
+    --shimmer-dur: 2s;
   }
   /* entra junto com as outras palavras E mantém o shimmer rodando.
      Precisa ser mais específico que `.hero-title .word`, que senão
      sobrescreveria a propriedade `animation` e travaria o shimmer. */
   .hero-title .word.hero-chaching {
     animation:
-      word-rise 0.7s var(--ease-spring) calc(120ms + var(--wi) * 70ms) backwards,
-      shimmer var(--shimmer-dur) linear 1s infinite;
+      word-rise 0.5s var(--ease-spring) calc(120ms + var(--wi) * 70ms) backwards,
+      shimmer var(--shimmer-dur) alternate-reverse 0.5s infinite;
   }
   .hero-sub {
     font-size: var(--text-xl);
@@ -599,7 +607,14 @@ const planos = [
   .planos-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-8); }
   .planos-title { font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl)); margin-top: var(--space-3); }
   .planos-sub { font-size: var(--text-lg); color: var(--color-text-muted); margin-top: var(--space-3); }
-  .planos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: stretch; }
+  .planos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: stretch;
+    max-width: 56rem;
+    margin-inline: auto;
+  }
   .plano {
     position: relative;
     display: flex;
@@ -613,25 +628,52 @@ const planos = [
   }
   .plano-destaque {
     background:
-      radial-gradient(120% 80% at 50% 0%, rgba(37, 207, 63, 0.1), transparent 60%),
+      radial-gradient(150% 100% at 50% -8%, rgba(37, 207, 63, 0.18), transparent 58%),
+      radial-gradient(120% 80% at 50% 108%, rgba(37, 207, 63, 0.08), transparent 60%),
       var(--color-card);
-    border: 2px solid var(--color-brand);
-    box-shadow: var(--shadow-md);
+    border: 1.5px solid color-mix(in srgb, var(--color-brand) 45%, var(--color-line));
+    box-shadow: var(--shadow-glow);
   }
+  /* mesh-gradient animado dentro do card destaque — clipado pelo raio do card.
+     Conteúdo fica acima via z-index; a borda (border-trail) transborda livre. */
+  .plano-bg {
+    z-index: 0;
+    border-radius: var(--radius-lg);
+  }
+  /* eleva o conteúdo acima do canvas, sem tocar no badge (que é absolute e
+     já fica em z-index maior, atravessando a borda do card) */
+  .plano-destaque > :not(.plano-bg):not(.plano-badge) { position: relative; z-index: 1; }
   .plano-badge {
     position: absolute;
-    top: calc(-1 * var(--space-3));
+    top: calc(-1 * var(--space-4));
     left: 50%;
     transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-body);
     font-size: var(--text-xs);
-    font-weight: var(--weight-semibold);
-    letter-spacing: 0.03em;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: var(--color-on-brand);
-    background: var(--color-brand);
-    padding: var(--space-1) var(--space-4);
+    background: linear-gradient(135deg, var(--color-brand-light), var(--color-brand) 52%, var(--color-brand-dark));
+    padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-full);
-    box-shadow: var(--shadow-sm);
+    box-shadow:
+      0 8px 20px -6px rgba(37, 207, 63, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    z-index: 4;
+  }
+  .plano-badge-star {
+    fill: currentColor;
+    filter: drop-shadow(0 1px 1px rgba(8, 33, 13, 0.25));
+    animation: badge-twinkle 2.8s var(--ease-spring) infinite;
+  }
+  @keyframes badge-twinkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(0.82) rotate(-12deg); opacity: 0.75; }
   }
   .plano-nome { font-size: var(--text-2xl); }
   .plano-desc { font-size: var(--text-sm); color: var(--color-text-muted); min-height: 2.6em; }

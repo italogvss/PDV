@@ -20,11 +20,11 @@ const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
         <h2 class="cta-title">{titulo}</h2>
         <p class="cta-sub">{subtitulo}</p>
         <div class="cta-actions">
-          <a href={`${appUrl}/cadastro`} class="btn-brand cta-btn">Criar conta grátis</a>
+          <a href={`${appUrl}/login?plano=profissional`} class="btn-brand cta-btn">Criar conta grátis</a>
           <a href="/preco" class="cta-ghost">Ver planos e preços →</a>
         </div>
         <ul class="cta-reassure">
-          <li>14 dias grátis</li>
+          <li>30 dias grátis</li>
           <li>Sem cartão de crédito</li>
           <li>Cancela quando quiser</li>
         </ul>
