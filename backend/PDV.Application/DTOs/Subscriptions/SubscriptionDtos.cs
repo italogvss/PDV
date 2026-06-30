@@ -1,7 +1,8 @@
 namespace PDV.Application.DTOs.Subscriptions;
 
 // Contrato HTTP de assinaturas. Planos são identificados por Id (Guid) — não há tier hardcoded.
-// `PlanId == null` em SubscriptionResponse = estado Free (sem assinatura). Limites: -1 = ilimitado.
+// `PlanId == null` em SubscriptionResponse = sem assinatura válida (acesso bloqueado, sem plano Free).
+// Limites: -1 = ilimitado.
 
 public record PlanResponse(
     Guid Id,

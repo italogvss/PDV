@@ -10,6 +10,7 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
     {
         builder.Property(p => p.Name).IsRequired().HasMaxLength(100);
         builder.Property(p => p.Description).HasMaxLength(500);
+        builder.Property(p => p.Slug).HasMaxLength(50);
         builder.Property(p => p.ExternalProductId).IsRequired().HasMaxLength(100);
         builder.Property(p => p.EntitledModulesJson).HasColumnType("json");
         builder.Property(p => p.LimitsJson).HasColumnType("json");
@@ -17,5 +18,8 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
 
         // Catálogo global — produto único por id do gateway (idempotência do seeder).
         builder.HasIndex(p => p.ExternalProductId).IsUnique();
+
+        // Lookup por slug no handoff da landing (não-único: planos sem slug compartilham "").
+        builder.HasIndex(p => p.Slug);
     }
 }

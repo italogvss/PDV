@@ -4,7 +4,8 @@ namespace PDV.Application.Interfaces;
 
 public interface ISubscriptionService
 {
-    // Assinatura efetiva do tenant atual (resolvida via o Owner da loja). Free se não houver viva.
+    // Assinatura efetiva do tenant atual (resolvida via o Owner da loja). Sem assinatura viva →
+    // Status "None"/expirado, sem módulos (acesso bloqueado — não há mais plano Free).
     Task<SubscriptionResponse> GetMineAsync();
 
     Task<IReadOnlyList<PlanResponse>> GetPlansAsync();

@@ -153,10 +153,10 @@ public class SubscriptionService(
         if (sub.Method == GatewayPaymentMethod.Card && !string.IsNullOrEmpty(sub.GatewaySubscriptionId))
             await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId!);
 
-        // Em trial: volta imediatamente ao Free com remoção FÍSICA da assinatura e dos pagamentos
+        // Em trial: bloqueia o acesso imediatamente com remoção FÍSICA da assinatura e dos pagamentos
         // (exceção justificada à regra de soft delete — em trial não há cobrança paga, e o usuário
-        // não pode reativar em trial). User.HasUsedTrial permanece true, então um novo checkout só
-        // aceitará planos sem trial. Pagamentos antes da assinatura por causa da FK.
+        // não pode reativar em trial). User.HasUsedTrial permanece true, então não há novo trial.
+        // Pagamentos antes da assinatura por causa da FK.
         if (sub.Status == SubscriptionStatus.Trialing)
         {
             await paymentRepository.DeleteBySubscriptionIdAsync(sub.Id);

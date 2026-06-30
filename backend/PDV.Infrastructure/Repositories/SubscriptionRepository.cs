@@ -28,8 +28,8 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
         await context.SaveChangesAsync();
     }
 
-    // Remoção FÍSICA (não soft delete) — cancelamento em trial volta o usuário ao Free sem
-    // deixar assinatura para reativar em trial. Deletar os Payment da sub antes (FK).
+    // Remoção FÍSICA (não soft delete) — cancelamento em trial bloqueia o acesso sem deixar
+    // assinatura para reativar em trial. Deletar os Payment da sub antes (FK).
     public async Task DeleteAsync(Subscription subscription)
     {
         context.Subscriptions.Remove(subscription);
@@ -45,6 +45,27 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
                 && s.Status == SubscriptionStatus.Canceled
                 && s.CurrentPeriodEnd != null
                 && s.CurrentPeriodEnd < now)
+            .ToListAsync();
+
+        foreach (var sub in due)
+        {
+            sub.Status = SubscriptionStatus.Expired;
+            sub.UpdatedAt = now;
+        }
+
+        if (due.Count > 0) await context.SaveChangesAsync();
+        return due.Count;
+    }
+
+    // Expira trials PDV-side vencidos (TrialEndsAt no passado, sem virar assinatura paga).
+    // Sem query filter de tenant — varre todos os usuários por design.
+    public async Task<int> ExpireTrialingPastEndAsync(DateTime now)
+    {
+        var due = await context.Subscriptions
+            .Where(s => s.IsActive
+                && s.Status == SubscriptionStatus.Trialing
+                && s.TrialEndsAt != null
+                && s.TrialEndsAt < now)
             .ToListAsync();
 
         foreach (var sub in due)

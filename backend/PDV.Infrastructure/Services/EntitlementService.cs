@@ -26,9 +26,10 @@ public class EntitlementService(
             return new ResolvedEntitlement(subscription, subscription.Plan, modules, limits);
         }
 
-        // Sem assinatura válida → plano Free (módulos/limites de FreePlanDefaults). `subscription`
-        // pode estar presente (ex.: expirada) para a UI exibir status/reativação.
-        return new ResolvedEntitlement(subscription, null, FreeModules(), FreePlanDefaults.Limits);
+        // Sem assinatura válida → SEM acesso (não existe mais plano Free permanente). Todos os
+        // controllers com [RequireModule] retornam 402 → app bloqueado até assinar. `subscription`
+        // pode estar presente (ex.: trial/assinatura expirada) para a UI exibir status/renovação.
+        return new ResolvedEntitlement(subscription, null, [], EmptyLimits);
     }
 
     public async Task RequireModuleAsync(OperationModule module)
@@ -69,6 +70,5 @@ public class EntitlementService(
         };
     }
 
-    private static IReadOnlyList<string> FreeModules() =>
-        FreePlanDefaults.Modules.Select(m => m.ToString().ToLowerInvariant()).ToList();
+    private static readonly IReadOnlyDictionary<string, int> EmptyLimits = new Dictionary<string, int>();
 }

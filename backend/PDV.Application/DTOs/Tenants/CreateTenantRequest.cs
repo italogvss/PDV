@@ -28,4 +28,8 @@ public record CreateTenantRequest(
     // Step 4 — Horário
     bool SkipHours,
     string? HoursPreset,
-    Dictionary<string, BusinessHoursDayDto>? BusinessHours);
+    Dictionary<string, BusinessHoursDayDto>? BusinessHours,
+
+    // Plano escolhido na landing (?plano=<slug>). Quando presente, inicia o trial PDV-side de
+    // 30 dias na criação do tenant. Null/vazio → sem trial.
+    string? PlanSlug = null);

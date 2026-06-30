@@ -3,7 +3,7 @@ import type { CreateTenantFormData } from '../pages/CreateTenant/types'
 import type { CreateTenantResponse } from '../types/tenant.types'
 
 export const tenantService = {
-  async create(form: CreateTenantFormData): Promise<CreateTenantResponse> {
+  async create(form: CreateTenantFormData, planSlug?: string | null): Promise<CreateTenantResponse> {
     const res = await api.post<CreateTenantResponse>('/tenants', {
       // Step 1
       fantasyName: form.fantasyName,
@@ -31,6 +31,9 @@ export const tenantService = {
       skipHours:    form.skipHours,
       hoursPreset:  form.skipHours ? null : form.hoursPreset,
       businessHours: form.skipHours ? null : form.businessHours,
+
+      // Plano escolhido na landing page (inicia trial de 30 dias automaticamente)
+      planSlug: planSlug ?? null,
     })
     return res.data
   },

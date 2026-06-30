@@ -8,6 +8,7 @@ import { mediaService } from '../services/media.service'
 import { convertToWebp, validateImageFile } from '../utils/image.utils'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { getStoredPlanSlug, clearStoredPlanSlug } from '../utils/planSelection'
 import type { CreateTenantFormData } from '../pages/CreateTenant/types'
 
 export function useCreateTenant() {
@@ -18,8 +19,10 @@ export function useCreateTenant() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: CreateTenantFormData) => tenantService.create(data),
+    // Plano escolhido na landing (?plano=) inicia o trial PDV-side de 30 dias na criação do tenant.
+    mutationFn: (data: CreateTenantFormData) => tenantService.create(data, getStoredPlanSlug()),
     onSuccess: async (response, variables) => {
+      clearStoredPlanSlug()
       dispatch(setTenant({ tenantId: response.tenantId }))
 
       if (variables.logoFile) {

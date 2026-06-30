@@ -20,6 +20,15 @@ public class PlanRepository(AppDbContext context) : IPlanRepository
     public async Task<Plan?> GetByExternalProductIdAsync(string externalProductId) =>
         await context.Plans.FirstOrDefaultAsync(p => p.ExternalProductId == externalProductId);
 
+    public async Task<Plan?> GetBySlugAsync(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug)) return null;
+        return await context.Plans
+            .Where(p => p.IsActive && p.Slug == slug)
+            .OrderBy(p => p.DisplayOrder)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task AddAsync(Plan plan)
     {
         await context.Plans.AddAsync(plan);

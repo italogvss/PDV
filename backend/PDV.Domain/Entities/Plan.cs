@@ -9,6 +9,10 @@ public class Plan : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
 
+    // Identificador estável usado no handoff landing → app (?plano=<slug>). Resolve o plano cujas
+    // features/limites o trial PDV-side concede. Vazio em planos sem ponto de entrada na landing.
+    public string Slug { get; set; } = string.Empty;
+
     // Valor em centavos (preço para o ciclo definido em BillingPeriod).
     public int PriceCents { get; set; }
 

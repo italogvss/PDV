@@ -73,9 +73,11 @@ public class ProductsController(...) {
 
 ## Assinaturas / cobrança
 
-Plano **Free** (default, sem assinatura — módulos/limites em `FreePlanDefaults`) + planos pagos (`Plan`, semeados por `PlanSeeder` no startup). Catálogo em `PDV.Domain/Constants` (`ModuleCatalog`, `PlanLimits`, `PlanSeedData`, `SegmentModuleDefaults`).
+Apenas planos pagos (`Plan`, semeados por `PlanSeeder` no startup). **Não existe plano Free permanente** — sem assinatura válida o acesso é bloqueado (todo módulo gateado → 402). Catálogo em `PDV.Domain/Constants` (`ModuleCatalog`, `PlanLimits`, `PlanSeedData`, `SegmentModuleDefaults`).
 
-- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant** → sua `Subscription` viva. `IsEntitled` cobre `Trialing` (até `TrialEndsAt`) e `Active`/`Canceled` (até `CurrentPeriodEnd`).
+**Trial de 30 dias (PDV-side).** Controlado inteiramente pela aplicação, **sem tocar o gateway**. Quando um plano é escolhido na landing (`?plano=<slug>` → `Plan.Slug`), o `TenantService` cria, na criação do tenant, uma `Subscription` `Trialing` (`TrialEndsAt = now + TrialDefaults.DurationDays`) e marca `User.HasUsedTrial`. Uma vez por usuário; sem `planSlug` → sem trial. Os planos no gateway **não** usam `trialDays`. `SubscriptionExpiryBackgroundService` marca trials vencidos como `Expired`.
+
+- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant** → sua `Subscription` viva. `IsEntitled` cobre `Trialing` (até `TrialEndsAt`) e `Active`/`Canceled` (até `CurrentPeriodEnd`); fora disso → módulos/limites vazios (bloqueado).
 - Gating de **módulo**: `RequireModuleAsync` → 402 `MODULE_NOT_IN_PLAN`.
 - Gating de **limite numérico**: o **service** chama `EnsureWithinLimitAsync(limitKey, currentCount)` antes de criar (ex.: `ProductService` checa `PlanLimits.MaxProducts`) → 402 `PLAN_LIMIT_EXCEEDED`.
 - Módulos/limites são armazenados como JSON no `Plan` (`EntitledModulesJson`, `LimitsJson`), lidos via `PlanJson` helper.

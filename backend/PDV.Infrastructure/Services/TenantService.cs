@@ -20,6 +20,8 @@ public class TenantService(
     ITenantRepository tenantRepository,
     IUserRepository userRepository,
     ITenantRoleRepository roleRepository,
+    ISubscriptionRepository subscriptionRepository,
+    IPlanRepository planRepository,
     ITenantContext tenantContext,
     IStorageService storage,
     IValidator<BusinessSettingsDto> businessValidator,
@@ -87,12 +89,44 @@ public class TenantService(
 
         user.LastTenantId = tenant.Id;
         user.UpdatedAt = DateTime.UtcNow;
+
+        await StartTrialIfEligibleAsync(user, request.PlanSlug);
+
         await userRepository.UpdateAsync(user);
 
         var accessToken = GenerateToken(userId, tenant.Id, user.Name, UserRole.Owner.ToString());
         var response    = new CreateTenantResponse(tenant.Id, tenant.Settings.FantasyName);
 
         return (response, accessToken);
+    }
+
+    // Concede o trial PDV-side (30 dias, sem cartão, sem chamar o gateway) quando um plano foi
+    // escolhido na landing. Uma vez por usuário (HasUsedTrial) e só se ainda não houver assinatura
+    // viva. Slug ausente/desconhecido → segue sem trial, sem falhar o onboarding.
+    private async Task StartTrialIfEligibleAsync(User user, string? planSlug)
+    {
+        if (string.IsNullOrWhiteSpace(planSlug) || user.HasUsedTrial) return;
+
+        var existing = await subscriptionRepository.GetLiveByUserIdAsync(user.Id);
+        if (existing is not null) return;
+
+        var plan = await planRepository.GetBySlugAsync(planSlug);
+        if (plan is null) return;
+
+        var trialEnd = DateTime.UtcNow.AddDays(TrialDefaults.DurationDays);
+
+        await subscriptionRepository.AddAsync(new Subscription
+        {
+            UserId           = user.Id,
+            PlanId           = plan.Id,
+            Provider         = string.Empty,   // o trial não toca o gateway
+            Status           = SubscriptionStatus.Trialing,
+            IsRenewable      = false,
+            TrialEndsAt      = trialEnd,
+            CurrentPeriodEnd = trialEnd,
+        });
+
+        user.HasUsedTrial = true;
     }
 
     public async Task<TenantSettingsResponse> GetSettingsAsync()

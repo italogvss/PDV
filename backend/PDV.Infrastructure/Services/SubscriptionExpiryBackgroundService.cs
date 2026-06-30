@@ -5,7 +5,8 @@ using PDV.Domain.Interfaces;
 
 namespace PDV.Infrastructure.Services;
 
-// Varre periodicamente as assinaturas canceladas cujo período já terminou e as marca como Expired.
+// Varre periodicamente as assinaturas vencidas (canceladas pós-período e trials PDV-side expirados)
+// e as marca como Expired.
 // Resolve o repositório num scope próprio (BackgroundService é singleton; o repo/DbContext é scoped).
 public class SubscriptionExpiryBackgroundService(
     IServiceScopeFactory scopeFactory,
@@ -30,9 +31,15 @@ public class SubscriptionExpiryBackgroundService(
             using var scope = scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<ISubscriptionRepository>();
 
-            var expired = await repo.ExpireCanceledPastPeriodAsync(DateTime.UtcNow);
-            if (expired > 0)
-                logger.LogInformation("Assinaturas expiradas por vencimento: {Count}", expired);
+            var now = DateTime.UtcNow;
+
+            var expiredCanceled = await repo.ExpireCanceledPastPeriodAsync(now);
+            if (expiredCanceled > 0)
+                logger.LogInformation("Assinaturas canceladas expiradas por vencimento: {Count}", expiredCanceled);
+
+            var expiredTrials = await repo.ExpireTrialingPastEndAsync(now);
+            if (expiredTrials > 0)
+                logger.LogInformation("Trials expirados por vencimento: {Count}", expiredTrials);
         }
         catch (Exception ex)
         {

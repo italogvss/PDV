@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAppDispatch } from '../../store'
 import { setAuth, clearAuth } from '../../store/slices/auth.slice'
 import { authService } from '../../services/auth.service'
+import { capturePlanSlugFromUrl } from '../../utils/planSelection'
 
 interface AuthProviderProps {
   children: React.ReactNode
@@ -11,6 +12,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const dispatch = useAppDispatch()
 
   useEffect(() => {
+    // Captura o plano vindo da landing (?plano=) antes do fluxo de auth/onboarding.
+    capturePlanSlugFromUrl()
+
     authService
       .getMe()
       .then((user) => dispatch(setAuth(user)))

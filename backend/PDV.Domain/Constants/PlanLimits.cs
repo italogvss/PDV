@@ -1,7 +1,7 @@
 namespace PDV.Domain.Constants;
 
 // Chaves canônicas dos limites numéricos de plano (lógica de negócio). Persistidas no
-// `LimitsJson` do Plano e no Free default. Valor -1 = ilimitado.
+// `LimitsJson` do Plano. Valor -1 = ilimitado.
 public static class PlanLimits
 {
     public const string MaxEmployees = "maxEmployees";
