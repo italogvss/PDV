@@ -38,7 +38,9 @@ public record OperationSettingsDto(
     int DefaultCriticalStock,
     bool StockFieldsEditable,
     bool RequireCustomerOnSale,
-    bool RequireCustomerOnAppointment);
+    bool RequireCustomerOnAppointment,
+    bool RequireCostPriceOnProducts,
+    bool RequireCostPriceOnServices);
 
 // Módulos da operação ativos — também é o corpo do PUT /api/tenants/settings/modules.
 // Strings lowercase: "sales", "inventory", "services", "appointments", "expenses",

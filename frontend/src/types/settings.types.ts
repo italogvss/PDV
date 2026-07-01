@@ -67,6 +67,8 @@ export interface OperationSettings {
   stockFieldsEditable: boolean
   requireCustomerOnSale: boolean
   requireCustomerOnAppointment: boolean
+  requireCostPriceOnProducts: boolean
+  requireCostPriceOnServices: boolean
 }
 
 // Pagamentos — cada método aceito tem um flag de habilitado e a taxa por venda (%).

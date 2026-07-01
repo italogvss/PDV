@@ -13,7 +13,6 @@ public record AppearanceSettingsDto(
 
 // Seção "Notificações" — também é o corpo do PUT /api/account/settings/notifications.
 public record NotificationSettingsDto(
-    bool NewSales,
     bool StockAlerts,
     bool Invoices,
     bool Appointments);

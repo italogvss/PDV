@@ -23,7 +23,6 @@ export const TEXT_SIZE_MAX = 20
 export const TEXT_SIZE_DEFAULT = 15
 
 export interface NotificationPrefs {
-  newSales: boolean
   stockAlerts: boolean
   invoices: boolean
   appointments: boolean

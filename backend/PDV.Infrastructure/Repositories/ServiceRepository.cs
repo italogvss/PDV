@@ -11,6 +11,8 @@ public class ServiceRepository(AppDbContext context, ITenantContext tenantContex
     public async Task<Service?> GetByIdAsync(Guid id) =>
         await context.Services
             .Include(s => s.Category)
+            .Include(s => s.ServiceProducts)
+                .ThenInclude(sp => sp.Product)
             .FirstOrDefaultAsync(s => s.Id == id);
 
     public async Task<(IEnumerable<Service> Data, int TotalCount)> GetAllAsync(
@@ -21,6 +23,8 @@ public class ServiceRepository(AppDbContext context, ITenantContext tenantContex
     {
         var query = context.Services
             .Include(s => s.Category)
+            .Include(s => s.ServiceProducts)
+                .ThenInclude(sp => sp.Product)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
@@ -63,6 +67,8 @@ public class ServiceRepository(AppDbContext context, ITenantContext tenantContex
         await context.Services
             .IgnoreQueryFilters()
             .Include(s => s.Category)
+            .Include(s => s.ServiceProducts)
+                .ThenInclude(sp => sp.Product)
             .Where(s => s.TenantId == tenantContext.TenantId && !s.IsActive)
             .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync();
@@ -92,5 +98,29 @@ public class ServiceRepository(AppDbContext context, ITenantContext tenantContex
         context.Services
             .IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantContext.TenantId)
+            .ExecuteDeleteAsync();
+
+    public async Task ReplaceServiceProductsAsync(Guid serviceId, IEnumerable<ServiceProduct> products)
+    {
+        await context.ServiceProducts
+            .Where(sp => sp.ServiceId == serviceId)
+            .ExecuteDeleteAsync();
+
+        var list = products.ToList();
+        if (list.Count > 0)
+        {
+            await context.ServiceProducts.AddRangeAsync(list);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public Task RemoveServiceProductsByServiceIdAsync(Guid serviceId) =>
+        context.ServiceProducts
+            .Where(sp => sp.ServiceId == serviceId)
+            .ExecuteDeleteAsync();
+
+    public Task RemoveServiceProductsByProductIdAsync(Guid productId) =>
+        context.ServiceProducts
+            .Where(sp => sp.ProductId == productId)
             .ExecuteDeleteAsync();
 }

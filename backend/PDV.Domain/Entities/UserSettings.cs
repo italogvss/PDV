@@ -13,7 +13,6 @@ public class UserSettings : BaseEntity
     public int TextSize { get; set; } = 15;
 
     // Notificações no app
-    public bool NotifyNewSales { get; set; } = true;
     public bool NotifyStockAlerts { get; set; } = true;
     public bool NotifyInvoices { get; set; } = true;
     public bool NotifyAppointments { get; set; } = true;

@@ -16,7 +16,7 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import ChipSelect from '../../../../components/ChipSelect'
@@ -34,9 +34,9 @@ import type { ProductModalProps } from './types'
 
 const PRODUCTS_QUERY_KEY = ['products'] as const
 
-const schema = z.object({
+const _baseProductSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
-  costPrice: z.number().positive('Deve ser maior que zero'),
+  costPrice: z.number().min(0),
   price: z.number().positive('Deve ser maior que zero'),
   stock: z.coerce
     .number({ invalid_type_error: 'Informe um número' })
@@ -59,19 +59,22 @@ const schema = z.object({
     .or(z.literal('')),
   barcode: z.string().max(50, 'Código de barras deve ter no máximo 50 caracteres').optional(),
   categoryId: z.string().optional().nullable(),
-}).superRefine((data, ctx) => {
-  const min = typeof data.minStock === 'number' ? data.minStock : undefined
-  const critical = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
-  if (min !== undefined && critical !== undefined && critical > min) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Deve ser menor ou igual ao estoque mínimo',
-      path: ['criticalStock'],
-    })
-  }
 })
 
-type ProductForm = z.infer<typeof schema>
+type ProductForm = z.infer<typeof _baseProductSchema>
+
+function buildProductSchema(requireCostPrice: boolean) {
+  return _baseProductSchema.superRefine((data, ctx) => {
+    const min = typeof data.minStock === 'number' ? data.minStock : undefined
+    const critical = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
+    if (min !== undefined && critical !== undefined && critical > min) {
+      ctx.addIssue({ code: 'custom', message: 'Deve ser menor ou igual ao estoque mínimo', path: ['criticalStock'] })
+    }
+    if (requireCostPrice && data.costPrice <= 0) {
+      ctx.addIssue({ code: 'custom', message: 'Deve ser maior que zero', path: ['costPrice'] })
+    }
+  })
+}
 
 function buildDefaults(stockDefaults?: { minStock?: number; criticalStock?: number }): ProductForm {
   return {
@@ -98,6 +101,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isEditing = !!product
   const { data: inventorySettings } = useInventorySettings()
+  const requireCostPrice = inventorySettings?.requireCostPriceOnProducts ?? true
+  const schema = useMemo(() => buildProductSchema(requireCostPrice), [requireCostPrice])
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const uploadImage = useUploadImage('Product', PRODUCTS_QUERY_KEY)
@@ -205,6 +210,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
       const criticalStockVal = typeof data.criticalStock === 'number' ? data.criticalStock : undefined
       const categoryId = data.categoryId || null
 
+      const purchasePrice = data.costPrice > 0 ? data.costPrice : undefined
+
       let entityId: string
       if (isEditing) {
         const updated = await updateProduct.mutateAsync({
@@ -212,7 +219,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           name: data.name,
           barcode: data.barcode || undefined,
           price: data.price,
-          purchasePrice: data.costPrice,
+          purchasePrice,
           stock: data.stock,
           minStock: minStockVal,
           minCriticalStock: criticalStockVal,
@@ -224,7 +231,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           name: data.name,
           barcode: data.barcode || undefined,
           price: data.price,
-          purchasePrice: data.costPrice,
+          purchasePrice,
           stock: data.stock,
           minStock: minStockVal,
           minCriticalStock: criticalStockVal,
@@ -395,7 +402,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <FieldLabel label="Preço de custo" required inline />
+                  <FieldLabel label="Preço de custo" required={requireCostPrice} inline />
                   <Typography variant="caption" color="text.disabled">unitário</Typography>
                 </Box>
                 <Controller

@@ -49,6 +49,10 @@ public class TenantSettings : BaseEntity
     public bool RequireCustomerOnSale { get; set; } = false;
     public bool RequireCustomerOnAppointment { get; set; } = false;
 
+    // Preço de custo
+    public bool RequireCostPriceOnProducts { get; set; } = true;
+    public bool RequireCostPriceOnServices { get; set; } = true;
+
     // Pagamentos — métodos aceitos e taxa por venda (%)
     public bool PaymentFeesEnabled { get; set; } = false;
     public bool PaymentPixEnabled { get; set; } = true;

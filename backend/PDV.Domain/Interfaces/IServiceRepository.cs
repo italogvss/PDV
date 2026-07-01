@@ -17,4 +17,7 @@ public interface IServiceRepository
     Task RestoreAsync(Service service);
     Task HardDeleteAsync(Service service);
     Task<int> PurgeAllAsync();
+    Task ReplaceServiceProductsAsync(Guid serviceId, IEnumerable<ServiceProduct> products);
+    Task RemoveServiceProductsByServiceIdAsync(Guid serviceId);
+    Task RemoveServiceProductsByProductIdAsync(Guid productId);
 }

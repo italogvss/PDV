@@ -10,7 +10,6 @@ import type { OperationModule } from '../../../../constants/modules'
 import { useAppSelector } from '../../../../store'
 
 const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string; module: OperationModule }[] = [
-  //{ key: 'newSales', label: 'Novas vendas', sublabel: 'Cada pedido finalizado', module: 'sales' },
   { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', module: 'inventory' },
   { key: 'invoices', label: 'Alertas de despesas', sublabel: 'Despesas vencidas e a vencer', module: 'expenses' },
   { key: 'appointments', label: 'Agendamentos', sublabel: 'Lembretes de agendamentos do dia', module: 'appointments' },

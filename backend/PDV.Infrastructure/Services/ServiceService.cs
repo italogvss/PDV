@@ -51,9 +51,27 @@ public class ServiceService(
             Price = request.Price,
             CategoryId = request.CategoryId,
             IsActive = request.IsActive,
+            CostPrice = request.CostPrice,
         };
 
         await repository.AddAsync(service);
+
+        if (request.Products is not null)
+        {
+            var serviceProducts = request.Products
+                .Where(p => p.Quantity > 0)
+                .Select(p => new ServiceProduct
+                {
+                    Id = Guid.NewGuid(),
+                    ServiceId = service.Id,
+                    ProductId = p.ProductId,
+                    Quantity = p.Quantity,
+                })
+                .ToList();
+
+            if (serviceProducts.Count > 0)
+                await repository.ReplaceServiceProductsAsync(service.Id, serviceProducts);
+        }
 
         var created = await repository.GetByIdAsync(service.Id)
             ?? throw new NotFoundException("Serviço não encontrado após criação.");
@@ -76,8 +94,22 @@ public class ServiceService(
         service.Price = request.Price;
         service.CategoryId = request.CategoryId;
         service.IsActive = request.IsActive;
+        service.CostPrice = request.CostPrice;
 
         await repository.UpdateAsync(service);
+
+        var serviceProducts = (request.Products ?? [])
+            .Where(p => p.Quantity > 0)
+            .Select(p => new ServiceProduct
+            {
+                Id = Guid.NewGuid(),
+                ServiceId = id,
+                ProductId = p.ProductId,
+                Quantity = p.Quantity,
+            })
+            .ToList();
+
+        await repository.ReplaceServiceProductsAsync(id, serviceProducts);
 
         var updated = await repository.GetByIdAsync(service.Id)
             ?? throw new NotFoundException("Serviço não encontrado após atualização.");
@@ -121,8 +153,21 @@ public class ServiceService(
     private static ServiceCategoryResponse? MapCategory(ServiceCategory? c) =>
         c is null ? null : new(c.Id, c.Name, c.Color);
 
+    // Product pode ser null quando o EF Core aplica o query filter de IsActive no ThenInclude.
+    private static IEnumerable<ServiceProductResponse> MapProducts(IEnumerable<ServiceProduct> products) =>
+        products
+            .Where(sp => sp.Product != null)
+            .Select(sp => new ServiceProductResponse(
+                sp.ProductId,
+                sp.Product!.Name,
+                sp.Product.PurchasePrice,
+                sp.Product.Price,
+                sp.Quantity));
+
     private async Task<ServiceResponse> Map(Service s) =>
         new(s.Id, s.Name, s.Description, s.DurationMinutes, s.Price, s.IsActive, s.CreatedAt, s.UpdatedAt,
             MapCategory(s.Category),
-            await storage.ResolveReadUrlAsync(s.ImageUrl, MediaCategory.Service, s.UpdatedAt));
+            await storage.ResolveReadUrlAsync(s.ImageUrl, MediaCategory.Service, s.UpdatedAt),
+            s.CostPrice,
+            MapProducts(s.ServiceProducts));
 }

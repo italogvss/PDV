@@ -6,4 +6,6 @@ public record CreateServiceRequest(
     int? DurationMinutes,
     decimal Price,
     Guid? CategoryId,
-    bool IsActive = true);
+    bool IsActive = true,
+    decimal? CostPrice = null,
+    IEnumerable<ServiceProductRequest>? Products = null);

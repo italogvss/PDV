@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701184754_RemoveNotifyNewSales")]
+    partial class RemoveNotifyNewSales
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1540,12 +1543,6 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
-
-                    b.Property<bool>("RequireCostPriceOnProducts")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("RequireCostPriceOnServices")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("RequireCustomerOnAppointment")
                         .ValueGeneratedOnAdd()

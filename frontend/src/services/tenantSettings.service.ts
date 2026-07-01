@@ -41,6 +41,8 @@ interface BackendOperationSettings {
   stockFieldsEditable?: boolean
   requireCustomerOnSale?: boolean
   requireCustomerOnAppointment?: boolean
+  requireCostPriceOnProducts?: boolean
+  requireCostPriceOnServices?: boolean
 }
 
 interface BackendSettings {
@@ -87,6 +89,8 @@ export const tenantSettingsService = {
         stockFieldsEditable: data.operation.stockFieldsEditable ?? true,
         requireCustomerOnSale: data.operation.requireCustomerOnSale ?? false,
         requireCustomerOnAppointment: data.operation.requireCustomerOnAppointment ?? false,
+        requireCostPriceOnProducts: data.operation.requireCostPriceOnProducts ?? true,
+        requireCostPriceOnServices: data.operation.requireCostPriceOnServices ?? true,
       },
       payments: data.payments,
       modules: data.modules.modules,

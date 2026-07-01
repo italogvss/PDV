@@ -70,6 +70,30 @@ export const OPERATION_MODULES: Record<OperationModule, ModuleDefinition> = {
 
 export const ALL_MODULES = Object.keys(OPERATION_MODULES) as OperationModule[]
 
+export interface ModuleGroup {
+  label: string
+  description: string
+  modules: OperationModule[]
+}
+
+export const MODULE_GROUPS: ModuleGroup[] = [
+  {
+    label: 'Vendas',
+    description: 'Frente de caixa, PDV, histórico de vendas e controle de estoque.',
+    modules: ['sales', 'inventory'],
+  },
+  {
+    label: 'Serviços e Agendamentos',
+    description: 'Catálogo de serviços e agenda de horários.',
+    modules: ['services', 'appointments'],
+  },
+  { label: 'Despesas',     description: 'Contas e despesas do negócio.',                modules: ['expenses'] },
+  { label: 'Relatórios',   description: 'Lucros, indicadores e relatórios.',             modules: ['reports'] },
+  { label: 'Clientes',     description: 'Cadastro e relacionamento com clientes.',       modules: ['customers'] },
+  { label: 'Fornecedores', description: 'Cadastro de fornecedores.',                     modules: ['suppliers'] },
+  { label: 'Logs',         description: 'Histórico de movimentações, status e preços.', modules: ['logs'] },
+]
+
 // Mapa reverso permissão → módulo. Permissões fora do mapa (ex.: ManageEmployees) são
 // "core" e ficam sempre visíveis, independente dos módulos ativos.
 export const permissionToModule: Partial<Record<Permission, OperationModule>> = Object.fromEntries(

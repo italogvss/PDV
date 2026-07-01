@@ -37,7 +37,6 @@ public class UserSettingsService(
     public async Task<NotificationSettingsDto> UpdateNotificationsAsync(Guid userId, NotificationSettingsDto request)
     {
         var settings = await GetOrCreateAsync(userId);
-        settings.NotifyNewSales = request.NewSales;
         settings.NotifyStockAlerts = request.StockAlerts;
         settings.NotifyInvoices = request.Invoices;
         settings.NotifyAppointments = request.Appointments;
@@ -71,5 +70,5 @@ public class UserSettingsService(
         new(
             new AppearanceSettingsDto(s.Theme.ToString(), s.AccentColor, s.TextSize),
             new NotificationSettingsDto(
-                s.NotifyNewSales, s.NotifyStockAlerts, s.NotifyInvoices, s.NotifyAppointments));
+                s.NotifyStockAlerts, s.NotifyInvoices, s.NotifyAppointments));
 }

@@ -80,7 +80,7 @@ export default function AppointmentDetailModal({
   })()
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={isMobile}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <ModalHeader
         title={data.customerName}
         subtitle={data.services.map((s) => s.name).join(' + ')}
@@ -243,7 +243,7 @@ export default function AppointmentDetailModal({
                   startIcon={<CancelRounded />}
                   onClick={() => setConfirmingCancel(true)}
                 >
-                  Cancelar
+                  Cancelar agendamento
                 </Button>
                 <Box sx={{ flex: 1 }} />
                 <Button

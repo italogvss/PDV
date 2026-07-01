@@ -5,16 +5,25 @@ import { buildNotificationItems, useNotifications } from '../../../../hooks/useN
 import { useAppSelector } from '../../../../store'
 import NotificationPanel from '../NotificationPanel'
 
-function buildHash(counts: unknown): string {
-  return JSON.stringify(counts)
+interface StoredReadState {
+  hash: string
+  readIds: string[]
 }
 
-function getStoredHash(tenantId: string): string {
-  return localStorage.getItem(`notifications_hash_${tenantId}`) ?? ''
+function storageKey(tenantId: string) {
+  return `notifications_read_${tenantId}`
 }
 
-function saveHash(tenantId: string, hash: string): void {
-  localStorage.setItem(`notifications_hash_${tenantId}`, hash)
+function loadReadState(tenantId: string): StoredReadState {
+  try {
+    const raw = localStorage.getItem(storageKey(tenantId))
+    if (raw) return JSON.parse(raw) as StoredReadState
+  } catch { /* ignore */ }
+  return { hash: '', readIds: [] }
+}
+
+function saveReadState(tenantId: string, state: StoredReadState): void {
+  localStorage.setItem(storageKey(tenantId), JSON.stringify(state))
 }
 
 export default function NotificationButton() {
@@ -22,45 +31,63 @@ export default function NotificationButton() {
   const tenantId = useAppSelector((s) => s.auth.tenantId) ?? ''
   const { data: counts } = useNotifications()
 
-  const currentHash = useMemo(() => (counts ? buildHash(counts) : ''), [counts])
-  const hasItems = counts ? buildNotificationItems(counts).length > 0 : false
-  const isRead = !hasItems || currentHash === getStoredHash(tenantId)
+  const currentHash = useMemo(() => (counts ? JSON.stringify(counts) : ''), [counts])
+  const allItems = useMemo(() => (counts ? buildNotificationItems(counts) : []), [counts])
 
-  const handleOpen = useCallback(() => {
-    setOpen(true)
-  }, [])
+  const [readState, setReadState] = useState<StoredReadState>(() => loadReadState(tenantId))
 
-  const handleClose = useCallback(() => {
-    setOpen(false)
-  }, [])
+  // Só usa os IDs lidos se o hash bater — hash diferente = dados mudaram = tudo não-lido
+  const readIds = useMemo<Set<string>>(
+    () => (readState.hash === currentHash ? new Set(readState.readIds) : new Set()),
+    [readState, currentHash],
+  )
+
+  const hasUnread = allItems.length > 0 && allItems.some((item) => !readIds.has(item.id))
+
+  // Functional updater: lê o estado mais recente de dentro do setter — evita stale closure
+  const handleMarkRead = useCallback(
+    (id: string) => {
+      setReadState((prev) => {
+        const base = prev.hash === currentHash ? new Set(prev.readIds) : new Set<string>()
+        base.add(id)
+        const next: StoredReadState = { hash: currentHash, readIds: [...base] }
+        if (tenantId) saveReadState(tenantId, next)
+        return next
+      })
+    },
+    [currentHash, tenantId],
+  )
 
   const handleMarkAllRead = useCallback(() => {
-    if (tenantId) saveHash(tenantId, currentHash)
+    const next: StoredReadState = { hash: currentHash, readIds: allItems.map((i) => i.id) }
+    setReadState(next)
+    if (tenantId) saveReadState(tenantId, next)
     setOpen(false)
-  }, [tenantId, currentHash])
+  }, [currentHash, allItems, tenantId])
 
   return (
     <>
       <IconButton
-        onClick={handleOpen}
+        onClick={() => setOpen(true)}
         size="small"
         sx={{
           color: 'text.tertiary',
-          border: isRead ? 2 : 1,
-          borderColor: isRead ? "secondary.main" : 'border.subtle',
+          border: hasUnread ? 1 : 2,
+          borderColor: hasUnread ? 'border.subtle' : 'secondary.main',
           borderRadius: 2,
           bgcolor: 'background.paper',
           width: 36,
           height: 36,
         }}
       >
-        <NotificationsNone sx={{ fontSize: 18, color: isRead ? "secondary.main" : "border.subtle" }} />
+        <NotificationsNone sx={{ fontSize: 18, color: hasUnread ? 'border.subtle' : 'secondary.main' }} />
       </IconButton>
       <NotificationPanel
         open={open}
-        onClose={handleClose}
+        onClose={() => setOpen(false)}
+        readIds={readIds}
+        onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
-        isRead={isRead}
       />
     </>
   )

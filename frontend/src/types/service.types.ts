@@ -1,3 +1,11 @@
+export interface ServiceProductItem {
+  productId: string
+  productName: string
+  purchasePrice?: number
+  price: number
+  quantity: number
+}
+
 export interface CreateServicePayload {
   name: string
   description?: string
@@ -5,6 +13,8 @@ export interface CreateServicePayload {
   price: number
   categoryId?: string | null
   isActive?: boolean
+  costPrice?: number | null
+  products?: { productId: string; quantity: number }[]
 }
 
 export interface UpdateServicePayload {
@@ -14,6 +24,8 @@ export interface UpdateServicePayload {
   price: number
   categoryId?: string | null
   isActive: boolean
+  costPrice?: number | null
+  products?: { productId: string; quantity: number }[]
 }
 
 export interface CreateServiceCategoryPayload {
@@ -40,4 +52,6 @@ export interface Service {
   price: number
   category: ServiceCategory | null
   isActive: boolean
+  costPrice?: number
+  serviceProducts: ServiceProductItem[]
 }

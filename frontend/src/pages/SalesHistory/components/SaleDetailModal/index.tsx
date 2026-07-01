@@ -122,6 +122,11 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
                   <Typography variant="body2">{sale.cancelledByName}</Typography>
                 </InfoRow>
               )}
+              {sale.cancelledAt && (
+                <InfoRow label="Data do cancelamento">
+                  <Typography variant="body2">{formatDateTime(sale.cancelledAt)}</Typography>
+                </InfoRow>
+              )}
             </Box>
 
             <Divider />

@@ -17,7 +17,7 @@ import {
   useUpdateModulesSettings,
   useUpdateOperationSettings,
 } from '../../../../hooks/useTenantSettings'
-import { ALL_MODULES, OPERATION_MODULES, type OperationModule } from '../../../../constants/modules'
+import { ALL_MODULES, MODULE_GROUPS, type OperationModule } from '../../../../constants/modules'
 import type { OperationSettings } from '../../../../types/settings.types'
 
 
@@ -58,7 +58,9 @@ export default function OperationSection() {
     op?.inventoryControlEnabled !== form.inventoryControlEnabled ||
     op?.defaultMinStock !== form.defaultMinStock ||
     op?.defaultCriticalStock !== form.defaultCriticalStock ||
-    op?.stockFieldsEditable !== form.stockFieldsEditable
+    op?.stockFieldsEditable !== form.stockFieldsEditable ||
+    op?.requireCostPriceOnProducts !== form.requireCostPriceOnProducts ||
+    op?.requireCostPriceOnServices !== form.requireCostPriceOnServices
 
   const customersChanged =
     op?.requireCustomerOnSale !== form.requireCustomerOnSale ||
@@ -76,6 +78,8 @@ export default function OperationSection() {
       defaultMinStock: op.defaultMinStock,
       defaultCriticalStock: op.defaultCriticalStock,
       stockFieldsEditable: op.stockFieldsEditable,
+      requireCostPriceOnProducts: op.requireCostPriceOnProducts,
+      requireCostPriceOnServices: op.requireCostPriceOnServices,
     } : f)
 
   const handleCustomersCancel = () =>
@@ -246,6 +250,29 @@ function InventoryCard({ form, set, hasChanges, onSave, onCancel, isPending }: I
             />
           </SettingRow>
         </Collapse>
+
+        <Divider />
+        <SettingRow
+          label="Exigir preço de custo em produtos"
+          sublabel="Produtos sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
+        >
+          <Switch
+            checked={form.requireCostPriceOnProducts}
+            onChange={(e) => set({ requireCostPriceOnProducts: e.target.checked })}
+            color="secondary"
+          />
+        </SettingRow>
+        <Divider />
+        <SettingRow
+          label="Exigir preço de custo em serviços"
+          sublabel="Serviços sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
+        >
+          <Switch
+            checked={form.requireCostPriceOnServices}
+            onChange={(e) => set({ requireCostPriceOnServices: e.target.checked })}
+            color="secondary"
+          />
+        </SettingRow>
       </Box>
     </SettingCard>
   )
@@ -336,12 +363,16 @@ function ModulesCard({ enabledModules }: { enabledModules: OperationModule[] }) 
     }
   }, [enabledModules])
 
-  const toggle = (module: OperationModule) =>
-    setSelected((prev) =>
-      prev.includes(module) ? prev.filter((m) => m !== module) : [...prev, module],
-    )
+  const isGroupEnabled = (groupModules: OperationModule[]) =>
+    groupModules.every((m) => selected.includes(m))
 
-  const isEnabled = (module: OperationModule) => selected.includes(module)
+  const toggleGroup = (groupModules: OperationModule[]) =>
+    setSelected((prev) => {
+      const allEnabled = groupModules.every((m) => prev.includes(m))
+      if (allEnabled) return prev.filter((m) => !groupModules.includes(m))
+      const missing = groupModules.filter((m) => !prev.includes(m))
+      return [...prev, ...missing]
+    })
 
   const hasChanges =
     [...selected].sort().join(',') !== [...enabledModules].sort().join(',')
@@ -372,15 +403,15 @@ function ModulesCard({ enabledModules }: { enabledModules: OperationModule[] }) 
         ) : undefined
       }
     >
-      {ALL_MODULES.map((module) => (
+      {MODULE_GROUPS.map((group) => (
         <SettingRow
-          key={module}
-          label={OPERATION_MODULES[module].label}
-          sublabel={OPERATION_MODULES[module].description}
+          key={group.label}
+          label={group.label}
+          sublabel={group.description}
         >
           <Switch
-            checked={isEnabled(module)}
-            onChange={() => toggle(module)}
+            checked={isGroupEnabled(group.modules)}
+            onChange={() => toggleGroup(group.modules)}
             color="secondary"
           />
         </SettingRow>

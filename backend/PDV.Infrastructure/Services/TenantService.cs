@@ -185,6 +185,8 @@ public class TenantService(
         settings.StockFieldsEditable           = request.StockFieldsEditable;
         settings.RequireCustomerOnSale         = request.RequireCustomerOnSale;
         settings.RequireCustomerOnAppointment  = request.RequireCustomerOnAppointment;
+        settings.RequireCostPriceOnProducts    = request.RequireCostPriceOnProducts;
+        settings.RequireCostPriceOnServices    = request.RequireCostPriceOnServices;
 
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
@@ -256,7 +258,9 @@ public class TenantService(
                 s.DefaultCriticalStock,
                 s.StockFieldsEditable,
                 s.RequireCustomerOnSale,
-                s.RequireCustomerOnAppointment),
+                s.RequireCustomerOnAppointment,
+                s.RequireCostPriceOnProducts,
+                s.RequireCostPriceOnServices),
             new PaymentsSettingsDto(
                 s.PaymentFeesEnabled,
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),

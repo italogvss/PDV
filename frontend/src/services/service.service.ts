@@ -2,11 +2,20 @@ import { api } from './api'
 import type {
   Service,
   ServiceCategory,
+  ServiceProductItem,
   CreateServicePayload,
   UpdateServicePayload,
   CreateServiceCategoryPayload,
   UpdateServiceCategoryPayload,
 } from '../types/service.types'
+
+interface BackendServiceProduct {
+  productId: string
+  productName: string
+  purchasePrice?: number | null
+  price: number
+  quantity: number
+}
 
 interface BackendService {
   id: string
@@ -17,6 +26,8 @@ interface BackendService {
   isActive: boolean
   updatedAt?: string | null
   category: ServiceCategory | null
+  costPrice?: number | null
+  products?: BackendServiceProduct[] | null
 }
 
 interface PaginatedResponse<T> {
@@ -24,6 +35,16 @@ interface PaginatedResponse<T> {
   total: number
   page: number
   pageSize: number
+}
+
+function mapServiceProduct(sp: BackendServiceProduct): ServiceProductItem {
+  return {
+    productId: sp.productId,
+    productName: sp.productName,
+    purchasePrice: sp.purchasePrice ?? undefined,
+    price: sp.price,
+    quantity: sp.quantity,
+  }
 }
 
 function mapService(s: BackendService): Service {
@@ -35,6 +56,8 @@ function mapService(s: BackendService): Service {
     price: s.price,
     category: s.category,
     isActive: s.isActive,
+    costPrice: s.costPrice ?? undefined,
+    serviceProducts: (s.products ?? []).map(mapServiceProduct),
   }
 }
 

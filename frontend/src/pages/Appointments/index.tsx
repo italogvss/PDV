@@ -168,7 +168,20 @@ export default function AppointmentsPage() {
       width: 110,
       valueGetter: (_: unknown, row: Appointment) => dayjs(row.start).format('DD/MM/YYYY'),
     }] : []),
-    { field: 'customerName', headerName: 'Cliente', flex: 1, minWidth: 140 },
+    {
+      field: 'customerName',
+      headerName: 'Cliente',
+      flex: 1,
+      minWidth: 140,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: '100%' }}>
+          {params.row.color && (
+            <Box sx={{ width: 3, height: '60%', borderRadius: 1, bgcolor: params.row.color, flexShrink: 0 }} />
+          )}
+          {params.value}
+        </Box>
+      ),
+    },
     { field: 'employeeName', headerName: 'Profissional', width: 160 },
     {
       field: 'services',
@@ -256,7 +269,10 @@ export default function AppointmentsPage() {
       const newDuration = Math.max(5, dayjs(event.end as string).diff(dayjs(event.start as string), 'minute'))
       const newEmployeeId = typeof event.resource === 'string' ? event.resource : (a.employeeId ?? '')
 
-      if (newStart !== a.start || newDuration !== a.durationMinutes || newEmployeeId !== a.employeeId) {
+      // Compara por momento (não por string) para evitar atualizações espúrias
+      // quando o EventCalendar reformata o timestamp (ex: adiciona milissegundos).
+      const startChanged = !dayjs(newStart).isSame(dayjs(a.start))
+      if (startChanged || newDuration !== a.durationMinutes || newEmployeeId !== a.employeeId) {
         updateAppt.mutate({
           id: a.id,
           payload: {

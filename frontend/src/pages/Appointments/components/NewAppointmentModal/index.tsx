@@ -66,7 +66,13 @@ const schema = z.object({
   status: z.enum(['confirmado', 'pendente']),
   note: z.string().max(1000),
   color: z.string(),
-})
+}).refine(
+  (data) => {
+    if (!data.date || !data.time) return true
+    return dayjs(`${data.date}T${data.time}`).isAfter(dayjs())
+  },
+  { message: 'Não é possível agendar para um horário que já passou', path: ['time'] },
+)
 
 type FormValues = z.infer<typeof schema>
 
@@ -135,10 +141,13 @@ export default function NewAppointmentModal({
   // Reset ao abrir, aplicando prefill (profissional/horário) quando houver.
   useEffect(() => {
     if (!open) return
-    const base = buildEmptyValues(defaultDate.format('YYYY-MM-DD'))
+    const today = dayjs().format('YYYY-MM-DD')
+    const resolvedDate = defaultDate.format('YYYY-MM-DD')
+    const base = buildEmptyValues(resolvedDate < today ? today : resolvedDate)
     if (prefill?.employeeId) base.employeeId = prefill.employeeId
     if (prefill?.start) {
-      base.date = dayjs(prefill.start).format('YYYY-MM-DD')
+      const prefillDate = dayjs(prefill.start).format('YYYY-MM-DD')
+      base.date = prefillDate < today ? today : prefillDate
       base.time = dayjs(prefill.start).format('HH:mm')
     }
     reset(base)
@@ -242,10 +251,11 @@ export default function NewAppointmentModal({
           component="form"
           id="new-appointment-form"
           onSubmit={handleSubmit(onSubmit)}
+          noValidate
           sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1.5 }}
         >
           {/* Cliente + Telefone */}
-          {customersModuleActive && (
+          {customersModuleActive ? (
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <FieldLabel label="Cliente" required={requireCustomerOnAppointment} />
@@ -316,6 +326,17 @@ export default function NewAppointmentModal({
                   )}
                 />
               </Box>
+            </Box>
+          ) : (
+            <Box>
+              <FieldLabel label="Nome do cliente" />
+              <TextField
+                {...register('customerName')}
+                placeholder="Nome do cliente"
+                fullWidth
+                error={!!errors.customerName}
+                helperText={errors.customerName?.message}
+              />
             </Box>
           )}
 
@@ -501,6 +522,7 @@ export default function NewAppointmentModal({
                     value={field.value ? dayjs(field.value) : null}
                     onChange={(value) => field.onChange(value ? value.format('YYYY-MM-DD') : '')}
                     format="DD/MM/YYYY"
+                    minDate={dayjs().startOf('day')}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -528,7 +550,10 @@ export default function NewAppointmentModal({
                       </InputAdornment>
                     ),
                   },
-                  htmlInput: { step: 300 },
+                  htmlInput: {
+                    step: 300,
+                    min: date === dayjs().format('YYYY-MM-DD') ? dayjs().format('HH:mm') : undefined,
+                  },
                 }}
               />
             </Box>

@@ -12,4 +12,6 @@ public record ServiceResponse(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     ServiceCategoryResponse? Category,
-    string? ImageUrl);
+    string? ImageUrl,
+    decimal? CostPrice,
+    IEnumerable<ServiceProductResponse> Products);

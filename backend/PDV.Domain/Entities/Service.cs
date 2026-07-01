@@ -9,6 +9,8 @@ public class Service : BaseEntity
     public decimal Price { get; set; }
     public Guid? CategoryId { get; set; }
     public string? ImageUrl { get; set; } // {tenantId}/service/{serviceId}.webp
+    public decimal? CostPrice { get; set; }
 
     public ServiceCategory? Category { get; set; }
+    public ICollection<ServiceProduct> ServiceProducts { get; set; } = new List<ServiceProduct>();
 }

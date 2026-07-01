@@ -42,6 +42,13 @@ function mapServiceRef(s: BackendServiceRef): AppointmentServiceRef {
   }
 }
 
+// Pomelo lê datetime do MySQL como DateTimeKind.Unspecified e o System.Text.Json serializa
+// sem sufixo de timezone (ex: "2026-07-01T18:35:00"). dayjs interpreta strings sem timezone
+// como hora local — em UTC-3 isso causaria um desvio de 3h. Força tratamento como UTC.
+function toUtcIso(dt: string): string {
+  return dt.endsWith('Z') || dt.includes('+') ? dt : dt + 'Z'
+}
+
 function mapAppointment(a: BackendAppointment): Appointment {
   return {
     id: a.id,
@@ -51,7 +58,7 @@ function mapAppointment(a: BackendAppointment): Appointment {
     employeeId: a.employeeId,
     employeeName: a.employeeName,
     services: a.services.map(mapServiceRef),
-    start: a.start,
+    start: toUtcIso(a.start),
     durationMinutes: a.durationMinutes,
     price: a.price,
     status: a.status as AppointmentStatus,

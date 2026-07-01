@@ -6,4 +6,6 @@ public record UpdateServiceRequest(
     int? DurationMinutes,
     decimal Price,
     Guid? CategoryId,
-    bool IsActive);
+    bool IsActive,
+    decimal? CostPrice = null,
+    IEnumerable<ServiceProductRequest>? Products = null);

@@ -1,15 +1,8 @@
 import {
-  AccountBalanceWalletOutlined,
-  CalendarTodayOutlined,
   CheckOutlined,
   CloseOutlined,
-  ErrorOutlined,
   NotificationsNoneOutlined,
-  RemoveShoppingCartOutlined,
-  ScheduleOutlined,
   SettingsOutlined,
-  TrendingDownOutlined,
-  WarningAmberOutlined,
 } from '@mui/icons-material'
 import {
   Box,
@@ -21,65 +14,43 @@ import {
   Tabs,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { buildNotificationItems, useNotifications } from '../../../../hooks/useNotifications'
-import type { NotificationCategory, NotificationItem as NotificationItemType } from '../../../../types/notification.types'
 import NotificationItem from './NotificationItem'
-
-// Apenas em desenvolvimento — cobre todos os tipos de notificação para visualização
-const DEV_MOCK_ITEMS: NotificationItemType[] = import.meta.env.DEV
-  ? [
-    { id: 'mock-out-of-stock', category: 'estoque', severity: 'error', icon: RemoveShoppingCartOutlined, title: '[Mock] Produtos sem estoque', description: '3 produtos sem estoque', route: '/estoque' },
-    { id: 'mock-critical-stock', category: 'estoque', severity: 'error', icon: ErrorOutlined, title: '[Mock] Estoque crítico', description: '5 produtos em nível crítico', route: '/estoque' },
-    { id: 'mock-low-stock', category: 'estoque', severity: 'warning', icon: WarningAmberOutlined, title: '[Mock] Estoque baixo', description: '2 produtos com estoque baixo', route: '/estoque' },
-    { id: 'mock-negative-stock', category: 'estoque', severity: 'error', icon: TrendingDownOutlined, title: '[Mock] Estoque negativo', description: '1 produto com estoque negativo', route: '/estoque' },
-    { id: 'mock-overdue-expenses', category: 'financeiro', severity: 'error', icon: AccountBalanceWalletOutlined, title: '[Mock] Despesas vencidas', description: '2 despesas vencidas', route: '/despesas' },
-    { id: 'mock-upcoming-expenses', category: 'financeiro', severity: 'warning', icon: ScheduleOutlined, title: '[Mock] Despesas a vencer', description: '4 despesas vencem nos próximos 7 dias', route: '/despesas' },
-    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-    { id: 'mock-appointments', category: 'agendamentos', severity: 'info', icon: CalendarTodayOutlined, title: '[Mock] Agendamentos hoje', description: '7 agendamentos para hoje', route: '/agendamentos' },
-
-  ]
-  : []
 
 interface Props {
   open: boolean
   onClose: () => void
+  readIds: Set<string>
+  onMarkRead: (id: string) => void
   onMarkAllRead: () => void
-  isRead: boolean
 }
 
-type TabValue = 'todas' | 'nao-lidas' | NotificationCategory
+type TabValue = 'todas' | 'nao-lidas'
 
-export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead }: Props) {
+export default function NotificationPanel({ open, onClose, readIds, onMarkRead, onMarkAllRead }: Props) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<TabValue>('todas')
 
   const { data: counts } = useNotifications()
-  const allItems = [...(counts ? buildNotificationItems(counts) : []), ...DEV_MOCK_ITEMS]
-
-  const filteredItems = allItems.filter((item) => {
-    if (tab === 'todas') return true
-    if (tab === 'nao-lidas') return !isRead
-    return item.category === tab
-  })
+  const allItems = counts ? buildNotificationItems(counts) : []
+  const unreadItems = allItems.filter((item) => !readIds.has(item.id))
+  const filteredItems = tab === 'todas' ? allItems : unreadItems
+  const unreadCount = unreadItems.length
 
   useEffect(() => {
     if (!open) setTab('todas')
   }, [open])
 
   const handleItemClick = useCallback(
-    (route: string) => {
+    (id: string, route: string) => {
+      onMarkRead(id)
       navigate(route)
       onClose()
     },
-    [navigate, onClose],
+    [onMarkRead, navigate, onClose],
   )
-
-  const unreadCount = isRead ? 0 : allItems.length
 
   return (
     <Drawer
@@ -112,11 +83,14 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
         }}
       >
         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          Notificações <Box component="span" sx={{ color: 'text.tertiary', fontWeight: 400 }}>{unreadCount > 0 ? ` (${unreadCount})` : ''}</Box>
+          Notificações{' '}
+          <Box component="span" sx={{ color: 'text.tertiary', fontWeight: 400 }}>
+            {unreadCount > 0 ? `(${unreadCount})` : ''}
+          </Box>
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!isRead && allItems.length > 0 && (
+          {unreadCount > 0 && (
             <Button
               size="small"
               startIcon={<CheckOutlined sx={{ fontSize: 14 }} />}
@@ -150,7 +124,7 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
           my: 1,
           '& .MuiTab-root': { minHeight: 40, p: 1, borderRadius: 999 },
           '& .MuiTab-root:hover': { bgcolor: 'action.hover' },
-          '& .MuiTab-root.Mui-selected': { borderRadius: 999, bgcolor: 'action.selected', color: 'text.primary', border: "1px solid", borderColor: "border.strong", },
+          '& .MuiTab-root.Mui-selected': { borderRadius: 999, bgcolor: 'action.selected', color: 'text.primary', border: '1px solid', borderColor: 'border.strong' },
         }}
       >
         <Tab label="Todas" value="todas" />
@@ -180,18 +154,18 @@ export default function NotificationPanel({ open, onClose, onMarkAllRead, isRead
           </Box>
         ) : (
           filteredItems.map((item) => (
-            <>
+            <Fragment key={item.id}>
               <NotificationItem
-                key={item.id}
                 item={item}
-                isRead={isRead}
-                onClick={() => handleItemClick(item.route)}
+                isRead={readIds.has(item.id)}
+                onClick={() => handleItemClick(item.id, item.route)}
               />
               <Divider color="border.subtle" />
-            </>
+            </Fragment>
           ))
         )}
       </Box>
+
       {/* Footer */}
       <Box
         sx={{

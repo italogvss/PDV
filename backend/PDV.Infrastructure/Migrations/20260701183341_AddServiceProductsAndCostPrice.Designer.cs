@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PDV.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701183341_AddServiceProductsAndCostPrice")]
+    partial class AddServiceProductsAndCostPrice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1541,12 +1544,6 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.Property<bool>("RequireCostPriceOnProducts")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("RequireCostPriceOnServices")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<bool>("RequireCustomerOnAppointment")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
@@ -1721,6 +1718,11 @@ namespace PDV.Infrastructure.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<bool>("NotifyInvoices")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("NotifyNewSales")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(true);

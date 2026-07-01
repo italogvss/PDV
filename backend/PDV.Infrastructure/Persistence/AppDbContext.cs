@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
+    public DbSet<ServiceProduct> ServiceProducts => Set<ServiceProduct>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<AppointmentServiceItem> AppointmentServiceItems => Set<AppointmentServiceItem>();
     public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
