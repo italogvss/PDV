@@ -298,8 +298,7 @@ export default function SalesPage() {
           ) : (
             <>
             <Button
-                variant="outlined"
-                size="small"
+                variant="contained"
                 startIcon={<PersonAddAlt1Rounded />}
                 onClick={() => setCustomerModalOpen(true)}
               >

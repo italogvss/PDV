@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, useTheme } from '@mui/material'
 import dayjs from 'dayjs'
 import { appointmentsOfDay } from '../appointmentHelpers'
 import type { WeekStripProps } from './types'
@@ -10,7 +10,7 @@ export default function WeekStrip({ selectedDate, appointments, onSelectDay }: W
   const monday = selectedDate.subtract((selectedDate.day() + 6) % 7, 'day')
   const days = Array.from({ length: 7 }, (_, i) => monday.add(i, 'day'))
   const today = dayjs()
-
+  const theme = useTheme()
   return (
     <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5 }}>
       {days.map((day, i) => {
@@ -84,7 +84,7 @@ export default function WeekStrip({ selectedDate, appointments, onSelectDay }: W
                   />
                   <Typography
                     variant="caption"
-                    sx={{ color: isSelected ? 'rgba(255,255,255,0.85)' : 'text.secondary' }}
+                    sx={{ color: isSelected ?"tertiary.main" : theme.palette.text.secondary }}
                   >
                     {count}
                   </Typography>

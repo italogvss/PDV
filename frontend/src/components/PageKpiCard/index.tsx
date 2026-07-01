@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, Skeleton, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Skeleton, Tooltip, Typography } from '@mui/material'
 import type { ReactNode } from 'react'
 import type { PageKpiCardBadge, Props } from './types'
 
@@ -16,13 +16,14 @@ const VALUE_COLOR: Record<NonNullable<Props['valueColor']>, string> = {
   error: 'error.main',
 }
 
-export default function PageKpiCard({ icon: Icon, label, value, valueColor, badge, isLoading }: Props) {
+export default function PageKpiCard({ icon: Icon, label, value, valueColor, badge, isLoading, tooltip }: Props) {
   if (isLoading) {
     return <Skeleton variant="rounded" height={120} />
   }
 
   return (
     <Card sx={{ minWidth: 0 }}>
+      <Tooltip title={tooltip}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
           <Icon sx={{ fontSize: 15, color: 'text.tertiary' }} />
@@ -41,6 +42,7 @@ export default function PageKpiCard({ icon: Icon, label, value, valueColor, badg
 
         {badge && <BadgeChip badge={badge} />}
       </CardContent>
+      </Tooltip>
     </Card>
   )
 }

@@ -151,12 +151,6 @@ export function computeKpis(
   }
 }
 
-export function bookedMinutesForPro(appts: Appointment[], employeeId: string, day: Dayjs): number {
-  return appointmentsOfDay(appts, day)
-    .filter((a) => a.employeeId === employeeId && a.status !== 'cancelado')
-    .reduce((sum, a) => sum + a.durationMinutes, 0)
-}
-
 /**
  * "A seguir" (§6.3): não cancelado e não concluído; se o dia for hoje, apenas os
  * que ainda não terminaram; ordenados por horário; até `limit`.

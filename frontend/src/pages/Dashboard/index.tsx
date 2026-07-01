@@ -139,9 +139,6 @@ export default function DashboardPage() {
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-            <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={handleExport}>
-              Exportar
-            </Button>
           </>
         )}
 

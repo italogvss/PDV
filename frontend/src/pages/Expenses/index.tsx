@@ -245,6 +245,7 @@ export default function ExpensesPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle e acompanhamento de despesas`}>
+        <Tooltip title="Selecionar mês de despesas">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Button
             variant="outlined"
@@ -284,6 +285,7 @@ export default function ExpensesPage() {
             <ChevronRightRounded fontSize="small" />
           </Button>
         </Box>
+        </Tooltip>
         {canManage && (
           <Button variant="contained" startIcon={<AddRounded />} onClick={() => setModalOpen(true)}>
             Nova despesa

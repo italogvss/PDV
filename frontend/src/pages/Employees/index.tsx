@@ -359,6 +359,7 @@ export default function EmployeesPage() {
                       >
                         <PeopleAltOutlinedIcon sx={{ fontSize: 16, color: role.color ? 'common.white' : 'text.tertiary' }} />
                       </Box>
+                      <Tooltip title={role.isDefault && "Este papel é padrão do sistema, não pode ser deletado"}>
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
@@ -372,6 +373,7 @@ export default function EmployeesPage() {
                           {role.memberCount} {role.memberCount === 1 ? 'membro' : 'membros'}
                         </Typography>
                       </Box>
+                      </Tooltip>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Tooltip title="Editar papel">

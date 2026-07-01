@@ -197,19 +197,6 @@ export default function ServicesPage() {
         ),
       },
       {
-        field: 'isActive',
-        headerName: 'Status',
-        width: 110,
-        renderCell: ({ row }) => (
-          <Chip
-            size="small"
-            label={row.isActive ? 'Ativo' : 'Inativo'}
-            color={row.isActive ? 'success' : 'default'}
-            variant={row.isActive ? 'filled' : 'outlined'}
-          />
-        ),
-      },
-      {
         field: 'rowActions',
         headerName: '',
         width: 56,

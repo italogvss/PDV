@@ -1,16 +1,16 @@
-import { SearchOutlined, GridViewRounded, TableRowsRounded, Inventory2Outlined, MiscellaneousServicesRounded, AddRounded } from '@mui/icons-material'
+import { AddRounded, GridViewRounded, Inventory2Outlined, MiscellaneousServicesRounded, SearchOutlined, TableRowsRounded } from '@mui/icons-material'
 import { Box, Button, CircularProgress, Grid, InputBase, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import type { GridColDef } from '@mui/x-data-grid'
+import { DataGrid } from '@mui/x-data-grid'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAppSelector } from '../../../../store'
-import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef } from '@mui/x-data-grid'
+import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import FilterTabs from '../../../../components/FilterTabs'
+import { useAppSelector } from '../../../../store'
+import { formatBRL } from '../../../../utils/currency'
 import ProductCard from '../ProductCard'
 import ServiceCard from '../ServiceCard'
-import { formatBRL } from '../../../../utils/currency'
 import { CatalogMode, CategoryValue, ProductCatalogProps } from './types'
-import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 
 type ViewMode = 'cards' | 'list'
 
@@ -190,17 +190,18 @@ export default function ProductCatalog({
           />
           {isLoading && <CircularProgress size={14} color="inherit" />}
         </Box>
-
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={(_, v: CatalogMode | null) => v && onModeChange(v)}
-          size="small"
-          sx={{ flexShrink: 0 }}
-        >
-          <ToggleButton value="products">Produtos</ToggleButton>
-          {hasServices && <ToggleButton value="services">Serviços</ToggleButton>}
-        </ToggleButtonGroup>
+        <Tooltip title="Alterne a visualização entre produtos e serviços">
+          <ToggleButtonGroup
+            value={mode}
+            exclusive
+            onChange={(_, v: CatalogMode | null) => v && onModeChange(v)}
+            size="small"
+            sx={{ flexShrink: 0 }}
+          >
+            <ToggleButton value="products">Produtos</ToggleButton>
+            {hasServices && <ToggleButton value="services">Serviços</ToggleButton>}
+          </ToggleButtonGroup>
+        </Tooltip>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -208,16 +209,16 @@ export default function ProductCatalog({
           <FilterTabs value={category} onChange={onCategoryChange} options={tabs} />
         </Box>
         <Tooltip title="Alterne a visualização dos itens">
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, v: ViewMode | null) => v && setViewMode(v)}
-          size="small"
-          sx={{ flexShrink: 0 }}
-        >
-          <ToggleButton value="cards"><GridViewRounded sx={{ fontSize: 18 }} /></ToggleButton>
-          <ToggleButton value="list"><TableRowsRounded sx={{ fontSize: 18 }} /></ToggleButton>
-        </ToggleButtonGroup>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, v: ViewMode | null) => v && setViewMode(v)}
+            size="small"
+            sx={{ flexShrink: 0 }}
+          >
+            <ToggleButton value="cards"><GridViewRounded sx={{ fontSize: 18 }} /></ToggleButton>
+            <ToggleButton value="list"><TableRowsRounded sx={{ fontSize: 18 }} /></ToggleButton>
+          </ToggleButtonGroup>
         </Tooltip>
       </Box>
 

@@ -37,18 +37,20 @@ export default function FilterTabs({ value, onChange, options }: Props) {
           key={t.value}
           value={t.value}
           label={t.label}
-          sx={{            
+          sx={{
             px: 1,
             '&:hover': {
               backgroundColor: 'surface.raised',
-              borderColor: 'secondary.main',
+              borderColor: t.color ?? 'border.strong',
             },
             '&.Mui-selected': {
-              '&:hover': {border: "none"},
+              '&:hover': { border: 'none' },
               fontWeight: 600,
               borderRadius: 999,
-              color: "common.white",
-              backgroundColor: t.color ?? 'neutral.300',
+              // Aba com cor → pílula colorida com texto branco.
+              // Aba neutra (ex.: "Todas") → pílula neutra com texto primário.
+              color: t.color ? 'common.white' : 'text.primary',
+              backgroundColor: t.color ?? 'surface.raised',
             },
           }}
         />

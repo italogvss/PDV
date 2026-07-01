@@ -13,4 +13,5 @@ export interface Props {
   valueColor?: 'warning' | 'error'
   badge?: PageKpiCardBadge
   isLoading?: boolean
+  tooltip?: string
 }

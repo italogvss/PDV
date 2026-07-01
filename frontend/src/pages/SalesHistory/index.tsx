@@ -6,6 +6,7 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
 } from '@mui/material'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
 import dayjs from 'dayjs'
@@ -227,6 +228,7 @@ export default function SalesHistoryPage() {
         sortValue={sortBy}
         onSortChange={setSortBy}
       >
+        <Tooltip title="Filtra por intervalo de dias a partir de hoje">
         <ToggleButtonGroup
           exclusive
           size="small"
@@ -239,6 +241,7 @@ export default function SalesHistoryPage() {
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        </Tooltip>
         <Button
           variant="outlined"
           startIcon={<FilterListRounded />}

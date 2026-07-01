@@ -1,4 +1,5 @@
 import type { AuditAction, AuditEntityType, StockMovementType } from '../../types/audit.types'
+import type { FilterTabOption } from '../../components/FilterTabs/types'
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'
 
@@ -51,5 +52,22 @@ export const STATUS_LABEL: Record<string, string> = {
   Cancelado: 'Cancelado',
 }
 
-// Opção "Todas" + uma por ação, para o filtro da página.
-export const ACTION_FILTER_OPTIONS = ['Todas', ...Object.values(ACTION_LABEL)] as const
+// Token de cor (do tema) para cada ação na aba de filtro. Reaproveita a
+// categoria semântica de ACTION_COLOR, resolvendo para o tom `.main`.
+const ACTION_TAB_COLOR: Record<AuditAction, string> = Object.fromEntries(
+  (Object.keys(ACTION_COLOR) as AuditAction[]).map((a) => [a, `${ACTION_COLOR[a]}.main`]),
+) as Record<AuditAction, string>
+
+/** Valor da aba "Todas" — sem filtro de ação. */
+export const ALL_ACTIONS = 'all'
+
+// Opções da FilterTabs: "Todas" (neutra) + uma aba colorida por ação.
+// O `value` é a própria AuditAction, então o filtro compara direto sem o rótulo.
+export const ACTION_TAB_OPTIONS: FilterTabOption[] = [
+  { value: ALL_ACTIONS, label: 'Todas' },
+  ...(Object.keys(ACTION_LABEL) as AuditAction[]).map((action) => ({
+    value: action,
+    label: ACTION_LABEL[action],
+    color: ACTION_TAB_COLOR[action],
+  })),
+]

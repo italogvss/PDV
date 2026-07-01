@@ -294,18 +294,21 @@ export default function InventoryPage() {
 
       <PageKpiGrid>
         <PageKpiCard
+        tooltip="Soma dos preço de venda em estoque"
           icon={Inventory2Rounded}
           label="Total em estoque"
           value={isLoadingProducts ? '—' : formatBRL(kpis.totalValue)}
           badge={{ label: `${kpis.totalUnits} unidades`, color: 'success' }}
         />
         <PageKpiCard
+        tooltip="Quantidade de itens em estoque"
           icon={SellRounded}
           label="Produtos"
           value={isLoadingProducts ? '—' : products.length}
           badge={{ label: `${categories.length} categorias`, color: 'default' }}
         />
         <PageKpiCard
+        tooltip="Quantidade de itens em estado baixo"
           icon={WarningAmberRounded}
           label="Estoque baixo"
           value={isLoadingProducts ? '—' : kpis.lowCount}
@@ -313,6 +316,7 @@ export default function InventoryPage() {
           badge={{ label: 'Repor em breve', color: 'warning', icon: WarningAmberRounded }}
         />
         <PageKpiCard
+        tooltip="Quantidade de itens em estado crítico"
           icon={CancelRounded}
           label="Crítico"
           value={isLoadingProducts ? '—' : kpis.criticalCount}

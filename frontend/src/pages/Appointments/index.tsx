@@ -12,6 +12,7 @@ import {
   Chip,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography
 } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
@@ -126,8 +127,8 @@ export default function AppointmentsPage() {
 
   const proTabs = useMemo<FilterTabOption[]>(
     () => [
-      { value: 'todos', label: 'Todos', color: 'primary.main' },
-      ...professionals.map((pro) => ({ value: pro.id, label: pro.name, color: "primary.main" })),
+      { value: 'todos', label: 'Todos', color: 'secondary.main' },
+      ...professionals.map((pro) => ({ value: pro.id, label: pro.name, color: "secondary.main" })),
     ],
     [professionals],
   )
@@ -286,12 +287,15 @@ export default function AppointmentsPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Agendamentos" description={headerTitle}>
+        <Tooltip title="Visualizar agendamentos de uma data especifica">
         <DatePicker
           value={selectedDate}
           onChange={(value) => value && setSelectedDate(value)}
           format="DD/MM/YYYY"
           slotProps={{ textField: { sx: { width: 160 } } }}
         />
+        </Tooltip>
+        <Tooltip title="Alterna entre ver agendamentos do dia ou da semana toda">
         <ToggleButtonGroup
           exclusive
           value={view}
@@ -300,14 +304,17 @@ export default function AppointmentsPage() {
           <ToggleButton value="day">Dia</ToggleButton>
           <ToggleButton value="week">Semana</ToggleButton>
         </ToggleButtonGroup>
-        <Button variant="ghost" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
-          Hoje
+        </Tooltip>
+        <Tooltip title="Ir para o dia de hoje">
+        <Button variant="outlined" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
+          Ver Hoje
         </Button>
+        </Tooltip>
         <Button variant="contained" startIcon={<AddRounded />} onClick={openNew}>
           Novo agendamento
         </Button>
       </PageHeader>
-
+{/* 
       <PageKpiGrid>
         <PageKpiCard
           icon={EventNoteOutlined}
@@ -327,7 +334,7 @@ export default function AppointmentsPage() {
           value={formatBRL(kpis.revenue)}
           badge={{ label: 'serviços do dia', color: 'default' }}
         />
-      </PageKpiGrid>
+      </PageKpiGrid> */}
 
       {/* Faixa da semana */}
       <Typography

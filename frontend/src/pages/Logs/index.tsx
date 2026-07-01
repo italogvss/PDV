@@ -1,11 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Box, Card, Chip, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Box, Card, Chip, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import PageHeader from '../../components/PageHeader'
-import ChipSelect from '../../components/ChipSelect'
 import { useAuditLogs } from '../../hooks/useLogs'
 import type {
   AuditLogRow,
@@ -21,9 +20,10 @@ import {
   ENTITY_TYPE_LABEL,
   MOVEMENT_TYPE_LABEL,
   STATUS_LABEL,
-  ACTION_FILTER_OPTIONS,
+  ACTION_TAB_OPTIONS,
+  ALL_ACTIONS,
 } from './types'
-import type { ChipSelectOption } from '../../components/ChipSelect/types'
+import FilterTabs from '../../components/FilterTabs'
 
 const DATE_RANGE_DAYS = [7, 30, 90] as const
 
@@ -178,14 +178,9 @@ const columns: GridColDef<AuditLogRow>[] = [
   },
 ]
 
-const ACTION_CHIP_OPTIONS: ChipSelectOption[] = ACTION_FILTER_OPTIONS.filter((o) => o !== 'Todas').map((label) => ({
-  id: label,
-  label,
-}))
-
 export default function LogsPage() {
   const [selectedDays, setSelectedDays] = useState<(typeof DATE_RANGE_DAYS)[number]>(30)
-  const [actionFilter, setActionFilter] = useState<string | null>(null)
+  const [actionFilter, setActionFilter] = useState<string>(ALL_ACTIONS)
 
   const { from, to } = useMemo(() => {
     const now = new Date()
@@ -197,13 +192,14 @@ export default function LogsPage() {
   const { data: logs = [], isLoading } = useAuditLogs({ from, to })
 
   const rows = useMemo(
-    () => (actionFilter === null ? logs : logs.filter((l) => ACTION_LABEL[l.action] === actionFilter)),
+    () => (actionFilter === ALL_ACTIONS ? logs : logs.filter((l) => l.action === actionFilter)),
     [logs, actionFilter],
   )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Logs" description="Histórico de auditoria das operações do sistema.">
+        <Tooltip title="Filtra por intervalo de dias a partir de hoje">
         <ToggleButtonGroup
           value={selectedDays}
           exclusive
@@ -216,15 +212,10 @@ export default function LogsPage() {
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        </Tooltip>
       </PageHeader>
 
-      <ChipSelect
-        options={ACTION_CHIP_OPTIONS}
-        value={actionFilter}
-        onChange={setActionFilter}
-        nullable
-        size="large"
-      />
+      <FilterTabs options={ACTION_TAB_OPTIONS} value={actionFilter} onChange={setActionFilter} />
 
       <Card sx={{ overflow: 'hidden' }}>
         <DataGrid
