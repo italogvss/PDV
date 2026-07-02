@@ -20,6 +20,17 @@ public static class SegmentModuleDefaults
         OperationModule.Logs,
     ];
 
+    private static readonly OperationModule[] ServiceBased =
+    [
+        OperationModule.Services,
+        OperationModule.Appointments,
+        OperationModule.Sales,
+        OperationModule.Expenses,
+        OperationModule.Reports,
+        OperationModule.Customers,
+        OperationModule.Logs,
+    ];
+
     private static readonly Dictionary<Segment, OperationModule[]> Map = new()
     {
         [Segment.Cafeteria]   = Retail,
@@ -29,16 +40,12 @@ public static class SegmentModuleDefaults
         [Segment.Farmacia]    = Retail,
         [Segment.Vestuario]   = Retail,
         [Segment.Eletronicos] = Retail,
-        [Segment.Servicos]    =
-        [
-            OperationModule.Services,
-            OperationModule.Appointments,
-            OperationModule.Sales,
-            OperationModule.Expenses,
-            OperationModule.Reports,
-            OperationModule.Customers,
-            OperationModule.Logs,
-        ],
+        [Segment.Petshop]     = Retail,
+        [Segment.Servicos]    = ServiceBased,
+        [Segment.Barbearia]   = ServiceBased,
+        [Segment.Mecanico]    = ServiceBased,
+        [Segment.Tatuagem]    = ServiceBased,
+        [Segment.Esteticista] = ServiceBased,
         [Segment.Outro]       = All,
     };
 

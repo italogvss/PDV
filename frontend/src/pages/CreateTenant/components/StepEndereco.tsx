@@ -9,6 +9,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Switch,
+  Paper,
+  Collapse,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import type { CreateTenantFormData, FormErrors } from '../types'
@@ -50,113 +53,145 @@ export default function StepEndereco({ data, onChange, errors }: StepEnderecoPro
         Onde fica o estabelecimento?
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        O endereço aparece nos recibos e na conta fiscal.
+        O endereço aparece nos recibos. Você pode preencher depois.
       </Typography>
 
-      {/* CEP */}
-      <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, alignItems: 'center' }}>
-        <TextField
-          label="CEP"
-          required
-          value={data.cep}
-          onChange={(e) => {
-            setCepError('')
-            onChange({ cep: maskCEP(e.target.value) })
-          }}
-          error={!!errors.cep || !!cepError}
-          helperText={cepError || errors.cep}
-          placeholder="00000-000"
-          sx={{ flex: 1 }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleCepSearch()
-          }}
+      {/* Toggle preencher depois */}
+      <Paper
+        variant="outlined"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 2,
+          mb: 3,
+          borderRadius: 2,
+          borderColor: data.skipAddress ? 'success.main' : 'success.main',
+          bgcolor: data.skipAddress ? 'success.soft' : 'surface.paper',
+        }}
+      >
+        <Box>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Preencher depois
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Sem endereço você pode operar normalmente, mas ele não aparece nos recibos.
+          </Typography>
+        </Box>
+        <Switch
+          checked={data.skipAddress}
+          onChange={(_, checked) => onChange({ skipAddress: checked })}
         />
-        <Button
-          variant="outlined"
-          startIcon={searching ? <CircularProgress size={14} /> : <SearchIcon />}
-          onClick={handleCepSearch}
-          disabled={searching}
-          sx={{ whiteSpace: 'nowrap', py: 2 }}
-        >
-          Buscar endereço
-        </Button>
-      </Box>
+      </Paper>
 
-      {/* Logradouro + Número */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-        <TextField
-          label="Logradouro"
-          required
-          fullWidth
-          value={data.street}
-          onChange={(e) => onChange({ street: e.target.value })}
-          error={!!errors.street}
-          helperText={errors.street}
-          placeholder="Rua, avenida, travessa..."
-        />
-        <TextField
-          label="Número"
-          required
-          value={data.number}
-          onChange={(e) => onChange({ number: e.target.value })}
-          error={!!errors.number}
-          helperText={errors.number}
-          placeholder="123"
-          sx={{ width: { xs: '100%', sm: 120 }, flexShrink: 0 }}
-        />
-      </Box>
+      <Collapse in={!data.skipAddress}>
+        <Box>
+          {/* CEP */}
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, alignItems: 'center' }}>
+            <TextField
+              label="CEP"
+              required
+              value={data.cep}
+              onChange={(e) => {
+                setCepError('')
+                onChange({ cep: maskCEP(e.target.value) })
+              }}
+              error={!!errors.cep || !!cepError}
+              helperText={cepError || errors.cep}
+              placeholder="00000-000"
+              sx={{ flex: 1 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCepSearch()
+              }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={searching ? <CircularProgress size={14} /> : <SearchIcon />}
+              onClick={handleCepSearch}
+              disabled={searching}
+              sx={{ whiteSpace: 'nowrap', py: 2 }}
+            >
+              Buscar endereço
+            </Button>
+          </Box>
 
-      {/* Complemento */}
-      <TextField
-        label="Complemento"
-        fullWidth
-        value={data.complement}
-        onChange={(e) => onChange({ complement: e.target.value })}
-        placeholder="Apto, sala, bloco..."
-        helperText="opcional"
-        sx={{ mb: 2.5 }}
-      />
+          {/* Logradouro + Número */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+            <TextField
+              label="Logradouro"
+              required
+              fullWidth
+              value={data.street}
+              onChange={(e) => onChange({ street: e.target.value })}
+              error={!!errors.street}
+              helperText={errors.street}
+              placeholder="Rua, avenida, travessa..."
+            />
+            <TextField
+              label="Número"
+              required
+              value={data.number}
+              onChange={(e) => onChange({ number: e.target.value })}
+              error={!!errors.number}
+              helperText={errors.number}
+              placeholder="123"
+              sx={{ width: { xs: '100%', sm: 120 }, flexShrink: 0 }}
+            />
+          </Box>
 
-      {/* Bairro + Cidade + UF */}
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-        <TextField
-          label="Bairro"
-          required
-          fullWidth
-          value={data.neighborhood}
-          onChange={(e) => onChange({ neighborhood: e.target.value })}
-          error={!!errors.neighborhood}
-          helperText={errors.neighborhood}
-        />
-        <TextField
-          label="Cidade"
-          required
-          fullWidth
-          value={data.city}
-          onChange={(e) => onChange({ city: e.target.value })}
-          error={!!errors.city}
-          helperText={errors.city}
-        />
-        <FormControl
-          required
-          error={!!errors.state}
-          sx={{ width: { xs: '100%', sm: 90 }, flexShrink: 0 }}
-        >
-          <InputLabel id="state-label">UF</InputLabel>
-          <Select
-            labelId="state-label"
-            label="UF"
-            value={data.state}
-            onChange={(e) => onChange({ state: e.target.value })}
-          >
-            {STATES.map((uf) => (
-              <MenuItem key={uf} value={uf}>
-                {uf}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+          {/* Complemento */}
+          <TextField
+            label="Complemento"
+            fullWidth
+            value={data.complement}
+            onChange={(e) => onChange({ complement: e.target.value })}
+            placeholder="Apto, sala, bloco..."
+            helperText="opcional"
+            sx={{ mb: 2.5 }}
+          />
+
+          {/* Bairro + Cidade + UF */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+            <TextField
+              label="Bairro"
+              required
+              fullWidth
+              value={data.neighborhood}
+              onChange={(e) => onChange({ neighborhood: e.target.value })}
+              error={!!errors.neighborhood}
+              helperText={errors.neighborhood}
+            />
+            <TextField
+              label="Cidade"
+              required
+              fullWidth
+              value={data.city}
+              onChange={(e) => onChange({ city: e.target.value })}
+              error={!!errors.city}
+              helperText={errors.city}
+            />
+            <FormControl
+              required
+              error={!!errors.state}
+              sx={{ width: { xs: '100%', sm: 90 }, flexShrink: 0 }}
+            >
+              <InputLabel id="state-label">UF</InputLabel>
+              <Select
+                labelId="state-label"
+                label="UF"
+                value={data.state}
+                onChange={(e) => onChange({ state: e.target.value })}
+              >
+                {STATES.map((uf) => (
+                  <MenuItem key={uf} value={uf}>
+                    {uf}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
+      </Collapse>
     </Box>
   )
 }

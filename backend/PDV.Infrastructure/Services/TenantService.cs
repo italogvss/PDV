@@ -45,7 +45,10 @@ public class TenantService(
         // resolvem vazios → ilimitado, logo o 1º negócio nunca é bloqueado. Ao criar um negócio
         // ADICIONAL, resolve o plano do Owner via o tenant atual e barra (402) se atingiu o limite.
         var ownedActiveCount = user.UserTenants.Count(ut => ut.Role == UserRole.Owner && ut.Tenant.IsActive);
-        await entitlementService.EnsureWithinLimitAsync(PlanLimits.Stores, ownedActiveCount);
+        if (ownedActiveCount >= 1)
+        {
+            await entitlementService.EnsureWithinLimitAsync(PlanLimits.Stores, ownedActiveCount);
+        }
 
         var tenant = new Tenant();
 
@@ -58,6 +61,7 @@ public class TenantService(
             FantasyName        = request.FantasyName.Trim(),
             Phone              = request.Phone?.Trim(),
             Segment            = segment,
+            CustomSegmentName  = segment == Segment.Outro ? request.CustomSegmentName?.Trim() : null,
             EnabledModulesJson = OperationModuleHelper.Serialize(SegmentModuleDefaults.ForSegment(segment)),
             LogoUrl            = request.LogoUrl,
 
@@ -66,17 +70,18 @@ public class TenantService(
             StateRegistration  = request.SkipDocuments ? null : request.StateRegistration?.Trim(),
             TaxRegime          = request.TaxRegime,
 
-            AddressCep         = StripMask(request.Cep),
-            AddressStreet      = request.Street?.Trim(),
-            AddressNumber      = request.Number?.Trim(),
-            AddressComplement  = request.Complement?.Trim(),
-            AddressNeighborhood = request.Neighborhood?.Trim(),
-            AddressCity        = request.City?.Trim(),
-            AddressState       = request.State?.Trim(),
+            AddressCep         = request.SkipAddress ? null : StripMask(request.Cep),
+            AddressStreet      = request.SkipAddress ? null : request.Street?.Trim(),
+            AddressNumber      = request.SkipAddress ? null : request.Number?.Trim(),
+            AddressComplement  = request.SkipAddress ? null : request.Complement?.Trim(),
+            AddressNeighborhood = request.SkipAddress ? null : request.Neighborhood?.Trim(),
+            AddressCity        = request.SkipAddress ? null : request.City?.Trim(),
+            AddressState       = request.SkipAddress ? null : request.State?.Trim(),
 
             BusinessHoursJson  = request.SkipHours || request.BusinessHours is null
                                     ? null
                                     : JsonSerializer.Serialize(request.BusinessHours, JsonOptions),
+
         };
 
         tenant.UserTenants =
@@ -154,7 +159,9 @@ public class TenantService(
         settings.CompanyName       = request.CompanyName?.Trim();
         settings.Cnpj              = StripMask(request.Cnpj);
         settings.StateRegistration = request.StateRegistration?.Trim();
-        settings.Segment           = ParseSegment(request.Segment);
+        var segment                = ParseSegment(request.Segment);
+        settings.Segment           = segment;
+        settings.CustomSegmentName = segment == Segment.Outro ? request.CustomSegmentName?.Trim() : null;
         settings.Phone             = request.Phone?.Trim();
         settings.LogoUrl           = request.LogoUrl;
         settings.TaxRegime         = request.TaxRegime;
@@ -249,6 +256,7 @@ public class TenantService(
                 s.Cnpj,
                 s.StateRegistration,
                 s.Segment.ToString().ToLowerInvariant(),
+                s.CustomSegmentName,
                 s.Phone,
                 s.TaxRegime,
                 new SettingsAddressDto(

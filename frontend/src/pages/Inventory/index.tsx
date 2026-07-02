@@ -1,4 +1,4 @@
-import { Help, Widgets } from '@mui/icons-material'
+import { Widgets } from '@mui/icons-material'
 import AddRounded from '@mui/icons-material/AddRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
 import CancelRounded from '@mui/icons-material/CancelRounded'
@@ -15,8 +15,7 @@ import {
   MenuItem,
   Select,
   TextField,
-  Tooltip,
-  Typography,
+  Typography
 } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
@@ -27,8 +26,10 @@ import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
+import { FEATURES } from '../../constants/entitlements'
 import { useCreateProductCategory, useDeleteProductCategory, useProductCategories, useUpdateProductCategory } from '../../hooks/useProductCategories'
 import { useDeleteProduct, useProducts } from '../../hooks/useProducts'
+import { useEntitlements } from '../../hooks/useSubscription'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import type { Product, ProductCategory } from '../../types/product.types'
 import { STOCK_LEVELS } from '../../types/product.types'
@@ -38,7 +39,6 @@ import ProductModal from './components/NewProductModal'
 import ProductRowMenu from './components/ProductRowMenu'
 import StockLevelCell from './components/StockLevelCell'
 import { getStockLevel } from './utils'
-import { useNavigate } from 'react-router-dom'
 
 export default function InventoryPage() {
   const { data: products = [], isLoading: isLoadingProducts } = useProducts()
@@ -49,7 +49,8 @@ export default function InventoryPage() {
   const updateCategory = useUpdateProductCategory()
   const { hasPermission } = useUserPermissions()
   const canManage = hasPermission('ManageStock')
-  const navigate = useNavigate();
+  const { has } = useEntitlements()
+  const hasAdvancedInventory = has(FEATURES.advancedInventory)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('Todos')
   const [levelFilter, setLevelFilter] = useState('Todos')
@@ -79,8 +80,8 @@ export default function InventoryPage() {
     return { totalValue, totalUnits, lowCount, criticalCount }
   }, [products])
 
-  const columns = useMemo<GridColDef[]>(
-    () => [
+  const columns = useMemo<GridColDef[]>(() => {
+    const cols: GridColDef[] = [
       {
         field: 'name',
         headerName: 'Produto',
@@ -248,9 +249,10 @@ export default function InventoryPage() {
           />
         ),
       },
-    ],
-    [deleteProduct, canManage],
-  )
+    ]
+    // Nível de estoque (mín/crítico) é um recurso do plano — sem a feature, a coluna some.
+    return hasAdvancedInventory ? cols : cols.filter((c) => c.field !== 'level')
+  }, [deleteProduct, canManage, hasAdvancedInventory])
 
   const activeFiltersCount = [categoryFilter, levelFilter].filter((v) => v !== 'Todos').length
 
@@ -283,46 +285,51 @@ export default function InventoryPage() {
       <PageHeader
         title="Estoque"
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
-      >       
+      >
         {canManage && (
           <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
             Novo produto
           </Button>
-          
+
         )}
       </PageHeader>
 
       <PageKpiGrid>
         <PageKpiCard
-        tooltip="Soma dos preço de venda em estoque"
+          tooltip="Soma dos preço de venda em estoque"
           icon={Inventory2Rounded}
           label="Total em estoque"
           value={isLoadingProducts ? '—' : formatBRL(kpis.totalValue)}
           badge={{ label: `${kpis.totalUnits} unidades`, color: 'success' }}
         />
         <PageKpiCard
-        tooltip="Quantidade de itens em estoque"
+          tooltip="Quantidade de itens em estoque"
           icon={SellRounded}
           label="Produtos"
           value={isLoadingProducts ? '—' : products.length}
           badge={{ label: `${categories.length} categorias`, color: 'default' }}
         />
-        <PageKpiCard
-        tooltip="Quantidade de itens em estado baixo"
-          icon={WarningAmberRounded}
-          label="Estoque baixo"
-          value={isLoadingProducts ? '—' : kpis.lowCount}
-          valueColor={kpis.lowCount > 0 ? 'warning' : undefined}
-          badge={{ label: 'Repor em breve', color: 'warning', icon: WarningAmberRounded }}
-        />
-        <PageKpiCard
-        tooltip="Quantidade de itens em estado crítico"
-          icon={CancelRounded}
-          label="Crítico"
-          value={isLoadingProducts ? '—' : kpis.criticalCount}
-          valueColor={kpis.criticalCount > 0 ? 'error' : undefined}
-          badge={{ label: 'Urgente', color: 'error', icon: ArrowDownwardRounded }}
-        />
+        {hasAdvancedInventory && (
+          <>
+            <PageKpiCard
+              tooltip="Quantidade de itens em estado baixo"
+              icon={WarningAmberRounded}
+              label="Estoque baixo"
+              value={isLoadingProducts ? '—' : kpis.lowCount}
+              valueColor={kpis.lowCount > 0 ? 'warning' : undefined}
+              badge={{ label: 'Repor em breve', color: 'warning', icon: WarningAmberRounded }}
+            />
+            <PageKpiCard
+              tooltip="Quantidade de itens em estado crítico"
+              icon={CancelRounded}
+              label="Crítico"
+              value={isLoadingProducts ? '—' : kpis.criticalCount}
+              valueColor={kpis.criticalCount > 0 ? 'error' : undefined}
+              badge={{ label: 'Urgente', color: 'error', icon: ArrowDownwardRounded }}
+            />
+          </>
+        )}
+
       </PageKpiGrid>
 
       {/* Strip de categorias */}

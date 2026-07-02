@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import SyncRounded from '@mui/icons-material/SyncRounded'
+import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import {
   Box,
   Chip,
@@ -16,18 +17,20 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
-import PremiumLock from '../../../../components/PremiumLock'
+import UpsellModal from '../../../../components/UpsellModal'
 import { FEATURES } from '../../../../constants/entitlements'
 import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
+import { useEntitlements } from '../../../../hooks/useSubscription'
 import type { ExpenseCategory } from '../../types'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
 import type { NewExpenseModalProps } from './types'
@@ -67,6 +70,9 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   const updateExpense = useUpdateExpense()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const { has } = useEntitlements()
+  const hasAdvancedExpenses = has(FEATURES.advancedExpanses)
+  const [upsellOpen, setUpsellOpen] = useState(false)
 
   const {
     register,
@@ -277,63 +283,110 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               )}
             />
           </Box>
-          <PremiumLock
-            feature={FEATURES.recurringExpense}
-            title="Despesas recorrentes no Pro"
-            description="Cadastrar despesas que se repetem todo mês é um recurso do plano Pro. Faça upgrade para automatizar suas contas fixas."
-          >
-          <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong" }}>
-            {/* Recorrente */}
-            <Controller
-              name="isRecurring"
-              control={control}
-              render={({ field }) => (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SyncRounded sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Despesa recorrente mensal
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Marque esta opção se a despesa se repete todo mês (aluguel, internet, salários...).
-                      </Typography>
+          {hasAdvancedExpenses ? (
+            <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong" }}>
+              {/* Recorrente */}
+              <Controller
+                name="isRecurring"
+                control={control}
+                render={({ field }) => (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <SyncRounded sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Despesa recorrente mensal
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Marque esta opção se a despesa se repete todo mês (aluguel, internet, salários...).
+                        </Typography>
+                      </Box>
                     </Box>
+                    <Switch
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
                   </Box>
-                  <Switch
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
+                )}
+              />
+
+              {/* Número de repetições (apenas quando recorrente) */}
+              <Collapse in={isRecurring}>
+                <Box>
+                  <FieldLabel label="Repetir por quantos meses?" />
+                  <TextField
+                    {...register('repeatCount', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+                    type="number"
+                    fullWidth
+                    placeholder="Ex.: 12"
+                    inputProps={{ min: 1 }}
+                    error={!!errors.repeatCount}
+                    helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
                   />
                 </Box>
-              )}
-            />
-
-            {/* Número de repetições (apenas quando recorrente) */}
-            <Collapse in={isRecurring}>
-              <Box>
-                <FieldLabel label="Repetir por quantos meses?" />
-                <TextField
-                  {...register('repeatCount', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
-                  type="number"
-                  fullWidth
-                  placeholder="Ex.: 12"
-                  inputProps={{ min: 1 }}
-                  error={!!errors.repeatCount}
-                  helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
-                />
+              </Collapse>
+            </Paper>
+          ) : (
+            <Paper
+              variant="outlined"
+              role="button"
+              aria-label="Despesas recorrentes — recurso do plano Pro"
+              onClick={() => setUpsellOpen(true)}
+              sx={{
+                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                cursor: 'pointer',
+                borderStyle: 'dashed',
+                borderColor: 'premium.400',
+                bgcolor: (t) => alpha(t.palette.premium[100], 0.4),
+                transition: 'background-color .15s',
+                '&:hover': { bgcolor: (t) => alpha(t.palette.premium[200], 0.55) },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  bgcolor: 'premium.400',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: 2,
+                }}
+              >
+                <WorkspacePremiumRounded sx={{ fontSize: 20, color: 'premium.900' }} />
               </Box>
-            </Collapse>
-          </Paper>
-          </PremiumLock>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Despesa recorrente mensal
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Automatize contas fixas como aluguel e internet com o plano Pro.
+                </Typography>
+              </Box>
+              <Chip label="Pro" color="premium" size="small" />
+            </Paper>
+          )}
         </Box>
       </DialogContent>
+
+      <UpsellModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        title="Despesas recorrentes no Pro"
+        description="Cadastrar despesas que se repetem todo mês é um recurso do plano Pro. Faça upgrade para automatizar suas contas fixas."
+      />
 
       <FormModalActions
         formId="expense-form"

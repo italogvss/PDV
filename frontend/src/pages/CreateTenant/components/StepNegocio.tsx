@@ -6,13 +6,19 @@ import {
   Avatar,
   InputAdornment,
   IconButton,
+  Collapse,
 } from '@mui/material'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
-import LocalCafeIcon from '@mui/icons-material/LocalCafe'
-import RestaurantIcon from '@mui/icons-material/Restaurant'
 import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket'
 import StoreIcon from '@mui/icons-material/Store'
 import HandymanIcon from '@mui/icons-material/Handyman'
+import ContentCutIcon from '@mui/icons-material/ContentCut'
+import CheckroomIcon from '@mui/icons-material/Checkroom'
+import DevicesIcon from '@mui/icons-material/Devices'
+import PetsIcon from '@mui/icons-material/Pets'
+import BuildIcon from '@mui/icons-material/Build'
+import BrushIcon from '@mui/icons-material/Brush'
+import SpaIcon from '@mui/icons-material/Spa'
 import GridViewIcon from '@mui/icons-material/GridView'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -27,11 +33,16 @@ interface StepNegocioProps {
 }
 
 const SEGMENTS: { value: BusinessSegment; label: string; Icon: React.ElementType }[] = [
-  { value: 'cafeteria',   label: 'Cafeteria / Padaria',   Icon: LocalCafeIcon },
-  { value: 'restaurante', label: 'Restaurante / Bar',      Icon: RestaurantIcon },
   { value: 'mercado',     label: 'Mercado / Mercearia',    Icon: ShoppingBasketIcon },
   { value: 'varejo',      label: 'Varejo / Loja',          Icon: StoreIcon },
+  { value: 'vestuario',   label: 'Vestuário',              Icon: CheckroomIcon },
+  { value: 'eletronicos', label: 'Eletrônicos',            Icon: DevicesIcon },
   { value: 'servicos',    label: 'Serviços',               Icon: HandymanIcon },
+  { value: 'barbearia',   label: 'Barbearia',              Icon: ContentCutIcon },
+  { value: 'petshop',     label: 'Petshop',                Icon: PetsIcon },
+  { value: 'mecanico',    label: 'Mecânico',               Icon: BuildIcon },
+  { value: 'tatuagem',    label: 'Tatuagem',               Icon: BrushIcon },
+  { value: 'esteticista', label: 'Esteticista',            Icon: SpaIcon },
   { value: 'outro',       label: 'Outro segmento',         Icon: GridViewIcon },
 ]
 
@@ -245,6 +256,20 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
           )
         })}
       </Box>
+
+      <Collapse in={data.segment === 'outro'} unmountOnExit>
+        <TextField
+          label="Nome do segmento"
+          fullWidth
+          value={data.customSegmentName}
+          onChange={(e) => onChange({ customSegmentName: e.target.value.slice(0, 50) })}
+          error={!!errors.customSegmentName}
+          helperText={errors.customSegmentName ?? `${data.customSegmentName.length}/50`}
+          placeholder="Ex: Papelaria"
+          slotProps={{ htmlInput: { maxLength: 50 } }}
+          sx={{ mt: 2 }}
+        />
+      </Collapse>
     </Box>
   )
 }

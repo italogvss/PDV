@@ -7,7 +7,6 @@ import { useCreateTenant } from '../../hooks/useCreateTenant'
 import type { RootState } from '../../store'
 import FinishScreen from './components/FinishScreen'
 import PreviewPanel from './components/PreviewPanel'
-import StepDocumentos from './components/StepDocumentos'
 import StepEndereco from './components/StepEndereco'
 import StepNegocio from './components/StepNegocio'
 import StepperBar from './components/StepperBar'
@@ -20,14 +19,12 @@ function validateStep(step: number, data: CreateTenantFormData): FormErrors {
   if (step === 1) {
     if (!data.fantasyName.trim()) errors.fantasyName = 'Nome obrigatório'
     if (!data.segment) errors.segment = 'Selecione um segmento'
+    if (data.segment === 'outro' && !data.customSegmentName.trim()) {
+      errors.customSegmentName = 'Informe o nome do segmento'
+    }
   }
 
-  if (step === 2 && !data.skipDocuments) {
-    if (data.cnpj.replace(/\D/g, '').length !== 14) errors.cnpj = 'CNPJ inválido'
-    if (!data.companyName.trim()) errors.companyName = 'Razão social obrigatória'
-  }
-
-  if (step === 3) {
+  if (step === 2 && !data.skipAddress) {
     if (data.cep.replace(/\D/g, '').length !== 8) errors.cep = 'CEP inválido'
     if (!data.street.trim()) errors.street = 'Logradouro obrigatório'
     if (!data.number.trim()) errors.number = 'Número obrigatório'
@@ -139,7 +136,7 @@ export default function OnboardingTenant() {
               Vamos criar o seu estabelecimento
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Quatro passos rápidos para configurar o PDV Ultra.{' '}
+              Dois passos rápidos para configurar o PDV Ultra.{' '}
               <Box component="span" sx={{ fontWeight: 500 }}>
                 Leva uns 2 minutos
               </Box>{' '}
@@ -170,12 +167,13 @@ export default function OnboardingTenant() {
                 <StepNegocio data={formData} onChange={patch} errors={errors} />
               )}
               {step === 2 && (
-                <StepDocumentos data={formData} onChange={patch} errors={errors} />
-              )}
-              {step === 3 && (
                 <StepEndereco data={formData} onChange={patch} errors={errors} />
               )}
-              {/* {step === 4 && (
+              {/* Documentos fiscais desativado no onboarding — CNPJ/razão social ficam para depois, em Configurações */}
+              {/* {step === 2 && (
+                <StepDocumentos data={formData} onChange={patch} errors={errors} />
+              )} */}
+              {/* {step === 3 && (
                 <StepHorario data={formData} onChange={patch} />
               )} */}
             </Box>

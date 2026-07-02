@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { SvgIconComponent } from '@mui/icons-material'
 import {
   ArrowForwardOutlined,
@@ -18,6 +19,9 @@ import {
   Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import UpsellModal from '../../../../../../components/UpsellModal'
+import { FEATURES } from '../../../../../../constants/entitlements'
+import { useEntitlements } from '../../../../../../hooks/useSubscription'
 import { useAppDispatch, useAppSelector } from '../../../../../../store'
 import { clearAuth } from '../../../../../../store/slices/auth.slice'
 import { DropdownProps } from './types'
@@ -34,11 +38,6 @@ const BASE_ACCOUNT_ITEMS: AccountItem[] = [
   { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios' },
 ]
 
-const SECURITY_ITEMS: AccountItem[] = [
-  { label: 'Aparência', icon: TuneOutlined, tab: 'aparencia' },
-  { label: 'Notificações', icon: NotificationsNoneOutlined, tab: 'notificacoes' },
-]
-
 const HELP_ITEMS: AccountItem[] = [
   { label: 'Central de ajuda', icon: HelpOutlineOutlined, tab: '' },
 ]
@@ -53,9 +52,14 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
       </Typography>
       {item.badge?.tone === 'premium' && (
         <Chip
+          icon={<WorkspacePremiumOutlined sx={{ fontSize: 13, color: 'inherit !important' }} />}
           label={item.badge.label}
           size="small"
-          sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: 'accent.100', color: 'accent.900' }}
+          sx={{
+            height: 20, fontSize: 11, fontWeight: 600, px: 0.5,
+            bgcolor: 'premium.100', color: 'premium.900',
+            '& .MuiChip-icon': { color: 'premium.900' },
+          }}
         />
       )}
       {item.badge?.tone === 'count' && (
@@ -76,10 +80,24 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const auth = useAppSelector((state) => state.auth)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { has } = useEntitlements()
+  const [upsellOpen, setUpsellOpen] = useState(false)
 
   const planName = auth.subscription?.planName ?? 'Gratuito'
   const isPaid = (auth.subscription?.planId ?? null) !== null
   const ts = isPaid ? PAID_STYLE : FREE_STYLE
+
+  // Notificações é gateada por plano: sem o entitlement, o item ganha badge Pro e vira CTA de upsell.
+  const canUseNotifications = has(FEATURES.notifications)
+  const securityItems: AccountItem[] = [
+    { label: 'Aparência', icon: TuneOutlined, tab: 'aparencia' },
+    {
+      label: 'Notificações',
+      icon: NotificationsNoneOutlined,
+      tab: 'notificacoes',
+      ...(canUseNotifications ? {} : { badge: { label: 'Pro', tone: 'premium' as const } }),
+    },
+  ]
 
   const initials = (auth.name ?? 'Usuário')
     .split(' ')
@@ -93,6 +111,11 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
     navigate(tab ? `/configuracoes?tab=${tab}` : '/ajuda')
   }
 
+  const openUpsell = () => {
+    onClose()
+    setUpsellOpen(true)
+  }
+
   const handleLogout = () => {
     onClose()
     dispatch(clearAuth())
@@ -100,124 +123,142 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   }
 
   return (
-    <Menu
-      anchorEl={anchorEl}
-      open={open}
-      onClose={onClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      slotProps={{
-        paper: {
-          sx: {
-            mt: 1,
-            width: 320,
-            maxHeight: '85vh',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'border.subtle',
-            boxShadow: (theme) => theme.customShadows.lg,
-            overflow: 'auto',
+    <>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={onClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: 320,
+              maxHeight: '85vh',
+              borderRadius: 3,
+              border: 1,
+              borderColor: 'border.subtle',
+              boxShadow: (theme) => theme.customShadows.lg,
+              overflow: 'auto',
+            },
           },
-        },
-        list: { disablePadding: true }
-      }}
-    >
-      {/* Profile header — clica e vai para Meu perfil */}
-      <Box
-        sx={{ px: 2.5, py: 2.5, cursor: 'pointer', '&:hover': { bgcolor: 'surface.sunken' } }}
-        onClick={() => goToTab('perfil')}
+          list: { disablePadding: true }
+        }}
       >
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-          <Box sx={{ flexShrink: 0 }}>
-            <Avatar
-              sx={{
-                width: 44, height: 44, bgcolor: 'data.orange.main', color: 'common.white', fontSize: 14, fontWeight: 600,
-                ...(ts.avatarOutlineColor && { outline: '2px solid', outlineColor: ts.avatarOutlineColor, outlineOffset: '2px' }),
-              }}
-              src={auth.avatarUrl ?? undefined}
-            >
-              {initials}
-            </Avatar>
-          </Box>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }} noWrap>
-              {auth.name}
-            </Typography>
-            <Typography variant="caption" color="text.tertiary" sx={{ display: 'block', mb: 1 }} noWrap>
-              {auth.email}
-            </Typography>
-            <Chip
-              icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}
-              label={`PLANO ${planName.toUpperCase()}`}
-              size="small"
-              sx={{
-                height: 22, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
-                bgcolor: ts.chipBg, color: ts.chipColor,
-                '& .MuiChip-icon': { color: ts.chipColor },
-              }}
-            />
+        {/* Profile header — clica e vai para Meu perfil */}
+        <Box
+          sx={{ px: 2.5, py: 2.5, cursor: 'pointer', '&:hover': { bgcolor: 'surface.sunken' } }}
+          onClick={() => goToTab('perfil')}
+        >
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+            <Box sx={{ flexShrink: 0 }}>
+              <Avatar
+                sx={{
+                  width: 44, height: 44, bgcolor: 'data.orange.main', color: 'common.white', fontSize: 14, fontWeight: 600,
+                  ...(ts.avatarOutlineColor && { outline: '2px solid', outlineColor: ts.avatarOutlineColor, outlineOffset: '2px' }),
+                }}
+                src={auth.avatarUrl ?? undefined}
+              >
+                {initials}
+              </Avatar>
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }} noWrap>
+                {auth.name}
+              </Typography>
+              <Typography variant="caption" color="text.tertiary" sx={{ display: 'block', mb: 1 }} noWrap>
+                {auth.email}
+              </Typography>
+              <Chip
+                icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}
+                label={`PLANO ${planName.toUpperCase()}`}
+                size="small"
+                sx={{
+                  height: 22, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+                  bgcolor: ts.chipBg, color: ts.chipColor,
+                  '& .MuiChip-icon': { color: ts.chipColor },
+                }}
+              />
+            </Box>
           </Box>
         </Box>
-      </Box>
 
-      <Divider sx={{ borderColor: 'border.subtle' }} />
+        <Divider sx={{ borderColor: 'border.subtle' }} />
 
-      <Box sx={{ py: 1 }}>
-        <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
-          <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
-          <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
-          <Chip
-            label={planName}
-            size="small"
-            sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
-          />
-        </MenuItem>
-        {BASE_ACCOUNT_ITEMS.map((item) => (
-          <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
-        ))}
-      </Box>
+        <Box sx={{ py: 1 }}>
+          <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
+            <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
+            <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
+            <Chip
+              label={planName}
+              size="small"
+              sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
+            />
+          </MenuItem>
+          {BASE_ACCOUNT_ITEMS.map((item) => (
+            <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
+          ))}
+        </Box>
 
-      {!isPaid && (
-        <>
-          <Divider sx={{ borderColor: 'border.subtle' }} />
-          <Box sx={{ py: 1 }}>
-            <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
-              <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'premium.600' }} />
-              <Typography variant="body2" sx={{ flex: 1, color: 'premium.800', fontWeight: 500 }}>
-                Conhecer os planos
-              </Typography>
-              <ArrowForwardOutlined sx={{ fontSize: 16, color: 'premium.600' }} />
-            </MenuItem>
-          </Box>
-        </>
-      )}
+        {!isPaid && (
+          <>
+            <Divider sx={{ borderColor: 'border.subtle' }} />
+            <Box sx={{ py: 1 }}>
+              <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
+                <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'premium.600' }} />
+                <Typography variant="body2" sx={{ flex: 1, color: 'premium.800', fontWeight: 500 }}>
+                  Conhecer os planos
+                </Typography>
+                <ArrowForwardOutlined sx={{ fontSize: 16, color: 'premium.600' }} />
+              </MenuItem>
+            </Box>
+          </>
+        )}
 
-      <Divider sx={{ borderColor: 'border.subtle' }} />
+        <Divider sx={{ borderColor: 'border.subtle' }} />
 
-      <Box sx={{ py: 1 }}>
-        {SECURITY_ITEMS.map((item) => (
-          <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
-        ))}
-      </Box>
+        <Box sx={{ py: 1 }}>
+          {securityItems.map((item) => (
+            <ItemRow
+              key={item.label}
+              item={item}
+              onClick={
+                item.tab === 'notificacoes' && !canUseNotifications
+                  ? openUpsell
+                  : () => goToTab(item.tab)
+              }
+            />
+          ))}
+        </Box>
 
-      <Divider sx={{ borderColor: 'border.subtle' }} />
+        <Divider sx={{ borderColor: 'border.subtle' }} />
 
-      <Box sx={{ py: 1 }}>
-        {HELP_ITEMS.map((item) => (
-          <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
-        ))}
-      </Box>
+        <Box sx={{ py: 1 }}>
+          {HELP_ITEMS.map((item) => (
+            <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
+          ))}
+        </Box>
 
-      <Divider sx={{ borderColor: 'border.subtle' }} />
+        <Divider sx={{ borderColor: 'border.subtle' }} />
 
-      <Box sx={{ py: 1 }}>
-        <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={handleLogout}>
-          <ArrowForwardOutlined sx={{ fontSize: 18, color: 'error.main' }} />
-          <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 500 }}>
-            Sair da conta
-          </Typography>
-        </MenuItem>
-      </Box>
-    </Menu>
+        <Box sx={{ py: 1 }}>
+          <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={handleLogout}>
+            <ArrowForwardOutlined sx={{ fontSize: 18, color: 'error.main' }} />
+            <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 500 }}>
+              Sair da conta
+            </Typography>
+          </MenuItem>
+        </Box>
+      </Menu>
+
+      {/* Fora do Menu: o Popover desmonta os filhos ao fechar, o que fecharia a modal junto. */}
+      <UpsellModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        title="Desbloqueie as notificações"
+        description="Receba alertas de estoque, despesas e agendamentos direto no app fazendo upgrade do seu plano."
+      />
+    </>
   )
 }

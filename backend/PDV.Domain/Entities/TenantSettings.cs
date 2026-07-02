@@ -13,6 +13,8 @@ public class TenantSettings : BaseEntity
     public string? Cnpj { get; set; }
     public string? StateRegistration { get; set; }
     public Segment Segment { get; set; } = Segment.Outro;
+    // Nome livre digitado pelo usuário quando Segment == Outro; ignorado para os demais segmentos.
+    public string? CustomSegmentName { get; set; }
     public string? Phone { get; set; }
     public string? LogoUrl { get; set; }
 
@@ -37,7 +39,7 @@ public class TenantSettings : BaseEntity
 
     // Operação / PDV
     public bool AllowDiscounts { get; set; } = true;
-    public decimal DiscountLimitPercent { get; set; }
+    public decimal DiscountLimitPercent { get; set; } = 10;
 
     // Controle de estoque mínimo e crítico
     public bool InventoryControlEnabled { get; set; } = false;

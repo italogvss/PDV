@@ -11,6 +11,7 @@ public class BusinessSettingsDtoValidator : AbstractValidator<BusinessSettingsDt
         RuleFor(x => x.CompanyName).MaximumLength(300).When(x => x.CompanyName is not null);
         RuleFor(x => x.StateRegistration).MaximumLength(50).When(x => x.StateRegistration is not null);
         RuleFor(x => x.Segment).MaximumLength(50).When(x => x.Segment is not null);
+        RuleFor(x => x.CustomSegmentName).MaximumLength(50).When(x => x.CustomSegmentName is not null);
         RuleFor(x => x.Phone).MaximumLength(20).When(x => x.Phone is not null);
         RuleFor(x => x.LogoUrl).MaximumLength(500).When(x => x.LogoUrl is not null);
         RuleFor(x => x.TaxRegime).NotEmpty().MaximumLength(20);

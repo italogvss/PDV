@@ -34,6 +34,7 @@ export interface CreateTenantFormData {
   fantasyName: string
   phone: string
   segment: BusinessSegment | ''
+  customSegmentName: string
   logoPreview: string | null
   logoFile: File | null
   skipDocuments: boolean
@@ -42,6 +43,7 @@ export interface CreateTenantFormData {
   companyName: string
   stateRegistration: string
   taxRegime: TaxRegime
+  skipAddress: boolean
   cep: string
   street: string
   number: string
@@ -57,14 +59,16 @@ export const INITIAL_FORM_DATA: CreateTenantFormData = {
   fantasyName: '',
   phone: '',
   segment: '',
+  customSegmentName: '',
   logoPreview: null,
   logoFile: null,
-  skipDocuments: false,
+  skipDocuments: true,
   skipHours: false,
   cnpj: '',
   companyName: '',
   stateRegistration: '',
   taxRegime: 'simples',
+  skipAddress: false,
   cep: '',
   street: '',
   number: '',
@@ -80,6 +84,5 @@ export type FormErrors = Partial<Record<keyof CreateTenantFormData, string>>
 
 export const STEPS = [
   { label: 'Seu negócio', subtitle: 'Como ele se chama' },
-  { label: 'Documentos', subtitle: 'CNPJ e razão social' },
   { label: 'Endereço', subtitle: 'Onde ele fica' },
 ] as const

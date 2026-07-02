@@ -13,5 +13,10 @@ public enum Segment
     Vestuario,
     Eletronicos,
     Servicos,
+    Barbearia,
+    Petshop,
+    Mecanico,
+    Tatuagem,
+    Esteticista,
     Outro,
 }

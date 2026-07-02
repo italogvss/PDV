@@ -14,6 +14,8 @@ import ConfirmDialog from '../../../components/ConfirmDialog'
 import DetailProfileHeader from '../../../components/DetailProfileHeader'
 import type { DetailMetaItem } from '../../../components/DetailProfileHeader/types'
 import PageKpiCard, { PageKpiGrid } from '../../../components/PageKpiCard'
+import UpsellCard from '../../../components/UpsellCard'
+import { FEATURES } from '../../../constants/entitlements'
 import {
   useDeactivateEmployee,
   useEmployee,
@@ -21,6 +23,7 @@ import {
   useResetEmployeePassword,
   useUpdateEmployee,
 } from '../../../hooks/useEmployees'
+import { useEntitlements } from '../../../hooks/useSubscription'
 import { useTeamRoles } from '../../../hooks/useTeamRoles'
 import type { Employee, UpdateEmployeePayload } from '../../../types/employee.types'
 import { formatBRL } from '../../../utils/currency'
@@ -28,8 +31,8 @@ import CancellationRateKpi from './components/CancellationRateKpi'
 import EmployeeAppointmentsChart from './components/EmployeeAppointmentsChart'
 import EmployeeInfoCard from './components/EmployeeInfoCard'
 import EmployeeSalesChart from './components/EmployeeSalesChart'
-import type { EmployeeFormErrors, EmployeeFormState } from './types'
 import SalaryVsRevenueCard from './components/SalaryVsRevenueCard'
+import type { EmployeeFormErrors, EmployeeFormState } from './types'
 
 function buildForm(employee: Employee): EmployeeFormState {
   return {
@@ -75,12 +78,12 @@ export default function EmployeeDetailPage() {
   const updateEmployee = useUpdateEmployee()
   const resetPassword = useResetEmployeePassword()
   const deactivateEmployee = useDeactivateEmployee()
-
+  const { has } = useEntitlements()
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState<EmployeeFormState | null>(null)
   const [errors, setErrors] = useState<EmployeeFormErrors>({})
   const [confirmDelete, setConfirmDelete] = useState(false)
-
+  const showStats = has(FEATURES.advancedEmployee)
   useEffect(() => {
     if (employee) setForm(buildForm(employee))
   }, [employee])
@@ -189,14 +192,27 @@ export default function EmployeeDetailPage() {
           memberSince={memberSince}
           errors={errors}
         />
-        <SalaryVsRevenueCard stats={stats} statsLoading={statsLoading} />        
-      </Box>
-      <EmployeeSalesChart stats={stats} statsLoading={statsLoading} />
+        {showStats ? (
+          <SalaryVsRevenueCard stats={stats} statsLoading={statsLoading} />
+        ) : (
+          <UpsellCard
+            title="Dados analíticos no Pro"
+            description="Veja mais detalhes de vendas e agendamentos do seu funcionário com o plano Pro."
+          />
+        )}
 
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '360px 1fr' } }}>
-
-        <EmployeeAppointmentsChart stats={stats} statsLoading={statsLoading} />
       </Box>
+      {showStats && (
+        <>
+          <EmployeeSalesChart stats={stats} statsLoading={statsLoading} />
+
+          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '360px 1fr' } }}>
+
+            <EmployeeAppointmentsChart stats={stats} statsLoading={statsLoading} />
+          </Box>
+        </>
+      )}
+
 
 
 

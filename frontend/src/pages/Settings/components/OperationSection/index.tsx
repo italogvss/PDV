@@ -206,83 +206,89 @@ function InventoryCard({ form, set, hasChanges, onSave, onCancel, isPending }: I
         ) : undefined
       }
     >
-      <Box>
-        <SettingRow
-          label="Controlar estoque mínimo e crítico"
-          sublabel="Ativa valores padrões e regras de edição nos campos de estoque dos produtos"
-        >
-          <Switch
-            checked={form.inventoryControlEnabled}
-            onChange={(e) => set({ inventoryControlEnabled: e.target.checked })}
-            color="secondary"
-          />
-        </SettingRow>
-
-        <Collapse in={form.inventoryControlEnabled} unmountOnExit>
-          <Divider />
+      <PremiumLock
+        feature={FEATURES.advancedInventory}
+        title="Controle de estoque no Pro"
+        description="Configurar estoque mínimo, crítico e regras de preço de custo é um recurso do plano Pro. Faça upgrade para habilitar estas regras."
+      >
+        <Box>
           <SettingRow
-            label="Estoque mínimo padrão"
-            sublabel="Pré-preenchido ao cadastrar um novo produto"
-          >
-            <TextField
-              size="small"
-              type="number"
-              value={form.defaultMinStock}
-              onChange={(e) => set({ defaultMinStock: Number(e.target.value) || 0 })}
-              sx={{ width: 100 }}
-              slotProps={{ htmlInput: { min: 0, step: 1 } }}
-            />
-          </SettingRow>
-          <Divider />
-          <SettingRow
-            label="Estoque crítico padrão"
-            sublabel="Pré-preenchido ao cadastrar um novo produto"
-          >
-            <TextField
-              size="small"
-              type="number"
-              value={form.defaultCriticalStock}
-              onChange={(e) => set({ defaultCriticalStock: Number(e.target.value) || 0 })}
-              sx={{ width: 100 }}
-              slotProps={{ htmlInput: { min: 0, step: 1 } }}
-            />
-          </SettingRow>
-          <Divider />
-          <SettingRow
-            label="Campos editáveis no cadastro e edição"
-            sublabel="Permite alterar estoque mínimo e crítico ao cadastrar ou editar produtos"
+            label="Controlar estoque mínimo e crítico"
+            sublabel="Ativa valores padrões e regras de edição nos campos de estoque dos produtos"
           >
             <Switch
-              checked={form.stockFieldsEditable}
-              onChange={(e) => set({ stockFieldsEditable: e.target.checked })}
+              checked={form.inventoryControlEnabled}
+              onChange={(e) => set({ inventoryControlEnabled: e.target.checked })}
               color="secondary"
             />
           </SettingRow>
-        </Collapse>
 
-        <Divider />
-        <SettingRow
-          label="Exigir preço de custo em produtos"
-          sublabel="Produtos sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
-        >
-          <Switch
-            checked={form.requireCostPriceOnProducts}
-            onChange={(e) => set({ requireCostPriceOnProducts: e.target.checked })}
-            color="secondary"
-          />
-        </SettingRow>
-        <Divider />
-        <SettingRow
-          label="Exigir preço de custo em serviços"
-          sublabel="Serviços sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
-        >
-          <Switch
-            checked={form.requireCostPriceOnServices}
-            onChange={(e) => set({ requireCostPriceOnServices: e.target.checked })}
-            color="secondary"
-          />
-        </SettingRow>
-      </Box>
+          <Collapse in={form.inventoryControlEnabled} unmountOnExit>
+            <Divider />
+            <SettingRow
+              label="Estoque mínimo padrão"
+              sublabel="Pré-preenchido ao cadastrar um novo produto"
+            >
+              <TextField
+                size="small"
+                type="number"
+                value={form.defaultMinStock}
+                onChange={(e) => set({ defaultMinStock: Number(e.target.value) || 0 })}
+                sx={{ width: 100 }}
+                slotProps={{ htmlInput: { min: 0, step: 1 } }}
+              />
+            </SettingRow>
+            <Divider />
+            <SettingRow
+              label="Estoque crítico padrão"
+              sublabel="Pré-preenchido ao cadastrar um novo produto"
+            >
+              <TextField
+                size="small"
+                type="number"
+                value={form.defaultCriticalStock}
+                onChange={(e) => set({ defaultCriticalStock: Number(e.target.value) || 0 })}
+                sx={{ width: 100 }}
+                slotProps={{ htmlInput: { min: 0, step: 1 } }}
+              />
+            </SettingRow>
+            <Divider />
+            <SettingRow
+              label="Campos editáveis no cadastro e edição"
+              sublabel="Permite alterar estoque mínimo e crítico ao cadastrar ou editar produtos"
+            >
+              <Switch
+                checked={form.stockFieldsEditable}
+                onChange={(e) => set({ stockFieldsEditable: e.target.checked })}
+                color="secondary"
+              />
+            </SettingRow>
+          </Collapse>
+
+          <Divider />
+          <SettingRow
+            label="Exigir preço de custo em produtos"
+            sublabel="Produtos sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
+          >
+            <Switch
+              checked={form.requireCostPriceOnProducts}
+              onChange={(e) => set({ requireCostPriceOnProducts: e.target.checked })}
+              color="secondary"
+            />
+          </SettingRow>
+          <Divider />
+          <SettingRow
+            label="Exigir preço de custo em serviços"
+            sublabel="Serviços sem preço de custo não são considerados nos cálculos de lucro dos relatórios"
+          >
+            <Switch
+              checked={form.requireCostPriceOnServices}
+              onChange={(e) => set({ requireCostPriceOnServices: e.target.checked })}
+              color="secondary"
+            />
+          </SettingRow>
+        </Box>
+      </PremiumLock>
     </SettingCard>
   )
 }

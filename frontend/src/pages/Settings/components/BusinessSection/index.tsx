@@ -5,6 +5,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   FormControl,
   MenuItem,
   Select,
@@ -69,6 +70,7 @@ export default function BusinessSection() {
       form.cnpj.replace(/\D/g, '') !== orig.cnpj.replace(/\D/g, '') ||
       form.stateRegistration !== orig.stateRegistration ||
       form.segment !== orig.segment ||
+      form.customSegmentName !== orig.customSegmentName ||
       form.phone.replace(/\D/g, '') !== orig.phone.replace(/\D/g, '') ||
       form.taxRegime !== orig.taxRegime ||
       form.address.cep.replace(/\D/g, '') !== orig.address.cep.replace(/\D/g, '') ||
@@ -193,17 +195,19 @@ export default function BusinessSection() {
               placeholder="00.000.000/0000-00"
               sx={{ width: 200 }}
             />
-            <Chip
-              label="Validado"
-              size="small"
-              icon={<CheckIcon sx={{ fontSize: '14px !important' }} />}
-              sx={{
-                bgcolor: 'success.soft',
-                color: 'success.ink',
-                fontWeight: 600,
-                '& .MuiChip-icon': { color: 'success.ink' },
-              }}
-            />
+            {form.cnpj.replace(/\D/g, '').length === 14 && (
+              <Chip
+                label="Validado"
+                size="small"
+                icon={<CheckIcon sx={{ fontSize: '14px !important' }} />}
+                sx={{
+                  bgcolor: 'success.soft',
+                  color: 'success.ink',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': { color: 'success.ink' },
+                }}
+              />
+            )}
           </Box>
         </SettingRow>
 
@@ -227,10 +231,28 @@ export default function BusinessSection() {
               <MenuItem value="vestuario">Vestuário</MenuItem>
               <MenuItem value="eletronicos">Eletrônicos</MenuItem>
               <MenuItem value="servicos">Prestação de Serviços</MenuItem>
+              <MenuItem value="barbearia">Barbearia</MenuItem>
+              <MenuItem value="petshop">Petshop</MenuItem>
+              <MenuItem value="mecanico">Mecânico</MenuItem>
+              <MenuItem value="tatuagem">Tatuagem</MenuItem>
+              <MenuItem value="esteticista">Esteticista</MenuItem>
               <MenuItem value="outro">Outro</MenuItem>
             </Select>
           </FormControl>
         </SettingRow>
+
+        <Collapse in={form.segment === 'outro'} unmountOnExit>
+          <SettingRow label="Nome do segmento">
+            <TextField
+              size="small"
+              value={form.customSegmentName ?? ''}
+              onChange={(e) => set({ customSegmentName: e.target.value.slice(0, 50) })}
+              placeholder="Ex: Papelaria"
+              slotProps={{ htmlInput: { maxLength: 50 } }}
+              sx={{ width: 340 }}
+            />
+          </SettingRow>
+        </Collapse>
 
         <SettingRow label="Telefone público">
           <TextField

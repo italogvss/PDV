@@ -26,6 +26,7 @@ interface BackendBusiness {
   cnpj: string | null
   stateRegistration: string | null
   segment: string | null
+  customSegmentName: string | null
   phone: string | null
   taxRegime: string
   address: BackendAddress
@@ -60,6 +61,7 @@ function mapBusiness(b: BackendBusiness): BusinessSettings {
     cnpj: b.cnpj ?? '',
     stateRegistration: b.stateRegistration ?? '',
     segment: b.segment ?? 'outro',
+    customSegmentName: b.customSegmentName,
     phone: b.phone ?? '',
     taxRegime: b.taxRegime,
     address: {

@@ -1,14 +1,16 @@
 import type { OperationModule } from '../constants/modules'
 
 export type BusinessSegment =
-  | 'cafeteria'
-  | 'restaurante'
   | 'mercado'
   | 'varejo'
-  | 'farmacia'
+  | 'barbearia'
   | 'vestuario'
   | 'eletronicos'
   | 'servicos'
+  | 'petshop'
+  | 'mecanico'
+  | 'tatuagem'
+  | 'esteticista'
   | 'outro'
 
 export type DayOfWeek =
@@ -52,6 +54,7 @@ export interface BusinessSettings {
   cnpj: string
   stateRegistration: string
   segment: string
+  customSegmentName: string | null
   phone: string
   taxRegime: string
   address: BusinessAddress

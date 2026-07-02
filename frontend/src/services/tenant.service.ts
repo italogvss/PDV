@@ -9,6 +9,7 @@ export const tenantService = {
       fantasyName: form.fantasyName,
       phone:       form.phone || null,
       segment:     form.segment,
+      customSegmentName: form.segment === 'outro' ? form.customSegmentName.trim() || null : null,
       logoUrl:     null, // upload via presigned URL — a implementar
 
       // Step 2
@@ -18,14 +19,15 @@ export const tenantService = {
       stateRegistration: form.skipDocuments ? null : form.stateRegistration || null,
       taxRegime:        form.taxRegime,
 
-      // Step 3
-      cep:          form.cep          || null,
-      street:       form.street       || null,
-      number:       form.number       || null,
-      complement:   form.complement   || null,
-      neighborhood: form.neighborhood || null,
-      city:         form.city         || null,
-      state:        form.state        || null,
+      // Step 3 (opcional, igual Documentos)
+      skipAddress:  form.skipAddress,
+      cep:          form.skipAddress ? null : form.cep          || null,
+      street:       form.skipAddress ? null : form.street       || null,
+      number:       form.skipAddress ? null : form.number       || null,
+      complement:   form.skipAddress ? null : form.complement   || null,
+      neighborhood: form.skipAddress ? null : form.neighborhood || null,
+      city:         form.skipAddress ? null : form.city         || null,
+      state:        form.skipAddress ? null : form.state        || null,
 
       // Step 4
       skipHours:    form.skipHours,

@@ -29,6 +29,8 @@ import { useMemo, useState } from 'react'
 import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
+import UpsellCard from '../../components/UpsellCard'
+import { FEATURES } from '../../constants/entitlements'
 import {
   useDeleteExpense,
   useDeleteExpenseSeries,
@@ -36,6 +38,7 @@ import {
   useMarkExpensePaid,
   useRecurringExpenses,
 } from '../../hooks/useExpenses'
+import { useEntitlements } from '../../hooks/useSubscription'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { formatBRL } from '../../utils/currency'
 import DonutChart from './components/DonutChart'
@@ -72,6 +75,8 @@ export default function ExpensesPage() {
   const deleteExpenseSeries = useDeleteExpenseSeries()
   const { hasPermission } = useUserPermissions()
   const canManage = hasPermission('ManageExpenses')
+  const { has } = useEntitlements()
+  const hasAdvancedExpenses = has(FEATURES.advancedExpanses)
 
   const monthName = MONTHS_PT[selectedMonth - 1]
   const year = selectedYear
@@ -312,12 +317,14 @@ export default function ExpensesPage() {
           value={formatBRL(kpis.pending)}
           badge={{ label: `${kpis.pendingCount} vencimentos`, color: 'warning', icon: WarningAmberRounded }}
         />
-        <PageKpiCard
-          icon={SyncRounded}
-          label="Recorrentes"
-          value={formatBRL(kpis.recurringTotal)}
-          badge={{ label: `${kpis.recurringCount} contas fixas/mês`, color: 'info', icon: SyncRounded }}
-        />
+        {hasAdvancedExpenses && (
+          <PageKpiCard
+            icon={SyncRounded}
+            label="Recorrentes"
+            value={formatBRL(kpis.recurringTotal)}
+            badge={{ label: `${kpis.recurringCount} contas fixas/mês`, color: 'info', icon: SyncRounded }}
+          />
+        )}
       </PageKpiGrid>
 
       {/* Conteúdo principal: tabela + painel lateral */}
@@ -384,144 +391,153 @@ export default function ExpensesPage() {
 
         {/* Painel lateral */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Gráfico por categoria */}
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
-                Por categoria
-              </Typography>
-              <DonutChart segments={donutSegments} />
-            </CardContent>
-          </Card>
+          {!hasAdvancedExpenses ? (
+            <UpsellCard
+              title="Dados analíticos no Pro"
+              description="Veja produtos mais comprados, histórico, gastos por mês e categorias de cada cliente com o plano Pro."
+            />
+          ) : (
+            <>
+              {/* Gráfico por categoria */}
+              <Card>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
+                    Por categoria
+                  </Typography>
+                  <DonutChart segments={donutSegments} />
+                </CardContent>
+              </Card>
 
-          {/* Próximas renovações */}
-          <Card>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                px: 2.5,
-                py: 2,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SyncRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Próximas renovações
-                </Typography>
-              </Box>
-              <Chip
-                label={upcomingRenewals.length}
-                size="small"
-                sx={{
-                  border: "none",
-                  height: 20,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  bgcolor: 'success.main',
-                  color: 'success.contrastText',
-                  '& .MuiChip-label': { px: 1 },
-                }}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {upcomingRenewals.map((expense, idx) => (
+              {/* Próximas renovações */}
+              <Card>
                 <Box
-                  key={expense.id}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
+                    justifyContent: 'space-between',
                     px: 2.5,
-                    py: 1.75,
-                    borderBottom: idx < upcomingRenewals.length - 1 ? '1px solid' : 'none',
+                    py: 2,
+                    borderBottom: '1px solid',
                     borderColor: 'divider',
                   }}
                 >
-                  <Box
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <SyncRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      Próximas renovações
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={upcomingRenewals.length}
+                    size="small"
                     sx={{
-                      width: 3,
-                      alignSelf: 'stretch',
-                      borderRadius: 2,
-                      bgcolor: EXPENSE_CATEGORY_LABELS[expense.category].color,
+                      border: "none",
+                      height: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      bgcolor: 'success.main',
+                      color: 'success.contrastText',
+                      '& .MuiChip-label': { px: 1 },
                     }}
                   />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
-                      {expense.description}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25, flexWrap: 'wrap' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
-                        <Typography variant="caption" color="text.tertiary">
-                          Vence em {fmtDueDate(expense.dueDate)}
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  {upcomingRenewals.map((expense, idx) => (
+                    <Box
+                      key={expense.id}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        px: 2.5,
+                        py: 1.75,
+                        borderBottom: idx < upcomingRenewals.length - 1 ? '1px solid' : 'none',
+                        borderColor: 'divider',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 3,
+                          alignSelf: 'stretch',
+                          borderRadius: 2,
+                          bgcolor: EXPENSE_CATEGORY_LABELS[expense.category].color,
+                        }}
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+                          {expense.description}
                         </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <CalendarTodayOutlined sx={{ fontSize: 11, color: 'text.tertiary' }} />
+                            <Typography variant="caption" color="text.tertiary">
+                              Vence em {fmtDueDate(expense.dueDate)}
+                            </Typography>
+                          </Box>
+                          {expense.repeatCount === 0 && (
+                            <Chip
+                              label="Última parcela"
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                bgcolor: 'warning.soft',
+                                color: 'warning.ink',
+                                '& .MuiChip-label': { px: 0.75 },
+                              }}
+                            />
+                          )}
+                          {expense.repeatCount != null && expense.repeatCount > 0 && (
+                            <Chip
+                              label={`${expense.repeatCount} restante${expense.repeatCount !== 1 ? 's' : ''}`}
+                              sx={{
+                                px: 1,
+                                bgcolor: 'info.soft',
+                                color: 'info.ink',
+                                '& .MuiChip-label': { px: 0.75 },
+                              }}
+                            />
+                          )}
+                        </Box>
                       </Box>
-                      {expense.repeatCount === 0 && (
-                        <Chip
-                          label="Última parcela"
-                          size="small"
-                          sx={{
-                            height: 16,
-                            fontSize: 10,
-                            fontWeight: 600,
-                            bgcolor: 'warning.soft',
-                            color: 'warning.ink',
-                            '& .MuiChip-label': { px: 0.75 },
-                          }}
-                        />
-                      )}
-                      {expense.repeatCount != null && expense.repeatCount > 0 && (
-                        <Chip
-                          label={`${expense.repeatCount} restante${expense.repeatCount !== 1 ? 's' : ''}`}
-                          sx={{
-                            px: 1,
-                            bgcolor: 'info.soft',
-                            color: 'info.ink',
-                            '& .MuiChip-label': { px: 0.75 },
-                          }}
-                        />
-                      )}
+                      <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
+                        {formatBRL(expense.amount)}
+                      </Typography>
                     </Box>
-                  </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600, flexShrink: 0 }}>
-                    {formatBRL(expense.amount)}
+                  ))}
+
+                  {upcomingRenewals.length === 0 && (
+                    <Box sx={{ px: 2.5, py: 3, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.disabled">
+                        Nenhuma renovação pendente
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    px: 2.5,
+                    py: 2,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Total fixo mensal
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {formatBRL(kpis.recurringTotal)}
                   </Typography>
                 </Box>
-              ))}
-
-              {upcomingRenewals.length === 0 && (
-                <Box sx={{ px: 2.5, py: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.disabled">
-                    Nenhuma renovação pendente
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                px: 2.5,
-                py: 2,
-                borderTop: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                Total fixo mensal
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {formatBRL(kpis.recurringTotal)}
-              </Typography>
-            </Box>
-          </Card>
+              </Card>
+            </>
+          )}
         </Box>
       </Box>
 

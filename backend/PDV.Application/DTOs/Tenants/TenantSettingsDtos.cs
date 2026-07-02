@@ -15,6 +15,7 @@ public record BusinessSettingsDto(
     string? Cnpj,
     string? StateRegistration,
     string? Segment,
+    string? CustomSegmentName,
     string? Phone,
     string TaxRegime,
     SettingsAddressDto Address,

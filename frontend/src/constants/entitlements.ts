@@ -13,6 +13,10 @@ export const FEATURES = {
   informativeCustomerData: 'informativeCustomerData',
   customerSettings: 'customerSettings',
   customDiscountPercentage: 'customDiscountPercentage',
+  notifications: 'notifications',
+  advancedInventory: 'advancedInventory',
+  advancedEmployee: 'advancedEmployee',
+  advancedExpanses: 'advancedExpanses',
 } as const
 
 export type PlanFeature = (typeof FEATURES)[keyof typeof FEATURES]

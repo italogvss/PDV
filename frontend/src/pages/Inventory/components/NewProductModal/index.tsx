@@ -30,6 +30,7 @@ import { FEATURES } from '../../../../constants/entitlements'
 import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
 import { useProductCategories } from '../../../../hooks/useProductCategories'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
+import { useEntitlements } from '../../../../hooks/useSubscription'
 import { useInventorySettings } from '../../../../hooks/useTenantSettings'
 import { formatBRL } from '../../../../utils/currency'
 import type { ProductModalProps } from './types'
@@ -102,6 +103,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isEditing = !!product
+  const { has } = useEntitlements()
+  const hasAdvancedInventory = has(FEATURES.advancedInventory)
   const { data: inventorySettings } = useInventorySettings()
   const requireCostPrice = inventorySettings?.requireCostPriceOnProducts ?? true
   const schema = useMemo(() => buildProductSchema(requireCostPrice), [requireCostPrice])
@@ -163,7 +166,8 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
           categoryId: product.category?.id ?? null,
         })
       } else {
-        const ctrl = inventorySettings?.inventoryControlEnabled
+        // Defaults de estoque mín/crítico são um recurso do plano — sem a feature, não pré-preenche.
+        const ctrl = hasAdvancedInventory && inventorySettings?.inventoryControlEnabled
         reset(buildDefaults(ctrl ? {
           minStock: inventorySettings?.defaultMinStock,
           criticalStock: inventorySettings?.defaultCriticalStock,
@@ -254,7 +258,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
       }
 
       if (mode === 'saveAndNew') {
-        const ctrl = inventorySettings?.inventoryControlEnabled
+        const ctrl = hasAdvancedInventory && inventorySettings?.inventoryControlEnabled
         reset(buildDefaults(ctrl ? {
           minStock: inventorySettings?.defaultMinStock,
           criticalStock: inventorySettings?.defaultCriticalStock,
@@ -368,38 +372,49 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
                   />
                 </Box>
 
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <FieldLabel label="Estoque mínimo" inline />
-                  </Box>
-                  <TextField
-                    {...register('minStock')}
-                    fullWidth
-                    size="small"
-                    type="number"
-                    placeholder="Ex: 10"
-                    error={!!errors.minStock}
-                    helperText={errors.minStock?.message as string}
-                    disabled={isPending || stockFieldsDisabled}
-                    slotProps={{ htmlInput: { min: 0, step: 1 } }}
-                  />
-                </Box>
+                <Box sx={{ flex: 2, minWidth: 0 }}>
+                  <PremiumLock
+                    feature={FEATURES.advancedInventory}
+                    radius={1}
+                    title="Controle de estoque no Pro"
+                    description="Definir estoque mínimo e crítico é um recurso do plano Pro. Faça upgrade para receber alertas de reposição."
+                  >
+                    <Box sx={{ display: 'flex', gap: 1.5 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                          <FieldLabel label="Estoque mínimo" inline />
+                        </Box>
+                        <TextField
+                          {...register('minStock')}
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="Ex: 10"
+                          error={!!errors.minStock}
+                          helperText={errors.minStock?.message as string}
+                          disabled={isPending || stockFieldsDisabled}
+                          slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                        />
+                      </Box>
 
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <FieldLabel label="Estoque crítico" inline />
-                  </Box>
-                  <TextField
-                    {...register('criticalStock')}
-                    fullWidth
-                    size="small"
-                    type="number"
-                    placeholder="Ex: 3"
-                    error={!!errors.criticalStock}
-                    helperText={errors.criticalStock?.message as string}
-                    disabled={isPending || stockFieldsDisabled}
-                    slotProps={{ htmlInput: { min: 0, step: 1 } }}
-                  />
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                          <FieldLabel label="Estoque crítico" inline />
+                        </Box>
+                        <TextField
+                          {...register('criticalStock')}
+                          fullWidth
+                          size="small"
+                          type="number"
+                          placeholder="Ex: 3"
+                          error={!!errors.criticalStock}
+                          helperText={errors.criticalStock?.message as string}
+                          disabled={isPending || stockFieldsDisabled}
+                          slotProps={{ htmlInput: { min: 0, step: 1 } }}
+                        />
+                      </Box>
+                    </Box>
+                  </PremiumLock>
                 </Box>
               </Box>
             </Box>

@@ -7,6 +7,7 @@ public record CreateTenantRequest(
     string FantasyName,
     string? Phone,
     string Segment,
+    string? CustomSegmentName,
     string? LogoUrl,
 
     // Step 2 — Documentos
@@ -16,7 +17,8 @@ public record CreateTenantRequest(
     string? StateRegistration,
     string TaxRegime,
 
-    // Step 3 — Endereço
+    // Step 3 — Endereço (opcional, igual Documentos)
+    bool SkipAddress,
     string? Cep,
     string? Street,
     string? Number,

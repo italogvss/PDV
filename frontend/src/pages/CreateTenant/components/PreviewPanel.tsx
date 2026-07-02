@@ -12,7 +12,7 @@ interface PreviewPanelProps {
   step: number
 }
 
-const STEP_LABELS = ['Seu negócio', 'Documentos', 'Endereço']
+const STEP_LABELS = ['Seu negócio', 'Endereço']
 
 function formatAddress(data: CreateTenantFormData): string {
   if (!data.street) return ''
