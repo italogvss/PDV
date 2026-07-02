@@ -9,33 +9,48 @@ import Accordion from '../components/Accordion.astro';
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 
 // `slug` é o ponto de entrada do trial no app (?plano=<slug>) — mapeia para o plano do backend.
+// Preços em pt-BR. `mensal` = valor por mês na cobrança mensal recorrente.
+// `anual` = valor TOTAL do plano anual, pago uma única vez (não é dividido por mês).
+// O anual já embute 2 meses grátis; `economia` = quanto se economiza vs. 12× o mensal.
 const planos = [
   {
     nome: 'Essencial', descricao: 'Pra quem está começando a organizar as vendas.',
     slug: 'essencial',
-    mensal: 39, anual: 32,
-    itens: ['PDV completo', 'Controle de estoque', 'Controle de despesas', 'Até 2 usuários'],
+    mensal: '29,99', anual: '299,99', economia: '59,89',
+    itens: ['PDV completo com parcelamento', 'Estoque, clientes e despesas', 'Agenda de atendimentos', 'Até 2 funcionários · 1 loja'],
     destaque: false,
   },
   {
     nome: 'Profissional', descricao: 'O queridinho de quem já vende todo dia.',
     slug: 'profissional',
-    mensal: 79, anual: 65,
-    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Usuários ilimitados'],
+    mensal: '49,99', anual: '499,99', economia: '99,89',
+    itens: ['Tudo do Essencial, e mais:', 'Relatórios e dashboard avançados', 'Funcionários ilimitados', 'Fotos, cargos e até 5 lojas'],
     destaque: true,
   },
 ];
 
+// Diferencial real: os dois planos têm todos os módulos. O Profissional adiciona
+// as features premium (só ✓ nele) e limites maiores.
 const recursos = [
   { nome: 'PDV / Caixa rápido', e: true, p: true },
+  { nome: 'Cadastro de produtos, serviços e categorias', e: true, p: true },
+  { nome: 'Clientes e fornecedores', e: true, p: true },
   { nome: 'Controle de estoque', e: true, p: true },
   { nome: 'Controle de despesas', e: true, p: true },
-  { nome: 'Relatórios e analytics', e: false, p: true },
-  { nome: 'Agenda e agendamentos', e: false, p: true },
-  { nome: 'Recibo no WhatsApp', e: true, p: true },
-  { nome: 'Usuários inclusos', e: '2', p: 'Ilimitados' },
-  { nome: 'Múltiplas lojas', e: false, p: true },
-  { nome: 'Suporte', e: 'E-mail', p: 'Prioritário' },
+  { nome: 'Agenda de atendimentos', e: true, p: true },
+  { nome: 'Relatórios', e: 'Básicos', p: 'Avançados' },
+  { nome: 'Dashboard com métricas e gráficos', e: false, p: true },
+  { nome: 'Alertas de estoque mínimo e crítico', e: false, p: true },
+  { nome: 'Fotos nos produtos', e: false, p: true },
+  { nome: 'Produtos vinculados a serviços', e: false, p: true },
+  { nome: 'Despesas recorrentes automáticas', e: false, p: true },
+  { nome: 'Desconto por porcentagem', e: false, p: true },
+  { nome: 'Cargos e permissões customizáveis', e: false, p: true },
+  { nome: 'Dados completos de clientes', e: false, p: true },
+  { nome: 'Funcionários', e: '2', p: 'Ilimitados' },
+  { nome: 'Lojas', e: '1', p: 'Até 5' },
+  { nome: 'Histórico de vendas', e: '90 dias', p: 'Ilimitado' },
+  { nome: 'Auditoria', e: '7 dias', p: 'Ilimitada' },
 ];
 
 const cobranca = [
@@ -47,7 +62,7 @@ const cobranca = [
 ---
 
 <Layout
-  title="Preço — Planos do Ka$hing a partir de R$ 32/mês"
+  title="Preço — Planos do Ka$hing a partir de R$ 24,99/mês"
   description="Planos simples e sem pegadinha pro pequeno comércio. 30 dias grátis, sem cartão e sem fidelidade. Pague mensal ou anual com 2 meses grátis."
 >
   <Navbar />
@@ -86,9 +101,11 @@ const cobranca = [
               descricao={p.descricao}
               mensal={p.mensal}
               anual={p.anual}
+              economia={p.economia}
               itens={p.itens}
               destaque={p.destaque}
-              ctaHref={`${appUrl}/login?plano=${p.slug}`}
+              ctaHrefMensal={`${appUrl}/login?plano=${p.slug}-mensal`}
+              ctaHrefAnual={`${appUrl}/login?plano=${p.slug}-anual`}
               revealDelay={i * 80}
             />
           ))}
@@ -200,9 +217,13 @@ const cobranca = [
   }
   .pre-toggle-btn.active { color: var(--color-on-brand); }
   .pre-toggle-save {
-    font-size: var(--text-sm); font-weight: var(--weight-medium);
-    color: var(--color-brand-deep);
-    background: var(--color-mint);
+    font-size: var(--text-sm); font-weight: var(--weight-semibold);
+    color: var(--color-on-brand);
+    background: linear-gradient(135deg, var(--color-brand-light), var(--color-brand) 55%, var(--color-brand-dark));
+    border: 1px solid var(--color-brand-light);
+    box-shadow:
+      0 3px 10px -3px rgba(37, 207, 63, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
   }
@@ -264,21 +285,28 @@ const cobranca = [
       b.classList.toggle('active', on);
       b.setAttribute('aria-pressed', String(on));
     });
+    const isAnual = period === 'anual';
     cards.forEach((card) => {
       const amount = card.querySelector<HTMLElement>('.plan-amount');
+      const per = card.querySelector<HTMLElement>('.plan-per');
       const billing = card.querySelector<HTMLElement>('.plan-billing');
+      const economia = card.querySelector<HTMLElement>('.plan-economia');
+      const cta = card.querySelector<HTMLAnchorElement>('.plan-cta');
       if (!amount) return;
-      const value = period === 'anual' ? card.dataset.anual : card.dataset.mensal;
-      amount.textContent = value ?? '';
+      amount.textContent = (isAnual ? card.dataset.anual : card.dataset.mensal) ?? '';
       // re-dispara a animação de troca
       amount.classList.remove('flip');
       void amount.offsetWidth;
       amount.classList.add('flip');
+      if (per) per.textContent = isAnual ? '/ano' : '/mês';
       if (billing) {
-        billing.textContent = period === 'anual'
-          ? 'por mês, cobrado anualmente'
+        billing.textContent = isAnual
+          ? 'pagamento único no ano, sem recorrência'
           : 'cobrança mensal, cancela quando quiser';
       }
+      if (economia) economia.hidden = !isAnual;
+      // CTA leva o slug do período escolhido (?plano=<slug>-mensal | -anual)
+      if (cta) cta.href = (isAnual ? cta.dataset.ctaAnual : cta.dataset.ctaMensal) ?? cta.href;
     });
   };
 

@@ -70,21 +70,25 @@ const depoimentos = [
   },
 ];
 
-// `slug` é o ponto de entrada do trial no app (?plano=<slug>).
+// `slug` é a base; o CTA envia `?plano=<slug>-mensal` ou `-anual` conforme o toggle,
+// batendo com os slugs oficiais do PlanSeedData. `mensal` = valor/mês; `anual` = total
+// pago uma vez no ano (2 meses grátis); `economia` = quanto se poupa vs. 12× o mensal.
 const planos = [
   {
-    nome: 'Essencial', preco: '39', slug: 'essencial', descricao: 'Pra quem está começando a organizar as vendas.',
-    itens: ['PDV completo', 'Controle de estoque', 'Até 2 usuários'], destaque: false,
+    nome: 'Essencial', slug: 'essencial', descricao: 'Pra quem está começando a organizar as vendas.',
+    mensal: '29,99', anual: '299,99', economia: '59,89',
+    itens: ['PDV completo', 'Estoque e despesas', 'Agenda de atendimentos', 'Até 2 funcionários'], destaque: false,
   },
   {
-    nome: 'Profissional', preco: '79', slug: 'profissional', descricao: 'O queridinho de quem já vende todo dia.',
-    itens: ['Tudo do Essencial', 'Relatórios e analytics', 'Agenda e agendamentos', 'Usuários ilimitados'], destaque: true,
+    nome: 'Profissional', slug: 'profissional', descricao: 'O queridinho de quem já vende todo dia.',
+    mensal: '49,99', anual: '499,99', economia: '99,89',
+    itens: ['Tudo do Essencial', 'Relatórios e dashboard avançados', 'Funcionários ilimitados', 'Até 5 lojas'], destaque: true,
   },
 ];
 ---
 
 <Layout
-  title="Ka$hing — O PDV que faz sua loja soar cha-ching"
+  title="Ka$hing — O PDV que faz sua loja soar ka-shing"
   description="Ponto de venda, estoque, agenda e relatórios num app só. Feito para o pequeno comércio brasileiro. 30 dias grátis, sem cartão."
 >
   <Navbar />
@@ -250,9 +254,25 @@ const planos = [
           <h2 class="planos-title">Um plano pra cada tamanho de loja</h2>
           <p class="planos-sub">Comece grátis. Escolha o plano só quando o teste convencer você.</p>
         </div>
+
+        <div class="planos-toggle-wrap" data-reveal>
+          <div class="planos-toggle" id="billing-toggle" role="group" aria-label="Período de cobrança">
+            <span class="planos-toggle-thumb" aria-hidden="true"></span>
+            <button class="planos-toggle-btn active" data-period="mensal" aria-pressed="true">Mensal</button>
+            <button class="planos-toggle-btn" data-period="anual" aria-pressed="false">Anual</button>
+          </div>
+          <span class="planos-toggle-save">2 meses grátis no anual</span>
+        </div>
+
         <div class="planos-grid">
           {planos.map((p, i) => (
-            <article class:list={['plano', { 'plano-destaque': p.destaque, 'border-trail': p.destaque }]} data-reveal style={`--reveal-delay: ${i * 80}ms`}>
+            <article
+              class:list={['plano', { 'plano-destaque': p.destaque, 'border-trail': p.destaque }]}
+              data-mensal={p.mensal}
+              data-anual={p.anual}
+              data-reveal
+              style={`--reveal-delay: ${i * 80}ms`}
+            >
               {p.destaque && <MeshGradient class="plano-bg" speed={1.1} intensity={0.7} />}
               {p.destaque && (
                 <span class="plano-badge">
@@ -265,12 +285,21 @@ const planos = [
               <h3 class="plano-nome">{p.nome}</h3>
               <p class="plano-desc">{p.descricao}</p>
               <p class="plano-preco">
-                <span class="plano-cifra">R$</span>{p.preco}<span class="plano-mes">/mês</span>
+                <span class="plano-cifra">R$</span><span class="plano-amount">{p.mensal}</span><span class="plano-mes">/mês</span>
+              </p>
+              <p class="plano-economia" hidden>
+                <span class="plano-eco-tag">2 meses grátis</span>
+                <span class="plano-eco-txt">economize R$ {p.economia} por ano</span>
               </p>
               <ul class="plano-itens">
                 {p.itens.map((i) => <li>{i}</li>)}
               </ul>
-              <a href={`${appUrl}/login?plano=${p.slug}`} class:list={['plano-cta', { 'btn-brand': p.destaque }]}>
+              <a
+                href={`${appUrl}/login?plano=${p.slug}-mensal`}
+                data-cta-mensal={`${appUrl}/login?plano=${p.slug}-mensal`}
+                data-cta-anual={`${appUrl}/login?plano=${p.slug}-anual`}
+                class:list={['plano-cta', { 'btn-brand': p.destaque }]}
+              >
                 Começar teste grátis
               </a>
             </article>
@@ -604,9 +633,43 @@ const planos = [
   .depo-meta { font-size: var(--text-sm); color: var(--color-text-muted); }
 
   /* ============ PLANOS ============ */
-  .planos-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-8); }
+  .planos-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-5); }
   .planos-title { font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl)); margin-top: var(--space-3); }
   .planos-sub { font-size: var(--text-lg); color: var(--color-text-muted); margin-top: var(--space-3); }
+
+  /* ===== TOGGLE MENSAL/ANUAL ===== */
+  .planos-toggle-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+    margin-bottom: var(--space-8);
+  }
+  .planos-toggle {
+    position: relative; display: inline-flex; padding: var(--space-1);
+    background: var(--color-cloud); border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+  }
+  .planos-toggle-thumb {
+    position: absolute; top: var(--space-1); bottom: var(--space-1); left: var(--space-1);
+    width: calc(50% - var(--space-1));
+    background: var(--color-brand); border-radius: var(--radius-full);
+    box-shadow: 0 4px 12px -3px rgba(37, 207, 63, 0.6);
+    transition: transform var(--dur-base) var(--ease-spring);
+  }
+  .planos-toggle.is-anual .planos-toggle-thumb { transform: translateX(100%); }
+  .planos-toggle-btn {
+    position: relative; z-index: 1; min-width: 7rem;
+    padding: var(--space-2) var(--space-5);
+    font-family: var(--font-body); font-weight: var(--weight-semibold); font-size: var(--text-base);
+    color: var(--color-text-muted); transition: color var(--dur-base) var(--ease-out);
+  }
+  .planos-toggle-btn.active { color: var(--color-on-brand); }
+  .planos-toggle-save {
+    font-size: var(--text-sm); font-weight: var(--weight-semibold);
+    color: var(--color-on-brand);
+    background: linear-gradient(135deg, var(--color-brand-light), var(--color-brand) 55%, var(--color-brand-dark));
+    border: 1px solid var(--color-brand-light);
+    box-shadow: 0 3px 10px -3px rgba(37, 207, 63, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-full);
+  }
   .planos-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -685,7 +748,27 @@ const planos = [
     margin: var(--space-2) 0;
   }
   .plano-cifra { font-size: var(--text-2xl); color: var(--color-text-muted); margin-right: 2px; }
+  .plano-amount { display: inline-block; transition: transform var(--dur-base) var(--ease-spring); }
+  .plano-amount.flip { animation: amount-flip var(--dur-base) var(--ease-spring); }
+  @keyframes amount-flip {
+    0% { opacity: 0.2; transform: translateY(-0.18em); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
   .plano-mes { font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--weight-regular); color: var(--color-text-muted); }
+  .plano-economia {
+    display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2);
+    margin: calc(-1 * var(--space-1)) 0 var(--space-1);
+  }
+  .plano-economia[hidden] { display: none; }
+  .plano-eco-tag {
+    font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--color-on-brand);
+    background: linear-gradient(135deg, var(--color-brand-light), var(--color-brand) 55%, var(--color-brand-dark));
+    border: 1px solid var(--color-brand-light);
+    box-shadow: 0 3px 10px -3px rgba(37, 207, 63, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    padding: var(--space-1) var(--space-2); border-radius: var(--radius-full);
+  }
+  .plano-eco-txt { font-size: var(--text-sm); color: var(--color-text-muted); }
   .plano-itens { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-3) 0 var(--space-5); }
   .plano-itens li { position: relative; padding-left: var(--space-6); font-size: var(--text-base); color: var(--color-text); }
   .plano-itens li::before { content: '✓'; position: absolute; left: 0; color: var(--color-brand-dark); font-weight: var(--weight-bold); }
@@ -727,3 +810,38 @@ const planos = [
     .chip-2 { left: 0; }
   }
 </style>
+
+<script>
+  // Toggle mensal/anual dos cards de plano. Mensal → R$ x,xx/mês; Anual → total pago uma
+  // vez no ano + economia, e o CTA passa a apontar para o slug do período (?plano=<slug>-anual).
+  const toggle = document.getElementById('billing-toggle');
+  const btns = toggle?.querySelectorAll<HTMLButtonElement>('.planos-toggle-btn');
+  const cards = document.querySelectorAll<HTMLElement>('.plano');
+
+  const setPeriod = (period: string) => {
+    const isAnual = period === 'anual';
+    toggle?.classList.toggle('is-anual', isAnual);
+    btns?.forEach((b) => {
+      const on = b.dataset.period === period;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    cards.forEach((card) => {
+      const amount = card.querySelector<HTMLElement>('.plano-amount');
+      const mes = card.querySelector<HTMLElement>('.plano-mes');
+      const economia = card.querySelector<HTMLElement>('.plano-economia');
+      const cta = card.querySelector<HTMLAnchorElement>('.plano-cta');
+      if (amount) {
+        amount.textContent = (isAnual ? card.dataset.anual : card.dataset.mensal) ?? '';
+        amount.classList.remove('flip');
+        void amount.offsetWidth; // re-dispara a animação de troca
+        amount.classList.add('flip');
+      }
+      if (mes) mes.textContent = isAnual ? '/ano' : '/mês';
+      if (economia) economia.hidden = !isAnual;
+      if (cta) cta.href = (isAnual ? cta.dataset.ctaAnual : cta.dataset.ctaMensal) ?? cta.href;
+    });
+  };
+
+  btns?.forEach((b) => b.addEventListener('click', () => setPeriod(b.dataset.period ?? 'mensal')));
+</script>

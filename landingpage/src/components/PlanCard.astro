@@ -4,19 +4,21 @@ import MeshGradient from './MeshGradient.astro';
 interface Props {
   nome: string;
   descricao: string;
-  mensal: number;
-  anual: number; // valor por mês no plano anual
+  mensal: string; // valor por mês na cobrança mensal (pt-BR, ex.: "29,99")
+  anual: string; // valor TOTAL do plano anual, pago uma vez (ex.: "299,99")
+  economia: string; // economia no anual vs. 12× o mensal (ex.: "59,89")
   itens: string[];
   destaque?: boolean;
   badge?: string;
-  ctaHref: string;
+  ctaHrefMensal: string; // destino do CTA no período mensal (?plano=<slug>-mensal)
+  ctaHrefAnual: string; // destino do CTA no período anual (?plano=<slug>-anual)
   ctaLabel?: string;
   revealDelay?: number;
 }
 const {
-  nome, descricao, mensal, anual, itens,
+  nome, descricao, mensal, anual, economia, itens,
   destaque = false, badge = 'Mais escolhido',
-  ctaHref, ctaLabel = 'Começar teste grátis', revealDelay = 0,
+  ctaHrefMensal, ctaHrefAnual, ctaLabel = 'Começar teste grátis', revealDelay = 0,
 } = Astro.props;
 ---
 
@@ -24,6 +26,7 @@ const {
   class:list={['plan-card', { featured: destaque, 'border-trail': destaque }]}
   data-mensal={mensal}
   data-anual={anual}
+  data-economia={economia}
   data-reveal
   style={`--reveal-delay: ${revealDelay}ms`}
 >
@@ -43,12 +46,21 @@ const {
     <span class="plan-cifra">R$</span><span class="plan-amount">{mensal}</span><span class="plan-per">/mês</span>
   </p>
   <p class="plan-billing">cobrança mensal, cancela quando quiser</p>
+  <p class="plan-economia" hidden>
+    <span class="plan-eco-tag">2 meses grátis</span>
+    <span class="plan-eco-txt">você economiza R$ {economia} por ano</span>
+  </p>
 
   <ul class="plan-itens">
     {itens.map((i) => <li>{i}</li>)}
   </ul>
 
-  <a href={ctaHref} class:list={['plan-cta', { 'btn-brand': destaque }]}>{ctaLabel}</a>
+  <a
+    href={ctaHrefMensal}
+    data-cta-mensal={ctaHrefMensal}
+    data-cta-anual={ctaHrefAnual}
+    class:list={['plan-cta', { 'btn-brand': destaque }]}
+  >{ctaLabel}</a>
 </article>
 
 <style>
@@ -142,6 +154,29 @@ const {
     min-height: 1.4em;
     transition: opacity var(--dur-fast);
   }
+  .plan-economia {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+  .plan-economia[hidden] { display: none; }
+  .plan-eco-tag {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-on-brand);
+    background: linear-gradient(135deg, var(--color-brand-light), var(--color-brand) 55%, var(--color-brand-dark));
+    border: 1px solid var(--color-brand-light);
+    box-shadow:
+      0 3px 10px -3px rgba(37, 207, 63, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+  }
+  .plan-eco-txt { font-size: var(--text-sm); color: var(--color-text-muted); }
   .plan-itens { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-4) 0 var(--space-5); }
   .plan-itens li { position: relative; padding-left: var(--space-6); font-size: var(--text-base); color: var(--color-text); }
   .plan-itens li::before { content: '✓'; position: absolute; left: 0; color: var(--color-brand-dark); font-weight: var(--weight-bold); }
