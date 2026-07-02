@@ -11,7 +11,7 @@ public class PlanRepository(AppDbContext context) : IPlanRepository
     public async Task<IReadOnlyList<Plan>> GetActiveAsync() =>
         await context.Plans
             .Where(p => p.IsActive)
-            .OrderBy(p => p.DisplayOrder)
+            .OrderBy(p => p.PriceCents)
             .ToListAsync();
 
     public async Task<Plan?> GetByIdAsync(Guid id) =>
@@ -25,7 +25,7 @@ public class PlanRepository(AppDbContext context) : IPlanRepository
         if (string.IsNullOrWhiteSpace(slug)) return null;
         return await context.Plans
             .Where(p => p.IsActive && p.Slug == slug)
-            .OrderBy(p => p.DisplayOrder)
+            .OrderBy(p => p.PriceCents)
             .FirstOrDefaultAsync();
     }
 

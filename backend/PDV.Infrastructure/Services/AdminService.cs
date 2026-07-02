@@ -93,7 +93,7 @@ public class AdminService(AppDbContext context) : IAdminService
 
     public async Task<List<AdminPlanDto>> GetAllPlansAsync() =>
         await context.Plans
-            .OrderBy(p => p.DisplayOrder)
+            .OrderBy(p => p.PriceCents)
             .Select(p => MapPlan(p))
             .ToListAsync();
 
@@ -113,9 +113,6 @@ public class AdminService(AppDbContext context) : IAdminService
         plan.Description = request.Description;
         plan.PriceCents = request.PriceCents;
         plan.TrialDays = request.TrialDays;
-        plan.SupportsCard = request.SupportsCard;
-        plan.SupportsPix = request.SupportsPix;
-        plan.DisplayOrder = request.DisplayOrder;
         plan.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
@@ -149,10 +146,7 @@ public class AdminService(AppDbContext context) : IAdminService
             p.PriceCents,
             p.BillingPeriod.ToString(),
             p.TrialDays,
-            p.SupportsCard,
-            p.SupportsPix,
             p.IsActive,
-            p.DisplayOrder,
             p.ExternalProductId,
             modules,
             limits,

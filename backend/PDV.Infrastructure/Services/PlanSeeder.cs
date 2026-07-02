@@ -43,9 +43,6 @@ public class PlanSeeder(IPlanRepository planRepository)
         plan.TrialDays = seed.TrialDays;
         plan.EntitledModulesJson = PlanJson.SerializeEntitlements(seed.Entitlements);
         plan.LimitsJson = PlanJson.SerializeLimits(seed.Limits);
-        plan.DisplayOrder = seed.DisplayOrder;
-        plan.SupportsCard = seed.SupportsCard;
-        plan.SupportsPix = seed.SupportsPix;
         plan.BillingPeriod = seed.BillingPeriod;
         plan.UpdatedAt = DateTime.UtcNow;
     }

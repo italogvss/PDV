@@ -25,6 +25,8 @@ import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
+import PremiumLock from '../../../../components/PremiumLock'
+import { FEATURES } from '../../../../constants/entitlements'
 import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
 import type { ExpenseCategory } from '../../types'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from '../../types'
@@ -275,6 +277,11 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               )}
             />
           </Box>
+          <PremiumLock
+            feature={FEATURES.recurringExpense}
+            title="Despesas recorrentes no Pro"
+            description="Cadastrar despesas que se repetem todo mês é um recurso do plano Pro. Faça upgrade para automatizar suas contas fixas."
+          >
           <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong" }}>
             {/* Recorrente */}
             <Controller
@@ -324,6 +331,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               </Box>
             </Collapse>
           </Paper>
+          </PremiumLock>
         </Box>
       </DialogContent>
 

@@ -12,8 +12,6 @@ public record PlanResponse(
     // Capabilities inclusas no plano (eixo de billing): módulos + sub-features. Informativo.
     IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
-    bool SupportsCard,
-    bool SupportsPix,
     int? TrialDays);
 
 public record SubscriptionResponse(

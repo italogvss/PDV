@@ -26,8 +26,11 @@ import CustomerTopProducts from './components/CustomerTopProducts'
 import CustomerSpendTimeline from './components/CustomerSpendTimeline'
 import CustomerCategoryPie from './components/CustomerCategoryPie'
 import ConfirmDialog from '../../../components/ConfirmDialog'
+import UpsellCard from '../../../components/UpsellCard'
 import { formatMemberSince, formatRelativeDate } from './components/helpers'
 import { useUserPermissions } from '../../../hooks/useUserPermissions'
+import { useEntitlements } from '../../../hooks/useSubscription'
+import { FEATURES } from '../../../constants/entitlements'
 
 function buildForm(customer: {
   name: string
@@ -77,6 +80,10 @@ export default function CustomerDetailPage() {
   const { data: customer, isLoading: customerLoading } = useCustomer(id!)
   const { data: stats, isLoading: statsLoading } = useCustomerStats(id!)
   const { isModuleEnabled } = useUserPermissions()
+  const { has } = useEntitlements()
+  // Feature Pro: dados analíticos do cliente (KPIs, gráficos, histórico). Sem ela, o endpoint
+  // /stats retorna 402 — então mostramos só o cadastro e um card de upsell no lugar.
+  const showStats = has(FEATURES.informativeCustomerData)
   const updateCustomer = useUpdateCustomer()
   const deleteCustomer = useDeleteCustomer()
 
@@ -169,34 +176,36 @@ export default function CustomerDetailPage() {
         onDeleteClick={() => setConfirmDelete(true)}
       />
 
-      <PageKpiGrid>
-        <PageKpiCard
-          icon={AttachMoneyRounded}
-          label="Total gasto"
-          value={statsLoading ? '...' : formatBRL(stats?.totalSpent ?? 0)}
-          isLoading={statsLoading}
-        />
-        <PageKpiCard
-          icon={ReceiptLongOutlined}
-          label="Compras realizadas"
-          value={statsLoading ? '...' : String(stats?.totalSales ?? 0)}
-          isLoading={statsLoading}
-        />
-        <PageKpiCard
-          icon={LocalOfferOutlined}
-          label="Ticket médio"
-          value={statsLoading ? '...' : formatBRL(stats?.averageTicket ?? 0)}
-          isLoading={statsLoading}
-        />
-        <PageKpiCard
-          icon={AccessTimeRounded}
-          label="Última compra"
-          value={statsLoading ? '...' : kpiLastPurchase}
-          isLoading={statsLoading}
-        />
-      </PageKpiGrid>
+      {showStats && (
+        <PageKpiGrid>
+          <PageKpiCard
+            icon={AttachMoneyRounded}
+            label="Total gasto"
+            value={statsLoading ? '...' : formatBRL(stats?.totalSpent ?? 0)}
+            isLoading={statsLoading}
+          />
+          <PageKpiCard
+            icon={ReceiptLongOutlined}
+            label="Compras realizadas"
+            value={statsLoading ? '...' : String(stats?.totalSales ?? 0)}
+            isLoading={statsLoading}
+          />
+          <PageKpiCard
+            icon={LocalOfferOutlined}
+            label="Ticket médio"
+            value={statsLoading ? '...' : formatBRL(stats?.averageTicket ?? 0)}
+            isLoading={statsLoading}
+          />
+          <PageKpiCard
+            icon={AccessTimeRounded}
+            label="Última compra"
+            value={statsLoading ? '...' : kpiLastPurchase}
+            isLoading={statsLoading}
+          />
+        </PageKpiGrid>
+      )}
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1fr 340px' } }}>
-        
+
         <CustomerInfoCard
           customer={customer}
           form={form}
@@ -208,23 +217,31 @@ export default function CustomerDetailPage() {
           cepError={cepError}
           setCepError={setCepError}
         />
-        <CustomerTopProducts stats={stats} statsLoading={statsLoading} />
-      </Box>
-      
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' } }}>
-        <CustomerRecentSales stats={stats} statsLoading={statsLoading} />
-        <CustomerSpendTimeline stats={stats} statsLoading={statsLoading} />
-        <CustomerCategoryPie
-          title="Categorias de produto"
-          subtitle="Gasto por categoria · todos os períodos"
-          data={stats?.productCategories}
-          loading={statsLoading}
-          emptyText="Nenhum produto comprado"
-        />
-        
+        {showStats ? (
+          <CustomerTopProducts stats={stats} statsLoading={statsLoading} />
+        ) : (
+          <UpsellCard
+            title="Dados analíticos no Pro"
+            description="Veja produtos mais comprados, histórico, gastos por mês e categorias de cada cliente com o plano Pro."
+          />
+        )}
       </Box>
 
-      {isModuleEnabled('services') && isModuleEnabled('appointments') && (
+      {showStats && (
+        <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' } }}>
+          <CustomerRecentSales stats={stats} statsLoading={statsLoading} />
+          <CustomerSpendTimeline stats={stats} statsLoading={statsLoading} />
+          <CustomerCategoryPie
+            title="Categorias de produto"
+            subtitle="Gasto por categoria · todos os períodos"
+            data={stats?.productCategories}
+            loading={statsLoading}
+            emptyText="Nenhum produto comprado"
+          />
+        </Box>
+      )}
+
+      {showStats && isModuleEnabled('services') && isModuleEnabled('appointments') && (
         <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '2fr 3fr' } }}>
           <CustomerCategoryPie
             title="Categorias de serviço"

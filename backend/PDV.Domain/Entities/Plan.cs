@@ -28,8 +28,4 @@ public class Plan : BaseEntity
     // plano (nomes PascalCase); vazio = nenhum. LimitsJson: dicionário chave→int (-1 = ilimitado).
     public string EntitledModulesJson { get; set; } = "[]";
     public string LimitsJson { get; set; } = "{}";
-
-    public int DisplayOrder { get; set; }
-    public bool SupportsCard { get; set; } = true;
-    public bool SupportsPix { get; set; } = true;
 }

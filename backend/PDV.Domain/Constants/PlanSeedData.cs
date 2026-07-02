@@ -9,9 +9,9 @@ namespace PDV.Domain.Constants;
 // foram removidas do seed.
 //
 // Os `ExternalProductId` (prod_...) abaixo são os ids reais do catálogo no AbacatePay
-// (devMode). O nome legível do produto (plano-mensal, plano-anual-pro, ...) está no
-// comentário de cada bloco. O `Slug` é o ponto de entrada da landing (?plano=<slug>),
-// preenchido só nos planos mensais canônicos de cada tier.
+// (versão final de produção). O nome legível do produto (essencial-mensal, profissional-anual, ...)
+// está no comentário de cada bloco. O `Slug` é o ponto de entrada da landing (?plano=<slug>).
+// Todos os planos aceitam cartão e PIX.
 public static class PlanSeedData
 {
     // Essencial (Starter): todos os módulos, NENHUMA feature premium.
@@ -40,70 +40,57 @@ public static class PlanSeedData
 
     public static readonly IReadOnlyList<PlanSeed> Plans =
     [
-        // ── Starter Mensal ───────────────────────────────────────────────────────────
-        // AbacatePay: plano-mensal (prod_kNUahnCQuYUMAU6CM4HJg1dg) — R$ 35,00/mês
-        // Slug "essencial": ponto de entrada do card Essencial da landing.
+        // ── Essencial Mensal ─────────────────────────────────────────────────────────
+        // AbacatePay: essencial-mensal (prod_LzwznAgbxBqQkHJ4ZNhRq5uX) — R$ 29,99/mês
         new PlanSeed(
-            Name: "Starter Mensal",
+            Name: "Plano Essencial Mensal",
             Description: "Essencial para começar: vendas, estoque, clientes e despesas.",
-            ExternalProductId: "prod_kNUahnCQuYUMAU6CM4HJg1dg",
-            PriceCents: 3500,
+            ExternalProductId: "prod_LzwznAgbxBqQkHJ4ZNhRq5uX",
+            PriceCents: 2999,
             TrialDays: null,
             Entitlements: StarterEntitlements,
             Limits: StarterLimits,
-            SupportsCard: true,
-            SupportsPix: false,
             BillingPeriod: BillingPeriod.Monthly,
-            DisplayOrder: 1,
-            Slug: "essencial"),
+            Slug: "essencial-mensal"),
 
-        // ── Starter Anual ────────────────────────────────────────────────────────────
-        // AbacatePay: plano-anual (prod_ggDACnfD3rbfSdmBuFa3Sd0G) — R$ 375,00/ano
+        // ── Essencial Anual ──────────────────────────────────────────────────────────
+        // AbacatePay: essencial-anual (prod_1Fq6LAq5wXnenUw6X4L36FWX) — R$ 299,99/ano
         new PlanSeed(
-            Name: "Starter Anual",
-            Description: "Starter com cobrança anual — economia de 2 meses.",
-            ExternalProductId: "prod_ggDACnfD3rbfSdmBuFa3Sd0G",
-            PriceCents: 37500,
+            Name: "Plano Essencial Anual",
+            Description: "Essencial com cobrança anual — economia de 2 meses.",
+            ExternalProductId: "prod_1Fq6LAq5wXnenUw6X4L36FWX",
+            PriceCents: 29999,
             TrialDays: null,
             Entitlements: StarterEntitlements,
             Limits: StarterLimits,
-            SupportsCard: true,
-            SupportsPix: true,
-            DisplayOrder: 3,
-            BillingPeriod: BillingPeriod.Annual),
+            BillingPeriod: BillingPeriod.Annual,
+            Slug: "essencial-anual"),
 
-        // ── Pro Mensal ───────────────────────────────────────────────────────────────
-        // AbacatePay: plano-mensal-pro (prod_WprrUe0bPSghwptpJSCEc2rY) — R$ 50,00/mês
-        // Slug "profissional": ponto de entrada dos cards Profissional e Avançado da landing
-        // (único tier ilimitado). Ajustar se um tier "avancado" dedicado for criado depois.
+        // ── Profissional Mensal ──────────────────────────────────────────────────────
+        // AbacatePay: profissional-mensal (prod_czbpxhGs1MgpuwqJpMkN6XGZ) — R$ 49,99/mês
         new PlanSeed(
-            Name: "Pro Mensal",
+            Name: "Plano Profissional Mensal",
             Description: "Todos os módulos, limites ilimitados, cobrança mensal.",
-            ExternalProductId: "prod_WprrUe0bPSghwptpJSCEc2rY",
-            PriceCents: 5000,
+            ExternalProductId: "prod_czbpxhGs1MgpuwqJpMkN6XGZ",
+            PriceCents: 4999,
             TrialDays: null,
             Entitlements: ProEntitlements,
             Limits: ProLimits,
-            SupportsCard: true,
-            SupportsPix: false,
-            DisplayOrder: 5,
             BillingPeriod: BillingPeriod.Monthly,
-            Slug: "profissional"),
+            Slug: "profissional-mensal"),
 
-        // ── Pro Anual ────────────────────────────────────────────────────────────────
-        // AbacatePay: plano-anual-pro (prod_k53QXxsKhNdwbsNMmbXgh0WA) — R$ 550,00/ano
+        // ── Profissional Anual ───────────────────────────────────────────────────────
+        // AbacatePay: profissional-anual (prod_wmAAU6jKsz6fMJypgHmKf4cL) — R$ 499,99/ano
         new PlanSeed(
-            Name: "Pro Anual",
+            Name: "Plano Profissional Anual",
             Description: "Todos os módulos, limites ilimitados, cobrança anual — economia de 2 meses.",
-            ExternalProductId: "prod_k53QXxsKhNdwbsNMmbXgh0WA",
-            PriceCents: 55000,
+            ExternalProductId: "prod_wmAAU6jKsz6fMJypgHmKf4cL",
+            PriceCents: 49999,
             TrialDays: null,
             Entitlements: ProEntitlements,
             Limits: ProLimits,
-            SupportsCard: true,
-            SupportsPix: true,
-            DisplayOrder: 7,
-            BillingPeriod: BillingPeriod.Annual),
+            BillingPeriod: BillingPeriod.Annual,
+            Slug: "profissional-anual"),
     ];
 }
 
@@ -115,8 +102,5 @@ public record PlanSeed(
     int? TrialDays,
     IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
-    bool SupportsCard,
-    bool SupportsPix,
-    int DisplayOrder,
     BillingPeriod BillingPeriod = BillingPeriod.Monthly,
     string Slug = "");

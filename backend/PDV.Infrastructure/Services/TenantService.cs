@@ -327,21 +327,7 @@ public class TenantService(
                     new() { Permission = Permission.ViewCustomers },
                     new() { Permission = Permission.ViewAppointments },
                 ],
-            },
-            new TenantRole
-            {
-                TenantId = tenantId,
-                Name = "Estoquista",
-                Color = "#d39b23",
-                Description = "Gerencia o estoque.",
-                IsDefault = true,
-                Permissions =
-                [
-                    new() { Permission = Permission.ViewStock },
-                    new() { Permission = Permission.ManageStock },
-                    new() { Permission = Permission.ViewSuppliers },
-                ],
-            },
+            },       
         ];
     }
 

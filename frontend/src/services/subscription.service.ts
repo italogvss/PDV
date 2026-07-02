@@ -30,8 +30,6 @@ interface BackendPlan {
   Price: number
   entitlements: string[]
   limits: Record<string, number>
-  supportsCard: boolean
-  supportsPix: boolean
   trialDays: number | null
 }
 
@@ -64,8 +62,6 @@ function mapPlan(p: BackendPlan): Plan {
     Price: p.Price,
     entitlements: p.entitlements ?? [],
     limits: p.limits ?? {},
-    supportsCard: p.supportsCard,
-    supportsPix: p.supportsPix,
     trialDays: p.trialDays ?? null,
   }
 }

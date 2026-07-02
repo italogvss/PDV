@@ -58,10 +58,7 @@ public record AdminPlanDto(
     int PriceCents,
     string BillingPeriod,
     int? TrialDays,
-    bool SupportsCard,
-    bool SupportsPix,
     bool IsActive,
-    int DisplayOrder,
     string ExternalProductId,
     IReadOnlyList<string> Modules,
     IReadOnlyDictionary<string, int> Limits,
@@ -72,7 +69,4 @@ public record UpdatePlanRequest(
     string Name,
     string? Description,
     int PriceCents,
-    int? TrialDays,
-    bool SupportsCard,
-    bool SupportsPix,
-    int DisplayOrder);
+    int? TrialDays);

@@ -12,12 +12,14 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
+import PremiumLock from '../../../../components/PremiumLock'
 import {
   useTenantSettings,
   useUpdateModulesSettings,
   useUpdateOperationSettings,
 } from '../../../../hooks/useTenantSettings'
 import { ALL_MODULES, MODULE_GROUPS, type OperationModule } from '../../../../constants/modules'
+import { FEATURES } from '../../../../constants/entitlements'
 import type { OperationSettings } from '../../../../types/settings.types'
 
 
@@ -122,17 +124,24 @@ export default function OperationSection() {
         </SettingRow>
 <Collapse in={form.allowDiscounts} unmountOnExit>
         <SettingRow label="Limite de desconto" sublabel="Limita o desconto máximo por venda">
-          <TextField
-            size="small"
-            type="number"
-            value={form.discountLimitPercent}
-            onChange={(e) => set({ discountLimitPercent: Number(e.target.value) || 0 })}
-            sx={{ width: 100 }}
-            disabled={!form.allowDiscounts}
-            slotProps={{
-              input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
-            }}
-          />
+          <PremiumLock
+            feature={FEATURES.customDiscountPercentage}
+            radius={1}
+            title="Descontos personalizados no Pro"
+            description="Definir um limite de desconto personalizado é um recurso do plano Pro. Faça upgrade para configurá-lo."
+          >
+            <TextField
+              size="small"
+              type="number"
+              value={form.discountLimitPercent}
+              onChange={(e) => set({ discountLimitPercent: Number(e.target.value) || 0 })}
+              sx={{ width: 100 }}
+              disabled={!form.allowDiscounts}
+              slotProps={{
+                input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+              }}
+            />
+          </PremiumLock>
         </SettingRow>
         </Collapse>
       </SettingCard>
@@ -320,31 +329,36 @@ function CustomersCard({ form, set, hasChanges, onSave, onCancel, isPending, ena
         ) : undefined
       }
     >
-      {hasSales && (
-        <SettingRow
-          label="Obrigar cliente em nova venda"
-          sublabel="Impede finalizar uma venda sem informar um cliente cadastrado"
-        >
-          <Switch
-            checked={form.requireCustomerOnSale}
-            onChange={(e) => set({ requireCustomerOnSale: e.target.checked })}
-            color="secondary"
-          />
-        </SettingRow>
-      )}
-      {hasSales && hasScheduling}
-      {hasScheduling && (
-        <SettingRow
-          label="Obrigar cliente em novo agendamento"
-          sublabel="Impede criar um agendamento sem informar um cliente cadastrado"
-        >
-          <Switch
-            checked={form.requireCustomerOnAppointment}
-            onChange={(e) => set({ requireCustomerOnAppointment: e.target.checked })}
-            color="secondary"
-          />
-        </SettingRow>
-      )}
+      <PremiumLock
+        feature={FEATURES.customerSettings}
+        title="Configurações de cliente no Pro"
+        description="Exigir cliente nas operações é um recurso do plano Pro. Faça upgrade para habilitar estas regras."
+      >
+        {hasSales && (
+          <SettingRow
+            label="Obrigar cliente em nova venda"
+            sublabel="Impede finalizar uma venda sem informar um cliente cadastrado"
+          >
+            <Switch
+              checked={form.requireCustomerOnSale}
+              onChange={(e) => set({ requireCustomerOnSale: e.target.checked })}
+              color="secondary"
+            />
+          </SettingRow>
+        )}
+        {hasScheduling && (
+          <SettingRow
+            label="Obrigar cliente em novo agendamento"
+            sublabel="Impede criar um agendamento sem informar um cliente cadastrado"
+          >
+            <Switch
+              checked={form.requireCustomerOnAppointment}
+              onChange={(e) => set({ requireCustomerOnAppointment: e.target.checked })}
+              color="secondary"
+            />
+          </SettingRow>
+        )}
+      </PremiumLock>
     </SettingCard>
   )
 }

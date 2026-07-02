@@ -31,6 +31,8 @@ import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
+import PremiumLock from '../../../../components/PremiumLock'
+import { FEATURES } from '../../../../constants/entitlements'
 import { useProducts } from '../../../../hooks/useProducts'
 import { useServiceCategories } from '../../../../hooks/useServiceCategories'
 import { useCreateService, useUpdateService } from '../../../../hooks/useServices'
@@ -376,6 +378,11 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
 
           {/* Produtos utilizados */}
           {showProductsSection && (
+            <PremiumLock
+              feature={FEATURES.productLinkedToService}
+              title="Vincular produtos no Pro"
+              description="Associar produtos consumidos a um serviço é um recurso do plano Pro. Faça upgrade para usá-lo."
+            >
             <Paper
               variant="outlined"
               sx={{
@@ -537,6 +544,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
                 </Box>
               </Collapse>
             </Paper>
+            </PremiumLock>
           )}
 
           {/* Preço de custo */}

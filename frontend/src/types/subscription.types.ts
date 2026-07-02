@@ -19,8 +19,6 @@ export interface Plan {
   // Capabilities inclusas no plano (eixo de billing): módulos + features. Informativo — não esconde UI.
   entitlements: string[]
   limits: Record<string, number>
-  supportsCard: boolean
-  supportsPix: boolean
   trialDays: number | null
 }
 

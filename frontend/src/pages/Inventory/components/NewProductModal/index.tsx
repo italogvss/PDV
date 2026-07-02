@@ -25,6 +25,8 @@ import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ImageUpload from '../../../../components/ImageUpload'
 import ModalHeader from '../../../../components/ModalHeader'
+import PremiumLock from '../../../../components/PremiumLock'
+import { FEATURES } from '../../../../constants/entitlements'
 import { useRemoveImage, useUploadImage } from '../../../../hooks/useMediaUpload'
 import { useProductCategories } from '../../../../hooks/useProductCategories'
 import { useCreateProduct, useUpdateProduct } from '../../../../hooks/useProducts'
@@ -316,16 +318,22 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <FieldLabel label="Foto do produto" />
               <Box sx={{ mt: 0.5, flex: 1 }}>
-                <ImageUpload
-                  currentUrl={currentImageUrl}
-                  onUpload={handleImageSelect}
-                  onRemove={handleRemoveImage}
-                  isLoading={uploadImage.isPending || removeImage.isPending}
-                  disabled={isPending}
-                  shape="square"
-                  size={120}
-                  fullHeight={!isMobile}
-                />
+                <PremiumLock
+                  feature={FEATURES.productWithPhoto}
+                  title="Fotos de produto no Pro"
+                  description="Adicionar foto aos produtos é um recurso do plano Pro. Faça upgrade para destacar seu catálogo."
+                >
+                  <ImageUpload
+                    currentUrl={currentImageUrl}
+                    onUpload={handleImageSelect}
+                    onRemove={handleRemoveImage}
+                    isLoading={uploadImage.isPending || removeImage.isPending}
+                    disabled={isPending}
+                    shape="square"
+                    size={120}
+                    fullHeight={!isMobile}
+                  />
+                </PremiumLock>
               </Box>
             </Box>
 

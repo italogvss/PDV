@@ -174,9 +174,6 @@ public class SubscriptionService(
         Plan plan, Subscription sub, bool isNew, GatewayCustomer customer,
         StartCheckoutRequest request, Dictionary<string, string> metadata, Guid userId)
     {
-        if (!plan.SupportsCard)
-            throw new BusinessException("Este plano não aceita pagamento por cartão.");
-
         sub.IsRenewable = true;
 
         var checkout = await gateway.CreateSubscriptionCheckoutAsync(new SubscriptionCheckoutRequest(
@@ -206,9 +203,6 @@ public class SubscriptionService(
         Plan plan, Subscription sub, bool isNew, User user,
         StartCheckoutRequest request, Dictionary<string, string> metadata, Guid userId)
     {
-        if (!plan.SupportsPix)
-            throw new BusinessException("Este plano não aceita pagamento por PIX.");
-
         var period = ParsePeriod(request.Period);
         var amount = plan.PriceCents;
 
@@ -296,8 +290,6 @@ public class SubscriptionService(
         p.PriceCents / 100m,
         PlanJson.ReadEntitlements(p.EntitledModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
-        p.SupportsCard,
-        p.SupportsPix,
         p.TrialDays);
 
 private static GatewayPaymentMethod ParseMethod(string method) => method?.ToUpperInvariant() switch

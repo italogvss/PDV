@@ -4,6 +4,8 @@ import type { CreateCustomerPayload, UpdateCustomerPayload } from '../types/cust
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { useUserPermissions } from './useUserPermissions'
+import { useEntitlements } from './useSubscription'
+import { FEATURES } from '../constants/entitlements'
 
 const QUERY_KEY = ['customers'] as const
 
@@ -16,10 +18,12 @@ export function useCustomer(id: string) {
 }
 
 export function useCustomerStats(id: string) {
+  const { has } = useEntitlements()
   return useQuery({
     queryKey: [...QUERY_KEY, id, 'stats'],
     queryFn: () => customerService.getStats(id),
-    enabled: !!id,
+    // Feature Pro: sem 'informativeCustomerData' o endpoint retorna 402 — não dispara o request.
+    enabled: !!id && has(FEATURES.informativeCustomerData),
   })
 }
 

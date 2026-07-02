@@ -46,7 +46,7 @@ import { permissionToModule, type OperationModule } from '../../constants/module
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAccessMetadata } from '../../hooks/useAccessMetadata'
 import { useEntitlements } from '../../hooks/useSubscription'
-import { PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
+import { FEATURES, PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
 import UpsellModal from '../../components/UpsellModal'
 import type { AvatarColorKey } from './types'
 
@@ -70,6 +70,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [upsellOpen, setUpsellOpen] = useState(false)
+  const [roleUpsellOpen, setRoleUpsellOpen] = useState(false)
   const [roleModal, setRoleModal] = useState<{ open: boolean; role?: TenantRole | null }>({ open: false })
 
   const navigate = useNavigate()
@@ -84,9 +85,12 @@ export default function EmployeesPage() {
   const { modules } = useUserPermissions()
 
   // Limite de plano: bloqueia a criação de novos funcionários ao atingir o teto do plano.
-  const { limit } = useEntitlements()
+  const { limit, has } = useEntitlements()
   const employeeLimit = limit(PLAN_LIMITS.employees)
   const employeeLimitReached = employeeLimit !== UNLIMITED && employees.length >= employeeLimit
+
+  // Feature Pro: criar papéis personalizados. Sem ela, o botão "Novo papel" abre o upsell.
+  const canCustomRoles = has(FEATURES.customRoles)
 
   // Relação permissão→módulo vinda do backend (fonte única). Enquanto os metadados carregam,
   // usa o mapa local como fallback de renderização.
@@ -345,7 +349,7 @@ export default function EmployeesPage() {
                 color="secondary"
                 size="small"
                 startIcon={<AddIcon />}
-                onClick={() => setRoleModal({ open: true, role: null })}
+                onClick={() => (canCustomRoles ? setRoleModal({ open: true, role: null }) : setRoleUpsellOpen(true))}
               >
                 Novo papel
               </Button>
@@ -600,6 +604,13 @@ export default function EmployeesPage() {
         onClose={() => setUpsellOpen(false)}
         title="Amplie sua equipe com o Pro"
         description={`Seu plano permite até ${employeeLimit} funcionários. No plano Pro você adiciona quantos precisar.`}
+      />
+
+      <UpsellModal
+        open={roleUpsellOpen}
+        onClose={() => setRoleUpsellOpen(false)}
+        title="Papéis personalizados no Pro"
+        description="Criar papéis sob medida para sua equipe é um recurso do plano Pro. Faça upgrade para definir permissões personalizadas por cargo."
       />
 
       <RoleFormModal

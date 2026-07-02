@@ -2,20 +2,33 @@ namespace PDV.Domain.Enums;
 
 public enum Permission
 {
+    //sales
     SellProducts,
     CancelSales,
     ViewStock,
     ManageStock,
+    ViewSalesHistory,
+
+    //expanses
     ViewExpenses,
     ManageExpenses,
+
+    //reports
     ViewReports,
+
+    //employees
     ManageEmployees,
-    ViewSalesHistory,
     ViewEmployees,
+
+    //appointment and services
     ManageAppointments,
     ViewAppointments,
+
+    //customers
     ManageCustomers,
     ViewCustomers,
+
+    //supliers
     ManageSuppliers,
     ViewSuppliers,
     ViewLogs,
