@@ -21,9 +21,9 @@ public class EntitlementService(
 
         if (subscription is not null && IsEntitled(subscription))
         {
-            var modules = PlanJson.ReadModules(subscription.Plan.EntitledModulesJson);
+            var entitlements = PlanJson.ReadEntitlements(subscription.Plan.EntitledModulesJson);
             var limits = PlanJson.ReadLimits(subscription.Plan.LimitsJson);
-            return new ResolvedEntitlement(subscription, subscription.Plan, modules, limits);
+            return new ResolvedEntitlement(subscription, subscription.Plan, entitlements, limits);
         }
 
         // Sem assinatura válida → SEM acesso (não existe mais plano Free permanente). Todos os
@@ -32,17 +32,20 @@ public class EntitlementService(
         return new ResolvedEntitlement(subscription, null, [], EmptyLimits);
     }
 
-    public async Task RequireModuleAsync(OperationModule module)
+    public async Task RequireEntitlementAsync(string entitlementKey)
     {
         var resolved = await ResolveForCurrentTenantAsync();
-        var wire = module.ToString().ToLowerInvariant();
 
-        if (!resolved.Modules.Contains(wire))
+        if (!resolved.Has(entitlementKey))
             throw new PaymentRequiredException(
                 "Recurso indisponível no seu plano.",
-                $"O módulo '{wire}' não está incluído no plano atual. Faça upgrade para utilizá-lo.",
-                "MODULE_NOT_IN_PLAN");
+                "Este recurso não está incluído no plano atual. Faça upgrade para utilizá-lo.",
+                "NOT_IN_PLAN");
     }
+
+    // Módulo é só uma capability coarse — delega ao gate único de entitlement.
+    public Task RequireModuleAsync(OperationModule module) =>
+        RequireEntitlementAsync(EntitlementCatalog.ForModule(module));
 
     public async Task EnsureWithinLimitAsync(string limitKey, int currentCount)
     {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.DTOs.Customers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
@@ -33,6 +34,7 @@ public class CustomersController(ICustomerService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}/stats")]
+    [RequireEntitlement(EntitlementCatalog.InformativeCustomerData)]
     [RequirePermission(Permission.ViewCustomers)]
     public async Task<IActionResult> GetCrmStats(Guid id)
     {

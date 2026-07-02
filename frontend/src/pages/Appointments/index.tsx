@@ -1,9 +1,6 @@
 import AddRounded from '@mui/icons-material/AddRounded'
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded'
-import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined'
 import EventBusyOutlined from '@mui/icons-material/EventBusyOutlined'
-import PaidOutlined from '@mui/icons-material/PaidOutlined'
 import TableRowsRounded from '@mui/icons-material/TableRowsRounded'
 import TodayOutlined from '@mui/icons-material/TodayOutlined'
 import {
@@ -15,8 +12,8 @@ import {
   Tooltip,
   Typography
 } from '@mui/material'
-import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
+import { DataGrid } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers'
 import type { SchedulerEvent } from '@mui/x-scheduler/models'
 import dayjs from 'dayjs'
@@ -24,13 +21,12 @@ import { useMemo, useState } from 'react'
 import FilterTabs from '../../components/FilterTabs'
 import type { FilterTabOption } from '../../components/FilterTabs/types'
 import PageHeader from '../../components/PageHeader'
-import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
+import { ALL_MODULES } from '../../constants/modules'
 import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useDeleteAppointment, useUpdateAppointment } from '../../hooks/useAppointments'
 import { useCustomers } from '../../hooks/useCustomers'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
-import { ALL_MODULES } from '../../constants/modules'
 import { useAppSelector } from '../../store'
 import type { Appointment, AppointmentStatus, Professional } from '../../types/appointment.types'
 import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
@@ -120,10 +116,10 @@ export default function AppointmentsPage() {
   // ─── KPIs e filtros ─────────────────────────────────────────────────────────
 
   const isToday = selectedDate.isSame(dayjs(), 'day')
-  const kpis = useMemo(
-    () => computeKpis(appointments, selectedDate),
-    [appointments, professionals, selectedDate],
-  )
+  // const kpis = useMemo(
+  //   () => computeKpis(appointments, selectedDate),
+  //   [appointments, professionals, selectedDate],
+  // )
 
   const proTabs = useMemo<FilterTabOption[]>(
     () => [
@@ -304,33 +300,33 @@ export default function AppointmentsPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Agendamentos" description={headerTitle}>
         <Tooltip title="Visualizar agendamentos de uma data especifica">
-        <DatePicker
-          value={selectedDate}
-          onChange={(value) => value && setSelectedDate(value)}
-          format="DD/MM/YYYY"
-          slotProps={{ textField: { sx: { width: 160 } } }}
-        />
+          <DatePicker
+            value={selectedDate}
+            onChange={(value) => value && setSelectedDate(value)}
+            format="DD/MM/YYYY"
+            slotProps={{ textField: { sx: { width: 160 } } }}
+          />
         </Tooltip>
         <Tooltip title="Alterna entre ver agendamentos do dia ou da semana toda">
-        <ToggleButtonGroup
-          exclusive
-          value={view}
-          onChange={(_, next: AgendaView | null) => next && setView(next)}
-        >
-          <ToggleButton value="day">Dia</ToggleButton>
-          <ToggleButton value="week">Semana</ToggleButton>
-        </ToggleButtonGroup>
+          <ToggleButtonGroup
+            exclusive
+            value={view}
+            onChange={(_, next: AgendaView | null) => next && setView(next)}
+          >
+            <ToggleButton value="day">Dia</ToggleButton>
+            <ToggleButton value="week">Semana</ToggleButton>
+          </ToggleButtonGroup>
         </Tooltip>
         <Tooltip title="Ir para o dia de hoje">
-        <Button variant="outlined" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
-          Ver Hoje
-        </Button>
+          <Button variant="outlined" startIcon={<TodayOutlined />} onClick={() => setSelectedDate(dayjs())}>
+            Ver Hoje
+          </Button>
         </Tooltip>
         <Button variant="contained" startIcon={<AddRounded />} onClick={openNew}>
           Novo agendamento
         </Button>
       </PageHeader>
-{/* 
+      {/* 
       <PageKpiGrid>
         <PageKpiCard
           icon={EventNoteOutlined}

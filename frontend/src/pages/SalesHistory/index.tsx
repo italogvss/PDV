@@ -9,12 +9,15 @@ import {
   Tooltip,
 } from '@mui/material'
 import FilterListRounded from '@mui/icons-material/FilterListRounded'
-import dayjs from 'dayjs'
+import dayjs, { type Dayjs } from 'dayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import { useSales, useCancelSale } from '../../hooks/useSales'
+import { useEntitlements } from '../../hooks/useSubscription'
+import { PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import PageHeader from '../../components/PageHeader'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -87,10 +90,24 @@ export default function SalesHistoryPage() {
   const [selectedDays, setSelectedDays] = useState(30)
   const [sortBy, setSortBy] = useState('time-desc')
 
-  const endDateStr = dayjs().format('YYYY-MM-DD')
+  // Limite de plano: Starter (saleHistoryDays finito) usa o ToggleButtonGroup por dias; Pro
+  // (ilimitado) libera filtro por intervalo livre com dois DatePickers.
+  const { limit } = useEntitlements()
+  const historyLimit = limit(PLAN_LIMITS.saleHistoryDays)
+  const isUnlimitedHistory = historyLimit === UNLIMITED
+
+  const [rangeStart, setRangeStart] = useState<Dayjs>(() => dayjs().subtract(30, 'day'))
+  const [rangeEnd, setRangeEnd] = useState<Dayjs>(() => dayjs())
+
+  const endDateStr = isUnlimitedHistory
+    ? rangeEnd.format('YYYY-MM-DD')
+    : dayjs().format('YYYY-MM-DD')
   const startDateStr = useMemo(
-    () => dayjs().subtract(selectedDays, 'day').format('YYYY-MM-DD'),
-    [selectedDays],
+    () =>
+      isUnlimitedHistory
+        ? rangeStart.format('YYYY-MM-DD')
+        : dayjs().subtract(selectedDays, 'day').format('YYYY-MM-DD'),
+    [isUnlimitedHistory, rangeStart, selectedDays],
   )
 
   const { data: salesRaw = [], isLoading } = useSales(startDateStr, endDateStr)
@@ -228,20 +245,40 @@ export default function SalesHistoryPage() {
         sortValue={sortBy}
         onSortChange={setSortBy}
       >
-        <Tooltip title="Filtra por intervalo de dias a partir de hoje">
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={selectedDays}
-          onChange={(_, value) => value !== null && setSelectedDays(value)}
-        >
-          {DATE_RANGE_DAYS.map((days) => (
-            <ToggleButton key={days} value={days}>
-              {days} dias
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-        </Tooltip>
+        {isUnlimitedHistory ? (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <DatePicker
+              label="De"
+              value={rangeStart}
+              maxDate={rangeEnd}
+              onChange={(v) => v && setRangeStart(v)}
+              slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
+            />
+            <DatePicker
+              label="Até"
+              value={rangeEnd}
+              minDate={rangeStart}
+              maxDate={dayjs()}
+              onChange={(v) => v && setRangeEnd(v)}
+              slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
+            />
+          </Box>
+        ) : (
+          <Tooltip title="Filtra por intervalo de dias a partir de hoje">
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={selectedDays}
+            onChange={(_, value) => value !== null && setSelectedDays(value)}
+          >
+            {DATE_RANGE_DAYS.map((days) => (
+              <ToggleButton key={days} value={days}>
+                {days} dias
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          </Tooltip>
+        )}
         <Button
           variant="outlined"
           startIcon={<FilterListRounded />}

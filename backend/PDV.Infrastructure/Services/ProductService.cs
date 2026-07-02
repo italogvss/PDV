@@ -49,9 +49,6 @@ public class ProductService(
         if (request.Barcode is not null && await repository.BarcodeExistsAsync(request.Barcode))
             throw new BusinessException($"Já existe um produto com o código de barras '{request.Barcode}'.");
 
-        // Enforcement de limite do plano (402 se atingido).
-        await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxProducts, await repository.CountAsync());
-
         var product = new Product
         {
             Id = Guid.NewGuid(),

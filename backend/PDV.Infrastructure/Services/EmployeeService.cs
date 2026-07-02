@@ -55,7 +55,7 @@ public class EmployeeService(
             throw new BusinessException("Já existe um funcionário com este e-mail nesta loja.");
 
         // Enforcement de limite do plano (402 se atingido).
-        await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxEmployees, await employeeRepository.CountAsync());
+        await entitlementService.EnsureWithinLimitAsync(PlanLimits.Employees, await employeeRepository.CountAsync());
 
         var role = await roleRepository.GetByIdAsync(request.RoleId)
             ?? throw new BusinessException("Papel não encontrado.");

@@ -38,7 +38,7 @@ public class SubscriptionService(
             TrialEndsAt: sub?.TrialEndsAt,
             CurrentPeriodEnd: sub?.CurrentPeriodEnd,
             CanceledAt: sub?.CanceledAt,
-            EntitledModules: resolved.Modules,
+            Entitlements: resolved.Entitlements,
             Limits: resolved.Limits,
             HasUsedTrial: user?.HasUsedTrial ?? false);
     }
@@ -294,7 +294,7 @@ public class SubscriptionService(
         p.Name,
         p.Description,
         p.PriceCents / 100m,
-        PlanJson.ReadModules(p.EntitledModulesJson),
+        PlanJson.ReadEntitlements(p.EntitledModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
         p.SupportsCard,
         p.SupportsPix,

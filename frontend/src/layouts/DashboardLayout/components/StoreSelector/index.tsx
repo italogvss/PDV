@@ -7,6 +7,9 @@ import { useAppSelector, useAppDispatch } from '../../../../store'
 import { setTenant } from '../../../../store/slices/auth.slice'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
 import { useTenantSettings } from '../../../../hooks/useTenantSettings'
+import { useEntitlements } from '../../../../hooks/useSubscription'
+import { PLAN_LIMITS, UNLIMITED } from '../../../../constants/entitlements'
+import UpsellModal from '../../../../components/UpsellModal'
 import type { TenantListItem } from '../../../../types/tenant.types'
 
 function getInitials(name: string): string {
@@ -86,10 +89,16 @@ export default function StoreSelector() {
   const switchTenant = useSwitchTenant()
   const { data: settings } = useTenantSettings()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [upsellOpen, setUpsellOpen] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const queryClient = useQueryClient()
+
+  const { limit } = useEntitlements()
+  const storesLimit = limit(PLAN_LIMITS.stores)
+  const ownedActiveCount = tenants.filter((t) => t.isActive && t.role === 'Owner').length
+  const storesLimitReached = storesLimit !== UNLIMITED && ownedActiveCount >= storesLimit
 
   const switchableTenants = tenants.filter((t) => t.isActive)
   const activeTenant = tenants.find((t) => t.tenantId === tenantId)
@@ -113,6 +122,11 @@ export default function StoreSelector() {
   }
 
   function handleCreateStore() {
+    if (storesLimitReached) {
+      handleClose()
+      setUpsellOpen(true)
+      return
+    }
     handleClose()
     dispatch(setTenant({ tenantId: null }))
     queryClient.clear()
@@ -227,6 +241,13 @@ export default function StoreSelector() {
           </Box>
         </>
       </Popover>
+
+      <UpsellModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        title="Abra mais lojas com o Pro"
+        description={`Seu plano permite até ${storesLimit} ${storesLimit === 1 ? 'loja' : 'lojas'}. Faça upgrade para o Pro e gerencie mais estabelecimentos.`}
+      />
     </Box>
   )
 }

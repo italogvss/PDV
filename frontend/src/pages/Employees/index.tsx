@@ -45,6 +45,9 @@ import { PERMISSIONS } from '../../types/employee.types'
 import { permissionToModule, type OperationModule } from '../../constants/modules'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAccessMetadata } from '../../hooks/useAccessMetadata'
+import { useEntitlements } from '../../hooks/useSubscription'
+import { PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
+import UpsellModal from '../../components/UpsellModal'
 import type { AvatarColorKey } from './types'
 
 const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
@@ -66,6 +69,7 @@ function getInitials(name: string): string {
 export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+  const [upsellOpen, setUpsellOpen] = useState(false)
   const [roleModal, setRoleModal] = useState<{ open: boolean; role?: TenantRole | null }>({ open: false })
 
   const navigate = useNavigate()
@@ -78,6 +82,11 @@ export default function EmployeesPage() {
   const setPermissions = useSetRolePermissions()
 
   const { modules } = useUserPermissions()
+
+  // Limite de plano: bloqueia a criação de novos funcionários ao atingir o teto do plano.
+  const { limit } = useEntitlements()
+  const employeeLimit = limit(PLAN_LIMITS.employees)
+  const employeeLimitReached = employeeLimit !== UNLIMITED && employees.length >= employeeLimit
 
   // Relação permissão→módulo vinda do backend (fonte única). Enquanto os metadados carregam,
   // usa o mapa local como fallback de renderização.
@@ -267,7 +276,11 @@ export default function EmployeesPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Funcionários" description={`${employees.length} membros na equipe  • Gerencie permissões e mebros da equipe`}>
-        <Button variant="contained" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
+        <Button
+          variant="contained"
+          startIcon={<AddRounded />}
+          onClick={() => (employeeLimitReached ? setUpsellOpen(true) : setAddOpen(true))}
+        >
           Novo funcionário
         </Button>
       </PageHeader>
@@ -581,6 +594,13 @@ export default function EmployeesPage() {
       </Paper>
 
       <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} />
+
+      <UpsellModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        title="Amplie sua equipe com o Pro"
+        description={`Seu plano permite até ${employeeLimit} funcionários. No plano Pro você adiciona quantos precisar.`}
+      />
 
       <RoleFormModal
         open={roleModal.open}

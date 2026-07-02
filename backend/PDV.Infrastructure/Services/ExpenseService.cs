@@ -2,6 +2,7 @@ using FluentValidation;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Expenses;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -12,6 +13,7 @@ namespace PDV.Infrastructure.Services;
 public class ExpenseService(
     IExpenseRepository repository,
     ITenantContext tenantContext,
+    IEntitlementService entitlementService,
     IValidator<CreateExpenseRequest> createValidator,
     IValidator<UpdateExpenseRequest> updateValidator) : IExpenseService
 {
@@ -73,6 +75,10 @@ public class ExpenseService(
     public async Task<ExpenseResponse> CreateAsync(CreateExpenseRequest request)
     {
         await createValidator.ValidateAndThrowAsync(request);
+
+        // Sub-feature Pro: despesas recorrentes só com o entitlement.
+        if (request.IsRecurring)
+            await entitlementService.RequireEntitlementAsync(EntitlementCatalog.RecurringExpense);
 
         var dueDate = DateTime.SpecifyKind(request.DueDate, DateTimeKind.Utc);
         var seriesId = request.IsRecurring ? Guid.NewGuid() : (Guid?)null;

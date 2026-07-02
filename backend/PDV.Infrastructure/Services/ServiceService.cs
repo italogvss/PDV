@@ -4,6 +4,7 @@ using PDV.Application.DTOs.ServiceCategories;
 using PDV.Application.DTOs.Services;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -16,6 +17,7 @@ public class ServiceService(
     ITenantContext tenantContext,
     IStorageService storage,
     IAuditLogger auditLogger,
+    IEntitlementService entitlementService,
     IValidator<CreateServiceRequest> createValidator,
     IValidator<UpdateServiceRequest> updateValidator) : IServiceService
 {
@@ -70,7 +72,11 @@ public class ServiceService(
                 .ToList();
 
             if (serviceProducts.Count > 0)
+            {
+                // Feature Pro: vincular produtos a um serviço.
+                await entitlementService.RequireEntitlementAsync(EntitlementCatalog.ProductLinkedToService);
                 await repository.ReplaceServiceProductsAsync(service.Id, serviceProducts);
+            }
         }
 
         var created = await repository.GetByIdAsync(service.Id)
@@ -108,6 +114,10 @@ public class ServiceService(
                 Quantity = p.Quantity,
             })
             .ToList();
+
+        // Feature Pro: vincular produtos a um serviço (lista vazia = desvincula, sempre permitido).
+        if (serviceProducts.Count > 0)
+            await entitlementService.RequireEntitlementAsync(EntitlementCatalog.ProductLinkedToService);
 
         await repository.ReplaceServiceProductsAsync(id, serviceProducts);
 

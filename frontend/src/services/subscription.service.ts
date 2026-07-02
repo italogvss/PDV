@@ -18,7 +18,7 @@ interface BackendSubscription {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
-  entitledModules: string[]
+  entitlements: string[]
   limits: Record<string, number>
   hasUsedTrial: boolean
 }
@@ -28,7 +28,7 @@ interface BackendPlan {
   name: string
   description: string | null
   Price: number
-  entitledModules: string[]
+  entitlements: string[]
   limits: Record<string, number>
   supportsCard: boolean
   supportsPix: boolean
@@ -50,7 +50,7 @@ function mapSubscription(s: BackendSubscription): Subscription {
     trialEndsAt: s.trialEndsAt ?? null,
     currentPeriodEnd: s.currentPeriodEnd ?? null,
     canceledAt: s.canceledAt ?? null,
-    entitledModules: s.entitledModules ?? [],
+    entitlements: s.entitlements ?? [],
     limits: s.limits ?? {},
     hasUsedTrial: s.hasUsedTrial ?? false,
   }
@@ -62,7 +62,7 @@ function mapPlan(p: BackendPlan): Plan {
     name: p.name,
     description: p.description ?? null,
     Price: p.Price,
-    entitledModules: p.entitledModules ?? [],
+    entitlements: p.entitlements ?? [],
     limits: p.limits ?? {},
     supportsCard: p.supportsCard,
     supportsPix: p.supportsPix,

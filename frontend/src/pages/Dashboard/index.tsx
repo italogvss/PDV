@@ -90,21 +90,6 @@ export default function DashboardPage() {
     month: 'long',
   })
 
-  const handleExport = () => {
-    const rows = financialSummary ?? []
-    const header = 'Data;Vendas;Lucro\n'
-    const body = rows
-      .map((r) => `${r.label};${r.revenue.toFixed(2)};${r.grossProfit.toFixed(2)}`)
-      .join('\n')
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `faturamento-${startDate}-a-${endDate}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader

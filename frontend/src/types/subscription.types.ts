@@ -16,8 +16,8 @@ export interface Plan {
   name: string
   description: string | null
   Price: number
-  // Módulos incluídos no plano (eixo de billing). Informativo — não esconde UI.
-  entitledModules: string[]
+  // Capabilities inclusas no plano (eixo de billing): módulos + features. Informativo — não esconde UI.
+  entitlements: string[]
   limits: Record<string, number>
   supportsCard: boolean
   supportsPix: boolean
@@ -33,9 +33,9 @@ export interface Subscription {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
-  // Módulos incluídos no plano ativo (eixo de billing). Informativo (futuro upsell) — não
-  // esconde UI; o bloqueio acontece via 402. Não confundir com os módulos do tenant (auth).
-  entitledModules: string[]
+  // Capabilities inclusas no plano ativo (eixo de billing): módulos + features. Informativo
+  // (upsell) — não esconde UI; o bloqueio acontece via 402. Não confundir com módulos do tenant.
+  entitlements: string[]
   limits: Record<string, number>
   // Controle de trial.
   hasUsedTrial: boolean
@@ -49,11 +49,15 @@ export interface PixCharge {
   expiresAt: string | null
 }
 
-// Resumo leve guardado no auth slice (espelho do React Query) para banner/exibição global.
+// Resumo leve guardado no auth slice (espelho do React Query) para banner/exibição global e
+// gating de plano síncrono (entitlements/limits) — mesmo eixo de permissions/modules.
 export interface SubscriptionSummary {
   planId: string | null
   planName: string | null
   status: SubscriptionStatus
   currentPeriodEnd: string | null
   trialEndsAt: string | null
+  // Capabilities inclusas no plano (módulos + features) e limites numéricos (-1 = ilimitado).
+  entitlements: string[]
+  limits: Record<string, number>
 }

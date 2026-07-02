@@ -13,4 +13,5 @@ public enum OperationModule
     Customers,
     Suppliers,
     Logs,
+    Employees,
 }

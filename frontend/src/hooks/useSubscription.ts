@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
 import type { BillingPeriod } from '../types/subscription.types'
+import { UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 import { useAppDispatch, useAppSelector } from '../store'
 import { setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
@@ -18,6 +19,21 @@ export function useSubscription(refetchIntervalMs?: number) {
     queryFn: () => subscriptionService.getMine(),
     refetchInterval: refetchIntervalMs,
   })
+}
+
+// Gating de plano no frontend (billing). Lê do espelho síncrono no Redux (auth.subscription),
+// alimentado por useSyncSubscriptionToStore — mesmo eixo de permissions/modules. `has(feature)`
+// para features sem endpoint (cadeado/CTA); `limit(key)` devolve o valor numérico (UNLIMITED = -1).
+// Para features COM endpoint, o backend já barra com 402 — não esconda a UI, apenas trate o erro.
+export function useEntitlements() {
+  const subscription = useAppSelector((s) => s.auth.subscription)
+  const entitlements = subscription?.entitlements ?? []
+  const limits = subscription?.limits ?? {}
+  return {
+    has: (feature: PlanFeature) => entitlements.includes(feature),
+    limit: (key: PlanLimitKey) => (key in limits ? limits[key] : UNLIMITED),
+    isLoaded: subscription !== null,
+  }
 }
 
 // Catálogo de planos — muda pouco, cache longo.
@@ -42,13 +58,21 @@ export function useSyncSubscriptionToStore() {
   const status = data?.status ?? null
   const currentPeriodEnd = data?.currentPeriodEnd ?? null
   const trialEndsAt = data?.trialEndsAt ?? null
+  // Assinaturas primitivas para os campos não-escalares (arrays/objetos trocam de referência a
+  // cada refetch mesmo sem mudar de conteúdo) — mantêm o dispatch estável.
+  const entitlementsKey = (data?.entitlements ?? []).join(',')
+  const limitsKey = JSON.stringify(data?.limits ?? {})
 
   useEffect(() => {
     if (!isAuthenticated || !data) return
-    dispatch(setSubscription({ planId, planName, status: data.status, currentPeriodEnd, trialEndsAt }))
+    dispatch(setSubscription({
+      planId, planName, status: data.status, currentPeriodEnd, trialEndsAt,
+      entitlements: data.entitlements ?? [],
+      limits: data.limits ?? {},
+    }))
     // Dependências primitivas: só refaz o dispatch quando um campo do resumo realmente muda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt])
+  }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt, entitlementsKey, limitsKey])
 }
 
 export interface StartCheckoutInput {

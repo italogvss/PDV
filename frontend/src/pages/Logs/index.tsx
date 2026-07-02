@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react'
 import { Box, Card, Chip, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import dayjs, { type Dayjs } from 'dayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import { formatBRL } from '../../utils/currency'
 import PageHeader from '../../components/PageHeader'
 import { useAuditLogs } from '../../hooks/useLogs'
+import { useEntitlements } from '../../hooks/useSubscription'
+import { PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
 import type {
   AuditLogRow,
   AuditDetails,
@@ -179,15 +183,36 @@ const columns: GridColDef<AuditLogRow>[] = [
 ]
 
 export default function LogsPage() {
-  const [selectedDays, setSelectedDays] = useState<(typeof DATE_RANGE_DAYS)[number]>(30)
   const [actionFilter, setActionFilter] = useState<string>(ALL_ACTIONS)
 
+  // Limite de plano: Starter (auditDays finito) só enxerga os últimos N dias — os presets 30/90
+  // ficam desabilitados e os DatePickers não voltam além do teto. Pro (ilimitado) libera tudo.
+  const { limit } = useEntitlements()
+  const auditLimit = limit(PLAN_LIMITS.auditDays)
+  const isUnlimitedAudit = auditLimit === UNLIMITED
+
+  // Preset selecionado (destaca o ToggleButton); null = intervalo custom via DatePicker.
+  const [selectedDays, setSelectedDays] = useState<number | null>(isUnlimitedAudit ? 30 : 7)
+  const [rangeStart, setRangeStart] = useState<Dayjs>(() =>
+    dayjs().subtract(isUnlimitedAudit ? 30 : auditLimit, 'day'),
+  )
+  const [rangeEnd, setRangeEnd] = useState<Dayjs>(() => dayjs())
+
+  // Piso do intervalo no Starter — não deixa consultar além do teto de dias do plano.
+  const auditFloor = isUnlimitedAudit ? null : dayjs().subtract(auditLimit, 'day')
+
+  const applyPreset = (days: number) => {
+    setSelectedDays(days)
+    setRangeStart(dayjs().subtract(days, 'day'))
+    setRangeEnd(dayjs())
+  }
+
   const { from, to } = useMemo(() => {
-    const now = new Date()
-    const start = new Date()
-    start.setDate(start.getDate() - selectedDays)
-    return { from: start.toISOString(), to: now.toISOString() }
-  }, [selectedDays])
+    let start = rangeStart
+    if (auditFloor && start.isBefore(auditFloor)) start = auditFloor
+    return { from: start.startOf('day').toISOString(), to: rangeEnd.endOf('day').toISOString() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStart, rangeEnd, isUnlimitedAudit, auditLimit])
 
   const { data: logs = [], isLoading } = useAuditLogs({ from, to })
 
@@ -199,20 +224,46 @@ export default function LogsPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader title="Logs" description="Histórico de auditoria das operações do sistema.">
-        <Tooltip title="Filtra por intervalo de dias a partir de hoje">
-        <ToggleButtonGroup
-          value={selectedDays}
-          exclusive
-          onChange={(_, v) => v != null && setSelectedDays(v)}
-          size="small"
-        >
-          {DATE_RANGE_DAYS.map((d) => (
-            <ToggleButton key={d} value={d}>
-              {d} dias
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-        </Tooltip>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Tooltip title="Filtra por intervalo de dias a partir de hoje">
+          <ToggleButtonGroup
+            value={selectedDays}
+            exclusive
+            onChange={(_, v) => v != null && applyPreset(v)}
+            size="small"
+          >
+            {DATE_RANGE_DAYS.map((d) => (
+              <ToggleButton key={d} value={d} disabled={!isUnlimitedAudit && d > auditLimit}>
+                {d} dias
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          </Tooltip>
+          <DatePicker
+            label="De"
+            value={rangeStart}
+            minDate={auditFloor ?? undefined}
+            maxDate={rangeEnd}
+            onChange={(v) => {
+              if (!v) return
+              setRangeStart(v)
+              setSelectedDays(null)
+            }}
+            slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
+          />
+          <DatePicker
+            label="Até"
+            value={rangeEnd}
+            minDate={rangeStart}
+            maxDate={dayjs()}
+            onChange={(v) => {
+              if (!v) return
+              setRangeEnd(v)
+              setSelectedDays(null)
+            }}
+            slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
+          />
+        </Box>
       </PageHeader>
 
       <FilterTabs options={ACTION_TAB_OPTIONS} value={actionFilter} onChange={setActionFilter} />

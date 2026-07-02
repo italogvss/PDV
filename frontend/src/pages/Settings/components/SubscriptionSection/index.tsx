@@ -57,8 +57,9 @@ export default function SubscriptionSection() {
 
   const statusLine = getStatusLine(subscription)
 
-  // Módulos liberados pelo plano → labels do registro central de módulos.
-  const includedModules = subscription.entitledModules
+  // Módulos liberados pelo plano → labels do registro central de módulos. (entitlements é um
+  // superset de módulos + features; aqui exibimos os módulos conhecidos.)
+  const includedModules = subscription.entitlements
     .filter((m): m is OperationModule => m in OPERATION_MODULES)
     .map((m) => OPERATION_MODULES[m].label)
 
@@ -279,7 +280,7 @@ export default function SubscriptionSection() {
                 )}
 
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, my: 1 }}>
-                  {plan.entitledModules
+                  {plan.entitlements
                     .filter((m): m is OperationModule => m in OPERATION_MODULES)
                     .map((m) => (
                       <Box key={m} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

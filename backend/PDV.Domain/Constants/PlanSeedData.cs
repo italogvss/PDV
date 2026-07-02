@@ -14,40 +14,28 @@ namespace PDV.Domain.Constants;
 // preenchido só nos planos mensais canônicos de cada tier.
 public static class PlanSeedData
 {
-    private static readonly IReadOnlyList<OperationModule> StarterModules =
-    [
-        OperationModule.Sales,
-        OperationModule.Inventory,
-        OperationModule.Customers,
-        OperationModule.Expenses,
-        OperationModule.Logs,
-    ];
+    // Essencial (Starter): todos os módulos, NENHUMA feature premium.
+    private static readonly IReadOnlyList<string> StarterEntitlements =
+        [.. EntitlementCatalog.Modules];
 
-    private static readonly IReadOnlyList<OperationModule> ProModules =
-    [
-        OperationModule.Sales,
-        OperationModule.Inventory,
-        OperationModule.Services,
-        OperationModule.Appointments,
-        OperationModule.Expenses,
-        OperationModule.Reports,
-        OperationModule.Customers,
-        OperationModule.Suppliers,
-        OperationModule.Logs,
-    ];
+    // Pro (Profissional): todos os módulos + todas as features.
+    private static readonly IReadOnlyList<string> ProEntitlements =
+        [.. EntitlementCatalog.Modules, .. EntitlementCatalog.Features];
 
     private static readonly IReadOnlyDictionary<string, int> StarterLimits = new Dictionary<string, int>
     {
-        [PlanLimits.MaxEmployees] = 5,
-        [PlanLimits.MaxProducts] = 100,
-        [PlanLimits.MaxStorageMb] = 512,
+        [PlanLimits.SaleHistoryDays] = 90,
+        [PlanLimits.Employees] = 2,
+        [PlanLimits.AuditDays] = 7,
+        [PlanLimits.Stores] = 1,
     };
 
     private static readonly IReadOnlyDictionary<string, int> ProLimits = new Dictionary<string, int>
     {
-        [PlanLimits.MaxEmployees] = PlanLimits.Unlimited,
-        [PlanLimits.MaxProducts] = PlanLimits.Unlimited,
-        [PlanLimits.MaxStorageMb] = PlanLimits.Unlimited,
+        [PlanLimits.SaleHistoryDays] = PlanLimits.Unlimited,
+        [PlanLimits.Employees] = PlanLimits.Unlimited,
+        [PlanLimits.AuditDays] = PlanLimits.Unlimited,
+        [PlanLimits.Stores] = 5,
     };
 
     public static readonly IReadOnlyList<PlanSeed> Plans =
@@ -61,7 +49,7 @@ public static class PlanSeedData
             ExternalProductId: "prod_kNUahnCQuYUMAU6CM4HJg1dg",
             PriceCents: 3500,
             TrialDays: null,
-            Modules: StarterModules,
+            Entitlements: StarterEntitlements,
             Limits: StarterLimits,
             SupportsCard: true,
             SupportsPix: false,
@@ -77,7 +65,7 @@ public static class PlanSeedData
             ExternalProductId: "prod_ggDACnfD3rbfSdmBuFa3Sd0G",
             PriceCents: 37500,
             TrialDays: null,
-            Modules: StarterModules,
+            Entitlements: StarterEntitlements,
             Limits: StarterLimits,
             SupportsCard: true,
             SupportsPix: true,
@@ -94,7 +82,7 @@ public static class PlanSeedData
             ExternalProductId: "prod_WprrUe0bPSghwptpJSCEc2rY",
             PriceCents: 5000,
             TrialDays: null,
-            Modules: ProModules,
+            Entitlements: ProEntitlements,
             Limits: ProLimits,
             SupportsCard: true,
             SupportsPix: false,
@@ -110,7 +98,7 @@ public static class PlanSeedData
             ExternalProductId: "prod_k53QXxsKhNdwbsNMmbXgh0WA",
             PriceCents: 55000,
             TrialDays: null,
-            Modules: ProModules,
+            Entitlements: ProEntitlements,
             Limits: ProLimits,
             SupportsCard: true,
             SupportsPix: true,
@@ -125,7 +113,7 @@ public record PlanSeed(
     string ExternalProductId,
     int PriceCents,
     int? TrialDays,
-    IReadOnlyList<OperationModule> Modules,
+    IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
     bool SupportsCard,
     bool SupportsPix,

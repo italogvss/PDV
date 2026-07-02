@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Sales;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -15,6 +16,7 @@ public class SaleService(
     AppDbContext context,
     ITenantContext tenantContext,
     IAuditLogger auditLogger,
+    IEntitlementService entitlementService,
     IValidator<CreateSaleRequest> createValidator) : ISaleService
 {
     private Guid TenantId => tenantContext.TenantId;
@@ -25,6 +27,16 @@ public class SaleService(
         Guid? operatorId, SaleStatus? status)
     {
         var query = context.Sales.AsQueryable();
+
+        // Limite de plano: o Essencial só enxerga os últimos N dias de histórico (Pro = ilimitado).
+        var resolved = await entitlementService.ResolveForCurrentTenantAsync();
+        if (resolved.Limits.TryGetValue(PlanLimits.SaleHistoryDays, out var histDays)
+            && histDays != PlanLimits.Unlimited)
+        {
+            var floor = DateTime.UtcNow.Date.AddDays(-histDays);
+            if (!startDate.HasValue || startDate.Value < floor)
+                startDate = floor;
+        }
 
         if (startDate.HasValue)
              query = query.Where(s => s.CreatedAt >= startDate.Value);

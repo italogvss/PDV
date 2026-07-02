@@ -1,24 +1,26 @@
 using System.Text.Json;
-using PDV.Domain.Enums;
+using PDV.Domain.Constants;
 
 namespace PDV.Application.Helpers;
 
 // Ponte entre os campos persistidos do PLANO (EntitledModulesJson / LimitsJson) e o
-// contrato/lógica de negócio. ATENÇÃO: módulos do plano têm semântica DIFERENTE do tenant —
-// aqui vazio = NENHUM módulo (o plano lista explicitamente o que inclui). Não usar o
+// contrato/lógica de negócio. ATENÇÃO: entitlements do plano têm semântica DIFERENTE do tenant —
+// aqui vazio = NENHUMA capability (o plano lista explicitamente o que inclui). Não usar o
 // OperationModuleHelper (cuja regra é "vazio = todos", válida só para o tenant).
 public static class PlanJson
 {
-    // Lê os módulos incluídos no plano como strings lowercase (contrato HTTP). Vazio = nenhum.
-    public static IReadOnlyList<string> ReadModules(string? json)
+    // Lê as capabilities incluídas no plano como chaves lowercase (contrato HTTP). Unifica
+    // módulos + sub-features; filtra pelas chaves conhecidas do EntitlementCatalog. Vazio = nenhuma.
+    public static IReadOnlyList<string> ReadEntitlements(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return [];
         try
         {
-            var names = JsonSerializer.Deserialize<List<string>>(json) ?? [];
-            return names
-                .Where(n => Enum.TryParse<OperationModule>(n, ignoreCase: true, out _))
-                .Select(n => Enum.Parse<OperationModule>(n, ignoreCase: true).ToString().ToLowerInvariant())
+            var keys = JsonSerializer.Deserialize<List<string>>(json) ?? [];
+            return keys
+                .Select(k => k.Trim().ToLowerInvariant())
+                .Where(EntitlementCatalog.IsKnown)
+                .Distinct()
                 .ToList();
         }
         catch
@@ -27,9 +29,9 @@ public static class PlanJson
         }
     }
 
-    // Serializa os módulos do plano para o JSON persistido (nomes PascalCase do enum).
-    public static string SerializeModules(IEnumerable<OperationModule> modules) =>
-        JsonSerializer.Serialize(modules.Select(m => m.ToString()));
+    // Serializa as capabilities do plano para o JSON persistido (chaves lowercase do catálogo).
+    public static string SerializeEntitlements(IEnumerable<string> entitlements) =>
+        JsonSerializer.Serialize(entitlements.Select(e => e.Trim().ToLowerInvariant()).Distinct());
 
     public static IReadOnlyDictionary<string, int> ReadLimits(string? json)
     {

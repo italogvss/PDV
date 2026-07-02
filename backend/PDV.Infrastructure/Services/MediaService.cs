@@ -15,23 +15,15 @@ public class MediaService(
     IEntitlementService entitlementService,
     ITenantContext tenantContext) : IMediaService
 {
-    // Sem coluna de tamanho por arquivo: cada imagem ocupa até o teto de upload (5MB). O limite
-    // de armazenamento do plano (maxStorageMb) é aplicado contra (nº de mídias ativas × 5MB).
-    private const int MaxFileMb = 5;
-
     public async Task<PresignedUrlResponse> GetUploadUrlAsync(MediaCategory category, Guid entityId)
     {
         ValidateCategory(category);
         if (entityId == Guid.Empty)
             throw new BusinessException("O identificador da entidade é obrigatório.");
 
-        // Só conta no upload de uma NOVA imagem (substituir a imagem de uma entidade não soma).
-        var current = await repository.GetActiveAsync(category, entityId);
-        if (current is null)
-        {
-            var usedMb = await repository.CountActiveAsync() * MaxFileMb;
-            await entitlementService.EnsureWithinLimitAsync(PlanLimits.MaxStorageMb, usedMb);
-        }
+        // Feature Pro: foto de produto só com o entitlement (demais categorias são livres).
+        if (category == MediaCategory.Product)
+            await entitlementService.RequireEntitlementAsync(EntitlementCatalog.ProductWithPhoto);
 
         var bucket = MediaPathHelper.GetBucket(category);
         var relativePath = MediaPathHelper.GetRelativePath(category, tenantContext.TenantId, entityId);
@@ -47,6 +39,10 @@ public class MediaService(
             throw new BusinessException("O identificador da entidade é obrigatório.");
         if (string.IsNullOrWhiteSpace(request.RelativePath))
             throw new BusinessException("O caminho do arquivo é obrigatório.");
+
+        // Feature Pro: foto de produto só com o entitlement.
+        if (request.Category == MediaCategory.Product)
+            await entitlementService.RequireEntitlementAsync(EntitlementCatalog.ProductWithPhoto);
 
         // Salva o novo path na entidade (valida ownership pelos query filters por tenant).
         var updated = await repository.SetEntityImageAsync(request.Category, request.EntityId, request.RelativePath);

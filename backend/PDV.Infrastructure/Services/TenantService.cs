@@ -22,6 +22,7 @@ public class TenantService(
     ITenantRoleRepository roleRepository,
     ISubscriptionRepository subscriptionRepository,
     IPlanRepository planRepository,
+    IEntitlementService entitlementService,
     ITenantContext tenantContext,
     IStorageService storage,
     IValidator<BusinessSettingsDto> businessValidator,
@@ -39,6 +40,12 @@ public class TenantService(
     {
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
+
+        // Limite de negócios por plano. No onboarding (0 negócios) não há assinatura viva → limites
+        // resolvem vazios → ilimitado, logo o 1º negócio nunca é bloqueado. Ao criar um negócio
+        // ADICIONAL, resolve o plano do Owner via o tenant atual e barra (402) se atingiu o limite.
+        var ownedActiveCount = user.UserTenants.Count(ut => ut.Role == UserRole.Owner && ut.Tenant.IsActive);
+        await entitlementService.EnsureWithinLimitAsync(PlanLimits.Stores, ownedActiveCount);
 
         var tenant = new Tenant();
 

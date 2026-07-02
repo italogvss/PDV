@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 const PLAN_GATING_MESSAGES: Record<string, string> = {
   PLAN_LIMIT_EXCEEDED: 'Você atingiu o limite do seu plano. Faça upgrade para continuar.',
   MODULE_NOT_IN_PLAN: 'Este recurso não está incluído no seu plano. Faça upgrade para liberá-lo.',
+  NOT_IN_PLAN: 'Este recurso é exclusivo do plano Pro. Faça upgrade para liberá-lo.',
 }
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {

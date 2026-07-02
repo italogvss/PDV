@@ -1,6 +1,7 @@
 using FluentValidation;
 using PDV.Application.DTOs.TenantRoles;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -12,6 +13,7 @@ public class TenantRoleService(
     ITenantRoleRepository roleRepository,
     ITenantContext tenantContext,
     IAuditLogger auditLogger,
+    IEntitlementService entitlementService,
     IValidator<CreateTenantRoleRequest> createValidator,
     IValidator<UpdateTenantRoleRequest> updateValidator,
     IValidator<SetRolePermissionsRequest> setPermissionsValidator) : ITenantRoleService
@@ -32,6 +34,9 @@ public class TenantRoleService(
     public async Task<TenantRoleResponse> CreateAsync(CreateTenantRoleRequest request)
     {
         await createValidator.ValidateAndThrowAsync(request);
+
+        // Feature Pro: criar cargos personalizados (os cargos padrão seguem livres no Essencial).
+        await entitlementService.RequireEntitlementAsync(EntitlementCatalog.CustomRoles);
 
         var role = new TenantRole
         {

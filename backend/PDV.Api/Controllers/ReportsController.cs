@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PDV.Api.Attributes;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Enums;
 
 namespace PDV.Api.Controllers;
@@ -10,6 +11,7 @@ namespace PDV.Api.Controllers;
 [Route("api/reports")]
 [Authorize]
 [RequireModule(OperationModule.Reports)]
+[RequireEntitlement(EntitlementCatalog.AdvancedReports)]
 [RequirePermission(Permission.ViewReports)]
 public class ReportsController(IReportService service) : ControllerBase
 {

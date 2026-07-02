@@ -22,11 +22,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmPhraseDialog from '../../../../components/ConfirmPhraseDialog'
+import UpsellModal from '../../../../components/UpsellModal'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import { useDeactivateTenant } from '../../../../hooks/useDeactivateTenant'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
 import { useTenantSettings } from '../../../../hooks/useTenantSettings'
+import { useEntitlements } from '../../../../hooks/useSubscription'
+import { PLAN_LIMITS, UNLIMITED } from '../../../../constants/entitlements'
 import { useToast } from '../../../../hooks/useToast'
 import { reportService } from '../../../../services/report.service'
 import { useAppDispatch, useAppSelector } from '../../../../store'
@@ -103,14 +106,25 @@ export default function BusinessesSection() {
   const deactivate = useDeactivateTenant()
   const { data: settings } = useTenantSettings()
   const [deactivateOpen, setDeactivateOpen] = useState(false)
+  const [upsellOpen, setUpsellOpen] = useState(false)
 
   const activeTenants = tenants.filter((t) => t.isActive)
   const inactiveTenants = tenants.filter((t) => !t.isActive)
   const canDeactivate = activeTenants.length > 1
   const isOwner = role === 'Owner' || role === 'Admin'
+
+  // Limite de plano: bloqueia a criação de um novo negócio ao atingir o teto de lojas do plano.
+  const { limit } = useEntitlements()
+  const storesLimit = limit(PLAN_LIMITS.stores)
+  const ownedActiveCount = tenants.filter((t) => t.isActive && t.role === 'Owner').length
+  const storesLimitReached = storesLimit !== UNLIMITED && ownedActiveCount >= storesLimit
   const currentTenantName = settings?.business.fantasyName ?? ''
 
   function handleNewBusiness() {
+    if (storesLimitReached) {
+      setUpsellOpen(true)
+      return
+    }
     dispatch(setTenant({ tenantId: null }))
     queryClient.clear()
     navigate('/criar-negocio')
@@ -306,6 +320,13 @@ export default function BusinessesSection() {
         confirmButtonIcon={<DeleteForeverOutlined />}
         isPending={deactivate.isPending}
         onConfirm={() => deactivate.mutate()}
+      />
+
+      <UpsellModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        title="Abra mais lojas com o Pro"
+        description={`Seu plano permite até ${storesLimit} ${storesLimit === 1 ? 'loja' : 'lojas'}. Faça upgrade para o Pro e gerencie mais estabelecimentos.`}
       />
     </Box>
   )
