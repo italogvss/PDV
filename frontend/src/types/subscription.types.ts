@@ -15,7 +15,7 @@ export interface Plan {
   id: string
   name: string
   description: string | null
-  Price: number
+  price: number
   // Capabilities inclusas no plano (eixo de billing): módulos + features. Informativo — não esconde UI.
   entitlements: string[]
   limits: Record<string, number>

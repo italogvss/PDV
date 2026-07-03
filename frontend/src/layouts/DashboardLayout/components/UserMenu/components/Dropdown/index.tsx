@@ -73,7 +73,10 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
   )
 }
 
-const PAID_STYLE = { chipBg: 'premium.100', chipColor: 'premium.900', avatarOutlineColor: 'premium.400' as string | null }
+// A paleta premium (dourada) é exclusiva do plano Profissional — o Essencial (pago, mas sem as
+// features Pro) usa a accent do tenant, e o Gratuito fica neutro.
+const PRO_STYLE = { chipBg: 'premium.100', chipColor: 'premium.900', avatarOutlineColor: 'premium.400' as string | null }
+const ESSENCIAL_STYLE = { chipBg: 'accent.100', chipColor: 'accent.900', avatarOutlineColor: 'accent.400' as string | null }
 const FREE_STYLE = { chipBg: 'action.hover', chipColor: 'text.secondary', avatarOutlineColor: null as string | null }
 
 export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
@@ -85,7 +88,10 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
 
   const planName = auth.subscription?.planName ?? 'Gratuito'
   const isPaid = (auth.subscription?.planId ?? null) !== null
-  const ts = isPaid ? PAID_STYLE : FREE_STYLE
+  // Sem tier hardcoded (ver subscription.types.ts) — `advancedDashboard` só está nas entitlements
+  // do Profissional, então serve de proxy para "é o plano Pro" (mesmo padrão do Dashboard).
+  const isProfissional = has(FEATURES.advancedDashboard)
+  const ts = isProfissional ? PRO_STYLE : isPaid ? ESSENCIAL_STYLE : FREE_STYLE
 
   // Notificações é gateada por plano: sem o entitlement, o item ganha badge Pro e vira CTA de upsell.
   const canUseNotifications = has(FEATURES.notifications)
@@ -206,11 +212,11 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
             <Divider sx={{ borderColor: 'border.subtle' }} />
             <Box sx={{ py: 1 }}>
               <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
-                <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'premium.600' }} />
-                <Typography variant="body2" sx={{ flex: 1, color: 'premium.800', fontWeight: 500 }}>
+                <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'accent.600' }} />
+                <Typography variant="body2" sx={{ flex: 1, color: 'accent.800', fontWeight: 500 }}>
                   Conhecer os planos
                 </Typography>
-                <ArrowForwardOutlined sx={{ fontSize: 16, color: 'premium.600' }} />
+                <ArrowForwardOutlined sx={{ fontSize: 16, color: 'accent.600' }} />
               </MenuItem>
             </Box>
           </>

@@ -4,7 +4,7 @@ import ModalHeader from '../../../../../components/ModalHeader'
 import FieldLabel from '../../../../../components/FieldLabel'
 import FormModalActions from '../../../../../components/FormModalActions'
 import { useStartCheckout } from '../../../../../hooks/useSubscription'
-import { formatPrice } from '../helpers'
+import { cycleSuffix, formatPrice, planCycle } from '../helpers'
 import type { PlanCheckoutDialogProps } from './types'
 
 export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckoutDialogProps) {
@@ -17,6 +17,9 @@ export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckout
   }, [open, plan])
 
   if (!plan) return null
+
+  const cycle = planCycle(plan)
+  const isAnnual = cycle === 'annual'
 
   const handleClose = () => {
     if (checkout.isPending) return
@@ -38,7 +41,7 @@ export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckout
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
       <ModalHeader
         title={`Assinar ${plan.name}`}
-        subtitle="Assinatura mensal recorrente no cartão"
+        subtitle={isAnnual ? 'Cobrança anual no cartão' : 'Assinatura mensal recorrente no cartão'}
         onClose={handleClose}
         disabled={checkout.isPending}
       />
@@ -71,9 +74,9 @@ export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckout
               Total
             </Typography>
             <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>
-              R$ {formatPrice(plan.Price)}
+              R$ {formatPrice(plan.price)}
               <Typography component="span" variant="caption" color="text.secondary">
-                {' '}/mês
+                {' '}{cycleSuffix(cycle)}
               </Typography>
             </Typography>
           </Box>

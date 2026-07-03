@@ -27,7 +27,8 @@ interface BackendPlan {
   id: string
   name: string
   description: string | null
-  Price: number
+  // Backend serializa em camelCase (PlanResponse.Price → "price"), em reais (PriceCents / 100).
+  price: number
   entitlements: string[]
   limits: Record<string, number>
   trialDays: number | null
@@ -59,7 +60,7 @@ function mapPlan(p: BackendPlan): Plan {
     id: p.id,
     name: p.name,
     description: p.description ?? null,
-    Price: p.Price,
+    price: p.price,
     entitlements: p.entitlements ?? [],
     limits: p.limits ?? {},
     trialDays: p.trialDays ?? null,

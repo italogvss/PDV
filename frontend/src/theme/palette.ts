@@ -138,6 +138,19 @@ const premiumGold: ColorScale = {
   900: '#5c3315',
 };
 
+const premiumPurple: ColorScale = {
+  50:  '#f1e9fb',
+  100: '#d8c6f6',
+  200: '#c69bef',
+  300: '#aa65ea',
+  400: '#8d3bda',
+  500: '#771fc9',
+  600: '#6918b4',
+  700: '#561593',
+  800: '#461573',
+  900: '#3c155c',
+};
+
 export const colors = {
   neutral,
   accent: accentGreen,

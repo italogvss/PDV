@@ -1,43 +1,65 @@
-import { useEffect, useState } from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  Paper,
-  Divider,
-  CircularProgress,
-} from '@mui/material'
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
-import CheckIcon from '@mui/icons-material/Check'
+import { useState } from 'react'
+import { Box, Button, CircularProgress, Divider, Paper, Typography } from '@mui/material'
+import { alpha, useTheme } from '@mui/material/styles'
+import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
+import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
+import CheckRounded from '@mui/icons-material/CheckRounded'
+import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded'
+import CancelOutlined from '@mui/icons-material/CancelOutlined'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
+import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
+import GroupsOutlined from '@mui/icons-material/GroupsOutlined'
+import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
+import VerifiedUserOutlined from '@mui/icons-material/VerifiedUserOutlined'
+import type { SvgIconComponent } from '@mui/icons-material'
 import {
   useSubscription,
   usePlans,
   useCancelSubscription,
   useChangePlan,
 } from '../../../../hooks/useSubscription'
-import { OPERATION_MODULES, type OperationModule } from '../../../../constants/modules'
-import type { PixCharge, Plan } from '../../../../types/subscription.types'
-import { STATUS_CONFIG, formatPrice, getStatusLine } from './helpers'
+import { FEATURE_LABELS, UNLIMITED, type PlanLimitKey } from '../../../../constants/entitlements'
+import type { Plan } from '../../../../types/subscription.types'
+import {
+  STATUS_CONFIG,
+  formatPrice,
+  getStatusLine,
+  cycleSuffix,
+  planCycle,
+  shortPlanName,
+  entitlementSet,
+  FEATURE_KEYS,
+  MODULE_LABELS,
+  LIMIT_ORDER,
+  LIMIT_LABELS,
+  formatLimit,
+  type BillingCycle,
+} from './helpers'
 import PlanCheckoutDialog from './PlanCheckoutDialog'
-import PixQrDialog from './PixQrDialog'
+import ConfirmDialog from '../../../../components/ConfirmDialog'
+
+const LIMIT_ICONS: Record<PlanLimitKey, SvgIconComponent> = {
+  employees: GroupsOutlined,
+  stores: StorefrontOutlined,
+  saleHistoryDays: ReceiptLongOutlined,
+  auditDays: VerifiedUserOutlined,
+}
 
 export default function SubscriptionSection() {
+  const theme = useTheme()
   const { data: subscription, isLoading: loadingSub } = useSubscription()
   const { data: plans, isLoading: loadingPlans } = usePlans()
   const changePlan = useChangePlan()
   const cancel = useCancelSubscription()
 
-  // Checkout em duas etapas: PlanCheckoutDialog (método/período/cupom) → PixQrDialog (QR PIX).
+  // Checkout de contratação nova (assinatura não-viva) → redireciona para o gateway via este diálogo.
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null)
-  const [pixCharge, setPixCharge] = useState<PixCharge | null>(null)
+  // Período escolhido no upsell (só afeta qual variante do Profissional é contratada).
+  const [cycle, setCycle] = useState<BillingCycle>('monthly')
+  // Confirmação de cancelamento de assinatura.
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
 
-  useEffect(() => {
-    console.log(plans)
-  
-  }, [plans])
-  
   if (loadingSub || loadingPlans || !subscription || !plans) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -46,276 +68,637 @@ export default function SubscriptionSection() {
     )
   }
 
-  const currentPlan = plans.find((p) => p.id === subscription.planId)
-  const status = STATUS_CONFIG[subscription.status]
-  const isPaid = subscription.planId !== null
-  // Assinatura "viva" (em vigor): troca de plano (cartão) usa change-plan; senão é nova contratação.
-  const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
-  const canCancel = isPaid && isLive
-  // Cancelada → pode reativar a qualquer momento (novo checkout), mesmo dentro do período já pago.
-  const isCanceled = subscription.status === 'Canceled'
+  // ── Cores da marca ────────────────────────────────────────────────────────────────────────
+  const white = theme.palette.common.white
+  const gold = theme.palette.premium // dourado do plano Profissional
+  const brand = theme.palette.accent // cor secundária/accent do plano Essencial
 
+  // ── Estado da assinatura ──────────────────────────────────────────────────────────────────
+  const owned = subscription.entitlements ?? []
+  const ownedSet = entitlementSet(owned)
+  const has = (key: string) => ownedSet.has(key.toLowerCase())
+  const currentPlan = plans.find((p) => p.id === subscription.planId) ?? null
+  const isPaid = subscription.planId !== null
+  const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
+  const isLiveCard = isLive && subscription.method === 'Card'
+  const canCancel = isPaid && isLive
   const statusLine = getStatusLine(subscription)
 
-  // Módulos liberados pelo plano → labels do registro central de módulos. (entitlements é um
-  // superset de módulos + features; aqui exibimos os módulos conhecidos.)
-  const includedModules = subscription.entitlements
-    .filter((m): m is OperationModule => m in OPERATION_MODULES)
-    .map((m) => OPERATION_MODULES[m].label)
+  // Tier = tem alguma feature premium? (Essencial concede 0 features; Profissional concede todas.)
+  const isPro = FEATURE_KEYS.some((k) => has(k))
 
-  // Planos visíveis: oculta planos com trial para usuários que já usaram trial.
-  const visiblePlans = plans.filter(
-    (p) => !(p.trialDays !== null && subscription.hasUsedTrial),
-  )
+  // Estilo do banner: premium (dourado) para o Pro, secondary (accent) para o Essencial.
+  const tier = isPro
+    ? {
+        ink: gold[900],
+        inkMuted: alpha(gold[900], 0.72),
+        gradient: `linear-gradient(135deg, ${gold[200]} 0%, ${gold[400]} 52%, ${gold[500]} 100%)`,
+        pillBg: alpha(gold[900], 0.1),
+        glyph: alpha(gold[900], 0.14),
+        Icon: WorkspacePremiumRounded,
+      }
+    : {
+        ink: white,
+        inkMuted: alpha(white, 0.82),
+        gradient: `linear-gradient(135deg, ${brand[600]} 0%, ${brand[700]} 55%, ${brand[800]} 100%)`,
+        pillBg: alpha(white, 0.22),
+        glyph: alpha(white, 0.16),
+        Icon: StorefrontRounded,
+      }
 
-  // Cartão vivo → troca de plano imediata (change-plan); demais estados (cancelada, expirada,
-  // gratuito) → novo checkout, que reativa/contrata reaproveitando a mesma assinatura no backend.
-  const handlePlanAction = (plan: Plan) => {
-    if (isLive && subscription.method === 'Card') {
-      if (plan.id === subscription.planId) return
-      changePlan.mutate(plan.id)
-    } else {
-      setCheckoutPlan(plan)
-    }
+  const planTitle = currentPlan ? shortPlanName(currentPlan.name) : subscription.planName ?? 'Gratuito'
+  const currentCycle = currentPlan ? planCycle(currentPlan) : 'monthly'
+  const statusLabel = STATUS_CONFIG[subscription.status].label
+  const statusText =
+    isPaid && statusLine ? `${statusLine.label} ${statusLine.date}` : 'Plano gratuito — sem cobranças'
+  const checkColor = isPro ? gold[600] : theme.palette.secondary.main
+
+  // Recursos inclusos no plano atual.
+  const includedModules = Object.keys(MODULE_LABELS)
+    .filter((k) => has(k))
+    .map((k) => MODULE_LABELS[k])
+  const includedFeatures = FEATURE_KEYS.filter((k) => has(k)).map((k) => FEATURE_LABELS[k])
+
+  // ── Upsell: variantes do Profissional (plano que concede features premium) ───────────────────
+  const proPlans = plans.filter((p) => {
+    const planSet = entitlementSet(p.entitlements)
+    return FEATURE_KEYS.some((k) => planSet.has(k.toLowerCase()))
+  })
+  const proMonthly = proPlans.find((p) => planCycle(p) === 'monthly') ?? proPlans[0] ?? null
+  const proAnnual = proPlans.find((p) => planCycle(p) === 'annual') ?? null
+  const upgradeTarget = cycle === 'annual' ? proAnnual ?? proMonthly : proMonthly
+  const showUpgrade = !isPro && upgradeTarget !== null
+
+  const targetSet = upgradeTarget ? entitlementSet(upgradeTarget.entitlements) : null
+  const newFeatures = targetSet
+    ? FEATURE_KEYS.filter((k) => targetSet.has(k.toLowerCase()) && !has(k)).map((k) => FEATURE_LABELS[k])
+    : []
+  const annualSavings =
+    proMonthly && proAnnual ? Math.max(0, proMonthly.price * 12 - proAnnual.price) : 0
+  const upgradeLimits: { icon: SvgIconComponent; text: string }[] = upgradeTarget
+    ? [
+        {
+          icon: GroupsOutlined,
+          text:
+            upgradeTarget.limits.employees === UNLIMITED
+              ? 'Funcionários ilimitados'
+              : `Até ${upgradeTarget.limits.employees} funcionários`,
+        },
+        {
+          icon: StorefrontOutlined,
+          text:
+            upgradeTarget.limits.stores === UNLIMITED
+              ? 'Lojas ilimitadas'
+              : `Até ${upgradeTarget.limits.stores} lojas`,
+        },
+        {
+          icon: ReceiptLongOutlined,
+          text:
+            upgradeTarget.limits.saleHistoryDays === UNLIMITED
+              ? 'Histórico de vendas ilimitado'
+              : `${upgradeTarget.limits.saleHistoryDays} dias de histórico`,
+        },
+      ]
+    : []
+
+  const ctaLabel = changePlan.isPending
+    ? 'Alterando...'
+    : isLiveCard
+      ? 'Fazer upgrade agora'
+      : 'Assinar Profissional'
+
+  const handleUpgrade = () => {
+    if (!upgradeTarget) return
+    // Assinatura viva no cartão → troca imediata; demais estados → checkout no gateway.
+    if (isLiveCard) changePlan.mutate(upgradeTarget.id)
+    else setCheckoutPlan(upgradeTarget)
   }
 
+  const cancelMessage =
+    subscription.status === 'Trialing'
+      ? 'Ao cancelar agora seu período de teste termina imediatamente e você perde o acesso.'
+      : 'Tem certeza que deseja cancelar sua assinatura?'
+
   const handleCancel = () => {
-    // Em trial o acesso encerra imediatamente; pós-trial mantém acesso até o fim do período.
-    const message =
-      subscription.status === 'Trialing'
-        ? 'Ao cancelar agora seu período de teste termina imediatamente e você volta ao plano gratuito. Tem certeza?'
-        : 'Tem certeza que deseja cancelar sua assinatura?'
-    if (window.confirm(message)) {
-      cancel.mutate()
-    }
+    cancel.mutate(undefined, { onSuccess: () => setConfirmCancelOpen(false) })
   }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Plan banner */}
+      {/* ══ Banner do plano atual ══ */}
       <Box
         sx={{
-          p: 3,
+          position: 'relative',
+          overflow: 'hidden',
           borderRadius: 3,
-          border: 1,
-          borderColor: 'premium.200',
-          bgcolor: 'premium.50',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 3,
+          p: { xs: 3, sm: 3.5 },
+          color: tier.ink,
+          background: tier.gradient,
+          boxShadow: theme.customShadows.lg,
         }}
       >
+        {/* brilho + glifo decorativo */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(130% 130% at 88% -25%, ${alpha(white, 0.35)}, transparent 46%)`,
+            pointerEvents: 'none',
+          }}
+        />
+        <tier.Icon
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            right: 70,
+            bottom: -5,
+            fontSize: 120,
+            color: tier.glyph,
+            transform: 'rotate(-8deg)',
+            pointerEvents: 'none',
+          }}
+        />
+
         <Box
           sx={{
-            width: 56,
-            height: 56,
-            borderRadius: 3,
-            bgcolor: 'premium.400',
+            position: 'relative',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 2, sm: 3 },
+            alignItems: { sm: 'center' },
           }}
         >
-          <WorkspacePremiumIcon sx={{ fontSize: 28, color: 'premium.900' }} />
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>
-              Plano {currentPlan?.name ?? subscription.planName ?? 'Gratuito'}
-            </Typography>
-            <Chip
-              label={status.label}
-              size="small"
-              sx={{
-                bgcolor: status.chipBg,
-                color: status.chipColor,
-                fontWeight: 700,
-                fontSize: 10,
-                letterSpacing: '0.04em',
-              }}
-            />
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            {isPaid && statusLine
-              ? `${statusLine.label} ${statusLine.date}${currentPlan ? ` • R$ ${formatPrice(currentPlan.Price)}/mês` : ''}`
-              : 'Plano gratuito — sem cobranças'}
-          </Typography>
-        </Box>
-
-        {canCancel && (
-          <Box sx={{ display: 'flex', gap: 1.5, flexShrink: 0 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<CancelOutlinedIcon />}
-              color="inherit"
-              onClick={handleCancel}
-              disabled={cancel.isPending}
-            >
-              Cancelar plano
-            </Button>
-          </Box>
-        )}
-      </Box>
-
-      {/* Features */}
-      {includedModules.length > 0 && (
-        <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-          <Box sx={{ px: 4, py: 3 }}>
-            <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-              Recursos inclusos
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Tudo que faz parte do seu plano
-            </Typography>
-          </Box>
-          <Divider />
           <Box
             sx={{
-              px: 4,
-              py: 3,
+              width: 56,
+              height: 56,
+              borderRadius: 2.5,
+              flexShrink: 0,
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 1.5,
+              placeItems: 'center',
+              bgcolor: tier.pillBg,
             }}
           >
-            {includedModules.map((feature) => (
-              <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <CheckIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
-                <Typography variant="body2" color="text.primary">
-                  {feature}
+            <tier.Icon sx={{ fontSize: 30, color: tier.ink }} />
+          </Box>
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: tier.ink, letterSpacing: '-0.02em' }}>
+                Plano {planTitle}
+              </Typography>
+              <Box
+                component="span"
+                sx={{
+                  px: 1.25,
+                  py: 0.375,
+                  borderRadius: 5,
+                  bgcolor: tier.pillBg,
+                  color: tier.ink,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {statusLabel}
+              </Box>
+            </Box>
+            <Typography variant="body2" sx={{ mt: 0.5, color: tier.inkMuted }}>
+              {statusText}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: { xs: 'flex-start', sm: 'flex-end' },
+              gap: 1.5,
+              flexShrink: 0,
+            }}
+          >
+            {currentPlan && (
+              <Box sx={{ textAlign: { sm: 'right' } }}>
+                <Typography component="span" variant="h5" sx={{ fontWeight: 800, color: tier.ink }}>
+                  R$ {formatPrice(currentPlan.price)}
+                </Typography>
+                <Typography component="span" sx={{ color: tier.inkMuted, fontWeight: 600 }}>
+                  {' '}
+                  {cycleSuffix(currentCycle)}
                 </Typography>
               </Box>
-            ))}
+            )}
+            {canCancel && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CancelOutlined />}
+                onClick={() => setConfirmCancelOpen(true)}
+                disabled={cancel.isPending}
+                sx={{
+                  color: tier.ink,
+                  borderColor: alpha(tier.ink, 0.4),
+                  '&:hover': { borderColor: tier.ink, bgcolor: alpha(tier.ink, 0.08) },
+                }}
+              >
+                Cancelar plano
+              </Button>
+            )}
           </Box>
-        </Paper>
-      )}
+        </Box>
+      </Box>
 
-      {/* Other plans */}
+      {/* ══ Recursos e limites do plano ══ */}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ px: 4, py: 3 }}>
-          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 600 }}>
-            Planos disponíveis
+        <Box sx={{ px: { xs: 3, sm: 4 }, py: 3 }}>
+          <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 700 }}>
+            O que seu plano inclui
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {subscription.hasUsedTrial
-              ? 'Planos com trial foram ocultados pois você já utilizou o período gratuito'
-              : 'Faça upgrade ou downgrade a qualquer momento'}
+            Recursos e limites ativos no seu plano {planTitle}.
           </Typography>
         </Box>
         <Divider />
+
+        {/* Limites */}
         <Box
           sx={{
-            p: 3,
+            px: { xs: 3, sm: 4 },
+            py: 3,
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(visiblePlans.length, 4)}, 1fr)`,
-            gap: 2,
+            gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
+            gap: 2.5,
           }}
         >
-          {visiblePlans.map((plan) => {
-            const isCurrent = plan.id === subscription.planId
-            const isCurrentLive = isCurrent && isLive
-            const pendingThis = changePlan.isPending && changePlan.variables === plan.id
-
-            const disabled = isCurrentLive || changePlan.isPending
-
-            const label = pendingThis
-              ? 'Alterando...'
-              : isCurrentLive
-                ? 'Plano atual'
-                : isLive
-                  ? 'Trocar plano'
-                  : isCanceled
-                    ? 'Reativar'
-                    : 'Assinar'
-
+          {LIMIT_ORDER.map((k) => {
+            const Icon = LIMIT_ICONS[k]
             return (
-              <Box
-                key={plan.id}
-                sx={{
-                  p: 2.5,
-                  borderRadius: 2,
-                  border: 2,
-                  borderColor: isCurrent ? 'secondary.main' : 'border.subtle',
-                  bgcolor: isCurrent ? 'success.soft' : 'background.paper',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 700 }}>
-                    {plan.name}
-                  </Typography>
-                  {isCurrent && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'secondary.main' }} />
-                      <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 600 }}>
-                        Atual
-                      </Typography>
-                    </Box>
-                  )}
-                  {plan.trialDays !== null && (
-                    <Chip label={`${plan.trialDays} dias grátis`} size="small" color="info" variant="outlined" sx={{ fontSize: 10 }} />
-                  )}
+              <Box key={k} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 2,
+                    flexShrink: 0,
+                    display: 'grid',
+                    placeItems: 'center',
+                    bgcolor: alpha(checkColor, 0.12),
+                    color: checkColor,
+                  }}
+                >
+                  <Icon sx={{ fontSize: 20 }} />
                 </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.25 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    R$
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                    {formatLimit(k, subscription.limits[k])}
                   </Typography>
-                  <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
-                    {formatPrice(plan.Price)}
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                    {LIMIT_LABELS[k]}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    /mês
-                  </Typography>
-                </Box>
-
-                {plan.description && (
-                  <Typography variant="caption" color="text.secondary">
-                    {plan.description}
-                  </Typography>
-                )}
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, my: 1 }}>
-                  {plan.entitlements
-                    .filter((m): m is OperationModule => m in OPERATION_MODULES)
-                    .map((m) => (
-                      <Box key={m} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckIcon sx={{ fontSize: 14, color: 'secondary.main' }} />
-                        <Typography variant="caption" color="text.primary">
-                          {OPERATION_MODULES[m].label}
-                        </Typography>
-                      </Box>
-                    ))}
-                </Box>
-
-                <Box sx={{ mt: 'auto' }}>
-                    <Button
-                      variant={isCurrentLive ? 'outlined' : 'contained'}
-                      color={isCurrentLive ? 'inherit' : 'secondary'}
-                      size="small"
-                      fullWidth
-                      disabled={disabled}
-                      onClick={() => handlePlanAction(plan)}
-                    >
-                      {label}
-                    </Button>
                 </Box>
               </Box>
             )
           })}
         </Box>
+        <Divider />
+
+        {/* Capacidades */}
+        <Box sx={{ px: { xs: 3, sm: 4 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box>
+            <Typography
+              variant="overline"
+              sx={{ color: 'text.tertiary', fontWeight: 700, letterSpacing: '0.08em' }}
+            >
+              Módulos
+            </Typography>
+            <Box
+              sx={{
+                mt: 1,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                columnGap: 3,
+                rowGap: 1.25,
+              }}
+            >
+              {includedModules.map((label) => (
+                <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <CheckRounded sx={{ fontSize: 18, color: checkColor, flexShrink: 0 }} />
+                  <Typography variant="body2" color="text.primary">
+                    {label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {includedFeatures.length > 0 && (
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{ color: 'text.tertiary', fontWeight: 700, letterSpacing: '0.08em' }}
+              >
+                Recursos avançados
+              </Typography>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  columnGap: 3,
+                  rowGap: 1.25,
+                }}
+              >
+                {includedFeatures.map((label) => (
+                  <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <CheckCircleRounded sx={{ fontSize: 18, color: gold[600], flexShrink: 0 }} />
+                    <Typography variant="body2" color="text.primary">
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Box>
       </Paper>
+
+      {/* ══ Upsell do Profissional — só para quem ainda não é Pro ══ */}
+      {showUpgrade && upgradeTarget && (
+        <Paper
+          elevation={0}
+          sx={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 3,
+            border: 1,
+            borderColor: gold[300],
+            color: gold[900],
+            background: `linear-gradient(150deg, ${gold[50]} 0%, ${gold[100]} 50%, ${gold[200]} 100%)`,
+            boxShadow: theme.customShadows.md,
+          }}
+        >
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: `radial-gradient(120% 120% at 90% -20%, ${alpha(white, 0.5)}, transparent 45%)`,
+              pointerEvents: 'none',
+            }}
+          />
+          <WorkspacePremiumRounded
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              right: -18,
+              top: -24,
+              fontSize: 170,
+              color: alpha(gold[500], 0.16),
+              transform: 'rotate(12deg)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <Box sx={{ position: 'relative', p: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box
+              component="span"
+              sx={{
+                alignSelf: 'flex-start',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.625,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: 5,
+                bgcolor: gold[900],
+                color: gold[50],
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+              }}
+            >
+              <AutoAwesomeRounded sx={{ fontSize: 14 }} />
+              PROFISSIONAL
+            </Box>
+
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: gold[900] }}>
+                Desbloqueie tudo o que sua loja pode ser
+              </Typography>
+              <Typography variant="body1" sx={{ mt: 1, color: alpha(gold[900], 0.8), maxWidth: 540 }}>
+                Passe para o Profissional e libere {newFeatures.length} recursos avançados, com limites
+                muito maiores para crescer sem travas.
+              </Typography>
+            </Box>
+
+            {/* Preço + período */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                  <Typography component="span" variant="h3" sx={{ fontWeight: 800, color: gold[900], letterSpacing: '-0.02em' }}>
+                    R$ {formatPrice(upgradeTarget.price)}
+                  </Typography>
+                  <Typography component="span" variant="h6" sx={{ color: alpha(gold[900], 0.7), fontWeight: 600 }}>
+                    {cycleSuffix(cycle)}
+                  </Typography>
+                </Box>
+                {cycle === 'annual' && annualSavings > 0 && (
+                  <Typography variant="body2" sx={{ mt: 0.5, color: gold[800], fontWeight: 600 }}>
+                    Economize ganhado 2 meses grátis.
+                  </Typography>
+                )}
+              </Box>
+
+              {proMonthly && proAnnual && (
+                <Box
+                  role="group"
+                  aria-label="Período de cobrança"
+                  sx={{
+                    display: 'inline-flex',
+                    gap: 0.5,
+                    p: 0.5,
+                    borderRadius: 5,
+                    bgcolor: alpha(gold[900], 0.06),
+                    border: 1,
+                    borderColor: alpha(gold[900], 0.12),
+                  }}
+                >
+                  {(['monthly', 'annual'] as BillingCycle[]).map((c) => {
+                    const active = cycle === c
+                    return (
+                      <Box
+                        key={c}
+                        component="button"
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setCycle(c)}
+                        sx={{
+                          cursor: 'pointer',
+                          border: 0,
+                          borderRadius: 5,
+                          px: 2,
+                          py: 0.875,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          fontFamily: 'inherit',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          bgcolor: active ? gold[900] : 'transparent',
+                          color: active ? gold[50] : alpha(gold[900], 0.75),
+                          transition: 'background-color 0.15s, color 0.15s',
+                          '&:hover': { color: active ? gold[50] : gold[900] },
+                          '&:focus-visible': { outline: `2px solid ${gold[600]}`, outlineOffset: 2 },
+                        }}
+                      >
+                        {c === 'monthly' ? 'Mensal' : 'Anual'}
+                        {c === 'annual' && annualSavings > 0 && (
+                          <Box
+                            component="span"
+                            sx={{
+                              fontSize: 9.5,
+                              fontWeight: 800,
+                              letterSpacing: '0.04em',
+                              px: 0.75,
+                              py: 0.25,
+                              borderRadius: 5,
+                              bgcolor: active ? alpha(gold[50], 0.22) : gold[500],
+                              color: active ? gold[50] : gold[900],
+                            }}
+                          >
+                            2 MESES GRÁTIS
+                          </Box>
+                        )}
+                      </Box>
+                    )
+                  })}
+                </Box>
+              )}
+            </Box>
+
+            <Divider sx={{ borderColor: alpha(gold[900], 0.12) }} />
+
+            {/* Novos recursos */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{ color: alpha(gold[900], 0.65), fontWeight: 700, letterSpacing: '0.08em' }}
+              >
+                Você também passa a ter
+              </Typography>
+              <Box
+                sx={{
+                  mt: 1.25,
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  columnGap: 3,
+                  rowGap: 1.25,
+                }}
+              >
+                {newFeatures.map((label) => (
+                  <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <CheckCircleRounded sx={{ fontSize: 18, color: gold[600], flexShrink: 0 }} />
+                    <Typography variant="body2" sx={{ color: gold[900] }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Destaques de limite */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {upgradeLimits.map(({ icon: Icon, text }) => (
+                <Box
+                  key={text}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: 5,
+                    bgcolor: alpha(gold[900], 0.06),
+                    border: 1,
+                    borderColor: alpha(gold[900], 0.12),
+                    color: gold[900],
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
+                  <Icon sx={{ fontSize: 16 }} />
+                  {text}
+                </Box>
+              ))}
+            </Box>
+
+            {/* CTA */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { sm: 'center' },
+                gap: 1.5,
+              }}
+            >
+              <Button
+                variant="contained"
+                endIcon={<ArrowForwardRounded />}
+                onClick={handleUpgrade}
+                disabled={changePlan.isPending}
+                sx={{
+                  px: 3,
+                  py: 1.25,
+                  fontWeight: 700,
+                  bgcolor: gold[900],
+                  color: gold[50],
+                  boxShadow: theme.customShadows.md,
+                  transition: 'transform 0.15s, box-shadow 0.15s, background-color 0.15s',
+                  '&:hover': {
+                    bgcolor: gold[800],
+                    transform: 'translateY(-1px)',
+                    boxShadow: theme.customShadows.lg,
+                  },
+                }}
+              >
+                {ctaLabel}
+              </Button>
+              <Typography variant="caption" sx={{ color: alpha(gold[900], 0.7) }}>
+                {isLiveCard
+                  ? 'Upgrade imediato — a diferença entra na próxima fatura.'
+                  : 'Cobrança recorrente. Cancele quando quiser.'}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      )}
 
       <PlanCheckoutDialog
         open={checkoutPlan !== null}
         plan={checkoutPlan}
         onClose={() => setCheckoutPlan(null)}
       />
-      <PixQrDialog open={pixCharge !== null} pix={pixCharge} onClose={() => setPixCharge(null)} />
+
+      <ConfirmDialog
+        open={confirmCancelOpen}
+        title="Cancelar assinatura?"
+        description={cancelMessage}
+        confirmLabel="Cancelar assinatura"
+        pendingLabel="Cancelando..."
+        isPending={cancel.isPending}
+        onClose={() => setConfirmCancelOpen(false)}
+        onConfirm={handleCancel}
+        danger
+      />
     </Box>
   )
 }
