@@ -9,7 +9,7 @@ public enum Permission
     ManageStock,
     ViewSalesHistory,
 
-    //expanses
+    //expenses
     ViewExpenses,
     ManageExpenses,
 

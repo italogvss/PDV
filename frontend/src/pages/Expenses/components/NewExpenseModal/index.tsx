@@ -71,7 +71,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { has } = useEntitlements()
-  const hasAdvancedExpenses = has(FEATURES.advancedExpanses)
+  const hasAdvancedExpenses = has(FEATURES.advancedExpenses)
   const [upsellOpen, setUpsellOpen] = useState(false)
 
   const {

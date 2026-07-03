@@ -31,21 +31,6 @@ public record HostedCheckoutResult(
     string Url,
     string Status);
 
-public record PixChargeRequest(
-    int AmountCents,
-    string Description,
-    int? ExpiresInSeconds,
-    CustomerInfo? Customer,
-    string ExternalId,
-    IReadOnlyDictionary<string, string> Metadata);
-
-public record PixChargeResult(
-    string ChargeId,
-    string BrCode,
-    string BrCodeBase64,
-    string Status,
-    DateTime? ExpiresAt);
-
 public record PlanChangeResult(
     string PendingChangeId,
     string Status,
@@ -67,9 +52,6 @@ public enum PaymentWebhookType
     CheckoutCompleted,
     CheckoutRefunded,
     CheckoutDisputed,
-    TransparentCompleted,
-    TransparentRefunded,
-    TransparentDisputed,
     SubscriptionTrialStarted,
     SubscriptionCompleted,
     SubscriptionRenewed,
@@ -86,7 +68,7 @@ public record PaymentWebhookEvent(
     string EventId,
     string? ChargeId,
     // ExternalId definido por nós ao criar a cobrança (= Subscription.Id no banco). Chave primária
-    // de correlação para eventos checkout/transparent, que não carregam o id da assinatura.
+    // de correlação para eventos checkout, que não carregam o id da assinatura.
     string? ExternalId,
     // Id da assinatura no gateway (subs_...) — vem de data.subscription.id nos eventos subscription.*.
     string? SubscriptionId,

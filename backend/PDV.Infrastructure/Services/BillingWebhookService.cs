@@ -28,11 +28,6 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
                 await ApplyCheckoutCompletedAsync(sub, payment, evt);
                 break;
 
-            // PIX é pagamento único e não gera evento subscription.* → ativa a sub E dá baixa.
-            case PaymentWebhookType.TransparentCompleted:
-                await ApplyPixCompletedAsync(sub, payment, evt);
-                break;
-
             // Eventos subscription.* só sincronizam o estado da assinatura (sem tocar em pagamento).
             case PaymentWebhookType.SubscriptionCompleted:
                 ApplySubscriptionActive(sub, evt);
@@ -52,8 +47,6 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
 
             case PaymentWebhookType.CheckoutRefunded:
             case PaymentWebhookType.CheckoutDisputed:
-            case PaymentWebhookType.TransparentRefunded:
-            case PaymentWebhookType.TransparentDisputed:
                 ApplyReversed(sub, payment, evt);
                 break;
 
@@ -86,7 +79,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
             if (byMeta is not null) return byMeta;
         }
 
-        // ExternalId = nossa Subscription.Id — chave primária para checkout.* e transparent.*.
+        // ExternalId = nossa Subscription.Id — chave primária para checkout.*.
         if (Guid.TryParse(evt.ExternalId, out var externalSubId))
         {
             var byExternal = await repo.GetSubscriptionByIdAsync(externalSubId);
@@ -113,7 +106,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         return null;
     }
 
-    // Resolve o Payment desta cobrança estritamente pelo id no gateway (bill_/pix_char_), que é o que
+    // Resolve o Payment desta cobrança estritamente pelo id no gateway (bill_), que é o que
     // gravamos em GatewayChargeId ao criar o checkout/PIX. Sem fallback por "pendente mais recente":
     // numa renovação não há Payment pré-criado e CompleteChargeAsync deve criar um novo — não marcar
     // por engano um pendente avulso de um checkout anterior.
@@ -155,7 +148,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
     }
 
     // subscription.renewed — só estende o ciclo. O pagamento da renovação chega por
-    // checkout.completed/transparent.completed (não é registrado aqui).
+    // checkout.completed (não é registrado aqui).
     private static void ApplyRenewed(Subscription? sub, PaymentWebhookEvent evt)
     {
         if (sub is null) return;
@@ -165,22 +158,6 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         sub.Status = SubscriptionStatus.Active;
         sub.CurrentPeriodEnd = NextPeriodEnd(DateTime.UtcNow, sub.Plan);
         sub.UpdatedAt = DateTime.UtcNow;
-    }
-
-    // transparent.completed — PIX é pagamento único sem evento subscription.*, então ativa a sub aqui.
-    private async Task ApplyPixCompletedAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
-    {
-        if (sub is null) return;
-
-        var annual = evt.Metadata.TryGetValue("period", out var period)
-            && string.Equals(period, BillingPeriod.Annual.ToString(), StringComparison.OrdinalIgnoreCase);
-
-        sub.Status = SubscriptionStatus.Active;
-        sub.IsRenewable = false;
-        sub.CurrentPeriodEnd = annual ? DateTime.UtcNow.AddYears(1) : DateTime.UtcNow.AddMonths(1);
-        sub.UpdatedAt = DateTime.UtcNow;
-
-        await CompleteChargeAsync(sub, payment, evt, PaymentKind.PixSubscription, GatewayPaymentMethod.Pix);
     }
 
     // checkout.completed reaproveitado para trial E cobrança real. No trial chega PENDING/amount 0 (sem
@@ -277,7 +254,7 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
     {
         if (payment is not null)
         {
-            payment.Status = evt.Type is PaymentWebhookType.CheckoutRefunded or PaymentWebhookType.TransparentRefunded
+            payment.Status = evt.Type is PaymentWebhookType.CheckoutRefunded
                 ? PaymentStatus.Refunded
                 : PaymentStatus.Disputed;
             payment.UpdatedAt = DateTime.UtcNow;

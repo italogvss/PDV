@@ -181,7 +181,7 @@ O JWT é montado em `AuthService.GenerateToken` (e, no onboarding/troca de loja,
 | `name` | `User.Name` | Exibição / `IUserContext.UserName` |
 | `role` | **`UserTenant.Role`** do tenant ativo (`Admin` usa `User.Role`) | `[Authorize(Roles=...)]`, `PermissionService` |
 | `jti` | `Guid.NewGuid()` | Id único do token (⚠️ não é persistido nem verificado — sem revogação) |
-| `mustChangePassword` | `"true"` (ausente quando false) | Setado só no login local; **não** é enforced no backend |
+| `mustChangePassword` | `"true"` (ausente quando false) | Setado no login local e **preservado no refresh** enquanto `MustChangePassword`; **enforced** por `MustChangePasswordMiddleware` |
 
 `tenantId` vazio ⇒ usuário sem tenant (onboarding). O `role` **vem sempre do vínculo `UserTenant`**, nunca de `User.Role` global (exceção: `Admin`).
 
@@ -249,11 +249,11 @@ public class ProductsController(...) {
 
 ### `PermissionService.RequireAsync`
 ```csharp
-if (role == "Owner") return;                 // Owner passa direto
+if (role == "Owner" || role == "Admin") return;   // Owner e Admin passam direto
 // Employee: busca o Employee do (userId, tenantId ativo) e checa
 roleRepository.HasPermissionAsync(employee.RoleId, permission)  // false → UnauthorizedException (401)
 ```
-> ⚠️ `Owner` é liberado; qualquer outra role (inclusive **`Admin`**) cai no caminho de Employee e, sem um `Employee` correspondente, lança `UnauthorizedException`. Ou seja, `[RequirePermission]` **não** deve ser usado em rotas de Admin — Admin usa `[Authorize(Roles="Admin")]` no `AdminController`.
+> `Owner` e `Admin` são liberados sem checar permissões (alinhado com o `useUserPermissions` do frontend). Qualquer outra role cai no caminho de Employee e, sem um `Employee` correspondente, lança `UnauthorizedException`. Admin continua usando `[Authorize(Roles="Admin")]` no `AdminController`, mas agora `[RequirePermission]` numa rota compartilhada **não** o quebra mais.
 
 ### Roles (`UserRole`)
 - **`Owner`** — dono da loja. Acesso total ao tenant; `PermissionService` o libera sem checar permissões.
@@ -302,7 +302,7 @@ A assinatura pertence ao **Owner (`UserId`)** e cobre todas as lojas dele; por i
 | `Id`, `Name`, `Email`, `Phone`, `Document`, `BirthDate` | `User` | perfil |
 | `AvatarUrl` | `storage.ResolveReadUrlAsync(User.ImageUrl, Profile)` | presigned URL |
 | `LastTenantId` | `User.LastTenantId` | vira `tenantId` no Redux |
-| `Role` | **`User.Role`** (global) | ⚠️ ver §17 — difere do `role` do JWT |
+| `Role` | **role do JWT** (= `UserTenant.Role` do tenant ativo; cai para `User.Role` só sem tenant) | consistente com o enforcement do backend |
 | `Settings` | `UserSettings` | `Theme`, `TextSize`, `AccentColor` |
 | `Tenants[]` | `UserTenants` → `TenantListItem` | `{ tenantId, name, role, logoUrl, isActive, scheduledDeletionAt }` |
 | `MustChangePassword` | `LocalAuth?.MustChangePassword ?? false` | fonte real do redirect de troca de senha |
@@ -320,20 +320,24 @@ Pontos-chave:
 ### Backend (`AuthService.RefreshAsync`)
 1. `SHA256(refresh_token)` → busca o `User` pelo hash (`GetByRefreshTokenAsync`).
 2. Valida expiração (`RefreshTokenExpiry`, 30 dias).
-3. **Rotação completa:** gera novo access_token **e** novo refresh_token (novo hash + nova expiry). O refresh anterior deixa de valer.
+3. **Rotação completa:** gera novo access_token **e** novo refresh_token (novo hash + nova expiry). O refresh anterior deixa de valer. O access_token reemitido **preserva o claim `mustChangePassword`** enquanto `LocalAuth.MustChangePassword` for `true`.
 4. `AuthController.Refresh` seta os dois cookies; em `UnauthorizedException` → expira os cookies e retorna `401`.
 
 > A rotação torna cada refresh token **single-use**.
+
+> **Revogação (trade-off):** o `access_token` é um JWT **stateless** — o `jti` não é persistido nem verificado. Logout e troca de senha/role zeram o refresh token no banco, mas o access_token já emitido **continua válido até expirar** (até 8h). Não há blacklist de `jti`; é uma decisão consciente de manter o token stateless. Janela máxima de exposição = `JWT_EXPIRES_HOURS`.
 
 ### Frontend (`services/api.ts`, interceptor de resposta)
 ```ts
 if (status === 401 && !config._isRetry) {
   config._isRetry = true
-  try { await axios.post('/auth/refresh'); return api(config) }   // repete a request original
+  // refreshPromise compartilhado: 401s concorrentes aguardam UM só /auth/refresh (evita
+  // rotacionar o token single-use em paralelo → logout espúrio).
+  try { await (refreshPromise ??= axios.post('/auth/refresh').finally(() => refreshPromise = null)); return api(config) }
   catch { store.dispatch(clearAuth()); throw error }              // refresh falhou → desloga
 }
 ```
-Refresh é 100% transparente: nenhum componente trata 401 manualmente.
+Refresh é 100% transparente: nenhum componente trata 401 manualmente. Um único `refreshPromise` compartilhado deduplica refreshes concorrentes no boot.
 
 ---
 
@@ -522,29 +526,38 @@ Três pontos de enforcement no frontend: **rota** (`PermissionGuard`), **navega�
 
 ## 17. Melhorias e bugs encontrados
 
-> Levantados na revisão de 2026-07-02. Ordenados por severidade. Nada aqui foi corrigido — é backlog.
+> Levantados na revisão de 2026-07-02. Ordenados por severidade.
+> **Itens 1–8 corrigidos em 2026-07-03** (ver marcações ✅). Itens 9–11 seguem em backlog.
 
 ### 🔴 Correção / segurança
 
 1. **`mustChangePassword` não é enforced no backend.** O JWT emitido no 1º login local é um token **plenamente válido**; nenhum atributo/middleware bloqueia endpoints quando `MustChangePassword == true`. O bloqueio existe **só no `RouterGuard` do frontend**. Um funcionário com senha temporária pode chamar a API diretamente sem trocar a senha. Além disso, `RefreshAsync` reemite o token **sem** o claim `mustChangePassword`, então após o primeiro refresh o claim some. *Sugestão:* enforcement no backend (middleware/filter) que barra tudo exceto `/auth/change-password` e `/auth/me` enquanto `MustChangePassword`.
+   > ✅ **Resolvido (2026-07-03):** `MustChangePasswordMiddleware` (registrado após `UseAuthentication`) barra tudo com `403 MUST_CHANGE_PASSWORD` exceto a allowlist (`/auth/change-password`, `/auth/me`, `/auth/logout`, `/auth/refresh`). `RefreshAsync` reemite o claim enquanto `MustChangePassword` for `true`; `ChangePasswordAsync` reemite o `access_token` **sem** o claim (o `AuthController` grava o cookie), liberando o acesso na hora.
 
 2. **Race de refresh token → logout espúrio.** O interceptor do axios dispara **um refresh por request 401**, sem deduplicação (sem promise compartilhada/mutex). Como `RefreshAsync` faz **rotação single-use**, várias requests que dão 401 juntas (típico no boot da página) disparam refreshes concorrentes: o 1º rotaciona o hash, os demais chegam com o refresh já invalidado → `clearAuth()` → usuário deslogado sem motivo. *Sugestão:* um único `refreshPromise` compartilhado que todas as requests aguardam.
+   > ✅ **Resolvido (2026-07-03):** `services/api.ts` mantém um `refreshPromise` compartilhado (módulo-scoped); requests 401 concorrentes aguardam o mesmo `/auth/refresh` e só então fazem retry. Limpo via `.finally`.
 
 3. **`MeResponse.Role` usa `User.Role` (global), mas o JWT usa `UserTenant.Role` (do tenant ativo).** Hoje o impacto é baixo porque um `User` tem um único role global na prática (Owner via Google *ou* Employee via local). Mas é uma inconsistência latente: se um dia o mesmo usuário for Owner de uma loja e Employee de outra, o frontend leria `isOwner = true` (via `/auth/me`) e **liberaria toda a UI**, enquanto o backend enforça as permissões de Employee daquele tenant. *Sugestão:* `/auth/me` retornar o role do **tenant ativo** (consistente com o JWT), não `User.Role`.
+   > ✅ **Resolvido (2026-07-03):** `GetMeAsync` retorna o `role` do claim do JWT (= `UserTenant.Role` do tenant ativo); só cai para `User.Role` quando o claim vem vazio (onboarding sem tenant).
 
 ### 🟡 Robustez
 
 4. **Sem revogação de token.** O `jti` é gerado mas nunca persistido nem verificado. Logout limpa o refresh token no banco, porém o `access_token` continua válido até expirar (até 8h). Não há blacklist de `jti`. Aceitável para JWT stateless, mas documentar o trade-off (janela de até 8h após logout/troca de role).
+   > ✅ **Resolvido (2026-07-03, só documentação):** trade-off documentado em §5 (claim `jti`), §10 (nota de revogação) e cenário 14. Sem blacklist — decisão consciente de manter o JWT stateless.
 
 5. **`Admin` é ambíguo entre as camadas.** `useUserPermissions` trata `Admin` como `isOwner` (acesso total no frontend), mas `PermissionService` **não** libera Admin (só `Owner`) — cairia no caminho de Employee e lançaria `UnauthorizedException`. Enquanto Admin só usar `AdminController` (`[Authorize(Roles="Admin")]`) está ok, mas é uma armadilha para quem adicionar `[RequirePermission]` numa rota compartilhada.
+   > ✅ **Resolvido (2026-07-03):** `PermissionService.RequireAsync` agora libera `Owner` **e** `Admin` (`if (role == "Owner" || role == "Admin") return;`), alinhando com o `useUserPermissions` do frontend.
 
 6. **Leitura do `sub` inconsistente.** `AuthController.Me` usa `User.FindFirstValue(ClaimTypes.NameIdentifier)!` (com `!`), enquanto `UserContext` faz fallback defensivo `NameIdentifier ?? "sub"`. Padronizar a leitura do `userId` (idealmente sempre via `IUserContext`) evita `NullReferenceException` caso o mapeamento de claim mude.
+   > ✅ **Resolvido (2026-07-03):** `AuthController` injeta `IUserContext` e lê `userContext.UserId` em `Me`/`Logout`/`SwitchTenant`/`ChangePassword` (fallback defensivo `NameIdentifier ?? "sub"`, sem o `!`).
 
 ### 🟢 Consistência / manutenção
 
 7. **`IOAuthProvider` é praticamente inerte.** A interface só expõe `ProviderName` e `GoogleOAuthProvider` não faz nada — a validação real do token Google está inline em `AuthService`. Ou a abstração ganha a responsabilidade de validar (para permitir Apple/Facebook), ou é removida para reduzir ruído.
+   > ✅ **Resolvido (2026-07-03):** `IOAuthProvider` ganhou `Task<OAuthUserInfo> ValidateAsync(credential)`; a validação do ID Token do Google saiu do `AuthService` para o `GoogleOAuthProvider`. `AuthService.LoginWithGoogleAsync` só orquestra (`provider.ValidateAsync` → `HandleGoogleCallbackAsync`), abrindo caminho para Apple/Facebook.
 
 8. **Nomes/typos no `EntitlementCatalog`.** Constante `AdvancedExpanses` e o comentário "expanses" (deveria ser *expenses*); `AdvancedInventory`, `AdvancedEmployee` e `AdvancedExpanses` estão em `Features` mas **ausentes da lista declarativa `All`** (a UI de assinatura não os exibe, mesmo sendo capabilities válidas). Alinhar chaves e catálogo.
+   > ✅ **Resolvido (2026-07-03):** chave renomeada para `advancedExpenses` (backend + frontend + consumidores; `PlanSeeder` reescreve o JSON no startup). As 3 features foram adicionadas a `All` — isto **corrige um bug**: como `PlanJson.ReadEntitlements` filtra por `IsKnown` (montado a partir de `All`), essas chaves eram silenciosamente removidas e **usuários Pro não as recebiam**.
 
 9. **`Permission` sem enforcement de módulo pareado.** O frontend permite marcar permissões (`ManageStock`) mesmo com o módulo (`inventory`) desabilitado no tenant; `permissionToModule` cobre a UI, mas vale garantir no backend que permissão concedida ⇒ módulo habilitado, para não deixar "permissão órfã".
 

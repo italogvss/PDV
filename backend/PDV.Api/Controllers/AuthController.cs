@@ -10,7 +10,7 @@ namespace PDV.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IUserContext userContext) : ControllerBase
 {
     private static readonly bool IsProduction =
         string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Production",
@@ -49,8 +49,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await authService.LogoutAsync(userId);
+        await authService.LogoutAsync(userContext.UserId);
         ExpireAuthCookies();
         return Ok();
     }
@@ -87,10 +86,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Me()
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
         Guid? tenantId = Guid.TryParse(User.FindFirstValue("tenantId"), out var tid) ? tid : null;
-        var user = await authService.GetMeAsync(userId, role, tenantId);
+        var user = await authService.GetMeAsync(userContext.UserId, role, tenantId);
         return Ok(user);
     }
 
@@ -98,8 +96,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> SwitchTenant(Guid tenantId)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var token = await authService.SwitchTenantAsync(userId, tenantId);
+        var token = await authService.SwitchTenantAsync(userContext.UserId, tenantId);
         Response.Cookies.Append("access_token", token, new CookieOptions
         {
             HttpOnly = true,
@@ -122,8 +119,17 @@ public class AuthController(IAuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+        var accessToken = await authService.ChangePasswordAsync(
+            userContext.UserId, request.CurrentPassword, request.NewPassword);
+
+        // Reemite o access_token já sem o claim mustChangePassword, liberando o enforcement na hora.
+        Response.Cookies.Append("access_token", accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = IsProduction,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromHours(8),
+        });
         return NoContent();
     }
 }

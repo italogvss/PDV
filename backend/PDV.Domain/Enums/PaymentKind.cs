@@ -4,6 +4,5 @@ namespace PDV.Domain.Enums;
 public enum PaymentKind
 {
     CardSubscription,
-    PixSubscription,
     OneOffCheckout,
 }

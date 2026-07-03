@@ -1,9 +1,7 @@
 import { api } from './api'
 import type {
-  BillingPeriod,
   PaymentMethod,
   Plan,
-  PixCharge,
   Subscription,
   SubscriptionStatus,
 } from '../types/subscription.types'
@@ -36,7 +34,6 @@ interface BackendPlan {
 
 interface BackendCheckout {
   checkoutUrl: string | null
-  pix: PixCharge | null
 }
 
 function mapSubscription(s: BackendSubscription): Subscription {
@@ -69,17 +66,14 @@ function mapPlan(p: BackendPlan): Plan {
 
 export interface StartCheckoutPayload {
   planId: string
-  method: PaymentMethod
-  period?: BillingPeriod
   couponCode?: string
   returnUrl: string
   completionUrl: string
 }
 
-// Cartão → checkoutUrl preenchido (redirect). PIX → pix preenchido (QR embutido).
+// Assinatura recorrente por cartão → checkoutUrl preenchido (redirect ao gateway).
 export interface CheckoutResult {
   checkoutUrl: string | null
-  pix: PixCharge | null
 }
 
 export const subscriptionService = {
@@ -93,17 +87,15 @@ export const subscriptionService = {
     return data.map(mapPlan)
   },
 
-  // Inicia o checkout do plano pago. O backend devolve a URL do AbacatePay (cartão) ou o PIX.
+  // Inicia o checkout do plano pago. O backend devolve a URL do AbacatePay (cartão).
   startCheckout: async (payload: StartCheckoutPayload): Promise<CheckoutResult> => {
     const { data } = await api.post<BackendCheckout>('/subscriptions/checkout', {
       planId: payload.planId,
-      method: payload.method === 'Pix' ? 'PIX' : 'CARD',
-      period: payload.period ?? null,
       couponCode: payload.couponCode ?? null,
       returnUrl: payload.returnUrl,
       completionUrl: payload.completionUrl,
     })
-    return { checkoutUrl: data.checkoutUrl ?? null, pix: data.pix ?? null }
+    return { checkoutUrl: data.checkoutUrl ?? null }
   },
 
   // Troca de plano de uma assinatura ativa — aplicada imediatamente.

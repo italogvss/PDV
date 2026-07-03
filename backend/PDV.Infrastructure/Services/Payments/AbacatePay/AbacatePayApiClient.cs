@@ -25,9 +25,6 @@ public class AbacatePayApiClient(HttpClient http) : IAbacatePayApiClient
     public Task<AbacateCheckout> CreateSubscriptionAsync(CreateSubscriptionBody body, CancellationToken ct = default) =>
         SendAsync<AbacateCheckout>(HttpMethod.Post, "subscriptions/create", body, ct);
 
-    public Task<AbacateTransparent> CreateTransparentAsync(CreateTransparentBody body, CancellationToken ct = default) =>
-        SendAsync<AbacateTransparent>(HttpMethod.Post, "transparents/create", body, ct);
-
     public Task<AbacatePlanChange> ChangePlanAsync(ChangePlanBody body, CancellationToken ct = default) =>
         SendAsync<AbacatePlanChange>(HttpMethod.Post, "subscriptions/change-plan", body, ct);
 
@@ -36,12 +33,6 @@ public class AbacatePayApiClient(HttpClient http) : IAbacatePayApiClient
 
     public Task<AbacateChargeStatus> GetCheckoutAsync(string id, CancellationToken ct = default) =>
         SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"checkouts/get?id={Uri.EscapeDataString(id)}", null, ct);
-
-    public Task<AbacateChargeStatus> CheckTransparentAsync(string id, CancellationToken ct = default) =>
-        SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"transparents/check?id={Uri.EscapeDataString(id)}", null, ct);
-
-    public Task<AbacateChargeStatus> SimulatePixPaymentAsync(string pixChargeId, CancellationToken ct = default) =>
-        SendAsync<AbacateChargeStatus>(HttpMethod.Get, $"pixQrCode/simulate?id={Uri.EscapeDataString(pixChargeId)}", null, ct);
 
     public async Task<AbacateProduct?> GetProductAsync(string externalId, CancellationToken ct = default)
     {

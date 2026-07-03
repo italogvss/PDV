@@ -49,8 +49,6 @@ public record AdminConfigDto(
     string BaseUrl,
     string? BackUrl);
 
-public record SimulatePixRequest(string PixChargeId);
-
 public record AdminPlanDto(
     Guid Id,
     string Name,

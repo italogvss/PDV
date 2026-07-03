@@ -15,9 +15,9 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.GatewaySubscriptionId).HasMaxLength(100);
         builder.Property(s => s.GatewayCustomerId).HasMaxLength(100);
 
-        // Invariante: uma única assinatura por usuário (reaproveitada em reativação/troca de método).
+        // Invariante: uma única assinatura por usuário (reaproveitada em reativação).
         builder.HasIndex(s => s.UserId).IsUnique();
-        // NULLs são distintos no MySQL — múltiplas assinaturas PIX (sem subs_) coexistem.
+        // NULLs são distintos no MySQL — assinaturas ainda sem subs_ (trial/pending) coexistem.
         builder.HasIndex(s => s.GatewaySubscriptionId).IsUnique();
 
         builder.HasOne(s => s.Plan)

@@ -30,25 +30,16 @@ public record SubscriptionResponse(
     IReadOnlyDictionary<string, int> Limits,
     bool HasUsedTrial);
 
-// Method: "CARD" (assinatura recorrente) | "PIX" (pagamento único). Period: "Monthly" | "Annual" (PIX).
-// ReturnUrl/CompletionUrl vêm do frontend — o backend não os conhece, apenas repassa ao gateway.
+// Assinatura recorrente por cartão. ReturnUrl/CompletionUrl vêm do frontend — o backend não os
+// conhece, apenas repassa ao gateway.
 public record StartCheckoutRequest(
     Guid PlanId,
-    string Method,
-    string? Period,
     string? CouponCode,
     string? ReturnUrl,
     string? CompletionUrl);
 
-public record PixChargeDto(
-    string ChargeId,
-    string BrCode,
-    string BrCodeBase64,
-    DateTime? ExpiresAt);
-
-// Cartão → CheckoutUrl preenchido (redirect). PIX → Pix preenchido (QR embutido).
+// CheckoutUrl = URL hospedada do gateway para onde o frontend redireciona.
 public record StartCheckoutResponse(
-    string? CheckoutUrl,
-    PixChargeDto? Pix);
+    string? CheckoutUrl);
 
 public record ChangePlanRequest(Guid PlanId);

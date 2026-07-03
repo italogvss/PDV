@@ -20,8 +20,10 @@ public class PermissionService(
 
         var role = context.User.FindFirstValue(ClaimTypes.Role);
 
-        // Owner tem acesso total — não precisa checar permissões granulares
-        if (role == "Owner") return;
+        // Owner (dono da loja) e Admin (plataforma) têm acesso total — não checam permissões
+        // granulares. Sem o bypass de Admin, ele cairia no caminho de Employee (sem vínculo → exceção),
+        // o que é uma armadilha caso [RequirePermission] seja usado numa rota compartilhada.
+        if (role == "Owner" || role == "Admin") return;
 
         var userId = Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedException("Usuário não identificado."));

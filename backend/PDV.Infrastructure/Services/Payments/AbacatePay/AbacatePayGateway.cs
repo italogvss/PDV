@@ -39,23 +39,6 @@ public class AbacatePayGateway(IAbacatePayApiClient api) : IPaymentGateway
         return new HostedCheckoutResult(checkout.Id, checkout.Url!, checkout.Status ?? "PENDING");
     }
 
-    public async Task<PixChargeResult> CreatePixChargeAsync(PixChargeRequest request, CancellationToken ct = default)
-    {
-        var customer = request.Customer is null
-            ? null
-            : new TransparentCustomer(request.Customer.Name, request.Customer.Email, request.Customer.TaxId, request.Customer.Cellphone);
-
-        var body = new CreateTransparentBody("PIX", new CreateTransparentData(
-            request.AmountCents,
-            request.Description,
-            request.ExpiresInSeconds,
-            customer,
-            request.Metadata.ToDictionary(k => k.Key, v => v.Value)));
-
-        var pix = await api.CreateTransparentAsync(body, ct);
-        return new PixChargeResult(pix.Id, pix.BrCode ?? string.Empty, pix.BrCodeBase64 ?? string.Empty, pix.Status ?? "PENDING", pix.ExpiresAt);
-    }
-
     public async Task<PlanChangeResult> ChangeSubscriptionPlanAsync(string gatewaySubscriptionId, string newProductExternalId, int quantity, CancellationToken ct = default)
     {
         var result = await api.ChangePlanAsync(new ChangePlanBody(gatewaySubscriptionId, newProductExternalId, quantity), ct);
@@ -73,11 +56,7 @@ public class AbacatePayGateway(IAbacatePayApiClient api) : IPaymentGateway
 
     public async Task<GatewayChargeStatus> GetChargeStatusAsync(string chargeId, CancellationToken ct = default)
     {
-        // pix_char_... usa transparents/check; bill_... usa checkouts/get.
-        var status = chargeId.StartsWith("pix", StringComparison.OrdinalIgnoreCase)
-            ? await api.CheckTransparentAsync(chargeId, ct)
-            : await api.GetCheckoutAsync(chargeId, ct);
-
+        var status = await api.GetCheckoutAsync(chargeId, ct);
         return MapStatus(status.Status);
     }
 

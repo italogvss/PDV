@@ -76,7 +76,7 @@ export default function ExpensesPage() {
   const { hasPermission } = useUserPermissions()
   const canManage = hasPermission('ManageExpenses')
   const { has } = useEntitlements()
-  const hasAdvancedExpenses = has(FEATURES.advancedExpanses)
+  const hasAdvancedExpenses = has(FEATURES.advancedExpenses)
 
   const monthName = MONTHS_PT[selectedMonth - 1]
   const year = selectedYear

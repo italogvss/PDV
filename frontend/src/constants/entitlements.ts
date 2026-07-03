@@ -16,7 +16,7 @@ export const FEATURES = {
   notifications: 'notifications',
   advancedInventory: 'advancedInventory',
   advancedEmployee: 'advancedEmployee',
-  advancedExpanses: 'advancedExpanses',
+  advancedExpenses: 'advancedExpenses',
 } as const
 
 export type PlanFeature = (typeof FEATURES)[keyof typeof FEATURES]
@@ -35,7 +35,7 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
   notifications: 'Notificações',
   advancedInventory: 'Alertas de estoque mínimo e crítico',
   advancedEmployee: 'Gestão avançada de equipe',
-  advancedExpanses: 'Despesas avançadas',
+  advancedExpenses: 'Despesas avançadas',
 }
 
 export const PLAN_LIMITS = {

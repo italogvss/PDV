@@ -7,11 +7,8 @@ public interface IAbacatePayApiClient
 {
     Task<AbacateCustomer> CreateCustomerAsync(CreateCustomerBody body, CancellationToken ct = default);
     Task<AbacateCheckout> CreateSubscriptionAsync(CreateSubscriptionBody body, CancellationToken ct = default);
-    Task<AbacateTransparent> CreateTransparentAsync(CreateTransparentBody body, CancellationToken ct = default);
     Task<AbacatePlanChange> ChangePlanAsync(ChangePlanBody body, CancellationToken ct = default);
     Task<AbacateSubscription> CancelSubscriptionAsync(CancelSubscriptionBody body, CancellationToken ct = default);
     Task<AbacateChargeStatus> GetCheckoutAsync(string id, CancellationToken ct = default);
-    Task<AbacateChargeStatus> CheckTransparentAsync(string id, CancellationToken ct = default);
-    Task<AbacateChargeStatus> SimulatePixPaymentAsync(string pixChargeId, CancellationToken ct = default);
     Task<AbacateProduct?> GetProductAsync(string externalId, CancellationToken ct = default);
 }

@@ -67,7 +67,6 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
     {
         var data     = payload.Data;
         var checkout = data?.Checkout;
-        var transp   = data?.Transparent;   // mutuamente exclusivo com checkout por família de evento
         var payment  = data?.Payment;
         var sub      = data?.Subscription;
         var customer = data?.Customer;
@@ -75,36 +74,33 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
 
         // ---- EventId -------------------------------------------------------
         // subscription.* trazem id estável (log_...) — usado para idempotência.
-        // checkout.* e transparent.* não têm id de evento: hash do corpo garante
+        // checkout.* não têm id de evento: hash do corpo garante
         // que retentativas com mesmo corpo colidam, e eventos distintos não colidam.
         var eventId = payload.Id
             ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawBody)));
 
         // ---- ChargeId ------------------------------------------------------
-        // Sempre o bill_ do checkout (ou o id do transparent para eventos transparent.*).
+        // Sempre o bill_ do checkout.
         // O payment.id (card_ / char_) é o ID da transação do cartão — diferente do billing.
-        var chargeId = checkout?.Id ?? transp?.Id;
+        var chargeId = checkout?.Id;
 
         // ---- ExternalId ----------------------------------------------------
         // checkout.externalId é null no sub.completed e sub.renewed porque o checkout é
         // gerado internamente pela plataforma nesses casos.
         // payment.externalId carrega o valor nesses eventos.
         var externalId = checkout?.ExternalId
-                      ?? payment?.ExternalId
-                      ?? transp?.ExternalId;
+                      ?? payment?.ExternalId;
 
         // ---- AmountCents ---------------------------------------------------
         // paidAmount = valor efetivamente debitado (null enquanto não há cobrança real).
         // amount     = valor nominal do plano.
         //
-        // Cascata: checkout.paidAmount → payment.paidAmount → checkout.amount → transp
+        // Cascata: checkout.paidAmount → payment.paidAmount → checkout.amount
         // Atenção: checkout.amount = 0 no checkout.completed de fluxos trial;
         //          nesse caso 0 é o correto (nada foi cobrado).
         var amountCents = checkout?.PaidAmount
                        ?? payment?.PaidAmount
-                       ?? checkout?.Amount
-                       ?? transp?.PaidAmount
-                       ?? transp?.Amount;
+                       ?? checkout?.Amount;
 
         // ---- Status --------------------------------------------------------
         // subscription.status é CANCELLED no evento cancelled;
@@ -113,20 +109,17 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         // correto do estado do billing.
         var statusRaw = sub?.Status == "CANCELLED"
             ? "CANCELLED"
-            : checkout?.Status ?? transp?.Status;
+            : checkout?.Status;
 
         // ---- PaidAt --------------------------------------------------------
         // Só tem sentido quando houve cobrança real (checkout.status = "PAID").
         // Eventos de trial têm updatedAt mas nenhum dinheiro foi movido — PaidAt = null.
-        var paidAt = checkout?.Status == "PAID" ? checkout.UpdatedAt
-                   : transp?.Status   == "PAID" ? transp.UpdatedAt
-                   : (DateTime?)null;
+        var paidAt = checkout?.Status == "PAID" ? checkout.UpdatedAt : (DateTime?)null;
 
         // ---- ReceiptUrl ----------------------------------------------------
         // Aparece em ambos os nós (checkout e payment) apenas no sub.completed e sub.renewed.
         var receiptUrl = checkout?.ReceiptUrl
-                      ?? payment?.ReceiptUrl
-                      ?? transp?.ReceiptUrl;
+                      ?? payment?.ReceiptUrl;
 
         // ---- CustomerId ----------------------------------------------------
         // customer.id é o ID canônico do cliente.
@@ -135,9 +128,9 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         var customerId = customer?.Id ?? checkout?.CustomerId;
 
         // ---- Metadata ------------------------------------------------------
-        // Presente no checkout (e transparent); valores JSON não-string viram raw text
+        // Presente no checkout; valores JSON não-string viram raw text
         // para preservar o comportamento original sem perda de informação.
-        var metadataSource = checkout?.Metadata ?? transp?.Metadata;
+        var metadataSource = checkout?.Metadata;
         var metadata = metadataSource?.ToDictionary(
             kv => kv.Key,
             kv => kv.Value.ValueKind == JsonValueKind.String
@@ -174,9 +167,6 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         "checkout.completed"         => PaymentWebhookType.CheckoutCompleted,
         "checkout.refunded"          => PaymentWebhookType.CheckoutRefunded,
         "checkout.disputed"          => PaymentWebhookType.CheckoutDisputed,
-        "transparent.completed"      => PaymentWebhookType.TransparentCompleted,
-        "transparent.refunded"       => PaymentWebhookType.TransparentRefunded,
-        "transparent.disputed"       => PaymentWebhookType.TransparentDisputed,
         "subscription.trial_started" => PaymentWebhookType.SubscriptionTrialStarted,
         "subscription.completed"     => PaymentWebhookType.SubscriptionCompleted,
         "subscription.renewed"       => PaymentWebhookType.SubscriptionRenewed,

@@ -456,13 +456,14 @@ anual). Corrigir (ex.: "Economize 2 meses no plano anual.").
 **#8 — Branch morto de trial no `PlanCheckoutDialog`.** Exibe "{trialDays} dias grátis…", mas todos os
 planos têm `TrialDays = null` (trial é PDV-side). Nunca executa. (`PlanCheckoutDialog/index.tsx:84-88`.)
 
-**#9 — `EntitlementCatalog.All` desatualizado.** As features `advancedInventory`, `advancedEmployee` e
-`advancedExpanses` estão em `EntitlementCatalog.Features` (concedidas ao Pro) mas **faltam em `All`** →
-`IsKnown` retorna `false` para elas e não há rótulo PT-BR no backend. Sincronizar `All` com `Features`.
-(`EntitlementCatalog.cs`.)
+**#9 — `EntitlementCatalog.All` desatualizado.** ✅ **Resolvido (2026-07-03).** As features
+`advancedInventory`, `advancedEmployee` e `advancedExpenses` foram adicionadas a `All`. Era **bug**,
+não só cosmético: como `PlanJson.ReadEntitlements` filtra por `IsKnown` (montado de `All`), essas
+chaves eram removidas ao resolver o plano → **o Pro não as recebia**. (`EntitlementCatalog.cs`.)
 
-**#10 — Grafia "advancedExpanses".** Deveria ser "advancedExpenses". Consistente entre backend e
-frontend (então funciona), mas é grafia incorreta da chave canônica.
+**#10 — Grafia "advancedExpanses".** ✅ **Resolvido (2026-07-03).** Renomeada para `advancedExpenses`
+no backend (const + valor), no frontend (`entitlements.ts`) e nos 2 consumidores; o `PlanSeeder`
+reescreve `EntitledModulesJson` no startup (sem migração de dados).
 
 ### ✅ Resolvidos desde os docs antigos
 

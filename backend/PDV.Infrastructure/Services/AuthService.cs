@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using FluentValidation;
-using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Auth;
@@ -24,36 +23,17 @@ public class AuthService(
     IEmployeeRepository employeeRepository,
     ITenantRoleRepository roleRepository,
     IStorageService storage,
+    IOAuthProvider oauthProvider,
     IValidator<ChangePasswordRequest> changePasswordValidator) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
         string credential)
     {
-        if (string.IsNullOrWhiteSpace(credential))
-            throw new UnauthorizedException("Credencial do Google ausente.");
-
-        var clientId = configuration["Authentication:Google:ClientId"]
-            ?? throw new InvalidOperationException("Google ClientId não configurado.");
-
-        GoogleJsonWebSignature.Payload payload;
-        try
-        {
-            // Valida assinatura (chaves públicas do Google), issuer, expiração e audience.
-            payload = await GoogleJsonWebSignature.ValidateAsync(
-                credential,
-                new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] });
-        }
-        catch (InvalidJwtException)
-        {
-            throw new UnauthorizedException("Token do Google inválido.");
-        }
-
-        // E-mail não verificado abriria vetor de account-takeover no fallback por e-mail.
-        if (!payload.EmailVerified)
-            throw new UnauthorizedException("E-mail do Google não verificado.");
+        // A validação da credencial (assinatura, audience, e-mail verificado) vive no provedor OAuth.
+        var info = await oauthProvider.ValidateAsync(credential);
 
         return await HandleGoogleCallbackAsync(
-            payload.Subject, payload.Email, payload.Name ?? string.Empty, payload.Picture);
+            info.ProviderId, info.Email, info.Name, info.AvatarUrl);
     }
 
     private async Task<(string AccessToken, string RefreshToken)> HandleGoogleCallbackAsync(
@@ -136,7 +116,11 @@ public class AuthService(
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
 
-        return (GenerateToken(user.Id, tenantId, user.Name, role), newRawRefreshToken);
+        // Preserva o claim mustChangePassword na rotação — senão o enforcement some após o 1º refresh.
+        var accessToken = GenerateToken(user.Id, tenantId, user.Name, role,
+            mustChangePassword: user.LocalAuth?.MustChangePassword ?? false);
+
+        return (accessToken, newRawRefreshToken);
     }
 
     public async Task LogoutAsync(Guid userId)
@@ -184,6 +168,10 @@ public class AuthService(
             }
         }
 
+        // Role efetivo = o do tenant ativo (claim do JWT, vindo de UserTenant.Role) — consistente com o
+        // enforcement do backend. Só cai para User.Role (global) quando não há tenant ativo (onboarding).
+        var effectiveRole = string.IsNullOrEmpty(role) ? user.Role.ToString() : role;
+
         var imageUrl = await storage.ResolveReadUrlAsync(user.ImageUrl, MediaCategory.Profile, user.UpdatedAt);
 
         // Módulos da operação ativos do tenant ativo (nulo/sem tenant → lista vazia).
@@ -195,7 +183,7 @@ public class AuthService(
             : [];
 
         return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.Document, user.BirthDate,
-            imageUrl, user.LastTenantId, user.Role.ToString(), settings, tenantItems, mustChangePassword, permissions, modules);
+            imageUrl, user.LastTenantId, effectiveRole, settings, tenantItems, mustChangePassword, permissions, modules);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)
@@ -261,7 +249,7 @@ public class AuthService(
         return (accessToken, rawRefreshToken);
     }
 
-    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    public async Task<string> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
         await changePasswordValidator.ValidateAndThrowAsync(new ChangePasswordRequest(currentPassword, newPassword));
 
@@ -280,6 +268,11 @@ public class AuthService(
 
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
+
+        // Reemite o access_token SEM o claim mustChangePassword para liberar o enforcement na hora
+        // (o token anterior ainda carregava o claim). O controller grava o novo cookie.
+        var (tenantId, role) = ResolveActiveTenant(user);
+        return GenerateToken(user.Id, tenantId, user.Name, role);
     }
 
     // Resolve o tenant ativo e o papel (role) do token a partir dos vínculos do usuário.

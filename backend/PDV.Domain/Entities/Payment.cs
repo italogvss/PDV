@@ -10,7 +10,7 @@ public class Payment : BaseEntity
     public Guid? SubscriptionId { get; set; }
     public Guid? PlanId { get; set; }
     public string Provider { get; set; } = string.Empty;
-    public string GatewayChargeId { get; set; } = string.Empty; // bill_... / pix_char_...
+    public string GatewayChargeId { get; set; } = string.Empty; // bill_...
 
     public PaymentKind Kind { get; set; }
     public GatewayPaymentMethod Method { get; set; }

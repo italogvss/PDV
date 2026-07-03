@@ -13,9 +13,6 @@ public interface IPaymentGateway
     // Assinatura recorrente por cartão — devolve a URL do checkout hospedado.
     Task<HostedCheckoutResult> CreateSubscriptionCheckoutAsync(SubscriptionCheckoutRequest request, CancellationToken ct = default);
 
-    // Checkout transparente — PIX embutido (brCode + brCodeBase64), sem redirecionar.
-    Task<PixChargeResult> CreatePixChargeAsync(PixChargeRequest request, CancellationToken ct = default);
-
     Task<PlanChangeResult> ChangeSubscriptionPlanAsync(string gatewaySubscriptionId, string newProductExternalId, int quantity, CancellationToken ct = default);
 
     Task CancelSubscriptionAsync(string gatewaySubscriptionId, CancellationToken ct = default);

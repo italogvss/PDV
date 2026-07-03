@@ -12,8 +12,7 @@ namespace PDV.Api.Controllers;
 [Authorize(Roles = "Admin")]
 public class AdminController(
     IAdminService adminService,
-    IOptions<AbacatePayOptions> abacateOptions,
-    IAbacatePayApiClient apiClient) : ControllerBase
+    IOptions<AbacatePayOptions> abacateOptions) : ControllerBase
 {
     [HttpGet("webhook-events")]
     public async Task<IActionResult> GetWebhookEvents(
@@ -40,13 +39,6 @@ public class AdminController(
             MaskSecret(opts.WebhookSecret),
             opts.BaseUrl,
             opts.BackUrl));
-    }
-
-    [HttpPost("test/simulate-pix")]
-    public async Task<IActionResult> SimulatePixPayment([FromBody] SimulatePixRequest request)
-    {
-        var result = await apiClient.SimulatePixPaymentAsync(request.PixChargeId);
-        return Ok(result);
     }
 
     [HttpGet("plans")]

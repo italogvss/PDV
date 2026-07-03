@@ -41,9 +41,9 @@ public static class EntitlementCatalog
 
     public const string AdvancedEmployee = "advancedEmployee";
 
-    public const string Notifications = "notifications";  
+    public const string Notifications = "notifications";
 
-    public const string AdvancedExpanses = "advancedExpanses";
+    public const string AdvancedExpenses = "advancedExpenses";
 
     public record EntitlementInfo(string Key, string Label, string Group, bool IsModule);
 
@@ -59,7 +59,7 @@ public static class EntitlementCatalog
     [
         AdvancedDashboard, ProductWithPhoto, ProductLinkedToService, RecurringExpense,
         CustomRoles, AdvancedReports, InformativeCustomerData, CustomerSettings,
-        CustomDiscountPercentage, Notifications, AdvancedInventory, AdvancedEmployee, AdvancedExpanses
+        CustomDiscountPercentage, Notifications, AdvancedInventory, AdvancedEmployee, AdvancedExpenses
     ];
 
     // Catálogo declarativo — rótulos PT-BR para a UI de Assinatura. Ordem = ordem de exibição.
@@ -85,7 +85,10 @@ public static class EntitlementCatalog
         new(InformativeCustomerData, "Dados analíticos do cliente", "Clientes", IsModule: false),
         new(CustomerSettings, "Configurações de cliente", "Clientes", IsModule: false),
         new(CustomDiscountPercentage, "Percentual de desconto personalizado", "Vendas", IsModule: false),
-        new(Notifications, "Notificações", "Notificações", IsModule: false)
+        new(Notifications, "Notificações", "Notificações", IsModule: false),
+        new(AdvancedInventory, "Estoque avançado", "Estoque", IsModule: false),
+        new(AdvancedEmployee, "Gestão avançada de equipe", "Equipe", IsModule: false),
+        new(AdvancedExpenses, "Despesas avançadas", "Despesas", IsModule: false)
     ];
 
     private static readonly HashSet<string> KnownKeys =

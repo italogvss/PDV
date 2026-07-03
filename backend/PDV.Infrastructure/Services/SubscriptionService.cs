@@ -20,8 +20,6 @@ public class SubscriptionService(
     IUserRepository userRepository,
     IPaymentGateway gateway) : ISubscriptionService
 {
-    private const int PixExpiresInSeconds = 3600;
-
     public async Task<SubscriptionResponse> GetMineAsync()
     {
         var resolved = await entitlementService.ResolveForCurrentTenantAsync();
@@ -78,15 +76,14 @@ public class SubscriptionService(
                 "Aguarde o fim desse período para contratar novamente.");
         }
 
-        var method = ParseMethod(request.Method);
         var customer = await EnsureCustomerAsync(userId, user);
 
-        // Uma assinatura por usuário — reaproveita a existente (reativação/troca de método).
+        // Uma assinatura por usuário — reaproveita a existente (reativação).
         var sub = existingSub ?? new Subscription { UserId = userId };
         var isNew = existingSub is null;
         sub.Provider = gateway.Provider;
         sub.PlanId = plan.Id;
-        sub.Method = method;
+        sub.Method = GatewayPaymentMethod.Card;
         sub.GatewayCustomerId = customer.GatewayCustomerId;
         sub.Status = SubscriptionStatus.Pending;
         sub.CanceledAt = null;
@@ -98,13 +95,12 @@ public class SubscriptionService(
             ["subscriptionId"] = sub.Id.ToString(),
         };
 
-        return method == GatewayPaymentMethod.Card
-            ? await StartCardCheckoutAsync(plan, sub, isNew, customer, request, metadata, userId)
-            : await StartPixCheckoutAsync(plan, sub, isNew, user, request, metadata, userId);
+        return await StartCardCheckoutAsync(plan, sub, isNew, customer, request, metadata, userId);
     }
 
-    // Troca de plano imediata (apenas cartão). Fora de trial: só troca o produto no gateway e o plano
-    // local, mantendo as datas de renovação/fim de período. Em trial: troca e recalcula o trial.
+    // Troca de plano imediata. Trial PDV-side (sem gateway): só troca o plano local, sem cobrança.
+    // Com gateway — fora de trial: troca o produto no gateway e o plano local, mantendo as datas de
+    // renovação/fim de período; em trial-gateway: troca e recalcula o trial.
     public async Task ChangePlanAsync(ChangePlanRequest request)
     {
         var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
@@ -114,9 +110,6 @@ public class SubscriptionService(
         if (sub.Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing))
             throw new BusinessException("Nenhuma assinatura ativa para trocar.");
 
-        if (sub.Method != GatewayPaymentMethod.Card || string.IsNullOrEmpty(sub.GatewaySubscriptionId))
-            throw new BusinessException("Troca de plano disponível apenas para assinaturas no cartão.");
-
         var newPlan = await planRepository.GetByIdAsync(request.PlanId)
             ?? throw new NotFoundException("Plano não encontrado.");
 
@@ -124,6 +117,20 @@ public class SubscriptionService(
             throw new BusinessException("Você já está neste plano.");
 
         var inTrial = sub.Status == SubscriptionStatus.Trialing;
+
+        // Trial PDV-side: não há assinatura no gateway para alterar. Troca só o plano local;
+        // o gateway recebe o plano no checkout do fim do trial (que usa o PlanId corrente).
+        // TrialEndsAt/CurrentPeriodEnd são preservados (janela de 30 dias inalterada).
+        if (inTrial && string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+        {
+            sub.PlanId = newPlan.Id;
+            sub.UpdatedAt = DateTime.UtcNow;
+            await subscriptionRepository.UpdateAsync(sub);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+            throw new BusinessException("Troca de plano disponível apenas para assinaturas já ativadas no gateway.");
 
         // Fora de trial não se pode migrar para um plano com período de trial.
         if (!inTrial && newPlan.TrialDays.HasValue)
@@ -149,8 +156,8 @@ public class SubscriptionService(
         var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
             ?? throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
 
-        // Cancela no gateway primeiro (cartão com subs_) — impede a cobrança ao fim do trial/período.
-        if (sub.Method == GatewayPaymentMethod.Card && !string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+        // Cancela no gateway primeiro (assinatura com subs_) — impede a cobrança ao fim do trial/período.
+        if (!string.IsNullOrEmpty(sub.GatewaySubscriptionId))
             await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId!);
 
         // Em trial: bloqueia o acesso imediatamente com remoção FÍSICA da assinatura e dos pagamentos
@@ -196,44 +203,7 @@ public class SubscriptionService(
             CouponCode = request.CouponCode,
         });
 
-        return new StartCheckoutResponse(checkout.Url, null);
-    }
-
-    private async Task<StartCheckoutResponse> StartPixCheckoutAsync(
-        Plan plan, Subscription sub, bool isNew, User user,
-        StartCheckoutRequest request, Dictionary<string, string> metadata, Guid userId)
-    {
-        var period = ParsePeriod(request.Period);
-        var amount = plan.PriceCents;
-
-        sub.IsRenewable = false;
-
-        var pixMetadata = new Dictionary<string, string>(metadata) { ["period"] = period.ToString() };
-
-        var pix = await gateway.CreatePixChargeAsync(new PixChargeRequest(
-            amount,
-            $"Assinatura {plan.Name} ({(period == BillingPeriod.Annual ? "anual" : "mensal")})",
-            PixExpiresInSeconds,
-            new CustomerInfo(user.Email, user.Name, user.Document, user.Phone),
-            sub.Id.ToString(),
-            pixMetadata));
-
-        await PersistSubscriptionAsync(sub, isNew);
-
-        await paymentRepository.AddAsync(new Payment
-        {
-            UserId = userId,
-            SubscriptionId = sub.Id,
-            PlanId = plan.Id,
-            Provider = gateway.Provider,
-            GatewayChargeId = pix.ChargeId,
-            Kind = PaymentKind.PixSubscription,
-            Method = GatewayPaymentMethod.Pix,
-            AmountCents = amount,
-            Status = PaymentStatus.Pending,
-        });
-
-        return new StartCheckoutResponse(null, new PixChargeDto(pix.ChargeId, pix.BrCode, pix.BrCodeBase64, pix.ExpiresAt));
+        return new StartCheckoutResponse(checkout.Url);
     }
 
     private async Task<GatewayCustomer> EnsureCustomerAsync(Guid userId, User user)
@@ -291,14 +261,4 @@ public class SubscriptionService(
         PlanJson.ReadEntitlements(p.EntitledModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
         p.TrialDays);
-
-private static GatewayPaymentMethod ParseMethod(string method) => method?.ToUpperInvariant() switch
-    {
-        "CARD" => GatewayPaymentMethod.Card,
-        "PIX" => GatewayPaymentMethod.Pix,
-        _ => throw new BusinessException("Método de pagamento inválido."),
-    };
-
-    private static BillingPeriod ParsePeriod(string? period) =>
-        string.Equals(period, "Annual", StringComparison.OrdinalIgnoreCase) ? BillingPeriod.Annual : BillingPeriod.Monthly;
 }

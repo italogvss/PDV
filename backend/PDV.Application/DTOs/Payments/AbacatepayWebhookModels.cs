@@ -8,7 +8,7 @@ namespace PDV.Infrastructure.Services.Payments.AbacatePay.Models;
 // ---------------------------------------------------------------------------
 
 // { id?, event, apiVersion, devMode, data }
-// id (log_...) só existe em eventos subscription.*; checkout/transparent não têm.
+// id (log_...) só existe em eventos subscription.*; checkout não tem.
 public record WebhookEnvelope(
     string? Id,
     string Event,
@@ -22,13 +22,11 @@ public record WebhookEnvelope(
 // ---------------------------------------------------------------------------
 
 // Seções presentes por família de evento:
-//   checkout, customer, payerInformation  → sempre (6/6)
-//   subscription, payment                 → ausentes no checkout.completed (5/6)
-//   transparent                           → exclusivo de eventos transparent.*
+//   checkout, customer, payerInformation  → sempre
+//   subscription, payment                 → ausentes no checkout.completed
 //   campos extras na raiz (ProductId...)  → exclusivos de subscription.plan_changed
 public record WebhookData(
     WebhookCheckout? Checkout,
-    WebhookTransparent? Transparent,
     WebhookSubscription? Subscription,
     WebhookPayment? Payment,
     WebhookCustomer? Customer,
@@ -178,22 +176,4 @@ public record WebhookUtms(
     string? Campaign,
     string? Term,
     string? Content
-);
-
-// ---------------------------------------------------------------------------
-// data.transparent
-// ---------------------------------------------------------------------------
-
-// Exclusivo de eventos transparent.* (PIX / boleto).
-// Shape análogo ao checkout — mutuamente exclusivos por família de evento.
-public record WebhookTransparent(
-    string Id,
-    string? ExternalId,
-    int Amount,
-    int? PaidAmount,
-    string Status,
-    string? ReceiptUrl,
-    Dictionary<string, JsonElement>? Metadata,
-    DateTime CreatedAt,
-    DateTime UpdatedAt
 );

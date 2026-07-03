@@ -8,8 +8,7 @@ export type SubscriptionStatus =
   | 'Canceled'
   | 'Expired'
 
-export type PaymentMethod = 'Card' | 'Pix'
-export type BillingPeriod = 'Monthly' | 'Annual'
+export type PaymentMethod = 'Card'
 
 export interface Plan {
   id: string
@@ -37,14 +36,6 @@ export interface Subscription {
   limits: Record<string, number>
   // Controle de trial.
   hasUsedTrial: boolean
-}
-
-// PIX transparente — QR embutido devolvido no checkout (sem redirecionar).
-export interface PixCharge {
-  chargeId: string
-  brCode: string
-  brCodeBase64: string
-  expiresAt: string | null
 }
 
 // Resumo leve guardado no auth slice (espelho do React Query) para banner/exibição global e

@@ -199,6 +199,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Frontend");
 app.UseAuthentication();
+// Barra tudo (exceto allowlist) enquanto o usuário tiver senha temporária — precisa do User já populado.
+app.UseMiddleware<MustChangePasswordMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

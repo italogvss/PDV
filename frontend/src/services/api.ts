@@ -17,6 +17,11 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Refresh compartilhado: várias requests que dão 401 juntas (típico no boot) aguardam UM único
+// /auth/refresh. Sem isso, refreshes concorrentes rotacionariam o token single-use e os retardatários
+// chegariam com o refresh já invalidado → clearAuth() → logout espúrio.
+let refreshPromise: Promise<void> | null = null
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -29,9 +34,15 @@ api.interceptors.response.use(
     config._isRetry = true
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/refresh`, null, {
-        withCredentials: true,
-      })
+      if (!refreshPromise) {
+        refreshPromise = axios
+          .post(`${import.meta.env.VITE_API_URL}/auth/refresh`, null, { withCredentials: true })
+          .then(() => undefined)
+          .finally(() => {
+            refreshPromise = null
+          })
+      }
+      await refreshPromise
       return api(config)
     } catch {
       store.dispatch(clearAuth())

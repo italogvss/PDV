@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
-import type { BillingPeriod } from '../types/subscription.types'
 import { UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 import { useAppDispatch, useAppSelector } from '../store'
 import { setSubscription } from '../store/slices/auth.slice'
@@ -12,7 +11,7 @@ export const SUBSCRIPTION_QUERY_KEY = ['subscription'] as const
 const PLANS_QUERY_KEY = ['plans'] as const
 
 // Plano efetivo + estado da assinatura da loja atual.
-// `refetchIntervalMs` permite que a página de retorno / o QR PIX façam polling até o webhook ativar.
+// `refetchIntervalMs` permite que a página de retorno faça polling até o webhook ativar.
 export function useSubscription(refetchIntervalMs?: number) {
   return useQuery({
     queryKey: SUBSCRIPTION_QUERY_KEY,
@@ -77,12 +76,10 @@ export function useSyncSubscriptionToStore() {
 
 export interface StartCheckoutInput {
   planId: string
-  period?: BillingPeriod
   couponCode?: string
 }
 
-// Inicia o checkout. Cartão → redireciona para o AbacatePay. PIX → o componente lê
-// `mutation.data.pix` para abrir o QR embutido.
+// Inicia o checkout da assinatura recorrente no cartão → redireciona para o AbacatePay.
 export function useStartCheckout() {
   const handleError = useApiError()
   return useMutation({
@@ -90,8 +87,6 @@ export function useStartCheckout() {
       const base = window.location.origin
       return subscriptionService.startCheckout({
         planId: input.planId,
-        method: "Card",
-        period: input.period,
         couponCode: input.couponCode,
         returnUrl: `${base}/configuracoes?tab=assinatura`,
         completionUrl: `${base}/assinatura/retorno`,

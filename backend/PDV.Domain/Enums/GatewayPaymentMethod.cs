@@ -4,5 +4,4 @@ namespace PDV.Domain.Enums;
 public enum GatewayPaymentMethod
 {
     Card,
-    Pix,
 }
