@@ -271,16 +271,22 @@ Sem endpoint. No fim do ciclo o gateway cobra e envia:
 
 ### 7.7 — CANCELAR
 
-**Frontend:** botão "Cancelar plano" quando `isPaid && isLive`. `ConfirmDialog` (mensagem específica
-p/ trial) → `useCancelSubscription.mutate()` → `POST /cancel`. Toast + invalida `/me`.
+**Frontend:** botão "Cancelar plano" quando `isPaid && isLive`. `ConfirmDialog` com mensagem por
+estado (trial → aviso forte de perda de acesso + exclusão da loja em 30 dias + link para exportar
+dados; ativa → "não renova, acesso até {data}") → `useCancelSubscription.mutate()` → `POST /cancel`.
+O endpoint devolve `{ accessRevoked }`: **true** (trial) → `authService.logout()` + `clearAuth()` +
+redirect para `VITE_LANDING_URL`; **false** (ativa) → toast + invalida a query (permanece logado).
 
-**Backend — `CancelAsync`:**
-- Se `Method == Card` **e** `GatewaySubscriptionId` presente → `gateway.CancelSubscriptionAsync` **primeiro**.
-- **Em trial (`Trialing`):** volta ao bloqueio imediato com **remoção FÍSICA** (hard delete) da
-  `Subscription` e dos `Payment` da sub (FK: pagamentos antes). Exceção justificada ao soft delete.
-  `User.HasUsedTrial` permanece `true` → novo checkout só aceita plano sem trial.
+**Backend — `CancelAsync` → `CancelSubscriptionResult(AccessRevoked)`:**
+- Se `GatewaySubscriptionId` presente → `gateway.CancelSubscriptionAsync` **primeiro**.
+- **Em trial (`Trialing`):** bloqueio imediato com **remoção FÍSICA** (hard delete) da `Subscription`
+  e dos `Payment` da sub (FK: pagamentos antes). Exceção justificada ao soft delete. Além disso,
+  **desativa todas as lojas ativas do Owner** (`IsActive=false`, `ScheduledDeletionAt = now+30d` →
+  excluídas pelo `TenantDeletionBackgroundService`). `User.HasUsedTrial` permanece `true`. Retorna
+  `AccessRevoked = true`.
 - **Pós-trial (`Active`):** `Status = Canceled`, `CanceledAt = now`, **`CurrentPeriodEnd` preservado**
-  → acesso mantido até o fim do período.
+  → acesso mantido até o fim do período. Retorna `AccessRevoked = false`. **Não** há janela de
+  reembolso: todo cancelamento de assinatura ativa mantém o acesso até o fim do período pago.
 
 **Webhook `subscription.cancelled` → `ApplyCancelled`:** `Status = Canceled`, `CanceledAt ??= now`
 (idempotente com o cancel manual). Cancelamento em trial: sub já removida → resolve nada → no-op

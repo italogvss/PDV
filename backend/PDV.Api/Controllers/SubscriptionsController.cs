@@ -33,9 +33,5 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
 
     [HttpPost("cancel")]
     [Authorize(Roles = "Owner,Admin")]
-    public async Task<IActionResult> Cancel()
-    {
-        await service.CancelAsync();
-        return NoContent();
-    }
+    public async Task<IActionResult> Cancel() => Ok(await service.CancelAsync());
 }

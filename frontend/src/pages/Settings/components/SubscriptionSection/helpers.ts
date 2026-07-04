@@ -10,7 +10,7 @@ export interface StatusConfig {
 }
 
 export const STATUS_CONFIG: Record<SubscriptionStatus, StatusConfig> = {
-  None: { label: 'GRATUITO', chipBg: 'surface.raised', chipColor: 'text.secondary' },
+  None: { label: 'SEM PLANO', chipBg: 'surface.raised', chipColor: 'text.secondary' },
   Pending: { label: 'PROCESSANDO', chipBg: 'warning.soft', chipColor: 'warning.ink' },
   Active: { label: 'ATIVO', chipBg: 'success.soft', chipColor: 'success.ink' },
   Trialing: { label: 'EM TESTE', chipBg: 'premium.100', chipColor: 'premium.900' },

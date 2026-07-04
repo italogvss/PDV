@@ -1,7 +1,8 @@
 // Espelha o contrato do backend (PDV.Application/DTOs/Subscriptions). Planos são identificados
-// por `id` (Guid) — não há tier hardcoded. Estado Free = `planId == null`. Limites: -1 = ilimitado.
+// por `id` (Guid) — não há tier hardcoded. `planId == null` = sem assinatura viva (acesso
+// bloqueado, sem plano grátis). Limites: -1 = ilimitado.
 export type SubscriptionStatus =
-  | 'None' // sem assinatura (estado Free)
+  | 'None' // sem assinatura viva → acesso bloqueado (não existe mais plano grátis)
   | 'Pending' // checkout iniciado, aguardando confirmação do gateway
   | 'Trialing'
   | 'Active'

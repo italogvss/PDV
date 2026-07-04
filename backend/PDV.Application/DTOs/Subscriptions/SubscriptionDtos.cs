@@ -43,3 +43,8 @@ public record StartCheckoutResponse(
     string? CheckoutUrl);
 
 public record ChangePlanRequest(Guid PlanId);
+
+// Resultado do cancelamento. AccessRevoked = true quando o acesso caiu na hora (cancelamento em
+// trial: assinatura removida + loja(s) desativada(s)) → o frontend desloga e vai para a landing.
+// false quando a assinatura ativa foi cancelada mas o acesso segue até o fim do período pago.
+public record CancelSubscriptionResult(bool AccessRevoked);

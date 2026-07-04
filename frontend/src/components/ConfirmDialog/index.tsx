@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, Paper, Typography } from '@mui/material'
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, Paper, Typography } from '@mui/material'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import ModalHeader from '../ModalHeader'
 import type { ConfirmDialogProps } from './types'
@@ -36,10 +36,10 @@ export default function ConfirmDialog({
         }}
       >
         <WarningAmberRounded sx={{ml: 2,fontSize: 25, mt: 0.25, flexShrink: 0 }} />
-        <Typography variant="body2">{description}</Typography>
-      </Paper>          
+        <Typography variant="body2" component="div">{description}</Typography>
+      </Paper>
         </>) : (
-          <DialogContentText>{description}</DialogContentText>
+          <DialogContentText component="div">{description}</DialogContentText>
         )}
       </DialogContent>
       <DialogActions>

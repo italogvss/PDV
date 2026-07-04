@@ -13,5 +13,9 @@ public interface ISubscriptionService
     // Owner-only — opera sobre a assinatura do usuário autenticado.
     Task<StartCheckoutResponse> StartCheckoutAsync(StartCheckoutRequest request);
     Task ChangePlanAsync(ChangePlanRequest request);
-    Task CancelAsync();
+
+    // Cancela a assinatura do usuário. Em trial revoga o acesso na hora (remove a assinatura e
+    // desativa as lojas do Owner com exclusão agendada); fora do trial mantém o acesso até o fim
+    // do período. Ver CancelSubscriptionResult.
+    Task<CancelSubscriptionResult> CancelAsync();
 }

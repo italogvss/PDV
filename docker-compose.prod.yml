@@ -44,6 +44,7 @@ services:
         # Embutido no bundle no momento do build.
         VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_LANDING_URL: ${VITE_LANDING_URL}
     container_name: pdv-frontend
     restart: unless-stopped
 

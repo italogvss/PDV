@@ -6,7 +6,8 @@ import Dropdown from './components/Dropdown'
 
 export default function UserMenu() {
   const auth = useAppSelector((state) => state.auth)
-  const planLabel = auth.subscription?.planName ?? 'Gratuito'
+  const isPaid = (auth.subscription?.planId ?? null) !== null
+  const planLabel = isPaid ? auth.subscription?.planName ?? 'Ativo' : 'Sem plano'
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)

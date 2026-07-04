@@ -18,6 +18,7 @@ public class SubscriptionService(
     IGatewayCustomerRepository gatewayCustomerRepository,
     IPaymentRepository paymentRepository,
     IUserRepository userRepository,
+    ITenantRepository tenantRepository,
     IPaymentGateway gateway) : ISubscriptionService
 {
     public async Task<SubscriptionResponse> GetMineAsync()
@@ -151,9 +152,10 @@ public class SubscriptionService(
         await subscriptionRepository.UpdateAsync(sub);
     }
 
-    public async Task CancelAsync()
+    public async Task<CancelSubscriptionResult> CancelAsync()
     {
-        var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
+        var userId = userContext.UserId;
+        var sub = await subscriptionRepository.GetLiveByUserIdAsync(userId)
             ?? throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
 
         // Cancela no gateway primeiro (assinatura com subs_) — impede a cobrança ao fim do trial/período.
@@ -163,18 +165,43 @@ public class SubscriptionService(
         // Em trial: bloqueia o acesso imediatamente com remoção FÍSICA da assinatura e dos pagamentos
         // (exceção justificada à regra de soft delete — em trial não há cobrança paga, e o usuário
         // não pode reativar em trial). User.HasUsedTrial permanece true, então não há novo trial.
-        // Pagamentos antes da assinatura por causa da FK.
+        // Pagamentos antes da assinatura por causa da FK. As lojas do Owner também são desativadas
+        // (acesso cai na hora) e agendadas para exclusão — o frontend desloga e vai para a landing.
         if (sub.Status == SubscriptionStatus.Trialing)
         {
             await paymentRepository.DeleteBySubscriptionIdAsync(sub.Id);
             await subscriptionRepository.DeleteAsync(sub);
-            return;
+            await DeactivateOwnedTenantsAsync(userId);
+            return new CancelSubscriptionResult(AccessRevoked: true);
         }
 
         // Pós-trial (Active): mantém acesso até o fim do período já pago (CurrentPeriodEnd preservado).
         sub.Status = SubscriptionStatus.Canceled;
         sub.CanceledAt = DateTime.UtcNow;
         await subscriptionRepository.UpdateAsync(sub);
+        return new CancelSubscriptionResult(AccessRevoked: false);
+    }
+
+    // Desativa todas as lojas ativas onde o usuário é Owner e agenda a exclusão definitiva em 30 dias
+    // (mesmo padrão de TenantService.DeactivateCurrentAsync + TenantDeletionBackgroundService). A
+    // assinatura é do Owner e cobre todas as suas lojas — ao cancelar em trial, todas caem juntas.
+    private async Task DeactivateOwnedTenantsAsync(Guid userId)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user is null) return;
+
+        var now = DateTime.UtcNow;
+        var ownedActive = user.UserTenants
+            .Where(ut => ut.Role == UserRole.Owner && ut.Tenant.IsActive)
+            .Select(ut => ut.Tenant);
+
+        foreach (var tenant in ownedActive)
+        {
+            tenant.IsActive = false;
+            tenant.ScheduledDeletionAt = now.AddMonths(1);
+            tenant.UpdatedAt = now;
+            await tenantRepository.UpdateAsync(tenant);
+        }
     }
 
     private async Task<StartCheckoutResponse> StartCardCheckoutAsync(

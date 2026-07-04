@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Link,
   TextField,
   Typography,
   useTheme,
@@ -172,6 +173,25 @@ export default function LoginPage() {
             ) : (
               <GoogleSignInButton onCredential={handleCredential} />
             )}
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              Ao continuar, declaro que li e concordo com os{' '}
+              <Link
+                href={`${import.meta.env.VITE_LANDING_URL}/termos-de-uso`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Termos de Uso
+              </Link>{' '}
+              e a{' '}
+              <Link
+                href={`${import.meta.env.VITE_LANDING_URL}/politica-de-privacidade`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Política de Privacidade
+              </Link>
+              .
+            </Typography>
           </Box>
         ) : (
           <Box

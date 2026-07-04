@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
+import { authService } from '../services/auth.service'
 import { UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 import { useAppDispatch, useAppSelector } from '../store'
-import { setSubscription } from '../store/slices/auth.slice'
+import { clearAuth, setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 
@@ -116,13 +117,29 @@ export function useChangePlan() {
 
 export function useCancelSubscription() {
   const queryClient = useQueryClient()
+  const dispatch = useAppDispatch()
   const showToast = useToast()
   const handleError = useApiError()
   return useMutation({
     mutationFn: () => subscriptionService.cancel(),
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      // Cancelamento em trial: o acesso e a(s) loja(s) já caíram no backend. Encerra a sessão
+      // (invalida o refresh token) e manda para a landing — não há mais app para voltar.
+      if (result.accessRevoked) {
+        try {
+          await authService.logout()
+        } catch {
+          // logout best-effort — segue para a landing de qualquer forma.
+        }
+        dispatch(clearAuth())
+        queryClient.clear()
+        window.location.href = import.meta.env.VITE_LANDING_URL
+        return
+      }
+
+      // Assinatura ativa cancelada: mantém acesso até o fim do período. Só atualiza o banner.
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
-      showToast('Assinatura cancelada.', 'info')
+      showToast('Assinatura cancelada. Você mantém o acesso até o fim do período.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar a assinatura.'),
   })

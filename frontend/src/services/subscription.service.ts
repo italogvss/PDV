@@ -36,6 +36,16 @@ interface BackendCheckout {
   checkoutUrl: string | null
 }
 
+interface BackendCancelResult {
+  accessRevoked: boolean
+}
+
+// Resultado do cancelamento. accessRevoked = true quando o acesso caiu na hora (cancelamento em
+// trial) → o app desloga e vai para a landing; false quando mantém acesso até o fim do período.
+export interface CancelResult {
+  accessRevoked: boolean
+}
+
 function mapSubscription(s: BackendSubscription): Subscription {
   return {
     planId: s.planId ?? null,
@@ -103,7 +113,8 @@ export const subscriptionService = {
     await api.post('/subscriptions/change-plan', { planId })
   },
 
-  cancel: async (): Promise<void> => {
-    await api.post('/subscriptions/cancel')
+  cancel: async (): Promise<CancelResult> => {
+    const { data } = await api.post<BackendCancelResult>('/subscriptions/cancel')
+    return { accessRevoked: data?.accessRevoked ?? false }
   },
 }

@@ -74,10 +74,10 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
 }
 
 // A paleta premium (dourada) é exclusiva do plano Profissional — o Essencial (pago, mas sem as
-// features Pro) usa a accent do tenant, e o Gratuito fica neutro.
+// features Pro) usa a accent do tenant, e sem plano ativo fica neutro.
 const PRO_STYLE = { chipBg: 'premium.100', chipColor: 'premium.900', avatarOutlineColor: 'premium.400' as string | null }
 const ESSENCIAL_STYLE = { chipBg: 'accent.100', chipColor: 'accent.900', avatarOutlineColor: 'accent.400' as string | null }
-const FREE_STYLE = { chipBg: 'action.hover', chipColor: 'text.secondary', avatarOutlineColor: null as string | null }
+const NO_PLAN_STYLE = { chipBg: 'action.hover', chipColor: 'text.secondary', avatarOutlineColor: null as string | null }
 
 export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const auth = useAppSelector((state) => state.auth)
@@ -86,12 +86,12 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const { has } = useEntitlements()
   const [upsellOpen, setUpsellOpen] = useState(false)
 
-  const planName = auth.subscription?.planName ?? 'Gratuito'
   const isPaid = (auth.subscription?.planId ?? null) !== null
+  const planName = isPaid ? auth.subscription?.planName ?? 'Ativo' : 'Sem plano'
   // Sem tier hardcoded (ver subscription.types.ts) — `advancedDashboard` só está nas entitlements
   // do Profissional, então serve de proxy para "é o plano Pro" (mesmo padrão do Dashboard).
   const isProfissional = has(FEATURES.advancedDashboard)
-  const ts = isProfissional ? PRO_STYLE : isPaid ? ESSENCIAL_STYLE : FREE_STYLE
+  const ts = isProfissional ? PRO_STYLE : isPaid ? ESSENCIAL_STYLE : NO_PLAN_STYLE
 
   // Notificações é gateada por plano: sem o entitlement, o item ganha badge Pro e vira CTA de upsell.
   const canUseNotifications = has(FEATURES.notifications)
@@ -178,7 +178,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
               </Typography>
               <Chip
                 icon={<WorkspacePremiumOutlined sx={{ fontSize: 14, color: 'inherit !important' }} />}
-                label={`PLANO ${planName.toUpperCase()}`}
+                label={isPaid ? `PLANO ${planName.toUpperCase()}` : 'SEM PLANO'}
                 size="small"
                 sx={{
                   height: 22, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',

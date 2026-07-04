@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Box, Button, CircularProgress, Divider, Paper, Typography } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { Box, Button, CircularProgress, Divider, Link, Paper, Typography } from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
 import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
@@ -48,6 +49,7 @@ const LIMIT_ICONS: Record<PlanLimitKey, SvgIconComponent> = {
 
 export default function SubscriptionSection() {
   const theme = useTheme()
+  const navigate = useNavigate()
   const { data: subscription, isLoading: loadingSub } = useSubscription()
   const { data: plans, isLoading: loadingPlans } = usePlans()
   const changePlan = useChangePlan()
@@ -79,6 +81,7 @@ export default function SubscriptionSection() {
   const has = (key: string) => ownedSet.has(key.toLowerCase())
   const currentPlan = plans.find((p) => p.id === subscription.planId) ?? null
   const isPaid = subscription.planId !== null
+  const isTrial = subscription.status === 'Trialing'
   const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
   const isLiveCard = isLive && subscription.method === 'Card'
   const canCancel = isPaid && isLive
@@ -106,11 +109,13 @@ export default function SubscriptionSection() {
         Icon: StorefrontRounded,
       }
 
-  const planTitle = currentPlan ? shortPlanName(currentPlan.name) : subscription.planName ?? 'Gratuito'
+  const planTitle = currentPlan ? shortPlanName(currentPlan.name) : subscription.planName ?? 'Sem plano ativo'
   const currentCycle = currentPlan ? planCycle(currentPlan) : 'monthly'
   const statusLabel = STATUS_CONFIG[subscription.status].label
   const statusText =
-    isPaid && statusLine ? `${statusLine.label} ${statusLine.date}` : 'Plano gratuito — sem cobranças'
+    isPaid && statusLine
+      ? `${statusLine.label} ${statusLine.date}`
+      : 'Nenhum plano ativo — assine para usar o sistema.'
   const checkColor = isPro ? gold[600] : theme.palette.secondary.main
 
   // Recursos inclusos no plano atual.
@@ -127,7 +132,21 @@ export default function SubscriptionSection() {
   const proMonthly = proPlans.find((p) => planCycle(p) === 'monthly') ?? proPlans[0] ?? null
   const proAnnual = proPlans.find((p) => planCycle(p) === 'annual') ?? null
   const upgradeTarget = cycle === 'annual' ? proAnnual ?? proMonthly : proMonthly
-  const showUpgrade = !isPro && upgradeTarget !== null
+  // Upsell do Profissional só faz sentido para quem tem assinatura viva não-Pro (upgrade).
+  const showUpgrade = isLive && !isPro && upgradeTarget !== null
+
+  // Reassinar/reativar: estados sem assinatura viva (cancelada/expirada/sem plano). Reativa o plano
+  // atual quando existe; senão sugere o Profissional (ou o 1º plano) como alvo padrão.
+  const showResubscribe =
+    subscription.status === 'Canceled' ||
+    subscription.status === 'Expired' ||
+    subscription.status === 'None'
+  const resubscribeTarget = currentPlan ?? proMonthly ?? plans[0] ?? null
+  // Cancelada mas ainda dentro do período pago → reativar gera cobrança imediata (aviso na UI).
+  const hasRemainingAccess =
+    subscription.status === 'Canceled' &&
+    !!subscription.currentPeriodEnd &&
+    new Date(subscription.currentPeriodEnd) > new Date()
 
   const targetSet = upgradeTarget ? entitlementSet(upgradeTarget.entitlements) : null
   const newFeatures = targetSet
@@ -174,10 +193,30 @@ export default function SubscriptionSection() {
     else setCheckoutPlan(upgradeTarget)
   }
 
-  const cancelMessage =
-    subscription.status === 'Trialing'
-      ? 'Ao cancelar agora seu período de teste termina imediatamente e você perde o acesso.'
-      : 'Tem certeza que deseja cancelar sua assinatura?'
+  const goToExport = () => navigate('/configuracoes?tab=backup')
+
+  // Em trial, cancelar derruba o acesso e agenda a exclusão do negócio → aviso forte + link de
+  // exportação. Fora do trial, a assinatura só deixa de renovar e o acesso segue até o fim do período.
+  const cancelDescription = isTrial ? (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Typography variant="body2">
+        Ao cancelar agora, seu período de teste termina <strong>imediatamente</strong> e você perde o
+        acesso. Seu negócio será desativado e <strong>excluído definitivamente em 30 dias</strong>.
+      </Typography>
+      <Typography variant="body2">
+        Exporte seus dados antes de continuar —{' '}
+        <Link component="button" type="button" onClick={goToExport} sx={{ fontWeight: 700 }}>
+          exportar meus dados
+        </Link>
+        .
+      </Typography>
+    </Box>
+  ) : (
+    <Typography variant="body2">
+      Sua assinatura não será renovada. Você mantém o acesso{' '}
+      {statusLine?.date ? `até ${statusLine.date}` : 'até o fim do período já pago'}.
+    </Typography>
+  )
 
   const handleCancel = () => {
     cancel.mutate(undefined, { onSuccess: () => setConfirmCancelOpen(false) })
@@ -682,6 +721,46 @@ export default function SubscriptionSection() {
         </Paper>
       )}
 
+      {/* ══ Reassinar / reativar — quando não há assinatura viva ══ */}
+      {showResubscribe && resubscribeTarget && (
+        <Paper
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: brand[300],
+            background: `linear-gradient(150deg, ${brand[50]} 0%, ${brand[100]} 100%)`,
+            p: { xs: 3, sm: 4 },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 2.5,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: brand[900], letterSpacing: '-0.01em' }}>
+              {hasRemainingAccess ? 'Reative sua assinatura' : 'Assine para continuar usando'}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5, color: alpha(brand[900], 0.8), maxWidth: 560 }}>
+              {hasRemainingAccess
+                ? `Sua assinatura foi cancelada, mas você ainda tem acesso${
+                    statusLine?.date ? ` até ${statusLine.date}` : ''
+                  }. Reativar agora gera uma nova cobrança imediata.`
+                : 'Sua assinatura não está ativa. Escolha um plano para voltar a usar o sistema.'}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="secondary"
+            endIcon={<ArrowForwardRounded />}
+            onClick={() => setCheckoutPlan(resubscribeTarget)}
+            sx={{ flexShrink: 0, px: 3, py: 1.25, fontWeight: 700 }}
+          >
+            {hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
+          </Button>
+        </Paper>
+      )}
+
       <PlanCheckoutDialog
         open={checkoutPlan !== null}
         plan={checkoutPlan}
@@ -691,13 +770,13 @@ export default function SubscriptionSection() {
       <ConfirmDialog
         open={confirmCancelOpen}
         title="Cancelar assinatura?"
-        description={cancelMessage}
-        confirmLabel="Cancelar assinatura"
+        description={cancelDescription}
+        confirmLabel={isTrial ? 'Cancelar e sair' : 'Cancelar assinatura'}
         pendingLabel="Cancelando..."
         isPending={cancel.isPending}
         onClose={() => setConfirmCancelOpen(false)}
         onConfirm={handleCancel}
-        danger
+        danger={isTrial}
       />
     </Box>
   )
