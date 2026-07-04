@@ -1,0 +1,108 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import { Content } from '../../../docs/politica-de-privacidade.md';
+---
+
+<Layout
+  title="Política de Privacidade — Ka$hing"
+  description="Política de Privacidade da plataforma Ka$hing."
+>
+  <Navbar />
+
+  <main>
+    <section class="legal">
+      <div class="container legal-prose">
+        <Content />
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .legal { padding-block: var(--space-10) var(--space-14); }
+  .legal-prose {
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+  .legal-prose :global(h1) {
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-4xl));
+    margin-bottom: var(--space-3);
+  }
+  .legal-prose :global(h2) {
+    font-size: var(--text-2xl);
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-4);
+  }
+  .legal-prose :global(h3) {
+    font-size: var(--text-lg);
+    font-family: var(--font-body);
+    font-weight: var(--weight-semibold);
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-2);
+  }
+  .legal-prose :global(p) {
+    margin-bottom: var(--space-4);
+    color: var(--color-text);
+  }
+  .legal-prose :global(ul),
+  .legal-prose :global(ol) {
+    margin: 0 0 var(--space-4) var(--space-5);
+    list-style: revert;
+  }
+  .legal-prose :global(li) {
+    margin-bottom: var(--space-2);
+  }
+  .legal-prose :global(a) {
+    color: var(--color-brand-deep);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .legal-prose :global(a:hover) {
+    color: var(--color-brand-dark);
+  }
+  .legal-prose :global(strong) {
+    font-weight: var(--weight-semibold);
+    color: var(--color-ink);
+  }
+  .legal-prose :global(blockquote) {
+    margin: var(--space-5) 0;
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-mint);
+    border-left: 3px solid var(--color-brand);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .legal-prose :global(blockquote p:last-child) {
+    margin-bottom: 0;
+  }
+  .legal-prose :global(hr) {
+    border: none;
+    border-top: 1px solid var(--color-line);
+    margin-block: var(--space-8);
+  }
+  .legal-prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-5);
+    font-size: var(--text-sm);
+  }
+  .legal-prose :global(th),
+  .legal-prose :global(td) {
+    text-align: left;
+    padding: var(--space-3);
+    border: 1px solid var(--color-line);
+    vertical-align: top;
+  }
+  .legal-prose :global(th) {
+    background: var(--color-cloud);
+    font-weight: var(--weight-semibold);
+  }
+  .legal-prose :global(em) {
+    color: var(--color-text-muted);
+  }
+</style>
