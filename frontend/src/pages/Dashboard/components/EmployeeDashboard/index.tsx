@@ -46,7 +46,7 @@ export default function EmployeeDashboard() {
               }}
             >
               <Icon sx={{ fontSize: 48, color: 'text.secondary' }} />
-              <Typography variant="h6" component="h2" textAlign="center" fontWeight={600}>
+              <Typography variant="h6" component="h2" sx={{ textAlign: "center", fontWeight: 600 }}>
                 {item.label}
               </Typography>
             </CardActionArea>

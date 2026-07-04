@@ -1,13 +1,24 @@
 import AddRounded from '@mui/icons-material/AddRounded'
 import AppsRounded from '@mui/icons-material/AppsRounded'
 import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
+import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded'
+import ReceiptLongRounded from '@mui/icons-material/ReceiptLongRounded'
+import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import WarningRounded from '@mui/icons-material/WarningRounded'
 import { Box, Button, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import { useState } from 'react'
+import dayjs from 'dayjs'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { FEATURES } from '../../constants/entitlements'
+import { useProducts } from '../../hooks/useProducts'
+import { useExpensesByCategory, useSalesMetrics } from '../../hooks/useReports'
 import { useEntitlements } from '../../hooks/useSubscription'
 import { useAppSelector } from '../../store'
+import { formatBRL } from '../../utils/currency'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 import EmployeeDashboard from './components/EmployeeDashboard'
 import EssentialDashboard from './components/EssentialDashboard'
@@ -26,6 +37,33 @@ export default function DashboardPage() {
   // versão enxuta (EssentialDashboard) que não bate nos endpoints de relatório (Pro).
   const { has } = useEntitlements()
   const advancedDashboard = has(FEATURES.advancedDashboard)
+  const advancedExpenses = has(FEATURES.advancedExpenses)
+
+  const endDate = dayjs().format('YYYY-MM-DD')
+  const startDate = useMemo(
+    () => dayjs().subtract(selectedDays, 'day').format('YYYY-MM-DD'),
+    [selectedDays],
+  )
+
+  const { data: metrics, isLoading: metricsLoading } = useSalesMetrics(startDate, endDate)
+  const { data: products } = useProducts()
+  const { data: expensesByCategory, isLoading: expensesLoading } = useExpensesByCategory(startDate, endDate)
+
+  const lowStockCount = useMemo(
+    () => products?.filter((p) => p.minStock !== undefined && p.stock <= p.minStock).length ?? 0,
+    [products],
+  )
+  const criticalStockCount = useMemo(
+    () => products?.filter((p) => p.criticalStock !== undefined && p.stock <= p.criticalStock).length ?? 0,
+    [products],
+  )
+
+  const totalExpenses = useMemo(
+    () => expensesByCategory?.reduce((sum, e) => sum + e.total, 0) ?? 0,
+    [expensesByCategory],
+  )
+  const estimatedProfit = (metrics?.totalRevenue ?? 0) - totalExpenses
+  const kpisLoading = metricsLoading || expensesLoading
 
   const formattedDate = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
@@ -35,22 +73,24 @@ export default function DashboardPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader
-        title={`Olá, ${name} 👋`}
+        title={`Olá, ${name}`}
         description={`Aqui está o resumo do seu negócio em ${formattedDate}`}
       >
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={view}
-          onChange={(_, v: DashboardView | null) => v && setView(v)}
-        >
-          <ToggleButton value="analytics">
-            <InsightsOutlined sx={{ fontSize: 18 }} />
-          </ToggleButton>
-          <ToggleButton value="modules">
-            <AppsRounded sx={{ fontSize: 18 }} />
-          </ToggleButton>
-        </ToggleButtonGroup>
+        {advancedDashboard && (
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={view}
+            onChange={(_, v: DashboardView | null) => v && setView(v)}
+          >
+            <ToggleButton value="analytics">
+              <InsightsOutlined sx={{ fontSize: 18 }} />
+            </ToggleButton>
+            <ToggleButton value="modules">
+              <AppsRounded sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
 
         {view === 'analytics' && advancedDashboard && (
           <ToggleButtonGroup
@@ -71,6 +111,51 @@ export default function DashboardPage() {
           Nova venda
         </Button>
       </PageHeader>
+
+      {kpisLoading ? (
+        <PageKpiGrid>
+          {[...Array(4)].map((_, i) => (
+            <PageKpiCard key={i} icon={ShoppingCartRounded} label="" value="" isLoading />
+          ))}
+        </PageKpiGrid>
+      ) : (
+        <PageKpiGrid>
+          <PageKpiCard
+            icon={ShoppingCartRounded}
+            label="Faturamento"
+            value={formatBRL(metrics?.totalRevenue ?? 0)}
+            badge={{ label: `${metrics?.totalSales ?? 0} vendas`, color: 'success', icon: TrendingUpRounded }}
+          />
+          {advancedExpenses && (
+            <PageKpiCard
+              icon={WarningRounded}
+              label="Estoque baixo"
+              value={lowStockCount.toString()}
+              badge={
+                criticalStockCount > 0
+                  ? { label: `${criticalStockCount} críticos`, color: 'error', icon: TrendingDownRounded }
+                  : undefined
+              }
+            />
+          )}
+          <PageKpiCard
+            icon={ReceiptLongRounded}
+            label="Despesas"
+            value={formatBRL(totalExpenses)}
+            badge={{ label: `${selectedDays} dias`, color: 'warning', icon: TrendingDownRounded }}
+          />
+          <PageKpiCard
+            icon={LocalFireDepartmentRounded}
+            label="Lucro estimado"
+            value={formatBRL(estimatedProfit)}
+            badge={
+              estimatedProfit >= 0
+                ? { label: 'positivo', color: 'success', icon: TrendingUpRounded }
+                : { label: 'negativo', color: 'error', icon: TrendingDownRounded }
+            }
+          />
+        </PageKpiGrid>
+      )}
 
       {view === 'modules' ? (
         <EmployeeDashboard />
