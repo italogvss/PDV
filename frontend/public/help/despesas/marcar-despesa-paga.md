@@ -10,7 +10,9 @@ Ao criar ou editar uma despesa, use o campo **Status do pagamento** para escolhe
 2. Localize a despesa desejada — despesas pendentes mostram o status **A pagar**.
 3. Clique no menu **⋮** da linha e selecione **Marcar como pago**.
 
-A opção some do menu assim que a despesa já estiver paga.
+> A opção **Marcar como pago** some do menu assim que a despesa já estiver paga.
+
+---
 
 ## Acompanhando pagos e pendentes
 

@@ -10,6 +10,8 @@ Categorias organizam os produtos por tipo (ex: Bebidas, Limpeza, Snacks) e apare
 4. Escolha uma **Cor** entre as predefinidas, ou clique no ícone de paleta para escolher uma cor personalizada.
 5. Clique em **Salvar**.
 
+---
+
 ## Editando ou excluindo uma categoria
 
 Clique na categoria desejada na faixa de categorias para abrir o menu com as opções **Editar** e **Excluir**.
@@ -18,5 +20,5 @@ Clique na categoria desejada na faixa de categorias para abrir o menu com as op�
 
 - A cor escolhida é usada para identificar a categoria em toda a interface: no catálogo de vendas, na lista de produtos e nos filtros.
 - O número ao lado do nome da categoria mostra quantos produtos estão vinculados a ela.
-- Ao cadastrar ou editar um produto, a categoria é selecionada no campo **Categoria** do formulário — produtos sem categoria aparecem como "—" nas listagens.
+- Ao cadastrar ou editar um produto, a categoria é selecionada no campo **Categoria** do formulário — produtos sem categoria aparecem como `—` nas listagens.
 

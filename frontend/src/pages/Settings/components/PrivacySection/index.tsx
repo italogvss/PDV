@@ -13,7 +13,11 @@ export default function PrivacySection() {
   }, [])
 
   return (
-    <SettingCard title="Política de Privacidade" subtitle="Como tratamos os dados da sua conta e do seu negócio">
+    <SettingCard
+      title="Política de Privacidade"
+      subtitle="Como tratamos os dados da sua conta e do seu negócio"
+      maxContentHeight="calc(100vh - 320px)"
+    >
       <Box sx={{ px: 4, py: 3 }}>
         {content ? (
           <MarkdownRenderer content={content} />

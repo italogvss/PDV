@@ -14,6 +14,8 @@ Acesse **Configurações > Notificações**.
 
 Cada evento só aparece na lista se o módulo correspondente estiver ativo no negócio (veja o artigo *Ativar módulos*).
 
+---
+
 ## Passo a passo
 
 1. Ative ou desative o interruptor **No app** de cada evento.
@@ -21,4 +23,4 @@ Cada evento só aparece na lista se o módulo correspondente estiver ativo no ne
 
 ## Observações
 
-- Receber notificações no app é um recurso do plano **Pro**. No plano padrão, esta tela aparece bloqueada com um convite para upgrade.
+> **Importante:** receber notificações no app é um recurso do plano **Pro**. No plano padrão, esta tela aparece bloqueada com um convite para upgrade.

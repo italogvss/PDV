@@ -18,8 +18,11 @@ Cada forma de pagamento — **Cartão de Crédito**, **Cartão de Débito**, **P
 
 Quando uma venda é paga por um método com taxa configurada, o valor da taxa e o **valor líquido recebido** ficam registrados no detalhe da venda, em **Vendas > Histórico**.
 
+---
+
 ## Observações
 
-- Pelo menos uma forma de pagamento precisa ficar ativa para conseguir finalizar uma venda.
-- Veja o artigo *Formas de pagamento* (categoria Vendas) para o passo a passo de como escolher o método na hora de vender.
+> **Nota:** pelo menos uma forma de pagamento precisa ficar ativa para conseguir finalizar uma venda.
+
+Veja o artigo *Formas de pagamento* (categoria Vendas) para o passo a passo de como escolher o método na hora de vender.
 

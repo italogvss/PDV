@@ -34,7 +34,7 @@ A Kashing atua em **dois papéis distintos**, conforme o tipo de dado:
 
 | Tipo de dado | Papel da Kashing | Controlador |
 |---|---|---|
-| Dados de cadastro do titular da conta (Owner): nome, e-mail, telefone, dados de assinatura | **Controladora** | Kashing |
+| Dados de cadastro do titular da conta (proprietário(a)): nome, e-mail, telefone, dados de assinatura | **Controladora** | Kashing |
 | Dados que o comerciante insere sobre **seus clientes e funcionários** | **Operadora** | O próprio comerciante (Usuário) |
 
 2.1. Em relação aos dados de **clientes e funcionários** cadastrados pelo comerciante, **o comerciante é o
@@ -53,7 +53,7 @@ irregular.
 ### 3.1. Dados do titular da conta (Kashing como Controladora)
 
 - **Login via Google:** nome, e-mail e link da foto de perfil fornecidos pela conta Google. **A Kashing não
-  armazena a senha do Owner** — a autenticação é feita pelo Google.
+  armazena a senha do proprietário(a)** — a autenticação é feita pelo Google.
 - **Telefone:** opcional, informado pelo Usuário.
 - **CNPJ/CPF e dados do estabelecimento:** opcionais, informados pelo Usuário.
 - **Dados de assinatura/pagamento:** informações mínimas de faturas, como os **4 últimos dígitos do cartão**.
@@ -102,7 +102,7 @@ A Kashing compartilha dados apenas com os terceiros necessários à prestação 
 
 - **AbacatePay** (gateway de pagamento): recebe o **e-mail do Usuário** e o **plano contratado** para
   processar a assinatura.
-- **Google** (login e Google Analytics): autenticação do Owner e análise de uso da plataforma.
+- **Google** (login e Google Analytics): autenticação do proprietário(a) e análise de uso da plataforma.
 - **Amazon S3** (armazenamento de arquivos): armazenamento das fotos (funcionários e produtos).
 - **Provedor de hospedagem (VPS)**: onde rodam o backend, o frontend e a landing page.
 
@@ -158,7 +158,7 @@ seguro**. A Kashing não garante resultado absoluto contra ataques que superem e
 8.2. Após o cancelamento ou a inativação da conta, os dados são mantidos por **90 (noventa) dias** e, em
 seguida, **eliminados definitivamente**.
 
-8.3. **Exceção — retenção legal:** os dados cadastrais do **Owner** podem ser retidos por prazo superior
+8.3. **Exceção — retenção legal:** os dados cadastrais do **proprietário(a)** podem ser retidos por prazo superior
 quando necessário ao cumprimento de obrigações legais ou ao exercício regular de direitos.
 
 8.4. **Portabilidade/exportação.** Antes da eliminação, o Usuário pode **exportar os dados de sua loja**.
@@ -193,7 +193,7 @@ segurança a Kashing **comunicará o comerciante (Controlador)** para que este a
 inclusive eventuais comunicações à ANPD e aos titulares.
 
 > **Pendente:** você ainda não possui um **procedimento formal de resposta a incidentes** para os dados dos
-> quais é Controladora (cadastro do Owner). Recomenda-se definir um processo de comunicação à **ANPD** e aos
+> quais é Controladora (cadastro do proprietário(a)). Recomenda-se definir um processo de comunicação à **ANPD** e aos
 > titulares afetados em prazo razoável, conforme o art. 48 da LGPD.
 
 ---

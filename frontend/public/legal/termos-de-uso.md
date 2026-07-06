@@ -72,16 +72,16 @@ Usuário pode, opcionalmente, informar dados adicionais como CNPJ/CPF, telefone 
 atualização** de todos os dados e informações que insere na plataforma. A Kashing apenas armazena e exibe
 os dados fornecidos, não lhe cabendo verificá-los.
 
-3.4. **Autenticação e papéis.** O acesso do titular da conta (**Owner**) é realizado por meio de login
+3.4. **Autenticação e papéis.** O acesso do titular da conta (**proprietário(a)**) é realizado por meio de login
 com conta Google, sujeitando-se também aos termos e à segurança do respectivo provedor de identidade. O
-Owner pode criar acessos para seus funcionários (**Employee**).
+proprietário(a) pode criar acessos para seus funcionários (**Employee**).
 
-3.5. **Responsabilidade pela conta.** O Owner do estabelecimento (tenant) é o **responsável por todas as
+3.5. **Responsabilidade pela conta.** O proprietário(a) do estabelecimento (tenant) é o **responsável por todas as
 contas e acessos vinculados à sua loja**, inclusive as de seus funcionários, bem como por todos os atos
 praticados por meio delas. O Usuário deve manter em sigilo suas credenciais e não compartilhá-las.
 
-3.6. **Comprometimento de credenciais.** Funcionários podem solicitar a redefinição de senha ao Owner de
-sua loja. Como o acesso do Owner é feito via login Google, a segurança dessa autenticação está sujeita ao
+3.6. **Comprometimento de credenciais.** Funcionários podem solicitar a redefinição de senha ao proprietário(a) de
+sua loja. Como o acesso do proprietário(a) é feito via login Google, a segurança dessa autenticação está sujeita ao
 provedor Google. Em caso de suspeita de acesso não autorizado, o Usuário deve tomar as medidas cabíveis o
 mais rápido possível.
 
@@ -178,7 +178,7 @@ descumpram estes Termos, pratiquem atos ilícitos ou fraudulentos, ou usem a pla
 7.1. O tratamento de dados pessoais é regido pela [Política de Privacidade](/politica-de-privacidade),
 parte integrante destes Termos, elaborada em conformidade com a Lei nº 13.709/2018 (LGPD).
 
-7.2. **Papéis.** Em relação aos dados de cadastro do próprio Usuário (Owner), a Kashing atua como
+7.2. **Papéis.** Em relação aos dados de cadastro do próprio Usuário (proprietário(a)), a Kashing atua como
 **Controladora**. Em relação aos dados que o Usuário insere sobre **seus clientes e funcionários**, a
 Kashing atua como mera **Operadora**, sendo o **Usuário o Controlador** desses dados e o responsável por
 possuir base legal para coletá-los e tratá-los.

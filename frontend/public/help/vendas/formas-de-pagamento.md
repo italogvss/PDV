@@ -10,13 +10,17 @@ No painel do carrinho, selecione uma das opções disponíveis:
 - **Pix** — sem campos extras, cobra o valor total da venda.
 - **Dinheiro** — informe o valor recebido do cliente; o sistema calcula automaticamente o troco (ou quanto ainda falta receber).
 
+---
+
 ## Habilitar ou desabilitar formas de pagamento
 
 1. Vá em **Configurações > Formas de pagamento**.
 2. Ative ou desative **Cartão de Crédito**, **Cartão de Débito**, **Pix** e **Dinheiro** individualmente.
 3. Clique em **Salvar alterações**.
 
-Pelo menos uma forma precisa ficar ativa para que seja possível finalizar uma venda.
+> Pelo menos uma forma precisa ficar ativa para que seja possível finalizar uma venda.
+
+---
 
 ## Cobrar taxa por forma de pagamento
 

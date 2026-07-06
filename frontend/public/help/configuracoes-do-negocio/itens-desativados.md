@@ -10,13 +10,19 @@ Acesse **Configurações > Itens desativados**.
 
 Use as abas no topo (**Produtos**, **Cat. Produto**, **Serviços**, **Cat. Serviço**, **Clientes**, **Fornecedores**, **Funcionários**, **Cargos**) para ver os itens desativados de cada tipo, com a data em que cada um foi desativado.
 
+---
+
 ## Restaurando um item
 
 Clique no menu **⋮** da linha e selecione **Reativar** — o item volta a aparecer normalmente em todo o sistema. Para restaurar vários de uma vez, marque as caixas de seleção das linhas desejadas e use o botão **Reativar** que aparece no topo do card.
 
 ## Excluindo definitivamente
 
-Clique no menu **⋮** da linha e selecione **Excluir definitivamente**, ou selecione várias linhas e use o botão **Excluir** no topo. Essa ação remove o item **para sempre** do banco de dados — diferente da desativação, **não pode ser desfeita**.
+Clique no menu **⋮** da linha e selecione **Excluir definitivamente**, ou selecione várias linhas e use o botão **Excluir** no topo.
+
+> **Atenção:** essa ação remove o item **para sempre** do banco de dados — diferente da desativação, **não pode ser desfeita**.
+
+---
 
 ## Observações
 

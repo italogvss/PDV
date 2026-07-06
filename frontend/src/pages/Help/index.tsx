@@ -109,16 +109,13 @@ export default function HelpPage() {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75 }}>
                 {Icon && (
-                  <Icon sx={{ fontSize: 14, color: 'text.tertiary', flexShrink: 0 }} />
+                  <Icon sx={{ fontSize: 14, color: activeCat === cat.slug ? 'text.primary' : 'text.tertiary', flexShrink: 0 }} />
                 )}
                 <Typography
-                  variant="caption"
+                  variant="body1"
                   sx={{
-                    color: 'text.tertiary',
+                    color: activeCat === cat.slug ? 'text.primary' : 'text.tertiary',
                     fontWeight: 600,
-                    fontSize: 10,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
                   }}
                 >
                   {cat.category}
@@ -211,7 +208,13 @@ export default function HelpPage() {
                   width: { xs: 150, lg: 250 },
                   flexShrink: 0,
                   pr: 3,
+                  border: "1px solid",
+                  borderColor: 'border.subtle',
+                  borderRadius: 2,
+                  bgcolor: 'surface.sunken',
                   overflowY: 'auto',
+                  pl: 1,
+                  pt: 1.5,
                 }),
           }}
         >

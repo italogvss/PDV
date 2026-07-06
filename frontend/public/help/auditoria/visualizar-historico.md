@@ -15,6 +15,8 @@ Use as abas no topo (**Todas**, ou uma aba por tipo de ação) para ver só um t
 - Use os atalhos **7 dias**, **30 dias** ou **90 dias** para períodos comuns a partir de hoje.
 - Ou escolha um intervalo específico nos campos **De** e **Até**.
 
+---
+
 ## Lendo a tabela
 
 Cada linha mostra:
@@ -25,6 +27,11 @@ Cada linha mostra:
 - **Detalhe** — o que mudou especificamente (veja o artigo *O que é registrado na auditoria*).
 - **Usuário** — quem realizou a ação.
 
+---
+
 ## Observações
 
-- O período de histórico disponível depende do plano: o plano **Starter** limita quantos dias podem ser consultados (os atalhos além do limite ficam desabilitados); o plano **Pro** libera o histórico completo, sem limite de dias.
+> **Importante:** o período de histórico disponível depende do plano.
+>
+> - **Starter** — limita quantos dias podem ser consultados (os atalhos além do limite ficam desabilitados).
+> - **Pro** — libera o histórico completo, sem limite de dias.

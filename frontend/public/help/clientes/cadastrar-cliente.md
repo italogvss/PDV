@@ -12,14 +12,22 @@ Cadastre os clientes do seu negócio para vinculá-los a vendas e agendamentos, 
 6. Use o campo **Observação** para registrar preferências ou informações especiais do cliente.
 7. Clique em **Salvar**.
 
+---
+
 ## Usando os dados do cliente
 
 - Na lista de **Clientes**, clique no ícone do WhatsApp na linha do cliente para abrir uma conversa direto com o número cadastrado.
-- Clique em qualquer linha da lista (ou no menu **⋮** > **Ver detalhes**) para abrir a página completa do cliente, com dados de contato, edição e — no plano **Pro** — estatísticas como total gasto, número de compras, ticket médio, produtos mais comprados e histórico de agendamentos.
+- Clique em qualquer linha da lista (ou no menu **⋮** > **Ver detalhes**) para abrir a página completa do cliente, com:
+  - dados de contato e edição
+  - no plano **Pro** — estatísticas como total gasto, número de compras, ticket médio, produtos mais comprados e histórico de agendamentos
 
 ## Desativando um cliente
 
-Na página de detalhes do cliente, clique em **Desativar** (ou pelo menu **⋮** na lista). O cliente sai das buscas de vinculação em vendas e agendamentos, mas o histórico de compras já realizado é mantido. É possível reativá-lo depois em **Configurações > Itens desativados**.
+Na página de detalhes do cliente, clique em **Desativar** (ou pelo menu **⋮** na lista).
+
+> O cliente sai das buscas de vinculação em vendas e agendamentos, mas o histórico de compras já realizado é mantido. É possível reativá-lo depois em **Configurações > Itens desativados**.
+
+---
 
 ## Observações
 

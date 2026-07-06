@@ -12,11 +12,15 @@ Serviços são itens vendáveis sem controle de estoque — o típico de negóci
 6. Selecione uma **Categoria** já cadastrada, ou deixe em branco.
 7. Clique em **Salvar**.
 
+---
+
 ## Produtos utilizados no serviço
 
 Ative o interruptor **Produtos utilizados** para associar produtos do estoque que são consumidos na execução do serviço (ex: tinta de cabelo, produtos de limpeza). Busque e clique no produto para adicioná-lo, ajuste a quantidade com **+**/**–**, e o **Preço de custo** do serviço é recalculado automaticamente com base nos produtos selecionados.
 
-Associar produtos a um serviço é um recurso do plano **Pro**.
+> Associar produtos a um serviço é um recurso do plano **Pro**.
+
+---
 
 ## Editando ou desativando um serviço
 

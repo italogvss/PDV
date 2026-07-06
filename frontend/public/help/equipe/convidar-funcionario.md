@@ -12,13 +12,15 @@ Adicione um membro da equipe com login próprio e acesso limitado pelo papel esc
 6. Informe o **Telefone**, se desejar.
 7. Clique em **Salvar**.
 
+---
+
 ## Despesa de salário automática
 
-Com o plano **Pro**, é possível ativar **Criar despesas de salário automaticamente** ao cadastrar o funcionário, informando o **Salário** e o **Dia de pagamento** — o sistema passa a lançar essa despesa recorrente sozinho em **Financeiro**.
+> Recurso do plano **Pro**: ative **Criar despesas de salário automaticamente** ao cadastrar o funcionário, informando o **Salário** e o **Dia de pagamento** — o sistema passa a lançar essa despesa recorrente sozinho em **Financeiro**.
 
 ## Observações
 
-- Diferente de um convite por e-mail, o acesso já é criado na hora: repasse o nome de usuário e a senha temporária ao funcionário para o primeiro login.
+- Diferente de um convite por e-mail, o acesso já é criado na hora: repasse o `nome de usuário` e a senha temporária ao funcionário para o primeiro login.
 - Planos com limite de funcionários bloqueiam **Novo funcionário** ao atingir o teto, mostrando um aviso de upgrade para o plano Pro.
 - Depois de criado, o funcionário pode ser editado (papel, telefone, salário, e redefinição de senha) na página de detalhes, acessível ao clicar na linha dele na lista.
 

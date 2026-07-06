@@ -16,6 +16,8 @@ Acesse **Configurações > Operação** e role até o card **Módulos da operaç
 - **Fornecedores** — cadastro de fornecedores.
 - **Logs** — histórico de auditoria (movimentações, status e preços).
 
+---
+
 ## Passo a passo
 
 1. Use o interruptor de cada grupo para ativar ou desativar.
@@ -23,7 +25,8 @@ Acesse **Configurações > Operação** e role até o card **Módulos da operaç
 
 ## O que acontece ao desativar um módulo
 
-- A página e o item correspondente somem do menu lateral para **todos** os usuários, inclusive o Owner.
+- A página e o item correspondente somem do menu lateral para **todos** os usuários, inclusive o proprietário.
 - As permissões daquele módulo somem da matriz de permissões em **Funcionários** — não é possível conceder acesso a algo que está desligado.
-- Os dados já cadastrados **não são apagados**: ao reativar o módulo, tudo volta a aparecer normalmente.
+
+> **Nota:** os dados já cadastrados **não são apagados** — ao reativar o módulo, tudo volta a aparecer normalmente.
 

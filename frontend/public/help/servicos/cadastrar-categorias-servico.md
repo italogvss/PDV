@@ -10,6 +10,8 @@ Categorias organizam os serviços por tipo (ex: Cabelo, Estética, Manutenção)
 4. Escolha uma **Cor** entre as predefinidas, ou clique no ícone de paleta para escolher uma cor personalizada.
 5. Clique em **Salvar**.
 
+---
+
 ## Editando ou excluindo uma categoria
 
 Clique na categoria desejada na faixa de categorias para abrir o menu com as opções **Editar** e **Excluir**.

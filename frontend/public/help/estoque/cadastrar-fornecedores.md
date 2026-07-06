@@ -11,6 +11,8 @@ Cadastre os fornecedores do seu negócio para manter contatos e dados organizado
 5. Para preencher o endereço automaticamente, digite o **CEP** e clique em **Buscar endereço** (ou pressione Enter no campo) — rua, cidade e UF são preenchidos sozinhos. Complete o **Número** manualmente.
 6. Clique em **Salvar**.
 
+---
+
 ## Usando os dados do fornecedor
 
 - Na lista de **Fornecedores**, clique no ícone do WhatsApp na linha do fornecedor para abrir uma conversa direto com o número cadastrado.

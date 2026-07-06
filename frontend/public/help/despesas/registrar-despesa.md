@@ -18,7 +18,11 @@ Use as setas ao lado do seletor de **Mês e Ano**, no topo da página, para cons
 
 ## Editando ou excluindo uma despesa
 
-Clique no menu **⋮** na linha da despesa para **Editar**, **Marcar como pago** ou **Excluir**. Despesas de salário geradas automaticamente (veja *Convidar funcionário*) não podem ser excluídas por aqui — desative o salário automático do funcionário para encerrar essa série.
+Clique no menu **⋮** na linha da despesa para **Editar**, **Marcar como pago** ou **Excluir**.
+
+> Despesas de salário geradas automaticamente (veja *Convidar funcionário*) não podem ser excluídas por aqui — desative o salário automático do funcionário para encerrar essa série.
+
+---
 
 ## Observações
 

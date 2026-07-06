@@ -1,10 +1,14 @@
 ﻿# Cancelar uma venda
 
-Cancelar uma venda devolve os itens ao estoque e marca a venda como **Cancelado** no histórico. Essa ação **não pode ser desfeita**.
+Cancelar uma venda devolve os itens ao estoque e marca a venda como `Cancelado` no histórico.
+
+> **Atenção:** essa ação **não pode ser desfeita**.
+
+---
 
 ## Quem pode cancelar
 
-É necessária a permissão **Cancelar vendas**. O Owner tem acesso total; para um funcionário poder cancelar vendas, a permissão precisa estar marcada no cargo dele, em **Equipe > Criar cargos e permissões**.
+É necessária a permissão **Cancelar vendas**. O proprietário(a) tem acesso total; para um funcionário poder cancelar vendas, a permissão precisa estar marcada no cargo dele, em **Equipe > Criar cargos e permissões**.
 
 ## Como cancelar
 
@@ -12,6 +16,8 @@ Cancelar uma venda devolve os itens ao estoque e marca a venda como **Cancelado*
 2. Localize a venda na lista — use os filtros de período, status, forma de pagamento ou operador se precisar.
 3. Clique no menu **⋮** na linha da venda e selecione **Cancelar venda**. Também é possível abrir os detalhes da venda (duplo clique na linha) e cancelar por lá.
 4. Confirme no diálogo de confirmação **Cancelar venda?**.
+
+---
 
 ## Depois do cancelamento
 

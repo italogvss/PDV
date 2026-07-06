@@ -1,6 +1,7 @@
-import { ArchiveOutlined, Article, BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
+import { ArchiveOutlined, Article, BackupOutlined, CloseRounded, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, MenuRounded, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
-import { Box, Button, Divider, Typography } from '@mui/material'
+import { Box, Button, Divider, Drawer, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '../../store'
 import AdvancedSection from './components/AdvancedSection'
@@ -78,6 +79,9 @@ export default function SettingsPage() {
   const { role } = useAppSelector((s) => s.auth)
   const isOwner = (role === 'Owner' || role === 'Admin')
   const navigate = useNavigate()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (isOwner) return true
     return item.type === 'user' && !item.ownerOnly
@@ -93,112 +97,181 @@ export default function SettingsPage() {
 
   const handleTabChange = (tab: SettingsTab) => {
     setSearchParams({ tab }, { replace: true })
+    setMobileNavOpen(false)
   }
+
+  const navList = (
+    <>
+      {visibleItems.map((item, index) => {
+        const Icon = item.icon
+        const active = activeTab === item.id
+        const isFirstOfGroup = index === 0 || visibleItems[index - 1].type !== item.type
+
+        return (
+          <Box key={item.id}>
+            {isFirstOfGroup && (
+              <>
+                {index > 0 && <Divider sx={{ borderColor: 'border.subtle', my: 1 }} />}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    px: 2,
+                    py: 0.5,
+                    color: 'text.tertiary',
+                    fontWeight: 600,
+                    fontSize: 10,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {item.type === 'user' ? 'Pessoal' : 'Negócio'}
+                </Typography>
+              </>
+            )}
+            <Box
+              onClick={() => handleTabChange(item.id)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                px: 2,
+                py: 1.5,
+                borderRadius: 2,
+                cursor: 'pointer',
+                userSelect: 'none',
+                color: active ? 'text.primary' : 'text.secondary',
+                bgcolor: active ? 'background.paper' : 'transparent',
+                boxShadow: active ? (t) => t.customShadows.xs : 'none',
+                border: 1,
+                borderColor: active ? 'border.subtle' : 'transparent',
+                transition: 'background-color 0.15s, color 0.15s',
+                '&:hover': {
+                  bgcolor: active ? 'background.paper' : 'surface.raised',
+                  color: 'text.primary',
+                },
+              }}
+            >
+              <Icon
+                sx={{
+                  fontSize: 18,
+                  color: active ? 'text.primary' : 'text.tertiary',
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: active ? 600 : 500,
+                  color: 'inherit',
+                  lineHeight: 1.3,
+                }}
+              >
+                {item.label}
+              </Typography>
+            </Box>
+          </Box>
+        )
+      })}
+    </>
+  )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography variant="h4" color="text.primary" sx={{ lineHeight: 1.15, fontWeight: 700 }}>
-            Configurações
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {current?.subtitle}
-          </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          
+          <Box>
+            <Typography variant="h4" color="text.primary" sx={{ lineHeight: 1.15, fontWeight: 700 }}>
+              Configurações
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {current?.subtitle}
+            </Typography>
+          </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Button onClick={()=> navigate('/ajuda?cat=configuracoes-do-negocio&art=dados-da-empresa')} variant="outlined" startIcon={<HelpOutlined />} size="small">
+          {isMobile ? (
+            <IconButton
+              onClick={() => setMobileNavOpen(true)}
+              size="small"
+              sx={{
+                color: 'text.primary',
+                border: 1,
+                borderColor: 'border.subtle',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                width: 36,
+                height: 36,
+                flexShrink: 0,
+              }}
+            >
+              <MenuRounded sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : (
+            <Button onClick={()=> navigate('/ajuda?cat=configuracoes-do-negocio&art=dados-da-empresa')} variant="outlined" startIcon={<HelpOutlined />} size="small">
             Precisa de ajuda?
-          </Button>
+          </Button> 
+          )}
+                   
         </Box>
       </Box>
 
       {/* Body */}
       <Box sx={{ display: 'flex', gap: 4, flex: 1, minHeight: 0 }}>
-        {/* Sidebar nav */}
-        <Box
-          component="nav"
+        {/* Sidebar nav (desktop) */}
+        {!isMobile && (
+          <Box
+            component="nav"
+            sx={{
+              width: 220,
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.5,
+            }}
+          >
+            {navList}
+          </Box>
+        )}
+
+        {/* Sidebar nav (mobile, fullscreen) */}
+        <Drawer
+          anchor="left"
+          open={isMobile && mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
           sx={{
-            width: 220,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.5,
+            '& .MuiDrawer-paper': {
+              width: '100%',
+              height: '100%',
+              boxSizing: 'border-box',
+              bgcolor: 'background.default',
+              p: 3,
+            },
           }}
         >
-          {visibleItems.map((item, index) => {
-            const Icon = item.icon
-            const active = activeTab === item.id
-            const isFirstOfGroup = index === 0 || visibleItems[index - 1].type !== item.type
-
-            return (
-              <Box key={item.id}>
-                {isFirstOfGroup && (
-                  <>
-                    {index > 0 && <Divider sx={{ borderColor: 'border.subtle', my: 1 }} />}
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        px: 2,
-                        py: 0.5,
-                        color: 'text.tertiary',
-                        fontWeight: 600,
-                        fontSize: 10,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {item.type === 'user' ? 'Pessoal' : 'Negócio'}
-                    </Typography>
-                  </>
-                )}
-                <Box
-                  onClick={() => handleTabChange(item.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 2,
-                    py: 1.5,
-                    borderRadius: 2,
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    color: active ? 'text.primary' : 'text.secondary',
-                    bgcolor: active ? 'background.paper' : 'transparent',
-                    boxShadow: active ? (t) => t.customShadows.xs : 'none',
-                    border: 1,
-                    borderColor: active ? 'border.subtle' : 'transparent',
-                    transition: 'background-color 0.15s, color 0.15s',
-                    '&:hover': {
-                      bgcolor: active ? 'background.paper' : 'surface.raised',
-                      color: 'text.primary',
-                    },
-                  }}
-                >
-                  <Icon
-                    sx={{
-                      fontSize: 18,
-                      color: active ? 'text.primary' : 'text.tertiary',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: active ? 600 : 500,
-                      color: 'inherit',
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                </Box>
-              </Box>
-            )
-          })}
-        </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <IconButton
+              onClick={() => setMobileNavOpen(false)}
+              size="small"
+              sx={{
+                color: 'text.primary',
+                border: 1,
+                borderColor: 'border.subtle',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                width: 36,
+                height: 36,
+              }}
+            >
+              <CloseRounded sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Box>
+          <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, overflowY: 'auto' }}>
+            {navList}
+          </Box>
+        </Drawer>
 
         {/* Content */}
         <Box

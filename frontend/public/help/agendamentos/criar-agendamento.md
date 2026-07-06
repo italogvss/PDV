@@ -14,13 +14,22 @@ Reserve um horário para um cliente com um ou mais serviços e um profissional r
 8. Opcionalmente, escolha uma **Cor** para identificar o agendamento na agenda, e escreva **Observações** (preferências, alergias etc.).
 9. Clique em **Agendar**.
 
+---
+
 ## Conflito de horário
 
-Se o profissional escolhido já tiver outro agendamento no mesmo intervalo, um aviso de conflito aparece com o nome do cliente conflitante e o horário — o botão **Agendar** fica bloqueado até o conflito ser resolvido (mudando o horário, a data ou o profissional).
+Se o profissional escolhido já tiver outro agendamento no mesmo intervalo, um aviso de conflito aparece com o nome do cliente conflitante e o horário.
+
+> O botão **Agendar** fica bloqueado até o conflito ser resolvido, mudando:
+> - o horário
+> - a data
+> - ou o profissional
 
 ## Cliente obrigatório
 
 Se **Obrigar cliente em novo agendamento** estiver ativo em **Configurações > Operação**, não é possível concluir o agendamento sem vincular um cliente já cadastrado.
+
+---
 
 ## Observações
 

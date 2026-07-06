@@ -6,6 +6,8 @@ Nem toda ação do sistema vira um registro de auditoria — apenas mudanças se
 
 Registrado sempre que o preço de venda de um produto ou serviço é alterado. O detalhe mostra o valor antigo e o novo, com destaque em vermelho (aumento) ou verde (redução).
 
+---
+
 ## Movimentação de estoque
 
 Toda entrada ou saída de estoque gera um registro, com a quantidade movimentada e o tipo:
@@ -14,6 +16,8 @@ Toda entrada ou saída de estoque gera um registro, com a quantidade movimentada
 - **Saída (Venda)** — baixa automática por uma venda.
 - **Estorno** — devolução ao estoque por cancelamento de venda.
 - **Ajuste Manual** — correção feita em *Ajustar estoque*.
+
+---
 
 ## Status de agendamento
 
@@ -29,5 +33,6 @@ Registrado quando as permissões de um papel são alteradas na matriz de permiss
 
 ## Observações
 
-- A auditoria é somente leitura — não é possível editar ou apagar um registro por aqui.
-- Cancelamento de vendas, criação de registros e outras ações que não estão nesta lista não aparecem na auditoria; elas ficam registradas nos próprios históricos de cada área (ex: **Vendas > Histórico**).
+> **Nota:** a auditoria é somente leitura — não é possível editar ou apagar um registro por aqui.
+
+Cancelamento de vendas, criação de registros e outras ações que não estão nesta lista não aparecem na auditoria; elas ficam registradas nos próprios históricos de cada área (ex: **Vendas > Histórico**).

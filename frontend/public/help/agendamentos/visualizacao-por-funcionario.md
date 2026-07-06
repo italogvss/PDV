@@ -9,6 +9,8 @@ Em **Agendamentos**, use a faixa **Filtrar por profissional** para escolher **To
 - No modo **calendário**, cada profissional aparece com uma cor própria (determinada automaticamente), facilitando identificar de quem é cada horário quando "Todos" está selecionado.
 - No modo **lista**, a coluna **Profissional** mostra o responsável por cada agendamento.
 
+---
+
 ## Alternando entre calendário e lista
 
 No canto da agenda, use os ícones para alternar entre:
@@ -20,7 +22,14 @@ No canto da agenda, use os ícones para alternar entre:
 
 Use os botões **Dia** / **Semana**, no topo da página, para ver os agendamentos apenas do dia selecionado ou da semana inteira. A **faixa de dias**, logo abaixo do cabeçalho, mostra quantos agendamentos ativos existem em cada dia da semana e permite pular direto para qualquer um deles.
 
+---
+
 ## Painel lateral
 
-Ao lado da agenda, o painel mostra um **resumo do dia** (quantidade de horários, receita prevista, confirmados e a confirmar) e a lista **A seguir**, com os próximos agendamentos ainda não atendidos.
+Ao lado da agenda, o painel mostra:
+
+- um **resumo do dia** — quantidade de horários, receita prevista, confirmados e a confirmar
+- a lista **A seguir** — próximos agendamentos ainda não atendidos
+
+> **Nota:** o resumo do dia e a lista **A seguir** sempre consideram todos os profissionais, independente do filtro selecionado na agenda.
 

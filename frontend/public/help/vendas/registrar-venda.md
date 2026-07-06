@@ -13,9 +13,12 @@ A tela **Vender** é o PDV do sistema: busque produtos ou serviços, monte o car
 7. Se precisar, aplique um desconto ou vincule um cliente à venda — veja os artigos correspondentes.
 8. Clique em **Finalizar**. Revise o resumo no modal de confirmação e clique em **Concluir venda**.
 
+---
+
 ## Observações
 
-- Só aparecem no catálogo produtos **ativos e com estoque disponível**. Produtos zerados ou desativados não podem ser vendidos.
+> Só aparecem no catálogo produtos **ativos e com estoque disponível**. Produtos zerados ou desativados não podem ser vendidos.
+
 - O botão **Limpar**, no topo do carrinho, remove todos os itens e reinicia a venda.
 - O botão **Finalizar** fica bloqueado enquanto o carrinho estiver vazio, ou se a configuração do negócio exigir um cliente vinculado e nenhum tiver sido selecionado.
 - Toda venda concluída pode ser conferida depois em **Vendas > Histórico**.

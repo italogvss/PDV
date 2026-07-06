@@ -7,7 +7,9 @@ O menu é dividido em duas seções:
 - **Operação** — Início, Vender, Histórico de vendas, Estoque, Serviços, Agendamentos, Despesas, Funcionários e Lucros & relatórios.
 - **Conta** — Auditoria, Clientes, Fornecedores, Configurações, Ajuda e Contato.
 
-Cada item só aparece se o **módulo** correspondente estiver ativo no negócio e se você tiver a **permissão** necessária — por isso o menu pode parecer diferente para cada funcionário. Veja o artigo *Definir permissões de acesso* para entender essa regra.
+> Cada item só aparece se o **módulo** correspondente estiver ativo no negócio e se você tiver a **permissão** necessária — por isso o menu pode parecer diferente para cada funcionário. Veja o artigo *Definir permissões de acesso* para entender essa regra.
+
+---
 
 ## A tela Início
 
@@ -18,7 +20,9 @@ Com o plano **Pro**, dois botões no cabeçalho permitem alternar a visão:
 - **Analítico** — gráficos de faturamento, formas de pagamento mais usadas, produtos mais vendidos, contas a pagar e equipe ativa, com filtro por período (7, 14, 30 ou 90 dias).
 - **Módulos** — atalhos em cartões para pular direto para cada área do sistema que você tem acesso.
 
-No plano padrão (sem os relatórios avançados do Pro), a tela Início mostra uma versão simplificada, com o faturamento do mês e um convite para conhecer os dados analíticos do Pro.
+> No plano padrão (sem os relatórios avançados do Pro), a tela Início mostra uma versão simplificada, com o faturamento do mês e um convite para conhecer os dados analíticos do Pro.
+
+---
 
 ## Ações rápidas
 

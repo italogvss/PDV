@@ -14,9 +14,13 @@ Acesse **Configurações > Negócio**. A página tem dois cards: **Dados do esta
 - **Segmento** — escolha entre as opções prontas (Cafeteria/Padaria, Restaurante/Bar, Varejo, Farmácia, Barbearia etc.) ou **Outro**, que libera um campo para nomear o segmento manualmente.
 - **Telefone público**.
 
+---
+
 ## Endereço
 
-Preencha o **CEP** e clique em **Buscar** (ou pressione Enter) para preencher automaticamente **Logradouro**, **Bairro**, **Cidade** e **Estado**. Complete **Número** e **Complemento** manualmente.
+Preencha o `CEP` e clique em **Buscar** (ou pressione Enter) para preencher automaticamente **Logradouro**, **Bairro**, **Cidade** e **Estado**. Complete **Número** e **Complemento** manualmente.
+
+---
 
 ## Salvando
 

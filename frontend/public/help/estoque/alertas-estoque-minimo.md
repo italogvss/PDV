@@ -1,6 +1,10 @@
 ﻿# Alertas de estoque mínimo
 
-O sistema pode avisar quando um produto está acabando, com base em dois limites configuráveis por produto: **estoque mínimo** e **estoque crítico**. Esse é um recurso do plano **Pro**.
+O sistema pode avisar quando um produto está acabando, com base em dois limites configuráveis por produto: **estoque mínimo** e **estoque crítico**.
+
+> Esse é um recurso do plano **Pro**.
+
+---
 
 ## Como funcionam os níveis
 
@@ -16,6 +20,8 @@ O sistema pode avisar quando um produto está acabando, com base em dois limites
 - **Estoque mínimo padrão** e **Estoque crítico padrão** — pré-preenchidos automaticamente ao cadastrar um novo produto.
 - **Campos editáveis no cadastro e edição** — permite alterar esses valores por produto; se desativado, todos os produtos usam os padrões definidos aqui.
 
+---
+
 ## Onde os alertas aparecem
 
 - Na lista de **Estoque**, a coluna **Nível** mostra uma barra de progresso e um chip (OK / Baixo / Crítico) por produto.
@@ -24,6 +30,7 @@ O sistema pode avisar quando um produto está acabando, com base em dois limites
 
 ## Observações
 
-- Definir estoque mínimo, crítico e os padrões de estoque é um recurso do plano **Pro** — no plano padrão, esses campos e alertas ficam bloqueados.
-- Um produto com estoque **zerado** não conta como alerta de estoque baixo/crítico — ele simplesmente some do catálogo de vendas por estar fora de estoque.
+> **Importante:** definir estoque mínimo, crítico e os padrões de estoque é um recurso do plano **Pro** — no plano padrão, esses campos e alertas ficam bloqueados.
+
+Um produto com estoque **zerado** não conta como alerta de estoque baixo/crítico — ele simplesmente some do catálogo de vendas por estar fora de estoque.
 

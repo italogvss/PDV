@@ -9,7 +9,9 @@ Vincular o cliente certo a cada venda (ou agendamento) é o que alimenta o hist�
 3. Não encontrou o cliente? Clique no ícone de adicionar ao lado da busca para ser levado direto ao cadastro.
 4. Para remover o vínculo, clique no **X** ao lado do nome do cliente exibido no topo.
 
-Se preferir não abrir um cadastro completo, é possível informar apenas o **CPF** no campo ao lado de **Adicionar cliente** — a venda registra o documento, mas não gera histórico em um cliente cadastrado.
+> Se preferir não abrir um cadastro completo, é possível informar apenas o `CPF` no campo ao lado de **Adicionar cliente** — a venda registra o documento, mas não gera histórico em um cliente cadastrado.
+
+---
 
 ## Em um agendamento
 
@@ -18,6 +20,8 @@ Ao criar um agendamento, clique em **Selecionar cliente** e busque do mesmo jeit
 ## Por que vincular um cliente cadastrado
 
 Vendas e agendamentos vinculados a um cliente cadastrado (não apenas ao CPF avulso) aparecem no histórico dele, na página de detalhes em **Clientes**. No plano **Pro**, essa página também mostra estatísticas como total gasto, número de compras, ticket médio, produtos mais comprados e gasto por categoria — dados que dependem do vínculo correto em cada venda.
+
+---
 
 ## Tornando o vínculo obrigatório
 
