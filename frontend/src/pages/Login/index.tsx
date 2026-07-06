@@ -19,6 +19,7 @@ import { useApiError } from '../../hooks/useApiError'
 import { authService } from '../../services/auth.service'
 import { useAppDispatch } from '../../store'
 import { setAuth } from '../../store/slices/auth.slice'
+import { resolvePostLoginPath } from '../../utils/planSelection'
 
 const employeeSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório'),
@@ -53,7 +54,7 @@ export default function LoginPage() {
         await authService.loginWithGoogle(credential)
         const user = await authService.getMe()
         dispatch(setAuth(user))
-        navigate(user.tenantId ? '/' : '/criar-negocio', { replace: true })
+        navigate(resolvePostLoginPath(user.tenantId), { replace: true })
       } catch {
         setGoogleError(true)
         setGoogleLoading(false)
@@ -68,7 +69,7 @@ export default function LoginPage() {
       const user = await authService.getMe()
       dispatch(setAuth(user))
       navigate(
-        user.mustChangePassword ? '/trocar-senha' : user.tenantId ? '/' : '/criar-negocio',
+        user.mustChangePassword ? '/trocar-senha' : resolvePostLoginPath(user.tenantId),
         { replace: true },
       )
     } catch (error) {

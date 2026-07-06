@@ -12,7 +12,10 @@ public record PlanResponse(
     // Capabilities inclusas no plano (eixo de billing): módulos + sub-features. Informativo.
     IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
-    int? TrialDays);
+    int? TrialDays,
+    // Ponto de entrada do trial na landing (`?plano=<slug>`) — o frontend reusa pra iniciar o
+    // onboarding já com o plano certo quando o usuário escolhe na tela de planos.
+    string Slug);
 
 public record SubscriptionResponse(
     Guid? PlanId,

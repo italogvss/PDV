@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Box } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import { useEntitlements } from '../../hooks/useSubscription'
+import PremiumIconBadge from '../PremiumIconBadge'
 import UpsellModal from '../UpsellModal'
 import type { Props } from './types'
 
@@ -41,20 +41,7 @@ export default function PremiumLock({ feature, children, title, description, rad
             '&:hover': { bgcolor: (t) => alpha(t.palette.premium[200], 0.65) },
           }}
         >
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              bgcolor: 'premium.400',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 2,
-            }}
-          >
-            <WorkspacePremiumRounded sx={{ fontSize: 20, color: 'premium.900' }} />
-          </Box>
+          <PremiumIconBadge size="md" />
         </Box>
       </Box>
 

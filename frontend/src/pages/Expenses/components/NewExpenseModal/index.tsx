@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import SyncRounded from '@mui/icons-material/SyncRounded'
-import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import {
   Box,
   Chip,
@@ -17,17 +16,16 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
-import UpsellModal from '../../../../components/UpsellModal'
+import UpsellFeatureRow from '../../../../components/UpsellFeatureRow'
 import { FEATURES } from '../../../../constants/entitlements'
 import { useCreateExpense, useUpdateExpense } from '../../../../hooks/useExpenses'
 import { useEntitlements } from '../../../../hooks/useSubscription'
@@ -72,7 +70,6 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { has } = useEntitlements()
   const hasAdvancedExpenses = has(FEATURES.advancedExpenses)
-  const [upsellOpen, setUpsellOpen] = useState(false)
 
   const {
     register,
@@ -334,59 +331,15 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
               </Collapse>
             </Paper>
           ) : (
-            <Paper
-              variant="outlined"
-              role="button"
-              aria-label="Despesas recorrentes — recurso do plano Pro"
-              onClick={() => setUpsellOpen(true)}
-              sx={{
-                p: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                cursor: 'pointer',
-                borderStyle: 'dashed',
-                borderColor: 'premium.400',
-                bgcolor: (t) => alpha(t.palette.premium[100], 0.4),
-                transition: 'background-color .15s',
-                '&:hover': { bgcolor: (t) => alpha(t.palette.premium[200], 0.55) },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  bgcolor: 'premium.400',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: 2,
-                }}
-              >
-                <WorkspacePremiumRounded sx={{ fontSize: 20, color: 'premium.900' }} />
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Despesa recorrente mensal
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Automatize contas fixas como aluguel e internet com o plano Pro.
-                </Typography>
-              </Box>
-              <Chip label="Pro" color="premium" size="small" />
-            </Paper>
+            <UpsellFeatureRow
+              title="Despesa recorrente mensal"
+              description="Automatize contas fixas como aluguel e internet com o plano Pro."
+              modalTitle="Despesas recorrentes no Pro"
+              modalDescription="Cadastrar despesas que se repetem todo mês é um recurso do plano Pro. Faça upgrade para automatizar suas contas fixas."
+            />
           )}
         </Box>
       </DialogContent>
-
-      <UpsellModal
-        open={upsellOpen}
-        onClose={() => setUpsellOpen(false)}
-        title="Despesas recorrentes no Pro"
-        description="Cadastrar despesas que se repetem todo mês é um recurso do plano Pro. Faça upgrade para automatizar suas contas fixas."
-      />
 
       <FormModalActions
         formId="expense-form"

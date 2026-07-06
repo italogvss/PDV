@@ -30,6 +30,7 @@ interface BackendPlan {
   entitlements: string[]
   limits: Record<string, number>
   trialDays: number | null
+  slug: string
 }
 
 interface BackendCheckout {
@@ -71,6 +72,7 @@ function mapPlan(p: BackendPlan): Plan {
     entitlements: p.entitlements ?? [],
     limits: p.limits ?? {},
     trialDays: p.trialDays ?? null,
+    slug: p.slug,
   }
 }
 

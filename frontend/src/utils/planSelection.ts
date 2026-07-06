@@ -24,6 +24,20 @@ export function getStoredPlanSlug(): string | null {
   return sessionStorage.getItem(STORAGE_KEY)
 }
 
+// Grava o slug escolhido na tela `/planos` (pós-login, sem vir da landing) — mesmo storage que
+// `capturePlanSlugFromUrl`, pra `useCreateTenant` consumir sem precisar saber a origem do slug.
+export function setStoredPlanSlug(slug: string): void {
+  sessionStorage.setItem(STORAGE_KEY, slug.trim().toLowerCase())
+}
+
 export function clearStoredPlanSlug(): void {
   sessionStorage.removeItem(STORAGE_KEY)
+}
+
+// Rota pós-login/pós-bootstrap de um usuário autenticado: já tem tenant → dashboard; sem tenant
+// mas com slug capturado (veio da landing) → direto pro onboarding; sem slug nenhum → tela de
+// planos, pra escolher antes de seguir (nunca visto ou já usou o trial).
+export function resolvePostLoginPath(tenantId: string | null): string {
+  if (tenantId) return '/'
+  return getStoredPlanSlug() ? '/criar-negocio' : '/planos'
 }

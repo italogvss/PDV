@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
 import { useAppSelector } from '../../store'
+import { resolvePostLoginPath } from '../../utils/planSelection'
 
 type GuardType = 'public' | 'protected' | 'onboarding' | 'change-password'
 
@@ -22,7 +23,7 @@ export default function RouterGuard({ type }: { type: GuardType }) {
     case 'public':
       if (isAuthenticated) {
         if (mustChangePassword) return <Navigate to="/trocar-senha" replace />
-        return <Navigate to={tenantId ? '/' : '/criar-negocio'} replace />
+        return <Navigate to={resolvePostLoginPath(tenantId)} replace />
       }
       break
     case 'protected':

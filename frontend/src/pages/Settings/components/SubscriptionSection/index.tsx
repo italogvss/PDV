@@ -38,6 +38,7 @@ import {
   type BillingCycle,
 } from './helpers'
 import PlanCheckoutDialog from './PlanCheckoutDialog'
+import PlansDialog from './PlansDialog'
 import ConfirmDialog from '../../../../components/ConfirmDialog'
 
 const LIMIT_ICONS: Record<PlanLimitKey, SvgIconComponent> = {
@@ -57,6 +58,8 @@ export default function SubscriptionSection() {
 
   // Checkout de contratação nova (assinatura não-viva) → redireciona para o gateway via este diálogo.
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null)
+  // Modal de escolha de plano (reassinatura) — só abre o checkout depois de um plano ser selecionado.
+  const [plansDialogOpen, setPlansDialogOpen] = useState(false)
   // Período escolhido no upsell (só afeta qual variante do Profissional é contratada).
   const [cycle, setCycle] = useState<BillingCycle>('monthly')
   // Confirmação de cancelamento de assinatura.
@@ -753,13 +756,23 @@ export default function SubscriptionSection() {
             variant="contained"
             color="secondary"
             endIcon={<ArrowForwardRounded />}
-            onClick={() => setCheckoutPlan(resubscribeTarget)}
+            onClick={() => setPlansDialogOpen(true)}
             sx={{ flexShrink: 0, px: 3, py: 1.25, fontWeight: 700 }}
           >
             {hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
           </Button>
         </Paper>
       )}
+
+      <PlansDialog
+        open={plansDialogOpen}
+        plans={plans}
+        onClose={() => setPlansDialogOpen(false)}
+        onSelectPlan={(plan) => {
+          setPlansDialogOpen(false)
+          setCheckoutPlan(plan)
+        }}
+      />
 
       <PlanCheckoutDialog
         open={checkoutPlan !== null}

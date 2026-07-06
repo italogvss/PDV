@@ -26,6 +26,9 @@ import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ChipSelect from '../../../../components/ChipSelect'
 import CurrencyField from '../../../../components/CurrencyField'
+import UpsellFeatureRow from '../../../../components/UpsellFeatureRow'
+import { FEATURES } from '../../../../constants/entitlements'
+import { useEntitlements } from '../../../../hooks/useSubscription'
 import type { AddEmployeeModalProps } from './types'
 
 const PAYMENT_DAYS = Array.from({ length: 28 }, (_, i) => i + 1)
@@ -76,6 +79,8 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
   const [showPassword, setShowPassword] = useState(false)
   const createEmployee = useCreateEmployee()
   const { data: roles, isLoading: rolesLoading } = useTeamRoles()
+  const { has } = useEntitlements()
+  const hasAdvancedExpenses = has(FEATURES.advancedExpenses)
   const isPending = createEmployee.isPending
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -232,62 +237,71 @@ export default function AddEmployeeModal({ open, onClose }: AddEmployeeModalProp
             />
           </Box>
 
-          <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong"}}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body1">Criar despesas de salário automaticamente</Typography>
-              <Controller
-                name="autoCreateSalaryExpense"
-                control={control}
-                render={({ field }) => (
-                  <Switch checked={field.value} onChange={(_, v) => field.onChange(v)} />
-                )}
-              />
-            </Box>
-
-            <Collapse in={autoCreate} unmountOnExit>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <FieldLabel label="Salário" required />
-                  <Controller
-                    name="salary"
-                    control={control}
-                    render={({ field }) => (
-                      <CurrencyField
-                        value={field.value ?? 0}
-                        onChange={field.onChange}
-                        fullWidth
-                        error={!!errors.salary}
-                        helperText={errors.salary?.message}
-                      />
-                    )}
-                  />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <FieldLabel label="Dia de pagamento" required />
-                  <Controller
-                    name="paymentDay"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        select
-                        fullWidth
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        error={!!errors.paymentDay}
-                        helperText={errors.paymentDay?.message}
-                      >
-                        {PAYMENT_DAYS.map((d) => (
-                          <MenuItem key={d} value={d}>
-                            <Typography variant="body2">Dia {d}</Typography>
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    )}
-                  />
-                </Box>
+          {hasAdvancedExpenses ? (
+            <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: "surface.sunken", borderColor: "border.strong"}}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body1">Criar despesas de salário automaticamente</Typography>
+                <Controller
+                  name="autoCreateSalaryExpense"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch checked={field.value} onChange={(_, v) => field.onChange(v)} />
+                  )}
+                />
               </Box>
-            </Collapse>
-          </Paper>
+
+              <Collapse in={autoCreate} unmountOnExit>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <FieldLabel label="Salário" required />
+                    <Controller
+                      name="salary"
+                      control={control}
+                      render={({ field }) => (
+                        <CurrencyField
+                          value={field.value ?? 0}
+                          onChange={field.onChange}
+                          fullWidth
+                          error={!!errors.salary}
+                          helperText={errors.salary?.message}
+                        />
+                      )}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <FieldLabel label="Dia de pagamento" required />
+                    <Controller
+                      name="paymentDay"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          select
+                          fullWidth
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          error={!!errors.paymentDay}
+                          helperText={errors.paymentDay?.message}
+                        >
+                          {PAYMENT_DAYS.map((d) => (
+                            <MenuItem key={d} value={d}>
+                              <Typography variant="body2">Dia {d}</Typography>
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      )}
+                    />
+                  </Box>
+                </Box>
+              </Collapse>
+            </Paper>
+          ) : (
+            <UpsellFeatureRow
+              title="Criar despesas de salário automaticamente"
+              description="Gere a despesa mensal do salário deste funcionário automaticamente com o plano Pro."
+              modalTitle="Folha de pagamento no Pro"
+              modalDescription="Criar automaticamente a despesa recorrente do salário é um recurso do plano Pro. Faça upgrade para automatizar sua folha."
+            />
+          )}
         </Box>
       </DialogContent>
 

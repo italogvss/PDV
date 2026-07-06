@@ -287,5 +287,6 @@ public class SubscriptionService(
         p.PriceCents / 100m,
         PlanJson.ReadEntitlements(p.EntitledModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
-        p.TrialDays);
+        p.TrialDays,
+        p.Slug);
 }

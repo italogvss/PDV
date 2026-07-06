@@ -21,6 +21,7 @@ import SettingsPage from '../pages/Settings'
 import SubscriptionReturnPage from '../pages/SubscriptionReturn'
 import HelpPage from '../pages/Help'
 import LoginPage from '../pages/Login'
+import ChoosePlanPage from '../pages/ChoosePlan'
 import OnboardingTenant from '../pages/CreateTenant'
 import ChangePasswordPage from '../pages/ChangePassword'
 import LogsPage from '../pages/Logs'
@@ -33,11 +34,18 @@ export const router = createBrowserRouter([
   },
   {
     element: <RouterGuard type="onboarding" />,
-    children: [{ path: '/criar-negocio', element: <OnboardingTenant /> }],
+    children: [
+      { path: '/criar-negocio', element: <OnboardingTenant /> },
+      { path: '/planos', element: <ChoosePlanPage /> },
+    ],
   },
   {
     element: <RouterGuard type="change-password" />,
     children: [{ path: '/trocar-senha', element: <ChangePasswordPage /> }],
+  },
+  {
+    element: <RouterGuard type="protected" />,
+    children: [{ path: '/assinatura/retorno', element: <SubscriptionReturnPage /> }],
   },
   {
     element: <RouterGuard type="protected" />,
@@ -168,7 +176,6 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'configuracoes', element: <SettingsPage /> },
-          { path: 'assinatura/retorno', element: <SubscriptionReturnPage /> },
           { path: 'ajuda', element: <HelpPage /> },
           { path: 'contato', element: <ContactPage /> },
         ],

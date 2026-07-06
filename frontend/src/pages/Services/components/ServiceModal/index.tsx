@@ -31,9 +31,10 @@ import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import FieldLabel from '../../../../components/FieldLabel'
 import FormModalActions from '../../../../components/FormModalActions'
 import ModalHeader from '../../../../components/ModalHeader'
-import PremiumLock from '../../../../components/PremiumLock'
+import UpsellFeatureRow from '../../../../components/UpsellFeatureRow'
 import { FEATURES } from '../../../../constants/entitlements'
 import { useProducts } from '../../../../hooks/useProducts'
+import { useEntitlements } from '../../../../hooks/useSubscription'
 import { useServiceCategories } from '../../../../hooks/useServiceCategories'
 import { useCreateService, useUpdateService } from '../../../../hooks/useServices'
 import { useUserPermissions } from '../../../../hooks/useUserPermissions'
@@ -110,6 +111,8 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
   const { data: categories = [], isLoading: isLoadingCategories } = useServiceCategories()
   const { data: allProducts = [], isLoading: isLoadingProducts } = useProducts()
   const { isModuleEnabled } = useUserPermissions()
+  const { has } = useEntitlements()
+  const hasLinkedProducts = has(FEATURES.productLinkedToService)
   const { data: inventorySettings } = useInventorySettings()
   const requireCostPrice = inventorySettings?.requireCostPriceOnServices ?? true
   const schema = useMemo(() => buildServiceSchema(requireCostPrice), [requireCostPrice])
@@ -330,6 +333,30 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
                 )}
               />
             </Box>
+            {/* Preço de custo */}
+          <Box>
+            <FieldLabel label="Preço de custo" required={requireCostPrice} />
+            <Controller
+              name="costPrice"
+              control={control}
+              render={({ field }) => (
+                <CurrencyField
+                  value={Number(field.value) || 0}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  fullWidth
+                  size="small"
+                  error={!!errors.costPrice}
+                  helperText={
+                    errors.costPrice?.message ??
+                    (showProductsSection && selectedProducts.length > 0
+                      ? 'Calculado automaticamente pelos produtos selecionados'
+                      : undefined)
+                  }
+                />
+              )}
+            />
+          </Box>
 
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Duração (minutos)" />
@@ -378,11 +405,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
 
           {/* Produtos utilizados */}
           {showProductsSection && (
-            <PremiumLock
-              feature={FEATURES.productLinkedToService}
-              title="Vincular produtos no Pro"
-              description="Associar produtos consumidos a um serviço é um recurso do plano Pro. Faça upgrade para usá-lo."
-            >
+            hasLinkedProducts ? (
             <Paper
               variant="outlined"
               sx={{
@@ -544,33 +567,15 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
                 </Box>
               </Collapse>
             </Paper>
-            </PremiumLock>
+            ) : (
+              <UpsellFeatureRow
+                title="Produtos utilizados"
+                description="Associe produtos consumidos na execução deste serviço com o plano Pro."
+                modalTitle="Vincular produtos no Pro"
+                modalDescription="Associar produtos consumidos a um serviço é um recurso do plano Pro. Faça upgrade para usá-lo."
+              />
+            )
           )}
-
-          {/* Preço de custo */}
-          <Box>
-            <FieldLabel label="Preço de custo" required={requireCostPrice} />
-            <Controller
-              name="costPrice"
-              control={control}
-              render={({ field }) => (
-                <CurrencyField
-                  value={Number(field.value) || 0}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  fullWidth
-                  size="small"
-                  error={!!errors.costPrice}
-                  helperText={
-                    errors.costPrice?.message ??
-                    (showProductsSection && selectedProducts.length > 0
-                      ? 'Calculado automaticamente pelos produtos selecionados'
-                      : undefined)
-                  }
-                />
-              )}
-            />
-          </Box>
         </Box>
       </DialogContent>
 

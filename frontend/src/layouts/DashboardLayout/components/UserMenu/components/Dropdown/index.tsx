@@ -52,14 +52,10 @@ function ItemRow({ item, onClick }: { item: AccountItem; onClick: () => void }) 
       </Typography>
       {item.badge?.tone === 'premium' && (
         <Chip
-          icon={<WorkspacePremiumOutlined sx={{ fontSize: 13, color: 'inherit !important' }} />}
+          icon={<WorkspacePremiumOutlined />}
           label={item.badge.label}
+          color="premium"
           size="small"
-          sx={{
-            height: 20, fontSize: 11, fontWeight: 600, px: 0.5,
-            bgcolor: 'premium.100', color: 'premium.900',
-            '& .MuiChip-icon': { color: 'premium.900' },
-          }}
         />
       )}
       {item.badge?.tone === 'count' && (
@@ -125,7 +121,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const handleLogout = () => {
     onClose()
     dispatch(clearAuth())
-    navigate('/login')
+    navigate(import.meta.env.VITE_LANDING_URL);
   }
 
   return (

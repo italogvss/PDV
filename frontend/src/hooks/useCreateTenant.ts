@@ -9,6 +9,7 @@ import { convertToWebp, validateImageFile } from '../utils/image.utils'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { getStoredPlanSlug, clearStoredPlanSlug } from '../utils/planSelection'
+import { SUBSCRIPTION_QUERY_KEY } from './useSubscription'
 import type { CreateTenantFormData } from '../pages/CreateTenant/types'
 
 export function useCreateTenant() {
@@ -24,6 +25,9 @@ export function useCreateTenant() {
     onSuccess: async (response, variables) => {
       clearStoredPlanSlug()
       dispatch(setTenant({ tenantId: response.tenantId }))
+      // Trial pode ter iniciado agora (StartTrialIfEligibleAsync) — invalida pra não esperar o
+      // staleTime e o dashboard já nascer com o plano/entitlements corretos.
+      queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
 
       if (variables.logoFile) {
         const validationError = validateImageFile(variables.logoFile)

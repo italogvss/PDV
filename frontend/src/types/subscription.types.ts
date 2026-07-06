@@ -20,6 +20,9 @@ export interface Plan {
   entitlements: string[]
   limits: Record<string, number>
   trialDays: number | null
+  // Ponto de entrada do trial (`?plano=<slug>`) — usado pra iniciar o onboarding já com o plano
+  // certo quando o usuário escolhe na tela de planos (sem passar pela landing).
+  slug: string
 }
 
 export interface Subscription {

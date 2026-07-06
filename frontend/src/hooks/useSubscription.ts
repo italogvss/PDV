@@ -78,6 +78,10 @@ export function useSyncSubscriptionToStore() {
 export interface StartCheckoutInput {
   planId: string
   couponCode?: string
+  // Pra onde o gateway volta se o usuário cancelar/abandonar o pagamento. Default: aba de
+  // assinatura em Configurações. A tela de planos pós-login (sem tenant) passa a própria rota
+  // (`/planos`) — voltar pra Configurações não faz sentido pra quem ainda não tem negócio.
+  returnUrl?: string
 }
 
 // Inicia o checkout da assinatura recorrente no cartão → redireciona para o AbacatePay.
@@ -89,7 +93,7 @@ export function useStartCheckout() {
       return subscriptionService.startCheckout({
         planId: input.planId,
         couponCode: input.couponCode,
-        returnUrl: `${base}/configuracoes?tab=assinatura`,
+        returnUrl: input.returnUrl ?? `${base}/configuracoes?tab=assinatura`,
         completionUrl: `${base}/assinatura/retorno`,
       })
     },

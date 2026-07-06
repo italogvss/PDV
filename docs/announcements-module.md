@@ -13,8 +13,8 @@ Dois mecanismos, um único controle de "visto":
 
 | Tabela | Papel |
 |---|---|
-| `Announcements` | Conteúdo editorial + regras de segmentação. Entidade **global** (sem `TenantId`). |
-| `UserSeenMarkers` | O que cada usuário já viu. Scoped por `UserId`. `Key` genérica. |
+| `Announcements` | Conteúdo editorial + regras de segmentação. Entidade **global** (sem `TenantId`, sem query filter — como `Plan`). |
+| `UserSeenMarkers` | O que cada usuário já viu. Global, scoped por `UserId` (filtrado explicitamente no repositório). `Key` genérica. |
 
 A `Key` em `UserSeenMarkers` é o que liga tudo:
 - aviso editorial → `Key = Announcement.Id`
@@ -61,7 +61,7 @@ VALUES
 |---|---|
 | `Title` | Título do modal. |
 | `Body` | Corpo em **markdown** (renderizado no frontend). |
-| `Type` | `Info` \| `Feature` \| `Terms` \| `Version` (só estilo/ícone). |
+| `Type` | `Info` \| `Feature` \| `Terms` \| `Version` (só estilo/ícone). Enum `AnnouncementType`, persistido como **string**. |
 | `ImageUrl` | Opcional — imagem no topo do modal. |
 | `CtaLabel` + `CtaUrl` | Opcional — botão extra que abre um link. Os dois juntos. |
 | `PublishAt` | A partir de quando aparece. `NULL` = imediatamente. |
@@ -117,17 +117,22 @@ Regra de ouro: **cada novo modal precisa de uma `key` única** (sempre com prefi
 
 ## Arquivos
 
-**Backend**
+**Backend** (segue a arquitetura em camadas — service faz o *targeting*, repositório faz o acesso a dados)
 - Entidades: [Announcement.cs](../backend/PDV.Domain/Entities/Announcement.cs), [UserSeenMarker.cs](../backend/PDV.Domain/Entities/UserSeenMarker.cs)
+- Enum de tipo: [AnnouncementType.cs](../backend/PDV.Domain/Enums/AnnouncementType.cs)
 - Tier de plano: [PlanTier.cs](../backend/PDV.Domain/Constants/PlanTier.cs)
-- Serviço (targeting + feed): [AnnouncementService.cs](../backend/PDV.Infrastructure/Services/AnnouncementService.cs)
+- Mapeamento EF: [AnnouncementConfiguration.cs](../backend/PDV.Infrastructure/Persistence/Configurations/AnnouncementConfiguration.cs), [UserSeenMarkerConfiguration.cs](../backend/PDV.Infrastructure/Persistence/Configurations/UserSeenMarkerConfiguration.cs)
+- DTOs: [AnnouncementDtos.cs](../backend/PDV.Application/DTOs/Announcements/AnnouncementDtos.cs) (`AnnouncementFeedResponse`, `AnnouncementResponse`, `MarkSeenRequest`)
+- Service (targeting + feed): [IAnnouncementService.cs](../backend/PDV.Application/Interfaces/IAnnouncementService.cs) → [AnnouncementService.cs](../backend/PDV.Infrastructure/Services/AnnouncementService.cs)
+- Repositório (queries de ativos + seen markers): [IAnnouncementRepository.cs](../backend/PDV.Domain/Interfaces/IAnnouncementRepository.cs) → [AnnouncementRepository.cs](../backend/PDV.Infrastructure/Repositories/AnnouncementRepository.cs)
 - Endpoints: [AnnouncementsController.cs](../backend/PDV.Api/Controllers/AnnouncementsController.cs)
   - `GET /api/announcements/feed` — avisos pendentes + keys de ciclo de vida vistas
   - `POST /api/announcements/seen` — body `{ "key": "..." }`
 
 **Frontend**
+- Tipos: [announcement.types.ts](../frontend/src/types/announcement.types.ts)
 - Service/hook: [announcement.service.ts](../frontend/src/services/announcement.service.ts), [useAnnouncements.ts](../frontend/src/hooks/useAnnouncements.ts)
-- Orquestrador + modal + registro: [AnnouncementCenter/](../frontend/src/components/AnnouncementCenter/)
+- Orquestrador + modal + registro de ciclo de vida: [AnnouncementCenter/](../frontend/src/components/AnnouncementCenter/) (`index.tsx`, `AnnouncementModal.tsx`, `lifecycle.tsx`)
 - Montado em: [DashboardLayout/index.tsx](../frontend/src/layouts/DashboardLayout/index.tsx)
 
 ---

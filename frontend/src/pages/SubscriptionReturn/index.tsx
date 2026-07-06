@@ -1,20 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material'
-import { CheckCircleOutlined as CheckCircleOutlineIcon, ScheduleOutlined as ScheduleOutlinedIcon } from '@mui/icons-material'
+import { alpha } from '@mui/material/styles'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded'
 import { useNavigate } from 'react-router-dom'
 import { useSubscription } from '../../hooks/useSubscription'
+import { useAppSelector } from '../../store'
 
 const POLL_INTERVAL_MS = 3000
-const POLL_TIMEOUT_MS = 30000
+// Teto de espera exibido ao usuário — o polling em si continua esporádico (a cada 3s), só o
+// limite máximo antes de declarar falha de comunicação sobe pra 1 minuto.
+const POLL_TIMEOUT_MS = 60_000
 
 type Phase = 'processing' | 'confirmed' | 'timeout'
 
+function formatCountdown(ms: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+// Tela cheia (sem DashboardLayout — o usuário pode ainda não ter tenant). Decide o próximo passo
+// sozinha: sem tenant → guia pro onboarding; com tenant → volta pro painel.
 export default function SubscriptionReturnPage() {
   const navigate = useNavigate()
+  const tenantId = useAppSelector((s) => s.auth.tenantId)
   const [phase, setPhase] = useState<Phase>('processing')
+  const [remainingMs, setRemainingMs] = useState(POLL_TIMEOUT_MS)
   const startedAt = useRef(Date.now())
 
-  // Enquanto processa, faz polling do /me até o webhook ativar (status pago).
+  // Enquanto processa, faz polling esporádico do /me até o webhook ativar (status pago).
   const { data } = useSubscription(phase === 'processing' ? POLL_INTERVAL_MS : undefined)
 
   const isActivated = useMemo(
@@ -22,22 +38,42 @@ export default function SubscriptionReturnPage() {
     [data?.status],
   )
 
+  // Ticker de UI (1s), independente da cadência do polling — só exibe o teto máximo de espera.
+  useEffect(() => {
+    if (phase !== 'processing') return
+    const tick = () => setRemainingMs(Math.max(0, POLL_TIMEOUT_MS - (Date.now() - startedAt.current)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [phase])
+
   useEffect(() => {
     if (phase !== 'processing') return
     if (isActivated) {
       setPhase('confirmed')
       return
     }
-    const elapsed = Date.now() - startedAt.current
-    if (elapsed >= POLL_TIMEOUT_MS) {
+    if (Date.now() - startedAt.current >= POLL_TIMEOUT_MS) {
       setPhase('timeout')
     }
   }, [phase, isActivated, data])
 
-  const goToSubscription = () => navigate('/configuracoes?tab=assinatura')
+  const goNext = () => navigate(tenantId ? '/' : '/criar-negocio')
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        px: 2,
+        bgcolor: 'surface.default',
+        backgroundImage: (t) =>
+          `radial-gradient(60% 50% at 15% 0%, ${alpha(t.palette.accent[300], 0.24)} 0%, transparent 60%),` +
+          `radial-gradient(50% 45% at 100% 100%, ${alpha(t.palette.premium[300], 0.26)} 0%, transparent 55%)`,
+      }}
+    >
       <Paper
         variant="outlined"
         sx={{
@@ -61,6 +97,9 @@ export default function SubscriptionReturnPage() {
             <Typography variant="body2" color="text.secondary">
               Estamos validando a confirmação do pagamento. Isso pode levar alguns instantes.
             </Typography>
+            <Typography variant="caption" color="text.tertiary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+              Aguardando confirmação — até {formatCountdown(remainingMs)}
+            </Typography>
           </>
         )}
 
@@ -71,26 +110,33 @@ export default function SubscriptionReturnPage() {
               Assinatura confirmada!
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Seu plano já está ativo. Aproveite todos os recursos.
+              {tenantId
+                ? 'Seu plano já está ativo. Aproveite todos os recursos.'
+                : 'Agora vamos criar o seu negócio.'}
             </Typography>
-            <Button variant="contained" color="secondary" onClick={goToSubscription} sx={{ mt: 1 }}>
-              Ir para assinatura
+            <Button variant="contained" color="secondary" onClick={goNext} sx={{ mt: 1 }}>
+              {tenantId ? 'Ir para o painel' : 'Criar meu negócio'}
             </Button>
           </>
         )}
 
         {phase === 'timeout' && (
           <>
-            <ScheduleOutlinedIcon sx={{ fontSize: 48, color: 'warning.main' }} />
+            <ErrorOutlineRoundedIcon sx={{ fontSize: 48, color: 'error.main' }} />
             <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700, mt: 1 }}>
-              Pagamento em processamento
+              Falha na comunicação
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Seu pagamento está sendo processado e pode levar alguns minutos para ser confirmado.
-              Você pode acompanhar o status na página de assinatura.
+              Não conseguimos confirmar seu pagamento a tempo. Se o valor foi cobrado, não se
+              preocupe — fale com a gente que resolvemos rapidinho.
             </Typography>
-            <Button variant="contained" color="secondary" onClick={goToSubscription} sx={{ mt: 1 }}>
-              Ir para assinatura
+            <Button
+              variant="contained"
+              color="secondary"
+              href="mailto:italo.gavassi@gmail.com?subject=Pagamento%20n%C3%A3o%20confirmado"
+              sx={{ mt: 1 }}
+            >
+              Entrar em contato
             </Button>
           </>
         )}

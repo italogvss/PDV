@@ -1,9 +1,9 @@
 import { Box, Button, Dialog, Typography, useMediaQuery, useTheme } from '@mui/material'
-import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import IconButton from '@mui/material/IconButton'
-import { useNavigate } from 'react-router-dom'
+import PremiumIconBadge from '../PremiumIconBadge'
+import UpsellButton from '../UpsellButton'
 import type { Props } from './types'
 
 const DEFAULT_HIGHLIGHTS = [
@@ -21,14 +21,8 @@ export default function UpsellModal({
   description = 'Você atingiu um limite do seu plano atual. Faça upgrade para o Pro e continue crescendo sem barreiras.',
   highlights = DEFAULT_HIGHLIGHTS,
 }: Props) {
-  const navigate = useNavigate()
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
-
-  const goToPlans = () => {
-    onClose()
-    navigate('/configuracoes?tab=assinatura')
-  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth fullScreen={fullScreen}>
@@ -41,21 +35,7 @@ export default function UpsellModal({
           <CloseRounded fontSize="small" />
         </IconButton>
 
-        <Box
-          sx={{
-            width: 64,
-            height: 64,
-            mx: 'auto',
-            mb: 2,
-            borderRadius: '50%',
-            bgcolor: 'premium.100',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <WorkspacePremiumRounded sx={{ fontSize: 34, color: 'premium.500' }} />
-        </Box>
+        <PremiumIconBadge size="xl" tone="soft" sx={{ mx: 'auto', mb: 2 }} />
 
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           {title}
@@ -75,20 +55,7 @@ export default function UpsellModal({
         >
           {highlights.map((item) => (
             <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <Box
-                sx={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  bgcolor: 'premium.100',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <CheckRounded sx={{ fontSize: 15, color: 'premium.500' }} />
-              </Box>
+              <PremiumIconBadge size="sm" tone="soft" icon={CheckRounded} sx={{ width: 22, height: 22 }} />
               <Typography variant="body2" color="text.primary">
                 {item}
               </Typography>
@@ -96,20 +63,7 @@ export default function UpsellModal({
           ))}
         </Box>
 
-        <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          onClick={goToPlans}
-          sx={{
-            bgcolor: 'premium.400',
-            color: 'premium.900',
-            fontWeight: 700,
-            '&:hover': { bgcolor: 'premium.500' },
-          }}
-        >
-          Ver planos Pro
-        </Button>
+        <UpsellButton fullWidth size="large" onBeforeNavigate={onClose} />
         <Button variant="ghost" fullWidth sx={{ mt: 1 }} onClick={onClose}>
           Agora não
         </Button>
