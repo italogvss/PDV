@@ -285,6 +285,7 @@ export default function InventoryPage() {
       <PageHeader
         title="Estoque"
         description={isLoadingProducts ? '...' : `${products.length} produtos cadastrados`}
+        helpUrl='/ajuda?cat=estoque&art=cadastrar-produto'
       >
         {canManage && (
           <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>

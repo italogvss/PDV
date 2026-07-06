@@ -74,8 +74,8 @@
     ]
   },
   {
-    "slug": "financeiro",
-    "category": "Financeiro",
+    "slug": "despesas",
+    "category": "Despesas",
     "icon": "AccountBalance",
     "articles": [
       { "slug": "registrar-despesa", "title": "Registrar despesa" },
@@ -89,31 +89,21 @@
     "icon": "Business",
     "articles": [
       { "slug": "dados-da-empresa", "title": "Dados da empresa" },
-      { "slug": "horario-funcionamento", "title": "Horário de funcionamento" },
       { "slug": "taxas-pagamento", "title": "Taxas de pagamento" },
       { "slug": "ativar-modulos", "title": "Ativar módulos" },
-      { "slug": "trocar-logo", "title": "Trocar logo" }
+      { "slug": "trocar-logo", "title": "Trocar logo" },
+      { "slug": "configurar-notificacoes", "title": "Configurar notificações" },
+      { "slug": "itens-desativados", "title": "Itens desativados" },
+      { "slug": "exclusao-do-negocio", "title": "Exclusão do negócio" }
     ]
   },
   {
-    "slug": "conta-e-aparencia",
-    "category": "Conta e aparência",
-    "icon": "ManageAccounts",
+    "slug": "auditoria",
+    "category": "Auditoria",
+    "icon": "History",
     "articles": [
-      { "slug": "alterar-perfil", "title": "Alterar perfil" },
-      { "slug": "tema-claro-escuro", "title": "Tema claro e escuro" },
-      { "slug": "cor-destaque-texto", "title": "Cor de destaque e texto" },
-      { "slug": "trocar-senha", "title": "Trocar senha" }
-    ]
-  },
-  {
-    "slug": "duvidas-frequentes",
-    "category": "Dúvidas frequentes",
-    "icon": "Help",
-    "articles": [
-      { "slug": "o-que-e-soft-delete", "title": "O que é soft delete?" },
-      { "slug": "multi-tenant", "title": "O que é multi-tenant?" },
-      { "slug": "limites-do-plano", "title": "Limites do plano" }
+      { "slug": "visualizar-historico", "title": "Visualizar histórico de auditoria" },
+      { "slug": "acoes-registradas", "title": "O que é registrado na auditoria" }
     ]
   }
 ]

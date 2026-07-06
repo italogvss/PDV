@@ -24,9 +24,13 @@ interface MeApiResponse {
 export const authService = {
   getMe: async (): Promise<AuthUser> => {
     const { data } = await api.get<MeApiResponse>('/auth/me')
+    // `lastTenantId` pode vir vazio mesmo com lojas ativas — cai para a primeira ativa
+    // pra não jogar um owner com tenant no fluxo de onboarding.
+    const tenantId =
+      data.lastTenantId ?? data.tenants?.find((t) => t.isActive)?.tenantId ?? null
     return {
       userId: data.id,
-      tenantId: data.lastTenantId,
+      tenantId,
       name: data.name,
       email: data.email,
       phone: data.phone,

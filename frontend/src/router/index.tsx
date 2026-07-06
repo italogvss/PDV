@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
     children: [{ path: '/assinatura/retorno', element: <SubscriptionReturnPage /> }],
   },
   {
-    element: <RouterGuard type="protected" />,
+    element: <RouterGuard type="dashboard" />,
     children: [
       {
         path: '/',

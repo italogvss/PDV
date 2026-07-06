@@ -1,7 +1,7 @@
 import { ArchiveOutlined, Article, BackupOutlined, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { Box, Button, Divider, Typography } from '@mui/material'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '../../store'
 import AdvancedSection from './components/AdvancedSection'
 import DisabledItemsSection from './components/DisabledItemsSection'
@@ -77,7 +77,7 @@ function renderSection(tab: SettingsTab) {
 export default function SettingsPage() {
   const { role } = useAppSelector((s) => s.auth)
   const isOwner = (role === 'Owner' || role === 'Admin')
-
+  const navigate = useNavigate()
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (isOwner) return true
     return item.type === 'user' && !item.ownerOnly
@@ -108,7 +108,7 @@ export default function SettingsPage() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Button variant="outlined" startIcon={<HelpOutlined />} size="small">
+          <Button onClick={()=> navigate('/ajuda?cat=configuracoes-do-negocio&art=dados-da-empresa')} variant="outlined" startIcon={<HelpOutlined />} size="small">
             Precisa de ajuda?
           </Button>
         </Box>

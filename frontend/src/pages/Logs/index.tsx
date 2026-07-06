@@ -223,7 +223,7 @@ export default function LogsPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Logs" description="Histórico de auditoria das operações do sistema.">
+      <PageHeader helpUrl='/ajuda?cat=auditoria&art=visualizar-historico' title="Auditoria" description="Histórico de auditoria das operações do sistema.">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Tooltip title="Filtra por intervalo de dias a partir de hoje">
           <ToggleButtonGroup

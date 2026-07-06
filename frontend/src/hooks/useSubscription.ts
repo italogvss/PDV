@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '../store'
 import { clearAuth, setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { clearStoredPlanSlug } from '../utils/planSelection'
 
 export const SUBSCRIPTION_QUERY_KEY = ['subscription'] as const
 const PLANS_QUERY_KEY = ['plans'] as const
@@ -137,6 +138,9 @@ export function useCancelSubscription() {
         }
         dispatch(clearAuth())
         queryClient.clear()
+        // Sem esse clear, o slug sobrevive no sessionStorage e, num novo login, `resolvePostLoginPath`
+        // mandaria um usuário `hasUsedTrial` direto pro onboarding, pulando o checkout pago.
+        clearStoredPlanSlug()
         window.location.href = import.meta.env.VITE_LANDING_URL
         return
       }

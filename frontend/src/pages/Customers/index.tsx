@@ -191,7 +191,7 @@ export default function CustomersPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Clientes" description={`Você tem ${kpis.total} cadastrados`}>
+      <PageHeader title="Clientes" description={`Você tem ${kpis.total} cadastrados`} helpUrl='/ajuda?cat=clientes&art=cadastrar-cliente'>
         <Button variant="contained" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Novo cliente
         </Button>

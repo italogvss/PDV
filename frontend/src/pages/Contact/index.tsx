@@ -282,7 +282,7 @@ export default function ContactPage() {
                 Ítalo Gavassi
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Desenvolvedor e Proprietário de PDV-Ultra
+                Desenvolvedor e Proprietário de Kashing
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

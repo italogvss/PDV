@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Box } from '@mui/material'
+import { useLocation } from 'react-router-dom'
 import { useAnnouncementFeed, useMarkSeen } from '../../hooks/useAnnouncements'
 import { useAppSelector } from '../../store'
 import MarkdownRenderer from '../MarkdownRenderer'
@@ -20,6 +21,7 @@ interface QueueItem {
 export default function AnnouncementCenter() {
   const { data } = useAnnouncementFeed()
   const { tenantId, name } = useAppSelector(s => s.auth)
+  const { pathname } = useLocation()
   const markSeen = useMarkSeen()
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
@@ -28,8 +30,8 @@ export default function AnnouncementCenter() {
     const seen = new Set(data.seenKeys)
 
     const lifecycle = LIFECYCLE_MODALS
-      .filter(m => !seen.has(m.key) && m.shouldShow({ tenantId, name }))
-      .map<QueueItem>(m => ({ key: m.key, title: m.title, content: m.body }))
+      .filter(m => !seen.has(m.key) && m.shouldShow({ tenantId, name, pathname }))
+      .map<QueueItem>(m => ({ key: m.key, title: m.title, content: <m.Content /> }))
 
     const editorial = data.announcements.map<QueueItem>(a => ({
       key: a.id,
@@ -52,7 +54,7 @@ export default function AnnouncementCenter() {
     }))
 
     return [...lifecycle, ...editorial]
-  }, [data, tenantId, name])
+  }, [data, tenantId, name, pathname])
 
   const current = queue.find(item => !dismissed.has(item.key))
   if (!current) return null

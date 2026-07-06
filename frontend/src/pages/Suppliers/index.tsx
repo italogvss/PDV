@@ -170,7 +170,7 @@ export default function SuppliersPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Fornecedores" description={`Você tem ${kpis.total} cadastrados`}>
+      <PageHeader helpUrl='/ajuda?cat=estoque&art=cadastrar-fornecedores' title="Fornecedores" description={`Você tem ${kpis.total} cadastrados`}>
         <Button variant="contained" startIcon={<AddRounded />} onClick={() => setAddOpen(true)}>
           Novo fornecedor
         </Button>

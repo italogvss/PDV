@@ -157,7 +157,7 @@ export default function EmployeeDetailPage() {
         deleteLabel="Desativar"
         onEdit={() => setIsEditing(true)}
         onCancel={handleCancel}
-        onSave={handleSave}
+        onSave={handleSave}       
         onDeleteClick={() => setConfirmDelete(true)}
       />
 

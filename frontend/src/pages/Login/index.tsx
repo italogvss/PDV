@@ -12,11 +12,12 @@ import {
 import { alpha } from '@mui/material/styles'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import GoogleSignInButton from '../../components/GoogleSignInButton'
 import { useApiError } from '../../hooks/useApiError'
 import { authService } from '../../services/auth.service'
+import type { AuthUser } from '../../types/auth.types'
 import { useAppDispatch } from '../../store'
 import { setAuth } from '../../store/slices/auth.slice'
 import { resolvePostLoginPath } from '../../utils/planSelection'
@@ -31,12 +32,27 @@ type Role = 'owner' | 'employee'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const dispatch = useAppDispatch()
   const handleError = useApiError()
   const theme = useTheme()
   const [role, setRole] = useState<Role>('owner')
   const [googleLoading, setGoogleLoading] = useState(false)
   const [googleError, setGoogleError] = useState(false)
+
+  // Rota pretendida antes do redirect pro login (preservada pelo RouterGuard).
+  const from = (location.state as { from?: string } | null)?.from ?? null
+
+  // Destino pós-login: troca de senha primeiro; senão o deep-link preservado (só path interno e
+  // só se já houver tenant — as rotas do dashboard exigem tenant); senão o fluxo de onboarding.
+  const resolveTarget = useCallback(
+    (user: AuthUser): string => {
+      if (user.mustChangePassword) return '/trocar-senha'
+      if (user.tenantId && from && from.startsWith('/') && !from.startsWith('//')) return from
+      return resolvePostLoginPath(user.tenantId)
+    },
+    [from],
+  )
 
   const {
     register,
@@ -54,13 +70,13 @@ export default function LoginPage() {
         await authService.loginWithGoogle(credential)
         const user = await authService.getMe()
         dispatch(setAuth(user))
-        navigate(resolvePostLoginPath(user.tenantId), { replace: true })
+        navigate(resolveTarget(user), { replace: true })
       } catch {
         setGoogleError(true)
         setGoogleLoading(false)
       }
     },
-    [dispatch, navigate],
+    [dispatch, navigate, resolveTarget],
   )
 
   const onEmployeeSubmit = async (data: EmployeeForm) => {
@@ -68,10 +84,7 @@ export default function LoginPage() {
       await authService.loginWithLocal(data.username, data.password)
       const user = await authService.getMe()
       dispatch(setAuth(user))
-      navigate(
-        user.mustChangePassword ? '/trocar-senha' : resolvePostLoginPath(user.tenantId),
-        { replace: true },
-      )
+      navigate(resolveTarget(user), { replace: true })
     } catch (error) {
       handleError(error, 'Usuário ou senha incorretos.')
     }

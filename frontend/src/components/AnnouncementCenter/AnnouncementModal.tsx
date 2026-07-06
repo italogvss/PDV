@@ -21,9 +21,9 @@ export default function AnnouncementModal({
   ctaUrl,
 }: AnnouncementModalProps) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <ModalHeader title={title} onClose={onClose} />
-      <DialogContent>{children}</DialogContent>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      {title && <ModalHeader title={title} onClose={onClose} />}
+      <DialogContent sx={{pt: title ? 0 : 4}}>{children}</DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         {ctaLabel && ctaUrl && (
           <Button

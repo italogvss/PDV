@@ -90,7 +90,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Conta',
     items: [
       {
-        label: 'Logs',
+        label: 'Auditoria',
         path: '/logs',
         icon: HistoryOutlined,
         module: 'logs',

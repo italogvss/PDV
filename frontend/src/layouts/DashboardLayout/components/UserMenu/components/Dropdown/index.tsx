@@ -24,6 +24,7 @@ import { FEATURES } from '../../../../../../constants/entitlements'
 import { useEntitlements } from '../../../../../../hooks/useSubscription'
 import { useAppDispatch, useAppSelector } from '../../../../../../store'
 import { clearAuth } from '../../../../../../store/slices/auth.slice'
+import { clearStoredPlanSlug } from '../../../../../../utils/planSelection'
 import { DropdownProps } from './types'
 
 interface AccountItem {
@@ -121,6 +122,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const handleLogout = () => {
     onClose()
     dispatch(clearAuth())
+    clearStoredPlanSlug()
     navigate(import.meta.env.VITE_LANDING_URL);
   }
 

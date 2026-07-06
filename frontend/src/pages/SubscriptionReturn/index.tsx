@@ -60,6 +60,14 @@ export default function SubscriptionReturnPage() {
 
   const goNext = () => navigate(tenantId ? '/' : '/criar-negocio')
 
+  // No timeout, retoma o polling (o webhook costuma chegar logo depois) sem forçar o usuário a
+  // recomeçar o checkout.
+  const retry = () => {
+    startedAt.current = Date.now()
+    setRemainingMs(POLL_TIMEOUT_MS)
+    setPhase('processing')
+  }
+
   return (
     <Box
       sx={{
@@ -128,16 +136,23 @@ export default function SubscriptionReturnPage() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Não conseguimos confirmar seu pagamento a tempo. Se o valor foi cobrado, não se
-              preocupe — fale com a gente que resolvemos rapidinho.
+              preocupe — tente verificar de novo ou fale com a gente que resolvemos rapidinho.
             </Typography>
-            <Button
-              variant="contained"
-              color="secondary"
-              href="mailto:italo.gavassi@gmail.com?subject=Pagamento%20n%C3%A3o%20confirmado"
-              sx={{ mt: 1 }}
-            >
-              Entrar em contato
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1, width: '100%', mt: 1 }}>
+              <Button variant="contained" color="secondary" onClick={retry}>
+                Verificar novamente
+              </Button>
+              <Button variant="outlined" color="secondary" onClick={goNext}>
+                {tenantId ? 'Ir para o painel' : 'Continuar cadastro'}
+              </Button>
+              <Button
+                variant="text"
+                color="secondary"
+                href="mailto:italo.gavassi@gmail.com?subject=Pagamento%20n%C3%A3o%20confirmado"
+              >
+                Entrar em contato
+              </Button>
+            </Box>
           </>
         )}
       </Paper>

@@ -32,7 +32,7 @@ import type { Appointment, AppointmentStatus, Professional } from '../../types/a
 import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
 import { formatBRL } from '../../utils/currency'
 import AppointmentDetailModal from './components/AppointmentDetailModal'
-import { computeKpis, STATUS_COLOR } from './components/appointmentHelpers'
+import { STATUS_COLOR } from './components/appointmentHelpers'
 import AppointmentScheduler from './components/AppointmentScheduler'
 import NewAppointmentModal from './components/NewAppointmentModal'
 import SidePanel from './components/SidePanel'
@@ -298,7 +298,7 @@ export default function AppointmentsPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Agendamentos" description={headerTitle}>
+      <PageHeader title="Agendamentos" description={headerTitle} helpUrl='/ajuda?cat=agendamentos&art=criar-agendamento'>
         <Tooltip title="Visualizar agendamentos de uma data especifica">
           <DatePicker
             value={selectedDate}

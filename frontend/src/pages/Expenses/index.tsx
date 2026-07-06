@@ -249,7 +249,7 @@ export default function ExpensesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader title="Despesas" description={`${monthName} de ${year} • Controle e acompanhamento de despesas`}>
+      <PageHeader helpUrl='/ajuda?cat=despesas&art=registrar-despesa' title="Despesas" description={`${monthName} de ${year} • Controle e acompanhamento de despesas`}>
         <Tooltip title="Selecionar mês de despesas">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Button

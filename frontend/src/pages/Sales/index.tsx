@@ -322,7 +322,7 @@ export default function SalesPage() {
         <Button variant="outlined" startIcon={<HistoryOutlined />} onClick={() => navigate('/historico')}>
           Histórico
         </Button>
-        <Button variant="outlined" startIcon={<Help />} onClick={() => navigate("/ajuda")}>
+        <Button variant="outlined" startIcon={<Help />} onClick={() => navigate("/ajuda?cat=vendas&art=registrar-venda")}>
           Ajuda
         </Button>
       </PageHeader>

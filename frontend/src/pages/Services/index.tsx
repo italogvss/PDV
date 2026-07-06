@@ -1,37 +1,36 @@
-import { useState, useMemo } from 'react'
+import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import AddRounded from '@mui/icons-material/AddRounded'
+import CategoryRounded from '@mui/icons-material/CategoryRounded'
+import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import MiscellaneousServicesRounded from '@mui/icons-material/MiscellaneousServicesRounded'
+import SearchRounded from '@mui/icons-material/SearchRounded'
+import SellRounded from '@mui/icons-material/SellRounded'
 import {
   Box,
   Button,
   Card,
-  TextField,
   InputAdornment,
-  Select,
   MenuItem,
-  Chip,
-  Typography,
+  Select,
+  TextField,
+  Typography
 } from '@mui/material'
-import AddRounded from '@mui/icons-material/AddRounded'
-import SearchRounded from '@mui/icons-material/SearchRounded'
-import FilterListRounded from '@mui/icons-material/FilterListRounded'
-import MiscellaneousServicesRounded from '@mui/icons-material/MiscellaneousServicesRounded'
-import CategoryRounded from '@mui/icons-material/CategoryRounded'
-import SellRounded from '@mui/icons-material/SellRounded'
-import CheckCircleOutlineRounded from '@mui/icons-material/CheckCircleOutlineRounded'
-import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
-import { DataGrid } from '@mui/x-data-grid'
-import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
-import { formatBRL } from '../../utils/currency'
-import type { Service, ServiceCategory } from '../../types/service.types'
+import { DataGrid } from '@mui/x-data-grid'
+import { useMemo, useState } from 'react'
+import CategoryFormModal from '../../components/CategoryFormModal'
+import CategoryStrip from '../../components/CategoryStrip'
+import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
-import ServiceRowMenu from './components/ServiceRowMenu'
+import { useCreateServiceCategory, useDeleteServiceCategory, useServiceCategories, useUpdateServiceCategory } from '../../hooks/useServiceCategories'
+import { useDeleteService, useServices } from '../../hooks/useServices'
+import type { Service, ServiceCategory } from '../../types/service.types'
+import { formatBRL } from '../../utils/currency'
 import ServiceModal from './components/ServiceModal'
-import CategoryStrip from '../../components/CategoryStrip'
-import CategoryFormModal from '../../components/CategoryFormModal'
-import { useServices, useDeleteService } from '../../hooks/useServices'
-import { useServiceCategories, useDeleteServiceCategory, useCreateServiceCategory, useUpdateServiceCategory } from '../../hooks/useServiceCategories'
+import ServiceRowMenu from './components/ServiceRowMenu'
 
 const STATUS_OPTIONS = ['Ativo', 'Inativo']
 
@@ -243,6 +242,7 @@ export default function ServicesPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader
         title="Serviços"
+        helpUrl='/ajuda?cat=servicos&art=cadastrar-servico'
         description={isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
       >
         <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
@@ -284,7 +284,7 @@ export default function ServicesPage() {
         isLoading={isLoadingCategories}
         onAdd={() => setAddCategoryOpen(true)}
         onEdit={(cat) => setEditingCategory(cat)}
-        onDelete={(id) => deleteCategory.mutate(id)}        
+        onDelete={(id) => deleteCategory.mutate(id)}
       />
 
       {/* Barra de busca e filtros */}
@@ -305,7 +305,7 @@ export default function ServicesPage() {
             placeholder="Buscar serviço ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken'} }}
+            sx={{ m: 1, width: 280, '& .MuiOutlinedInput-root': { backgroundColor: 'surface.sunken' } }}
             slotProps={{
               input: {
                 startAdornment: (

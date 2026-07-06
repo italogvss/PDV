@@ -2,8 +2,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Box, Button, CircularProgress, Divider, Paper, Typography, useTheme } from '@mui/material'
 import { useCallback, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { useCreateTenant } from '../../hooks/useCreateTenant'
+import { useSubscription } from '../../hooks/useSubscription'
 import type { RootState } from '../../store'
 import FinishScreen from './components/FinishScreen'
 import PreviewPanel from './components/PreviewPanel'
@@ -42,6 +44,7 @@ export default function OnboardingTenant() {
   const firstName = authName?.split(' ')[0] ?? 'você'
 
   const createTenant = useCreateTenant()
+  const { data: subscription, isLoading: loadingSubscription } = useSubscription()
 
   const [step, setStep] = useState(1)
   const [finished, setFinished] = useState(false)
@@ -90,6 +93,20 @@ export default function OnboardingTenant() {
         onReset={handleReset}
       />
     )
+  }
+
+  // Rede de segurança: quem já usou o trial precisa pagar antes de criar o negócio. Se um slug
+  // órfão tiver rota até aqui pulando o ChoosePlan, devolve pro checkout obrigatório em /planos.
+  const hasActiveSub = subscription?.status === 'Active' || subscription?.status === 'Trialing'
+  if (loadingSubscription) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+  if (subscription?.hasUsedTrial && !hasActiveSub) {
+    return <Navigate to="/planos" replace />
   }
 
   const bgGradient = `linear-gradient(160deg, ${theme.palette.surface.default} 60%, ${theme.palette.accent[50]} 100%)`
