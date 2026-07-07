@@ -79,7 +79,14 @@ export const router = createBrowserRouter([
               </PermissionGuard>
             ),
           },
-          { path: 'servicos', element: <ServicesPage /> },
+          {
+            path: 'servicos',
+            element: (
+              <PermissionGuard permission="ViewServices">
+                <ServicesPage />
+              </PermissionGuard>
+            ),
+          },
           {
             path: 'agendamentos',
             element: (

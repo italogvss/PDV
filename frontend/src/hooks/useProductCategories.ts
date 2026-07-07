@@ -13,9 +13,12 @@ export function useProductCategories() {
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => productService.getAllCategories(),
+    // Caixa (SellProducts) precisa das categorias para navegar o catálogo no PDV.
     enabled:
       isModuleEnabled('inventory') &&
-      (hasPermission('ViewStock') || hasPermission('ManageStock')),
+      (hasPermission('ViewStock') ||
+        hasPermission('ManageStock') ||
+        hasPermission('SellProducts')),
   })
 }
 

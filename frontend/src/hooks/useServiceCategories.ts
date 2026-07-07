@@ -9,11 +9,14 @@ const CATEGORIES_KEY = ['service-categories'] as const
 const SERVICES_KEY = ['services'] as const
 
 export function useServiceCategories() {
-  const { isModuleEnabled } = useUserPermissions()
+  const { isModuleEnabled, hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: () => serviceService.getAllCategories(),
-    enabled: isModuleEnabled('services'),
+    // Caixa (SellProducts) precisa das categorias de serviço no PDV mesmo sem ViewServices.
+    enabled:
+      isModuleEnabled('services') &&
+      (hasPermission('ViewServices') || hasPermission('SellProducts')),
   })
 }
 

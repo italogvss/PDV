@@ -32,4 +32,8 @@ public enum Permission
     ManageSuppliers,
     ViewSuppliers,
     ViewLogs,
+
+    //services
+    ViewServices,
+    ManageServices,
 }

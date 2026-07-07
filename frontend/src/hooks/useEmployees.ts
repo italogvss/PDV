@@ -8,33 +8,36 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['employees'] as const
 
 export function useEmployees(page = 1, pageSize = 50) {
-  const { hasPermission } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, page, pageSize],
     queryFn: () => employeeService.getAll(page, pageSize),
     enabled:
+      isModuleEnabled('employees') &&
       (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
   })
 }
 
 export function useEmployee(id: string) {
-  const { hasPermission } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, id],
     queryFn: () => employeeService.getById(id),
     enabled:
       Boolean(id) &&
+      isModuleEnabled('employees') &&
       (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
   })
 }
 
 export function useEmployeeStats(id: string) {
-  const { hasPermission } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: [...QUERY_KEY, id, 'stats'],
     queryFn: () => employeeService.getStats(id),
     enabled:
       Boolean(id) &&
+      isModuleEnabled('employees') &&
       (hasPermission('ViewEmployees') || hasPermission('ManageEmployees')),
   })
 }

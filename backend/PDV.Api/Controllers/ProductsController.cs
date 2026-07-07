@@ -14,7 +14,8 @@ namespace PDV.Api.Controllers;
 public class ProductsController(IProductService service) : ControllerBase
 {
     [HttpGet]
-    [RequirePermission(Permission.ViewStock)]
+    // Caixa (SellProducts) precisa listar o catálogo no PDV mesmo sem ViewStock.
+    [RequirePermission(Permission.ViewStock, Permission.SellProducts)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -29,7 +30,7 @@ public class ProductsController(IProductService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [RequirePermission(Permission.ViewStock)]
+    [RequirePermission(Permission.ViewStock, Permission.SellProducts)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);

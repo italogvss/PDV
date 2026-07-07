@@ -113,7 +113,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
   const { isModuleEnabled } = useUserPermissions()
   const { has } = useEntitlements()
   const hasLinkedProducts = has(FEATURES.productLinkedToService)
-  const { data: inventorySettings } = useInventorySettings()
+  const { data: inventorySettings } = useInventorySettings(open)
   const requireCostPrice = inventorySettings?.requireCostPriceOnServices ?? true
   const schema = useMemo(() => buildServiceSchema(requireCostPrice), [requireCostPrice])
   const showProductsSection = isModuleEnabled('inventory')

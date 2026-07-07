@@ -13,6 +13,7 @@ export type OperationModule =
   | 'customers'
   | 'suppliers'
   | 'logs'
+  | 'employees'
 
 interface ModuleDefinition {
   label: string
@@ -34,7 +35,7 @@ export const OPERATION_MODULES: Record<OperationModule, ModuleDefinition> = {
   services: {
     label: 'Serviços',
     description: 'Catálogo de serviços oferecidos.',
-    permissions: [],
+    permissions: ['ViewServices', 'ManageServices'],
   },
   appointments: {
     label: 'Agendamentos',
@@ -66,6 +67,11 @@ export const OPERATION_MODULES: Record<OperationModule, ModuleDefinition> = {
     description: 'Histórico de movimentações, status e preços.',
     permissions: ['ViewLogs'],
   },
+  employees: {
+    label: 'Funcionários',
+    description: 'Equipe, cargos e permissões.',
+    permissions: ['ManageEmployees', 'ViewEmployees'],
+  },
 }
 
 export const ALL_MODULES = Object.keys(OPERATION_MODULES) as OperationModule[]
@@ -91,6 +97,7 @@ export const MODULE_GROUPS: ModuleGroup[] = [
   { label: 'Relatórios',   description: 'Lucros, indicadores e relatórios.',             modules: ['reports'] },
   { label: 'Clientes',     description: 'Cadastro e relacionamento com clientes.',       modules: ['customers'] },
   { label: 'Fornecedores', description: 'Cadastro de fornecedores.',                     modules: ['suppliers'] },
+  { label: 'Funcionários', description: 'Equipe, cargos e permissões.',                  modules: ['employees'] },
   { label: 'Logs',         description: 'Histórico de movimentações, status e preços.', modules: ['logs'] },
 ]
 

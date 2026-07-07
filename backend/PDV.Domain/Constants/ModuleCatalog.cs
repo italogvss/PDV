@@ -12,17 +12,17 @@ public static class ModuleCatalog
         {
             [OperationModule.Sales] = [Permission.SellProducts, Permission.CancelSales, Permission.ViewSalesHistory],
             [OperationModule.Inventory] = [Permission.ViewStock, Permission.ManageStock],
-            [OperationModule.Services] = [],
+            [OperationModule.Services] = [Permission.ViewServices, Permission.ManageServices],
             [OperationModule.Appointments] = [Permission.ManageAppointments, Permission.ViewAppointments],
             [OperationModule.Expenses] = [Permission.ViewExpenses, Permission.ManageExpenses],
             [OperationModule.Reports] = [Permission.ViewReports],
             [OperationModule.Customers] = [Permission.ManageCustomers, Permission.ViewCustomers],
             [OperationModule.Suppliers] = [Permission.ManageSuppliers, Permission.ViewSuppliers],
             [OperationModule.Logs] = [Permission.ViewLogs],
+            [OperationModule.Employees] = [Permission.ManageEmployees, Permission.ViewEmployees],
         };
 
-    // Permissões que não pertencem a nenhum módulo — sempre visíveis (ex.: gestão de equipe),
-    // independente dos módulos ativos do tenant.
-    public static readonly IReadOnlyList<Permission> CorePermissions =
-        [Permission.ManageEmployees, Permission.ViewEmployees];
+    // Permissões que não pertencem a nenhum módulo — sempre visíveis, independente dos módulos
+    // ativos do tenant. Hoje vazio: gestão de equipe passou a ser o módulo Employees (togglável).
+    public static readonly IReadOnlyList<Permission> CorePermissions = [];
 }

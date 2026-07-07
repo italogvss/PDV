@@ -27,6 +27,7 @@ import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { useCreateServiceCategory, useDeleteServiceCategory, useServiceCategories, useUpdateServiceCategory } from '../../hooks/useServiceCategories'
 import { useDeleteService, useServices } from '../../hooks/useServices'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import type { Service, ServiceCategory } from '../../types/service.types'
 import { formatBRL } from '../../utils/currency'
 import ServiceModal from './components/ServiceModal'
@@ -48,6 +49,8 @@ export default function ServicesPage() {
   const deleteCategory = useDeleteServiceCategory()
   const createCategory = useCreateServiceCategory()
   const updateCategory = useUpdateServiceCategory()
+  const { hasPermission } = useUserPermissions()
+  const canManage = hasPermission('ManageServices')
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('Todos')
@@ -205,13 +208,14 @@ export default function ServicesPage() {
         renderCell: ({ row }) => (
           <ServiceRowMenu
             service={row}
+            canManage={canManage}
             onEdit={setEditService}
             onDelete={(id) => deleteService.mutate(id)}
           />
         ),
       },
     ],
-    [deleteService],
+    [deleteService, canManage],
   )
 
   const activeFiltersCount = [categoryFilter, statusFilter].filter((v) => v !== 'Todos').length
@@ -245,9 +249,11 @@ export default function ServicesPage() {
         helpUrl='/ajuda?cat=servicos&art=cadastrar-servico'
         description={isLoadingServices ? '...' : `${services.length} serviços cadastrados`}
       >
-        <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
-          Novo serviço
-        </Button>
+        {canManage && (
+          <Button variant="contained" startIcon={<AddRounded />} onClick={() => setNewModalOpen(true)}>
+            Novo serviço
+          </Button>
+        )}
       </PageHeader>
 
       <PageKpiGrid>
@@ -359,7 +365,7 @@ export default function ServicesPage() {
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-          onRowDoubleClick={(params) => setEditService(params.row)}
+          onRowDoubleClick={(params) => canManage && setEditService(params.row)}
           slots={{ noRowsOverlay: DataGridNoRowsOverlay }}
         />
       </Card>

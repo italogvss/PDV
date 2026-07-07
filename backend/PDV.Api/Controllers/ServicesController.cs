@@ -14,6 +14,8 @@ namespace PDV.Api.Controllers;
 public class ServicesController(IServiceService service) : ControllerBase
 {
     [HttpGet]
+    // Caixa (SellProducts) precisa listar serviços no PDV mesmo sem ViewServices.
+    [RequirePermission(Permission.ViewServices, Permission.SellProducts)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -27,6 +29,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewServices, Permission.SellProducts)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -34,7 +37,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Create([FromBody] CreateServiceRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -42,7 +45,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -50,7 +53,7 @@ public class ServicesController(IServiceService service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

@@ -7,11 +7,11 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['team-roles'] as const
 
 export function useTeamRoles() {
-  const { hasPermission } = useUserPermissions()
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => teamRolesService.getAll(),
-    enabled: hasPermission('ManageEmployees'),
+    enabled: isModuleEnabled('employees') && hasPermission('ManageEmployees'),
   })
 }
 

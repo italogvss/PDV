@@ -316,8 +316,12 @@ public class TenantService(
                     new() { Permission = Permission.ViewCustomers },
                     new() { Permission = Permission.ManageCustomers },
                     new() { Permission = Permission.ViewSuppliers },
+                    new() { Permission = Permission.ManageSuppliers },
                     new() { Permission = Permission.ViewAppointments },
                     new() { Permission = Permission.ManageAppointments },
+                    new() { Permission = Permission.ViewServices },
+                    new() { Permission = Permission.ManageServices },
+                    new() { Permission = Permission.ViewLogs },
                 ],
             },
             new TenantRole

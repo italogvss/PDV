@@ -19,6 +19,18 @@ export function useTenantSettings() {
   })
 }
 
+// Configurações consumidas pelo PDV (regras de pagamento/desconto/cliente). Diferente de
+// useTenantSettings (owner-only): busca para qualquer usuário que possa vender, pois o caixa
+// precisa das regras reais da loja. GET /tenants/settings é aberto a qualquer autenticado.
+export function usePdvSettings() {
+  const { hasPermission } = useUserPermissions()
+  return useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => tenantSettingsService.get(),
+    enabled: hasPermission('SellProducts'),
+  })
+}
+
 export function useUpdateBusinessSettings() {
   const queryClient = useQueryClient()
   const showToast = useToast()
@@ -82,11 +94,15 @@ export function useUpdatePaymentsSettings() {
   })
 }
 
-export function useInventorySettings() {
+// Configurações de operação (ex.: controle de estoque) consumidas por modais de cadastro.
+// Aceita `enabled` para só buscar quando o modal abre — evita GET /tenant-settings desnecessário
+// para Employees, já que os modais ficam sempre montados na página.
+export function useInventorySettings(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => tenantSettingsService.get(),
     select: (data) => data.operation,
     staleTime: 5 * 60 * 1000,
+    enabled,
   })
 }

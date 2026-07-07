@@ -50,6 +50,12 @@ public class TenantRoleRepository(AppDbContext context, ITenantContext tenantCon
             .SelectMany(r => r.Permissions)
             .AnyAsync(p => p.Permission == permission);
 
+    public async Task<bool> HasAnyPermissionAsync(Guid roleId, IReadOnlyCollection<Permission> permissions) =>
+        await context.TenantRoles
+            .Where(r => r.Id == roleId)
+            .SelectMany(r => r.Permissions)
+            .AnyAsync(p => permissions.Contains(p.Permission));
+
     public async Task ReplacePermissionsAsync(Guid roleId, IEnumerable<Permission> permissions)
     {
         var existing = await context.TenantRolePermissions

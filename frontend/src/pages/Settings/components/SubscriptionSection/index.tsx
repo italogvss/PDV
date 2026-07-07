@@ -339,9 +339,10 @@ export default function SubscriptionSection() {
                 onClick={() => setConfirmCancelOpen(true)}
                 disabled={cancel.isPending}
                 sx={{
+                  backgroundColor: tier.pillBg,
                   color: tier.ink,
                   borderColor: alpha(tier.ink, 0.4),
-                  '&:hover': { borderColor: tier.ink, bgcolor: alpha(tier.ink, 0.08) },
+                  '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
                 }}
               >
                 Cancelar plano

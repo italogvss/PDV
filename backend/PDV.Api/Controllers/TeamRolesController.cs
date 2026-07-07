@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/team-roles")]
 [Authorize]
+[RequireModule(OperationModule.Employees)]
 [RequirePermission(Permission.ManageEmployees)]
 public class TeamRolesController(ITenantRoleService service) : ControllerBase
 {

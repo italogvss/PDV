@@ -3,13 +3,13 @@ import { Box, Button, IconButton, TextField, Typography } from '@mui/material'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
-import { ALL_MODULES } from '../../constants/modules'
 import { useProductCategories } from '../../hooks/useProductCategories'
 import { useProducts } from '../../hooks/useProducts'
 import { useCreateSale } from '../../hooks/useSales'
 import { useServiceCategories } from '../../hooks/useServiceCategories'
 import { useServices } from '../../hooks/useServices'
-import { useTenantSettings } from '../../hooks/useTenantSettings'
+import { usePdvSettings } from '../../hooks/useTenantSettings'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAppSelector } from '../../store'
 import type { AppointmentServiceRef } from '../../types/appointment.types'
 import type { Product } from '../../types/product.types'
@@ -54,11 +54,12 @@ export default function SalesPage() {
   const { data: serviceCategories = [] } = useServiceCategories()
   const auth = useAppSelector((state) => state.auth)
   const createSale = useCreateSale()
-  const { data: tenantSettings } = useTenantSettings()
+  const { isModuleEnabled } = useUserPermissions()
+  const { data: tenantSettings } = usePdvSettings()
   const allowDiscounts = tenantSettings?.operation.allowDiscounts ?? false
   const discountLimitPercent = tenantSettings?.operation.discountLimitPercent ?? 0
   const requireCustomerOnSale = tenantSettings?.operation.requireCustomerOnSale ?? false
-  const customersModuleActive = (tenantSettings?.modules ?? ALL_MODULES).includes('customers')
+  const customersModuleActive = isModuleEnabled('customers')
 
   // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
   const payments = tenantSettings?.payments ?? {

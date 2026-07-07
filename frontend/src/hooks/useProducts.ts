@@ -12,9 +12,12 @@ export function useProducts() {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => productService.getAll(),
+    // Caixa (SellProducts) precisa do catálogo no PDV mesmo sem ViewStock.
     enabled:
       isModuleEnabled('inventory') &&
-      (hasPermission('ViewStock') || hasPermission('ManageStock')),
+      (hasPermission('ViewStock') ||
+        hasPermission('ManageStock') ||
+        hasPermission('SellProducts')),
   })
 }
 

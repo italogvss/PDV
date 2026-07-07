@@ -7,11 +7,12 @@ const EXCLUDED_PATHS = ['/', '/configuracoes', '/ajuda', '/assinatura/retorno']
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate()
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const { hasPermission, isModuleEnabled, isOwner } = useUserPermissions()
 
   const modules = NAV_SECTIONS.flatMap((s) => s.items).filter(
     (item) =>
       !EXCLUDED_PATHS.includes(item.path) &&
+      (!item.ownerOnly || isOwner) &&
       (!item.module || isModuleEnabled(item.module)) &&
       (!item.requiredPermission || hasPermission(item.requiredPermission)),
   )

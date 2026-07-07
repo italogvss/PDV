@@ -8,11 +8,14 @@ import { useUserPermissions } from './useUserPermissions'
 const QUERY_KEY = ['services'] as const
 
 export function useServices() {
-  const { isModuleEnabled } = useUserPermissions()
+  const { isModuleEnabled, hasPermission } = useUserPermissions()
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => serviceService.getAll(),
-    enabled: isModuleEnabled('services'),
+    // Caixa (SellProducts) precisa dos serviços no PDV mesmo sem ViewServices.
+    enabled:
+      isModuleEnabled('services') &&
+      (hasPermission('ViewServices') || hasPermission('SellProducts')),
   })
 }
 

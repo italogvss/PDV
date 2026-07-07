@@ -13,8 +13,11 @@ public class PermissionService(
     ITenantRoleRepository roleRepository,
     ITenantContext tenantContext) : IPermissionService
 {
-    public async Task RequireAsync(Permission permission)
+    public async Task RequireAsync(params Permission[] permissions)
     {
+        if (permissions.Length == 0)
+            throw new UnauthorizedException("Nenhuma permissão informada.");
+
         var context = accessor.HttpContext
             ?? throw new UnauthorizedException("Contexto HTTP não disponível.");
 
@@ -31,7 +34,8 @@ public class PermissionService(
         var employee = await employeeRepository.GetByUserIdAsync(userId, tenantContext.TenantId)
             ?? throw new UnauthorizedException("Funcionário não encontrado.");
 
-        var hasPermission = await roleRepository.HasPermissionAsync(employee.RoleId, permission);
+        // Semântica OR: basta ter QUALQUER uma das permissões informadas.
+        var hasPermission = await roleRepository.HasAnyPermissionAsync(employee.RoleId, permissions);
 
         if (!hasPermission)
             throw new UnauthorizedException("Sem permissão para realizar esta operação.");

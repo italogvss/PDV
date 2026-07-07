@@ -105,7 +105,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
   const isEditing = !!product
   const { has } = useEntitlements()
   const hasAdvancedInventory = has(FEATURES.advancedInventory)
-  const { data: inventorySettings } = useInventorySettings()
+  const { data: inventorySettings } = useInventorySettings(open)
   const requireCostPrice = inventorySettings?.requireCostPriceOnProducts ?? true
   const schema = useMemo(() => buildProductSchema(requireCostPrice), [requireCostPrice])
   const createProduct = useCreateProduct()

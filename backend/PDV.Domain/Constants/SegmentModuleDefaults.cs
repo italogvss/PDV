@@ -18,6 +18,7 @@ public static class SegmentModuleDefaults
         OperationModule.Customers,
         OperationModule.Suppliers,
         OperationModule.Logs,
+        OperationModule.Employees,
     ];
 
     private static readonly OperationModule[] ServiceBased =
@@ -29,6 +30,7 @@ public static class SegmentModuleDefaults
         OperationModule.Reports,
         OperationModule.Customers,
         OperationModule.Logs,
+        OperationModule.Employees,
     ];
 
     private static readonly Dictionary<Segment, OperationModule[]> Map = new()

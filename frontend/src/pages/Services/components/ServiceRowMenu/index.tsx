@@ -5,7 +5,7 @@ import EditRounded from '@mui/icons-material/EditRounded'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import type { ServiceRowMenuProps } from './types'
 
-export default function ServiceRowMenu({ service, onEdit, onDelete }: ServiceRowMenuProps) {
+export default function ServiceRowMenu({ service, canManage, onEdit, onDelete }: ServiceRowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -23,6 +23,8 @@ export default function ServiceRowMenu({ service, onEdit, onDelete }: ServiceRow
     handleClose()
     onDelete(service.id)
   }
+
+  if (!canManage) return null
 
   return (
     <>

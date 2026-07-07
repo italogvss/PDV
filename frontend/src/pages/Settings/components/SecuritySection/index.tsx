@@ -15,11 +15,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
-import { useAppSelector } from '../../../../store'
 import { Google } from '@mui/icons-material'
 import { authService } from '../../../../services/auth.service'
 import { useToast } from '../../../../hooks/useToast'
 import { useApiError } from '../../../../hooks/useApiError'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 
 const schema = z
   .object({
@@ -42,8 +42,7 @@ export default function SecuritySection() {
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const { role } = useAppSelector((s) => s.auth)
-  const isOwner = role === 'Owner'
+  const { isOwner } = useUserPermissions()
   const showToast = useToast()
   const handleError = useApiError()
 

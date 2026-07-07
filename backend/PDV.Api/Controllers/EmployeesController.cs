@@ -10,6 +10,7 @@ namespace PDV.Api.Controllers;
 [ApiController]
 [Route("api/employees")]
 [Authorize]
+[RequireModule(OperationModule.Employees)]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
     [HttpGet]

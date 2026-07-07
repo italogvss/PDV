@@ -14,6 +14,8 @@ namespace PDV.Api.Controllers;
 public class ServiceCategoriesController(IServiceCategoryService service) : ControllerBase
 {
     [HttpGet]
+    // Caixa (SellProducts) precisa das categorias para navegar serviços no PDV.
+    [RequirePermission(Permission.ViewServices, Permission.SellProducts)]
     public async Task<IActionResult> GetAll()
     {
         var result = await service.GetAllAsync();
@@ -21,6 +23,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpGet("{id:guid}")]
+    [RequirePermission(Permission.ViewServices, Permission.SellProducts)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
@@ -28,7 +31,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpPost]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Create([FromBody] CreateServiceCategoryRequest request)
     {
         var result = await service.CreateAsync(request);
@@ -36,7 +39,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceCategoryRequest request)
     {
         var result = await service.UpdateAsync(id, request);
@@ -44,7 +47,7 @@ public class ServiceCategoriesController(IServiceCategoryService service) : Cont
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Owner,Admin")]
+    [RequirePermission(Permission.ManageServices)]
     public async Task<IActionResult> Delete(Guid id)
     {
         await service.DeleteAsync(id);

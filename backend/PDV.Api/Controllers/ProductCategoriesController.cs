@@ -14,7 +14,8 @@ namespace PDV.Api.Controllers;
 public class ProductCategoriesController(IProductCategoryService service) : ControllerBase
 {
     [HttpGet]
-    [RequirePermission(Permission.ViewStock)]
+    // Caixa (SellProducts) precisa das categorias para navegar o catálogo no PDV.
+    [RequirePermission(Permission.ViewStock, Permission.SellProducts)]
     public async Task<IActionResult> GetAll()
     {
         var result = await service.GetAllAsync();
@@ -22,7 +23,7 @@ public class ProductCategoriesController(IProductCategoryService service) : Cont
     }
 
     [HttpGet("{id:guid}")]
-    [RequirePermission(Permission.ViewStock)]
+    [RequirePermission(Permission.ViewStock, Permission.SellProducts)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await service.GetByIdAsync(id);
