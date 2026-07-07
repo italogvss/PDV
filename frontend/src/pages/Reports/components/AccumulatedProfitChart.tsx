@@ -36,7 +36,7 @@ export default function AccumulatedProfitChart({
       <LineChart
         height={300}
         xAxis={[{ scaleType: 'point', data: labels }]}
-        yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+        yAxis={[{ width: 100,valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={[
           {
             data: accumulated,
@@ -47,7 +47,7 @@ export default function AccumulatedProfitChart({
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
         ]}
-        margin={{ left: 16 }}
+        margin={{ left: 0}}
         sx={{
           '& .MuiAreaElement-root': { fillOpacity: 0.15 },
         }}

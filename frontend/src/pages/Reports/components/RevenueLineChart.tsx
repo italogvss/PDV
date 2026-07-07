@@ -65,9 +65,9 @@ export default function RevenueLineChart({
       <LineChart
         height={300}
         xAxis={[{ scaleType: 'point', data: labels }]}
-        yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+        yAxis={[{ width: 100,valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={series}
-        margin={{ left: 16 }}
+        margin={{ left: 0 }}
         sx={{
           '& .MuiAreaElement-series-current': { fillOpacity: 0.15 },
           '& .MuiLineElement-series-prev': { strokeDasharray: '8 4' },

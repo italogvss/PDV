@@ -1,5 +1,5 @@
 import { CheckRounded, DeleteOutlined, LocalOfferRounded, ShoppingCartOutlined } from '@mui/icons-material'
-import { Box, Button, Divider, Typography } from '@mui/material'
+import { Box, Button, Divider, Tooltip, Typography } from '@mui/material'
 import CurrencyField from '../../../../components/CurrencyField'
 import FieldLabel from '../../../../components/FieldLabel'
 import { formatBRL } from '../../../../utils/currency'
@@ -117,7 +117,7 @@ export default function CartPanel({
             <CurrencyField
               value={discountAmount}
               onChange={(value) => onDiscountChange(Math.min(value, maxDiscount))}
-              size="small"             
+              size="small"
               placeholder="0,00"
             />
             {clampedDiscount > 0 && (
@@ -181,18 +181,22 @@ export default function CartPanel({
           onCashReceivedChange={onCashReceivedChange}
           payments={payments}
         />
-
-        <Button
-          variant="contained"
-          size="large"
-          fullWidth
-          disabled={isEmpty || customerMissing}
-          startIcon={<CheckRounded />}
-          onClick={onFinalize}
-          sx={{ mt: 1 }}
-        >
-          Finalizar
-        </Button>
+        <Tooltip title={isEmpty ? 'Adicione produtos ou serviços para finalizar a venda' : (customerMissing ? 'Selecione um cliente para finalizar a venda' : '')}
+        placement="top" arrow>
+          <Box>
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={isEmpty || customerMissing}
+            startIcon={<CheckRounded />}
+            onClick={onFinalize}
+            sx={{ mt: 1 }}
+          >
+            {isEmpty ? 'Carrinho vazio' : (customerMissing ? 'Selecione um cliente' : 'Finalizar venda')}
+          </Button>
+          </Box>
+        </Tooltip>
       </Box>
     </Box>
   )

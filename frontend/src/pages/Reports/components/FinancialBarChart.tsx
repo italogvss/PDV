@@ -28,7 +28,7 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
       <BarChart
         height={300}
         xAxis={[{ scaleType: 'band', data: labels }]}
-        yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+        yAxis={[{ width: 100, valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={[
           {
             data: revenue,
@@ -43,7 +43,7 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
         ]}
-        margin={{ left: 16 }}
+        margin={{ left: 0 }}
       />
     </ChartCard>
   )
