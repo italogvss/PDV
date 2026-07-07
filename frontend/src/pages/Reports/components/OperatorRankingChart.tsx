@@ -25,6 +25,7 @@ export default function OperatorRankingChart({
     <ChartCard
       title="Ranking por operador"
       subtitle="Receita por operador no período"
+      info="Receita total das vendas registradas por cada operador no caixa durante o período."
       loading={loading}
       isEmpty={data.length === 0}
     >

@@ -1,20 +1,22 @@
 import { Box, Card, CardContent, Divider, Skeleton, Typography, useTheme } from '@mui/material'
 import { PieChart } from '@mui/x-charts/PieChart'
+import InfoTooltip from '../../../../components/InfoTooltip'
 import type { CustomerCategorySlice } from '../../../../services/customer.service'
 import { formatBRL } from '../../../../utils/currency'
 
 interface Props {
   title: string
   subtitle: string
+  info?: string
   data: CustomerCategorySlice[] | undefined
   loading: boolean
   emptyText: string
 }
 
-export default function CustomerCategoryPie({ title, subtitle, data, loading, emptyText }: Props) {
+export default function CustomerCategoryPie({ title, subtitle, info, data, loading, emptyText }: Props) {
   const theme = useTheme()
 
-  const slices = (data ?? []).map((d, i) => ({
+  const slices = (data ?? []).map((d) => ({
     id: d.name,
     value: d.total,
     label: d.name,
@@ -24,9 +26,12 @@ export default function CustomerCategoryPie({ title, subtitle, data, loading, em
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
       <CardContent sx={{ pb: '16px !important' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-          {title}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {title}
+          </Typography>
+          {info && <InfoTooltip title={info} />}
+        </Box>
         <Typography variant="caption" color="text.secondary">
           {subtitle}
         </Typography>

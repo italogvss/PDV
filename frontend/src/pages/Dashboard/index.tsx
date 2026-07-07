@@ -15,7 +15,7 @@ import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import { FEATURES } from '../../constants/entitlements'
 import { useProducts } from '../../hooks/useProducts'
-import { useExpensesByCategory, useSalesMetrics } from '../../hooks/useReports'
+import { useExpensesByCategory, useFinancialSummary, useSalesMetrics } from '../../hooks/useReports'
 import { useEntitlements } from '../../hooks/useSubscription'
 import { useAppSelector } from '../../store'
 import { formatBRL } from '../../utils/currency'
@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const { data: metrics, isLoading: metricsLoading } = useSalesMetrics(startDate, endDate)
   const { data: products } = useProducts()
   const { data: expensesByCategory, isLoading: expensesLoading } = useExpensesByCategory(startDate, endDate)
+  const { data: financial, isLoading: financialLoading } = useFinancialSummary(startDate, endDate, 'day')
 
   const lowStockCount = useMemo(
     () => products?.filter((p) => p.minStock !== undefined && p.stock <= p.minStock).length ?? 0,
@@ -62,8 +63,13 @@ export default function DashboardPage() {
     () => expensesByCategory?.reduce((sum, e) => sum + e.total, 0) ?? 0,
     [expensesByCategory],
   )
-  const estimatedProfit = (metrics?.totalRevenue ?? 0) - totalExpenses
-  const kpisLoading = metricsLoading || expensesLoading
+  // Lucro estimado = resultado líquido real (receita − custo − taxas − despesas), a mesma
+  // definição da página de Relatórios (soma do netResult por bucket). Evita divergir do relatório.
+  const estimatedProfit = useMemo(
+    () => financial?.reduce((sum, d) => sum + d.netResult, 0) ?? 0,
+    [financial],
+  )
+  const kpisLoading = metricsLoading || expensesLoading || financialLoading
 
   const formattedDate = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',

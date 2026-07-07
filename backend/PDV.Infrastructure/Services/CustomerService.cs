@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Customers;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
@@ -117,10 +118,27 @@ public class CustomerService(
             .Select(g => g.Key)
             .FirstOrDefault();
 
-        var topProducts = activeSales
-            .SelectMany(s => s.Items)
-            .GroupBy(i => i.ProductName)
-            .Select(g => new { Name = g.Key, Qty = g.Sum(i => i.Quantity), Total = g.Sum(i => i.Subtotal) })
+        // Linhas de PRODUTO (serviços vendidos no caixa ficam de fora — este é o painel de produtos),
+        // com o gasto já líquido do desconto rateado da venda, para fechar com o "Total gasto".
+        var productLines = activeSales
+            .SelectMany(s => s.Items
+                .Where(i => i.ProductId != null)
+                .Select(i => new
+                {
+                    ProductId = i.ProductId!.Value,
+                    i.ProductName,
+                    i.Quantity,
+                    NetSpent = SaleFinancials.NetItemRevenue(i.Subtotal, s.Discount, s.Items.Sum(x => x.Subtotal)),
+                    CategoryName = i.Product?.Category?.Name ?? "Sem categoria",
+                    CategoryColor = i.Product?.Category?.Color,
+                }))
+            .ToList();
+
+        // Agrupado por ProductId (não por nome) — produtos homônimos não se fundem; o rótulo usa o
+        // nome mais recente (activeSales vem ordenado por CreatedAt desc).
+        var topProducts = productLines
+            .GroupBy(i => i.ProductId)
+            .Select(g => new { Name = g.First().ProductName, Qty = g.Sum(i => i.Quantity), Total = g.Sum(i => i.NetSpent) })
             .OrderByDescending(p => p.Qty)
             .Take(10)
             .ToList();
@@ -133,12 +151,10 @@ public class CustomerService(
         // Linha do tempo de gastos: Σ Total por mês (últimos 12 meses, sem ir antes da 1ª compra)
         var monthlySpend = BuildMonthlySpend(activeSales);
 
-        // Distribuição de gasto por categoria de produto (linhas de produto das vendas)
-        var productCategories = activeSales
-            .SelectMany(s => s.Items)
-            .Where(i => i.ProductId != null)
-            .GroupBy(i => new { Name = i.Product?.Category?.Name ?? "Sem categoria", Color = i.Product?.Category?.Color })
-            .Select(g => new CustomerCategorySliceDto(g.Key.Name, g.Sum(i => i.Subtotal), g.Key.Color))
+        // Distribuição de gasto por categoria de produto (mesmas linhas, gasto líquido do desconto)
+        var productCategories = productLines
+            .GroupBy(i => new { i.CategoryName, i.CategoryColor })
+            .Select(g => new CustomerCategorySliceDto(g.Key.CategoryName, g.Sum(i => i.NetSpent), g.Key.CategoryColor))
             .OrderByDescending(c => c.Total)
             .ToList();
 
@@ -199,10 +215,11 @@ public class CustomerService(
         var topServiceDtos = topServices
             .Select(s => new CustomerTopServiceDto(s.Name, s.Count, maxServiceCount));
 
-        // Distribuição de gasto por categoria de serviço (atendimentos não cancelados).
-        // AppointmentServiceItem só guarda a cor da categoria, não o nome → resolve via Service.Category.
+        // Distribuição de gasto por categoria de serviço — só atendimentos CONCLUÍDOS (gasto de fato
+        // consumido; agendamentos futuros/pendentes não contam). AppointmentServiceItem guarda só a
+        // cor da categoria, não o nome → resolve via Service.Category.
         var consumedServiceItems = appointments
-            .Where(a => a.Status != AppointmentStatus.Cancelado)
+            .Where(a => a.Status == AppointmentStatus.Concluido)
             .SelectMany(a => a.ServiceItems)
             .ToList();
 

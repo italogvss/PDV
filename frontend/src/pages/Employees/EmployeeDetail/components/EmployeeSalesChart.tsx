@@ -26,6 +26,7 @@ export default function EmployeeSalesChart({ stats, statsLoading }: Props) {
     <ChartPanel
       title="Vendas no caixa"
       subtitle="Receita operada e ticket médio por período"
+      info="Receita operada no caixa e ticket médio (receita ÷ número de vendas) por período. Reflete as vendas registradas por este funcionário — não é comissão."
       action={<GranularityToggle value={granularity} onChange={setGranularity} />}
       loading={statsLoading}
       isEmpty={!series.hasData}

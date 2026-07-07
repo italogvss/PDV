@@ -21,6 +21,7 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
     <ChartCard
       title="Receita × Resultado líquido"
       subtitle="Resultado = margem (itens com custo) − taxas − despesas"
+      info="Receita é o total vendido no período. Resultado líquido = margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado não entram na margem."
       loading={loading}
       isEmpty={data.length === 0}
     >

@@ -1,5 +1,6 @@
 import { Box, Card, CardContent, Divider, Skeleton, Typography, useTheme } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
+import InfoTooltip from '../../../../components/InfoTooltip'
 import type { CustomerCrmStats } from '../../../../services/customer.service'
 import { formatBRL } from '../../../../utils/currency'
 import { formatCompactBRL } from '../../../../utils/chart'
@@ -25,9 +26,12 @@ export default function CustomerSpendTimeline({ stats, statsLoading }: Props) {
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
       <CardContent sx={{ pb: '16px !important' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Linha do tempo de gastos
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            Linha do tempo de gastos
+          </Typography>
+          <InfoTooltip title="Total gasto pelo cliente a cada mês nos últimos 12 meses, considerando as compras no caixa já com descontos." />
+        </Box>
         <Typography variant="caption" color="text.secondary">
           Total gasto por mês · últimos 12 meses
         </Typography>

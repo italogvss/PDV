@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
 import { authService } from '../services/auth.service'
@@ -8,6 +8,7 @@ import { clearAuth, setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { clearStoredPlanSlug } from '../utils/planSelection'
+import { entitlementSet } from '../utils/plans'
 
 export const SUBSCRIPTION_QUERY_KEY = ['subscription'] as const
 const PLANS_QUERY_KEY = ['plans'] as const
@@ -30,8 +31,11 @@ export function useEntitlements() {
   const subscription = useAppSelector((s) => s.auth.subscription)
   const entitlements = subscription?.entitlements ?? []
   const limits = subscription?.limits ?? {}
+  // Comparação case-insensitive: o backend persiste/retorna as chaves em lowercase
+  // (contrato HTTP), enquanto as chaves canônicas de FEATURES são camelCase.
+  const ownedSet = useMemo(() => entitlementSet(entitlements), [entitlements])
   return {
-    has: (feature: PlanFeature) => entitlements.includes(feature),
+    has: (feature: PlanFeature) => ownedSet.has(feature.toLowerCase()),
     limit: (key: PlanLimitKey) => (key in limits ? limits[key] : UNLIMITED),
     isLoaded: subscription !== null,
   }

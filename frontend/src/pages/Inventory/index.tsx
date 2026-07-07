@@ -297,7 +297,7 @@ export default function InventoryPage() {
 
       <PageKpiGrid>
         <PageKpiCard
-          tooltip="Soma dos preço de venda em estoque"
+          tooltip="Soma dos preços de venda dos produtos em estoque"
           icon={Inventory2Rounded}
           label="Total em estoque"
           value={isLoadingProducts ? '—' : formatBRL(kpis.totalValue)}

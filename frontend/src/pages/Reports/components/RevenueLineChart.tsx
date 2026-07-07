@@ -22,7 +22,12 @@ export default function RevenueLineChart({
   const revenue = data.map((d) => d.revenue)
 
   const hasPrev = prevData && prevData.length > 0
-  const prevRevenue = hasPrev ? prevData.map((d) => d.revenue) : []
+  // Alinha a série anterior aos buckets do período atual (mesma posição relativa no ciclo) e
+  // preenche com null quando o período anterior tem menos buckets — evita que o gráfico
+  // descarte pontos ou associe a série anterior ao rótulo errado quando as contagens diferem.
+  const prevRevenue: (number | null)[] = hasPrev
+    ? labels.map((_, i) => prevData[i]?.revenue ?? null)
+    : []
 
   const series = [
     {
@@ -53,6 +58,7 @@ export default function RevenueLineChart({
     <ChartCard
       title="Receita ao longo do tempo"
       subtitle={hasPrev ? 'vs período anterior' : undefined}
+      info="Receita bruta — soma do total das vendas (já com os descontos aplicados) em cada período. Quando há comparação, a linha tracejada mostra o mesmo intervalo do período anterior."
       loading={loading}
       isEmpty={data.length === 0}
     >

@@ -1,9 +1,12 @@
 import { Card, CardContent, Box, Typography, Skeleton } from '@mui/material'
 import type { ReactNode } from 'react'
+import InfoTooltip from '../../../components/InfoTooltip'
 
 export interface ChartCardProps {
   title: string
   subtitle?: string
+  /** Texto explicativo do gráfico, exibido num ícone de ajuda ao lado do título. */
+  info?: string
   action?: ReactNode
   loading?: boolean
   isEmpty?: boolean
@@ -15,6 +18,7 @@ export interface ChartCardProps {
 export default function ChartCard({
   title,
   subtitle,
+  info,
   action,
   loading = false,
   isEmpty = false,
@@ -36,9 +40,12 @@ export default function ChartCard({
           }}
         >
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {title}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                {title}
+              </Typography>
+              {info && <InfoTooltip title={info} />}
+            </Box>
             {subtitle && (
               <Typography variant="caption" color="text.secondary">
                 {subtitle}

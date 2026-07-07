@@ -27,6 +27,7 @@ export default function PaymentMethodPieChart({
   return (
     <ChartCard
       title="Vendas por forma de pagamento"
+      info="Valor total recebido em cada forma de pagamento no período. Ajuda a ver a preferência dos clientes e onde há mais taxas."
       loading={loading}
       isEmpty={data.length === 0}
     >

@@ -44,7 +44,12 @@ export default function PaymentMethodsDonut({ data, payments, loading = false }:
   const isEmpty = total === 0
 
   return (
-    <ChartCard title="Formas de pagamento" loading={loading} isEmpty={isEmpty}>
+    <ChartCard
+      title="Formas de pagamento"
+      info="Distribuição do valor recebido entre as formas de pagamento habilitadas na loja. O centro mostra o total do período."
+      loading={loading}
+      isEmpty={isEmpty}
+    >
       <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
         <PieChart
           height={200}

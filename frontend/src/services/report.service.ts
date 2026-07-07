@@ -7,7 +7,6 @@ import type {
   TopProduct,
   ExpensesByCategory,
   RevenueByType,
-  CustomerNewVsReturningPoint,
   GroupBy,
 } from '../types/report.types'
 
@@ -83,18 +82,6 @@ export const reportService = {
     const { data } = await api.get<RevenueByType>('/reports/revenue-by-type', {
       params: { startDate, endDate },
     })
-    return data
-  },
-
-  getCustomerNewVsReturning: async (
-    startDate: string,
-    endDate: string,
-    groupBy: GroupBy,
-  ): Promise<CustomerNewVsReturningPoint[]> => {
-    const { data } = await api.get<CustomerNewVsReturningPoint[]>(
-      '/reports/customers/new-vs-returning',
-      { params: { startDate, endDate, groupBy } },
-    )
     return data
   },
 

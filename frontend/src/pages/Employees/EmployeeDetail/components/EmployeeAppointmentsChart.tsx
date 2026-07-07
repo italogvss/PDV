@@ -24,6 +24,7 @@ export default function EmployeeAppointmentsChart({ stats, statsLoading }: Props
     <ChartPanel
       title="Agendamentos por status"
       subtitle="Volume e qualidade do atendimento por período"
+      info="Quantidade de agendamentos deste funcionário por status em cada período. Ajuda a acompanhar o volume de atendimento e a taxa de cancelamento."
       action={<GranularityToggle value={granularity} onChange={setGranularity} />}
       loading={statsLoading}
       isEmpty={!series.hasData}

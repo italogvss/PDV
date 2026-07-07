@@ -22,6 +22,7 @@ export default function TopProductsChart({ data, loading = false }: TopProductsC
     <ChartCard
       title="Top produtos vendidos"
       subtitle="Maior receita no período"
+      info="Produtos com maior receita no período, já com o desconto rateado. Considera apenas produtos — serviços não entram neste ranking."
       loading={loading}
       isEmpty={data.length === 0}
     >

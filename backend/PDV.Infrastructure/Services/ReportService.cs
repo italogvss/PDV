@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Reports;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -27,21 +28,18 @@ public class ReportService(AppDbContext context) : IReportService
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .Select(s => new
-            {
+            .Select(s => new SaleFinancialProjection(
                 s.CreatedAt,
                 s.Total,
+                s.Discount,
                 s.FeeAmount,
-                // O lucro considera serviços (custo zero legítimo) e produtos COM custo cadastrado.
-                // Produtos sem snapshot de preço de compra são ignorados, para não inflar o lucro com
-                // custo zero. A receita total (s.Total) continua cheia para a linha "Receita".
-                ProfitRevenue = s.Items
+                s.Items.Sum(i => i.Subtotal),
+                s.Items
                     .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
                     .Sum(i => i.Subtotal),
-                Cost = s.Items
+                s.Items
                     .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
-                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
-            })
+                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
             .ToListAsync();
 
         // Despesas pela data de vencimento (competência) — consistente com ExpenseService.GetChartAsync
@@ -52,11 +50,15 @@ public class ReportService(AppDbContext context) : IReportService
 
         var salesByBucket = sales
             .GroupBy(s => BucketKey(s.CreatedAt, gb))
-            .ToDictionary(g => g.Key, g => (
-                Revenue: g.Sum(s => s.Total),
-                ProfitRevenue: g.Sum(s => s.ProfitRevenue),
-                Cost: g.Sum(s => s.Cost),
-                Fees: g.Sum(s => s.FeeAmount)));
+            .ToDictionary(g => g.Key, g =>
+            {
+                var parts = g.Select(ToProfitParts).ToList();
+                return (
+                    Revenue: parts.Sum(p => p.Revenue),
+                    Cost: parts.Sum(p => p.Cost),
+                    Fees: parts.Sum(p => p.Fees),
+                    GrossProfit: parts.Sum(p => p.GrossProfit));
+            });
 
         var expensesByBucket = expenses
             .GroupBy(e => BucketKey(e.DueDate, gb))
@@ -65,11 +67,8 @@ public class ReportService(AppDbContext context) : IReportService
         var result = new List<FinancialSummaryPoint>();
         foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
         {
-            var (revenue, profitRevenue, cost, fees) = salesByBucket.GetValueOrDefault(key);
+            var (revenue, cost, fees, grossProfit) = salesByBucket.GetValueOrDefault(key);
             var expenseTotal = expensesByBucket.GetValueOrDefault(key);
-            // Lucro bruto = receita dos itens contados (serviços + produtos com custo) menos o custo.
-            // Produtos sem custo cadastrado ficam de fora para não inflar o lucro.
-            var grossProfit = profitRevenue - cost;
             var netResult = grossProfit - fees - expenseTotal;
             result.Add(new FinancialSummaryPoint(label, revenue, cost, fees, expenseTotal, grossProfit, netResult));
         }
@@ -174,9 +173,7 @@ public class ReportService(AppDbContext context) : IReportService
             {
                 i.ProductName,
                 i.Quantity,
-                NetRevenue = i.ItemsTotal > 0
-                    ? i.Subtotal - i.Discount * (i.Subtotal / i.ItemsTotal)
-                    : i.Subtotal,
+                NetRevenue = SaleFinancials.NetItemRevenue(i.Subtotal, i.Discount, i.ItemsTotal),
             })
             .GroupBy(i => i.ProductName)
             .Select(g => new TopProductResponse(
@@ -436,22 +433,18 @@ public class ReportService(AppDbContext context) : IReportService
 
     public async Task<byte[]> ExportBillingCsvAsync()
     {
+        // Serviços + produtos com custo entram no lucro; produtos sem custo ficam de fora e o desconto
+        // é rateado — tudo centralizado em SaleFinancials (mesma matemática do GetFinancialSummaryAsync).
         var sales = await context.Sales
             .Where(s => s.Status == SaleStatus.Active)
-            .Select(s => new
-            {
+            .Select(s => new SaleFinancialProjection(
                 s.CreatedAt,
                 s.Total,
+                s.Discount,
                 s.FeeAmount,
-                // Serviços + produtos com custo entram no lucro; produtos sem custo cadastrado ficam
-                // de fora (igual ao GetFinancialSummaryAsync).
-                ProfitRevenue = s.Items
-                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
-                    .Sum(i => i.Subtotal),
-                Cost = s.Items
-                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
-                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
-            })
+                s.Items.Sum(i => i.Subtotal),
+                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
+                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
             .ToListAsync();
 
         var expenses = await context.Expenses
@@ -460,11 +453,15 @@ public class ReportService(AppDbContext context) : IReportService
 
         var salesByMonth = sales
             .GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-            .ToDictionary(g => g.Key, g => (
-                Revenue: g.Sum(s => s.Total),
-                ProfitRevenue: g.Sum(s => s.ProfitRevenue),
-                Cost: g.Sum(s => s.Cost),
-                Fees: g.Sum(s => s.FeeAmount)));
+            .ToDictionary(g => g.Key, g =>
+            {
+                var parts = g.Select(ToProfitParts).ToList();
+                return (
+                    Revenue: parts.Sum(p => p.Revenue),
+                    Cost: parts.Sum(p => p.Cost),
+                    Fees: parts.Sum(p => p.Fees),
+                    GrossProfit: parts.Sum(p => p.GrossProfit));
+            });
 
         var expensesByMonth = expenses
             .GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
@@ -477,9 +474,8 @@ public class ReportService(AppDbContext context) : IReportService
 
         foreach (var month in allMonths)
         {
-            var (revenue, profitRevenue, cost, fees) = salesByMonth.GetValueOrDefault(month);
+            var (revenue, cost, fees, grossProfit) = salesByMonth.GetValueOrDefault(month);
             var expTotal = expensesByMonth.GetValueOrDefault(month);
-            var grossProfit = profitRevenue - cost;
             var netResult = grossProfit - fees - expTotal;
             sb.AppendLine(
                 $"{month:MM/yyyy}," +
@@ -638,14 +634,14 @@ public class ReportService(AppDbContext context) : IReportService
         var sales = await context.Sales
             .IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantId && s.Status == SaleStatus.Active)
-            .Select(s => new
-            {
+            .Select(s => new SaleFinancialProjection(
                 s.CreatedAt,
                 s.Total,
+                s.Discount,
                 s.FeeAmount,
-                ProfitRevenue = s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
-                Cost = s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
-            })
+                s.Items.Sum(i => i.Subtotal),
+                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
+                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
             .ToListAsync();
 
         var expenses = await context.Expenses
@@ -654,8 +650,12 @@ public class ReportService(AppDbContext context) : IReportService
             .Select(e => new { e.DueDate, e.Amount })
             .ToListAsync();
 
-        var salesByMonth  = sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-            .ToDictionary(g => g.Key, g => (Revenue: g.Sum(s => s.Total), ProfitRevenue: g.Sum(s => s.ProfitRevenue), Cost: g.Sum(s => s.Cost), Fees: g.Sum(s => s.FeeAmount)));
+        var salesByMonth = sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
+            .ToDictionary(g => g.Key, g =>
+            {
+                var parts = g.Select(ToProfitParts).ToList();
+                return (Revenue: parts.Sum(p => p.Revenue), Cost: parts.Sum(p => p.Cost), Fees: parts.Sum(p => p.Fees), GrossProfit: parts.Sum(p => p.GrossProfit));
+            });
         var expensesByMonth = expenses.GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 
@@ -665,9 +665,8 @@ public class ReportService(AppDbContext context) : IReportService
         sb.AppendLine("Mês,Receita,Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
         foreach (var month in allMonths)
         {
-            var (revenue, profitRevenue, cost, fees) = salesByMonth.GetValueOrDefault(month);
+            var (revenue, cost, fees, grossProfit) = salesByMonth.GetValueOrDefault(month);
             var expTotal = expensesByMonth.GetValueOrDefault(month);
-            var grossProfit = profitRevenue - cost;
             sb.AppendLine($"{month:MM/yyyy},{revenue:F2},{cost:F2},{fees:F2},{expTotal:F2},{grossProfit:F2},{grossProfit - fees - expTotal:F2}");
         }
         return Encoding.UTF8.GetBytes(sb.ToString());
@@ -695,78 +694,46 @@ public class ReportService(AppDbContext context) : IReportService
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
+        // Carrega cada item com o desconto e o total da venda, para ratear o desconto por item —
+        // assim servicesRevenue + productsRevenue = Σ Sale.Total, coerente com o KPI "Receita total".
         var items = await context.Sales
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .SelectMany(s => s.Items.Select(i => new { i.ServiceId, i.Subtotal }))
+            .SelectMany(s => s.Items.Select(i => new
+            {
+                i.ServiceId,
+                i.Subtotal,
+                s.Discount,
+                ItemsTotal = s.Items.Sum(x => x.Subtotal),
+            }))
             .ToListAsync();
 
-        var servicesRevenue = items.Where(i => i.ServiceId != null).Sum(i => i.Subtotal);
-        var productsRevenue = items.Where(i => i.ServiceId == null).Sum(i => i.Subtotal);
+        var servicesRevenue = items
+            .Where(i => i.ServiceId != null)
+            .Sum(i => SaleFinancials.NetItemRevenue(i.Subtotal, i.Discount, i.ItemsTotal));
+        var productsRevenue = items
+            .Where(i => i.ServiceId == null)
+            .Sum(i => SaleFinancials.NetItemRevenue(i.Subtotal, i.Discount, i.ItemsTotal));
 
         return new RevenueByTypeResponse(servicesRevenue, productsRevenue);
     }
 
-    public async Task<List<CustomerNewVsReturningPoint>> GetCustomerNewVsReturningAsync(
-        DateTime startDate, DateTime endDate, string groupBy)
-    {
-        var gb = groupBy.ToLower();
-        if (gb is not ("day" or "week" or "month" or "year"))
-            throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
-
-        var start = startDate.Date;
-        var end = endDate.Date.AddDays(1).AddTicks(-1);
-
-        // Vendas com cliente identificado no período
-        var salesInRange = await context.Sales
-            .Where(s => s.Status == SaleStatus.Active
-                     && s.CustomerId != null
-                     && s.CreatedAt >= start
-                     && s.CreatedAt <= end)
-            .Select(s => new { CustomerId = s.CustomerId!.Value, s.CreatedAt })
-            .ToListAsync();
-
-        if (salesInRange.Count == 0)
-            return EnumerateBuckets(startDate, endDate, gb)
-                .Select(b => new CustomerNewVsReturningPoint(b.Label, 0, 0))
-                .ToList();
-
-        var customerIds = salesInRange.Select(s => s.CustomerId).Distinct().ToList();
-
-        // Primeira venda de cada cliente em todo o histórico do tenant
-        var firstSaleDates = await context.Sales
-            .Where(s => s.Status == SaleStatus.Active
-                     && s.CustomerId != null
-                     && customerIds.Contains(s.CustomerId!.Value))
-            .GroupBy(s => s.CustomerId!.Value)
-            .Select(g => new { CustomerId = g.Key, FirstSale = g.Min(s => s.CreatedAt) })
-            .ToListAsync();
-
-        var firstSaleMap = firstSaleDates.ToDictionary(x => x.CustomerId, x => x.FirstSale);
-
-        var classified = salesInRange.Select(s => new
-        {
-            s.CustomerId,
-            s.CreatedAt,
-            // Novo = a primeira venda de todos os tempos está no mesmo bucket deste registro
-            IsNew = firstSaleMap.TryGetValue(s.CustomerId, out var first)
-                    && BucketKey(first, gb) == BucketKey(s.CreatedAt, gb),
-        }).ToList();
-
-        var result = new List<CustomerNewVsReturningPoint>();
-        foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
-        {
-            var inBucket = classified.Where(c => BucketKey(c.CreatedAt, gb) == key).ToList();
-            var newCount = inBucket.Where(c => c.IsNew).Select(c => c.CustomerId).Distinct().Count();
-            var returningCount = inBucket.Where(c => !c.IsNew).Select(c => c.CustomerId).Distinct().Count();
-            result.Add(new CustomerNewVsReturningPoint(label, newCount, returningCount));
-        }
-
-        return result;
-    }
-
     // ─── Helpers ────────────────────────────────────────────────────────────
+
+    // Projeção mínima por venda para alimentar o cálculo financeiro centralizado (SaleFinancials).
+    // ItemsTotal soma TODOS os itens (pré-desconto); CountedSubtotal/CountedCost só os itens contáveis.
+    private record SaleFinancialProjection(
+        DateTime CreatedAt,
+        decimal Total,
+        decimal Discount,
+        decimal FeeAmount,
+        decimal ItemsTotal,
+        decimal CountedSubtotal,
+        decimal CountedCost);
+
+    private static SaleFinancials.SaleProfitParts ToProfitParts(SaleFinancialProjection s) =>
+        SaleFinancials.Compute(s.Total, s.Discount, s.ItemsTotal, s.CountedSubtotal, s.CountedCost, s.FeeAmount);
 
     // Escapa um campo de texto para CSV: duplica aspas, envolve em aspas quando há vírgula/aspas/quebra
     // de linha, e neutraliza injeção de fórmula (=, +, -, @) prefixando uma aspa simples.

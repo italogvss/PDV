@@ -21,7 +21,6 @@ import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../../components/PageHeader'
 import PageKpiCard, { PageKpiGrid } from '../../components/PageKpiCard'
 import {
-  useCustomerNewVsReturning,
   useFinancialSummary,
   useRevenueByType,
   useSalesByOperator,

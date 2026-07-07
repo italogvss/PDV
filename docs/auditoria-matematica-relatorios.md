@@ -10,6 +10,45 @@
 
 ---
 
+## 0. Atualização 2026-07-06 — correções aplicadas
+
+Refatoração executada após a auditoria. A matemática de lucro foi **centralizada** e as falhas de
+severidade Alta corrigidas.
+
+**Centralização** — novo `PDV.Application/Helpers/SaleFinancials.cs` é a fonte única da matemática:
+- `Compute(...)` → parcelas de lucro de uma venda (receita, custo, taxas, lucro bruto) com o
+  **desconto rateado** sobre os itens contáveis.
+- `NetItemRevenue(...)` → receita de um item líquida do desconto proporcional (ranking de produtos/serviços).
+
+Passaram a consumir o helper (fim das 3 cópias da fórmula de lucro):
+`GetFinancialSummaryAsync`, `ExportBillingCsvAsync`, `ExportBillingForTenantAsync`,
+`GetRevenueByTypeAsync`, `GetTopProductsAsync` e o CRM do cliente.
+
+| Falha | Status | O que mudou |
+|---|---|---|
+| #1 Desconto ignorado no lucro | ✅ corrigido | `GrossProfit`/`NetResult` agora rateiam o `Sale.Discount` via `SaleFinancials` |
+| #2 Três definições de lucro | ✅ corrigido | Dashboard "Lucro estimado" agora é `Σ netResult` (mesma definição dos Relatórios) |
+| #3 Base de receita do donut | ✅ corrigido | `RevenueByType` usa receita pós-desconto rateada → fecha com "Receita total" |
+| #4 Margem em bases mistas | ⚠️ parcial | Desconto agora coerente entre num./den.; a exclusão de produtos **sem custo** permanece **por design** (cadastrar o custo torna a margem exata) |
+| #5 Top produtos do cliente c/ serviços | ✅ corrigido | Filtra `ProductId != null`, agrupa por `ProductId`, gasto líquido de desconto |
+| #6 Categorias de serviço c/ futuros | ✅ corrigido | Só atendimentos `Concluido` (consumo real) |
+| #7 "Total gasto" ignora atendimentos | ✅ ok por design | Decisão: serviço é cobrado no caixa (Sale) → "Total gasto" já cobre tudo |
+| #8 Período anterior desalinhado | ✅ mitigado | Série anterior alinhada aos buckets atuais, com padding `null` |
+| #9 Fuso horário UTC | ⏳ adiado | Sistêmico (toca todo o app); PR próprio. Comportamento documentado |
+| #10 `new-vs-returning` morto | ✅ removido | Endpoint, service, hook, tipo e import não usado removidos |
+| #11 `cancelledCount` não exibido | ⏳ mantido | Fora de escopo (adicionar KPI é decisão de UI) |
+| #13 Agrupamento por nome | ✅ parcial | Top produtos do cliente agora agrupa por `ProductId` |
+| #14 Competência (despesas não pagas) | ⏳ documentado | Intencional; sem alternância caixa×competência nesta rodada |
+
+Bônus de limpeza: removidos dois erros de `noUnusedLocals` em `CustomerDetail`
+(`CustomerCategoryPie`, `CustomerRecentSales`).
+
+Verificação: `dotnet build` **0 erros**; `tsc -b` sem erros novos nas áreas alteradas.
+
+O restante deste documento é a auditoria original (mantida como referência do estado pré-correção).
+
+---
+
 ## 1. Sumário executivo
 
 O motor de relatórios está **funcional e bem organizado por camadas**, mas há **um erro de cálculo
@@ -331,18 +370,18 @@ Foi essa dispersão que produziu as Falhas #1–#4: cada lugar reimplementou "lu
 
 ## 7. Checklist pré-produção
 
-- [ ] **#1** Ratear/subtrair o desconto no `GrossProfit`/`NetResult` (financial-summary + billing CSV + tenant export).
-- [ ] **#2** Unificar a definição de lucro entre Dashboard e Relatórios.
-- [ ] **#3** Padronizar base de receita do `RevenueByTypeDonut` (pós-desconto) ou rotular como bruta.
-- [ ] **#4** Corrigir a margem para numerador/denominador na mesma base.
-- [ ] **#5** Filtrar `ProductId != null` em "Top produtos comprados" do cliente.
-- [ ] **#6** Restringir "Categorias de serviço" a agendamentos `Concluido`.
-- [ ] **#7** Alinhar "Total gasto" do cliente ao modelo de atendimentos.
-- [ ] **#8** Alinhar período anterior do RevenueLineChart por bucket.
-- [ ] **#9** Introduzir timezone do tenant (sistêmico).
-- [ ] **#10** Remover a cadeia `new-vs-returning` (ou plugar o gráfico) — corrige o erro de `noUnusedLocals`.
-- [ ] **#11–#14** Limpezas (cancelledCount, redundâncias, agrupamento por Id, tooltip de competência).
-- [ ] Extrair `FinancialMath` e cobrir com testes de regressão as bordas (desconto, sem custo, serviço no caixa, agendamento futuro).
+- [x] **#1** Ratear o desconto no `GrossProfit`/`NetResult` (financial-summary + billing CSV + tenant export).
+- [x] **#2** Unificar a definição de lucro entre Dashboard e Relatórios.
+- [x] **#3** Padronizar base de receita do `RevenueByTypeDonut` (pós-desconto).
+- [~] **#4** Margem: desconto coerente; exclusão de produtos sem custo mantida por design.
+- [x] **#5** Filtrar `ProductId != null` em "Top produtos comprados" do cliente.
+- [x] **#6** Restringir "Categorias de serviço" a agendamentos `Concluido`.
+- [x] **#7** "Total gasto" do cliente: confirmado que serviço é cobrado no caixa → sem mudança.
+- [x] **#8** Alinhar período anterior do RevenueLineChart por bucket (com padding).
+- [ ] **#9** Introduzir timezone do tenant (sistêmico) — **adiado para PR próprio**.
+- [x] **#10** Remover a cadeia `new-vs-returning` — corrige o erro de `noUnusedLocals`.
+- [~] **#11–#14** `cancelledCount` (mantido) · agrupamento por Id (feito p/ produtos do cliente) · competência (documentada).
+- [x] Extrair `SaleFinancials` (feito). **Pendente:** testes de regressão das bordas (desconto, sem custo, serviço no caixa, agendamento futuro).
 
 ---
 

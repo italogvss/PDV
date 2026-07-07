@@ -4,7 +4,6 @@ import DataGridNoRowsOverlay from '../../../../components/DataGridNoRowsOverlay'
 import type { GridColDef } from '@mui/x-data-grid'
 import type { CustomerCrmStats, CustomerRecentSale } from '../../../../services/customer.service'
 import { formatBRL } from '../../../../utils/currency'
-import { PAYMENT_COLORS } from './helpers'
 import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 
 const salesColumns: GridColDef<CustomerRecentSale>[] = [

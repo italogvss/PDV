@@ -20,6 +20,7 @@ export default function SalaryVsRevenueCard({ stats, statsLoading }: Props) {
     <ChartPanel
       title="Salário × Receita gerada"
       subtitle="Custo fixo e receita operada no mês atual"
+      info="Compara o salário mensal (custo fixo) com a receita que o funcionário operou no caixa no mês atual. A margem é a diferença entre os dois — não considera comissões nem outros custos."
       loading={statsLoading}
       isEmpty={salary <= 0 && revenue <= 0}
       emptyText="Sem salário configurado ou vendas no mês."

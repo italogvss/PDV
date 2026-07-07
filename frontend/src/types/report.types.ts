@@ -56,9 +56,3 @@ export interface RevenueByType {
   servicesRevenue: number
   productsRevenue: number
 }
-
-export interface CustomerNewVsReturningPoint {
-  label: string
-  newCustomers: number
-  returningCustomers: number
-}

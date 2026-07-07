@@ -29,6 +29,7 @@ export default function AccumulatedProfitChart({
     <ChartCard
       title="Lucro acumulado"
       subtitle="Resultado líquido somado no período"
+      info="Soma corrida do resultado líquido, período a período. A curva subindo indica lucro se acumulando; descendo, prejuízo."
       loading={loading}
       isEmpty={data.length === 0}
     >

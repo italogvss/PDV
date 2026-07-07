@@ -82,16 +82,6 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("customers/new-vs-returning")]
-    public async Task<IActionResult> GetCustomerNewVsReturning(
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate,
-        [FromQuery] string groupBy = "month")
-    {
-        var result = await service.GetCustomerNewVsReturningAsync(startDate, endDate, groupBy);
-        return Ok(result);
-    }
-
     [HttpGet("sales/export")]
     public async Task<IActionResult> ExportSalesCSV(
         [FromQuery] string? period,

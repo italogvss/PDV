@@ -234,6 +234,7 @@ export default function CustomerDetailPage() {
           <CustomerCategoryPie
             title="Categorias de produto"
             subtitle="Gasto por categoria · todos os períodos"
+            info="Quanto o cliente já gastou em cada categoria de produto, somando todas as compras, com o desconto de cada venda rateado."
             data={stats?.productCategories}
             loading={statsLoading}
             emptyText="Nenhum produto comprado"
@@ -246,6 +247,7 @@ export default function CustomerDetailPage() {
           <CustomerCategoryPie
             title="Categorias de serviço"
             subtitle="Gasto por categoria · atendimentos"
+            info="Quanto o cliente já gastou em cada categoria de serviço, considerando os atendimentos concluídos."
             data={stats?.serviceCategories}
             loading={statsLoading}
             emptyText="Nenhum serviço realizado"

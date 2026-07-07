@@ -34,6 +34,7 @@ export default function RevenueByTypeDonut({ data, loading = false }: RevenueByT
     <ChartCard
       title="Serviços vs Produtos"
       subtitle="Participação na receita do período"
+      info="Divisão da receita entre serviços e produtos, com o desconto de cada venda rateado entre os itens. A soma equivale à receita total do período."
       loading={loading}
       isEmpty={isEmpty}
       height={220}
