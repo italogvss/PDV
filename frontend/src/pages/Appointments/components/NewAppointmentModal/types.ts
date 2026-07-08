@@ -18,4 +18,5 @@ export interface NewAppointmentModalProps {
   onCreate: (appointment: Appointment) => void
   requireCustomerOnAppointment: boolean
   customersModuleActive: boolean
+  isPending?: boolean
 }

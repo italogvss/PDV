@@ -157,11 +157,13 @@ public class AuthService(
         var mustChangePassword = user.LocalAuth?.MustChangePassword ?? false;
 
         IEnumerable<string> permissions = [];
+        Guid? employeeId = null;
         if (role == "Employee" && tenantId.HasValue)
         {
             var employee = await employeeRepository.GetByUserIdAsync(userId, tenantId.Value);
             if (employee is not null)
             {
+                employeeId = employee.Id;
                 var tenantRole = await roleRepository.GetByIdAsync(employee.RoleId);
                 if (tenantRole is not null)
                     permissions = tenantRole.Permissions.Select(p => p.Permission.ToString());
@@ -183,7 +185,8 @@ public class AuthService(
             : [];
 
         return new MeResponse(user.Id, user.Name, user.Email, user.Phone, user.Document, user.BirthDate,
-            imageUrl, user.LastTenantId, effectiveRole, settings, tenantItems, mustChangePassword, permissions, modules);
+            imageUrl, user.LastTenantId, effectiveRole, settings, tenantItems, mustChangePassword, permissions, modules,
+            employeeId);
     }
 
     public async Task<string> SwitchTenantAsync(Guid userId, Guid tenantId)

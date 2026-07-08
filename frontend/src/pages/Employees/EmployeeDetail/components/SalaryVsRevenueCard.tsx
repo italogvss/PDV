@@ -35,9 +35,9 @@ export default function SalaryVsRevenueCard({ stats, statsLoading }: Props) {
             colorMap: { type: 'ordinal', colors: [theme.palette.warning.main, theme.palette.success.main] },
           },
         ]}
-        yAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+        yAxis={[{ width: 70, valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
         series={[{ data: [salary, revenue], valueFormatter: (v) => formatBRL(v ?? 0) }]}
-        margin={{ left: 16 }}
+        margin={{ left: 0 }}
         hideLegend
       />
       {salary > 0 && (
@@ -45,7 +45,7 @@ export default function SalaryVsRevenueCard({ stats, statsLoading }: Props) {
           <Typography variant="caption" color="text.secondary">
             Margem no mês
           </Typography>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }} color={net >= 0 ? 'success.main' : 'error.main'}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: net >= 0 ? 'success.main' : 'error.main' }} >
             {formatBRL(net)}
           </Typography>
         </Box>

@@ -16,4 +16,5 @@ public record MeResponse(
     IEnumerable<TenantListItem>? Tenants = null,
     bool MustChangePassword = false,
     IEnumerable<string>? Permissions = null,
-    IEnumerable<string>? Modules = null);
+    IEnumerable<string>? Modules = null,
+    Guid? EmployeeId = null);

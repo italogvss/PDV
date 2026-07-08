@@ -1,19 +1,6 @@
 import { Card, CardContent, Box, Typography, Skeleton } from '@mui/material'
-import type { ReactNode } from 'react'
-import InfoTooltip from '../../../components/InfoTooltip'
-
-export interface ChartCardProps {
-  title: string
-  subtitle?: string
-  /** Texto explicativo do gráfico, exibido num ícone de ajuda ao lado do título. */
-  info?: string
-  action?: ReactNode
-  loading?: boolean
-  isEmpty?: boolean
-  emptyText?: string
-  height?: number
-  children: ReactNode
-}
+import InfoTooltip from '../InfoTooltip'
+import type { ChartCardProps } from './types'
 
 export default function ChartCard({
   title,

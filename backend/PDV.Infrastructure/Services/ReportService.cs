@@ -185,6 +185,35 @@ public class ReportService(AppDbContext context) : IReportService
             .ToList();
     }
 
+    public async Task<List<TopCustomerResponse>> GetTopCustomersAsync(
+        DateTime startDate, DateTime endDate, int limit)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // Só vendas com cliente vinculado — balcão anônimo fica fora do ranking, por natureza do dado.
+        var rows = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CustomerId != null
+                     && s.CreatedAt >= start
+                     && s.CreatedAt <= end)
+            .Select(s => new { s.CustomerId, CustomerName = s.Customer!.Name, s.Total })
+            .ToListAsync();
+
+        // Agrupa por CustomerId (não por nome) — nome vem do Customer vivo, não do snapshot
+        // Sale.CustomerName, então clientes homônimos com Ids diferentes não se fundem.
+        return rows
+            .GroupBy(s => new { s.CustomerId, s.CustomerName })
+            .Select(g => new TopCustomerResponse(
+                g.Key.CustomerId!.Value,
+                g.Key.CustomerName,
+                g.Count(),
+                g.Sum(s => s.Total)))
+            .OrderByDescending(r => r.TotalRevenue)
+            .Take(limit)
+            .ToList();
+    }
+
     public async Task<List<ExpensesByCategoryResponse>> GetExpensesByCategoryAsync(
         DateTime startDate, DateTime endDate)
     {
@@ -717,6 +746,157 @@ public class ReportService(AppDbContext context) : IReportService
             .Sum(i => SaleFinancials.NetItemRevenue(i.Subtotal, i.Discount, i.ItemsTotal));
 
         return new RevenueByTypeResponse(servicesRevenue, productsRevenue);
+    }
+
+    public async Task<List<AppointmentSummaryPoint>> GetAppointmentSummaryAsync(
+        DateTime startDate, DateTime endDate, string groupBy)
+    {
+        var gb = groupBy.ToLower();
+        if (gb is not ("day" or "week" or "month" or "year"))
+            throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
+
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // NOTA (fuso): Start é gravado em UTC e aqui é filtrado/agrupado sem conversão de fuso,
+        // igual ao resto da aplicação (GetFinancialSummaryAsync). RevenueTotal usa Appointment.Price
+        // (valor do agendamento) — pode divergir do que é de fato cobrado na Venda no caixa.
+        var appointments = await context.Appointments
+            .Where(a => a.Start >= start && a.Start <= end)
+            .Select(a => new { a.Start, a.Status, a.Price })
+            .ToListAsync();
+
+        var byBucket = appointments
+            .GroupBy(a => BucketKey(a.Start, gb))
+            .ToDictionary(g => g.Key, g => new
+            {
+                Total = g.Count(),
+                Completed = g.Count(a => a.Status == AppointmentStatus.Concluido),
+                Cancelled = g.Count(a => a.Status == AppointmentStatus.Cancelado),
+                InProgress = g.Count(a => a.Status == AppointmentStatus.EmAtendimento),
+                Pending = g.Count(a => a.Status == AppointmentStatus.Pendente || a.Status == AppointmentStatus.Confirmado),
+                RevenueRealized = g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.Price),
+                RevenueTotal = g.Sum(a => a.Price),
+            });
+
+        var result = new List<AppointmentSummaryPoint>();
+        foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
+        {
+            var bucket = byBucket.GetValueOrDefault(key);
+            result.Add(new AppointmentSummaryPoint(
+                label,
+                bucket?.Total ?? 0,
+                bucket?.Completed ?? 0,
+                bucket?.Cancelled ?? 0,
+                bucket?.InProgress ?? 0,
+                bucket?.Pending ?? 0,
+                bucket?.RevenueRealized ?? 0m,
+                bucket?.RevenueTotal ?? 0m));
+        }
+
+        return result;
+    }
+
+    public async Task<List<TopServiceResponse>> GetTopServicesAsync(
+        DateTime startDate, DateTime endDate, int limit)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // Ordenado por Start desc para que cada grupo use o nome mais recente do serviço
+        // (AppointmentServiceItem.ServiceName é snapshot). Agrupado por ServiceId, não por nome —
+        // ver docs/auditoria-matematica-relatorios.md Falha #13. Cancelados não contam como "agendado";
+        // a receita só soma atendimentos CONCLUÍDOS.
+        var appointments = await context.Appointments
+            .Where(a => a.Start >= start && a.Start <= end)
+            .Include(a => a.ServiceItems)
+            .OrderByDescending(a => a.Start)
+            .ToListAsync();
+
+        var items = appointments
+            .SelectMany(a => a.ServiceItems.Select(si => new { si.ServiceId, si.ServiceName, si.Price, a.Status }))
+            .ToList();
+
+        return items
+            .GroupBy(i => i.ServiceId)
+            .Select(g => new TopServiceResponse(
+                g.Key,
+                g.First().ServiceName,
+                g.Count(i => i.Status != AppointmentStatus.Cancelado),
+                g.Where(i => i.Status == AppointmentStatus.Concluido).Sum(i => i.Price)))
+            .OrderByDescending(r => r.Revenue)
+            .Take(limit)
+            .ToList();
+    }
+
+    public async Task<List<AppointmentsByEmployeeResponse>> GetAppointmentsByEmployeeAsync(
+        DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        var rows = await context.Appointments
+            .Where(a => a.Start >= start && a.Start <= end)
+            .Select(a => new { a.EmployeeId, a.EmployeeName, a.Status, a.Price })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(a => new { a.EmployeeId, a.EmployeeName })
+            .Select(g => new AppointmentsByEmployeeResponse(
+                g.Key.EmployeeId ?? Guid.Empty,
+                g.Key.EmployeeName,
+                g.Count(a => a.Status != AppointmentStatus.Cancelado),
+                g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.Price)))
+            .OrderByDescending(r => r.Revenue)
+            .ToList();
+    }
+
+    public async Task<List<ServiceCategoryRevenueResponse>> GetServiceCategoryRevenueAsync(
+        DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // Só atendimentos CONCLUÍDOS (consumo real) — mesmo critério de CustomerService.GetCrmStatsAsync.
+        // AppointmentServiceItem só guarda a cor da categoria (snapshot), não o nome → resolve via Service.
+        var consumedItems = await context.Appointments
+            .Where(a => a.Start >= start && a.Start <= end && a.Status == AppointmentStatus.Concluido)
+            .SelectMany(a => a.ServiceItems.Select(si => new { si.ServiceId, si.Price }))
+            .ToListAsync();
+
+        var serviceIds = consumedItems.Select(i => i.ServiceId).Distinct().ToList();
+        var categoryInfo = await context.Services
+            .Where(s => serviceIds.Contains(s.Id))
+            .Select(s => new { s.Id, CategoryName = s.Category != null ? s.Category.Name : null, CategoryColor = s.Category != null ? s.Category.Color : null })
+            .ToDictionaryAsync(s => s.Id);
+
+        return consumedItems
+            .GroupBy(i => categoryInfo.TryGetValue(i.ServiceId, out var info) && info.CategoryName != null
+                ? new { Name = info.CategoryName, Color = info.CategoryColor }
+                : new { Name = "Sem categoria", Color = (string?)null })
+            .Select(g => new ServiceCategoryRevenueResponse(g.Key.Name, g.Sum(i => i.Price), g.Key.Color))
+            .OrderByDescending(c => c.Total)
+            .ToList();
+    }
+
+    public async Task<List<AppointmentPeakHourResponse>> GetAppointmentPeakHoursAsync(
+        DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+        // NOTA (fuso): Start em UTC sem conversão — mesmo caveat sistêmico do resto da aplicação.
+        // Só agendamentos não cancelados contam como demanda real por horário.
+        var hours = await context.Appointments
+            .Where(a => a.Start >= start && a.Start <= end && a.Status != AppointmentStatus.Cancelado)
+            .Select(a => a.Start.Hour)
+            .ToListAsync();
+
+        var counts = hours.GroupBy(h => h).ToDictionary(g => g.Key, g => g.Count());
+
+        return Enumerable.Range(0, 24)
+            .Select(h => new AppointmentPeakHourResponse(h, counts.GetValueOrDefault(h)))
+            .ToList();
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────

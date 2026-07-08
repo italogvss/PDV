@@ -1,7 +1,5 @@
 import { useTheme } from '@mui/material'
-import { PieChart } from '@mui/x-charts/PieChart'
-import { formatBRL } from '../../../utils/currency'
-import ChartCard from './ChartCard'
+import DonutChart from '../../../components/DonutChart'
 import type { RevenueByType } from '../../../types/report.types'
 
 export interface RevenueByTypeDonutProps {
@@ -12,45 +10,26 @@ export interface RevenueByTypeDonutProps {
 export default function RevenueByTypeDonut({ data, loading = false }: RevenueByTypeDonutProps) {
   const theme = useTheme()
 
-  const total = (data?.servicesRevenue ?? 0) + (data?.productsRevenue ?? 0)
-  const isEmpty = !data || total === 0
-
-  const slices = [
+  const segments = [
     {
-      id: 'services',
-      value: data?.servicesRevenue ?? 0,
       label: 'Serviços',
+      value: data?.servicesRevenue ?? 0,
       color: theme.palette.data.purple.main,
     },
     {
-      id: 'products',
-      value: data?.productsRevenue ?? 0,
       label: 'Produtos',
+      value: data?.productsRevenue ?? 0,
       color: theme.palette.data.blue.main,
     },
   ]
 
   return (
-    <ChartCard
+    <DonutChart
       title="Serviços vs Produtos"
       subtitle="Participação na receita do período"
       info="Divisão da receita entre serviços e produtos, com o desconto de cada venda rateado entre os itens. A soma equivale à receita total do período."
+      segments={segments}
       loading={loading}
-      isEmpty={isEmpty}
-      height={220}
-    >
-      <PieChart
-        height={220}
-        series={[
-          {
-            data: slices,
-            innerRadius: 50,
-            paddingAngle: 2,
-            cornerRadius: 4,
-            valueFormatter: (item) => formatBRL(item.value),
-          },
-        ]}
-      />
-    </ChartCard>
+    />
   )
 }

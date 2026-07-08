@@ -8,6 +8,7 @@ import { setTenant } from '../../../../store/slices/auth.slice'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
 import { useTenantSettings } from '../../../../hooks/useTenantSettings'
 import { useEntitlements } from '../../../../hooks/useSubscription'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 import { PLAN_LIMITS, UNLIMITED } from '../../../../constants/entitlements'
 import UpsellModal from '../../../../components/UpsellModal'
 import type { TenantListItem } from '../../../../types/tenant.types'
@@ -86,6 +87,7 @@ function TenantRow({
 
 export default function StoreSelector() {
   const { tenantId, tenants } = useAppSelector((s) => s.auth)
+  const { isOwner } = useUserPermissions()
   const switchTenant = useSwitchTenant()
   const { data: settings } = useTenantSettings()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -103,8 +105,8 @@ export default function StoreSelector() {
   const switchableTenants = tenants.filter((t) => t.isActive)
   const activeTenant = tenants.find((t) => t.tenantId === tenantId)
   const activeName = activeTenant?.name ?? ''
-  const canSwitch = switchableTenants.length > 1
-  const singleTenant = switchableTenants.length === 1
+  const canSwitch = isOwner && switchableTenants.length > 1
+  const singleTenant = isOwner && switchableTenants.length === 1
   const logoUrl = settings?.business.logoUrl ?? null
 
   function handleOpen() {

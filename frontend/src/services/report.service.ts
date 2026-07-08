@@ -5,9 +5,15 @@ import type {
   SalesByOperator,
   SalesByPaymentMethod,
   TopProduct,
+  TopCustomer,
   ExpensesByCategory,
   RevenueByType,
   GroupBy,
+  AppointmentSummaryPoint,
+  TopService,
+  AppointmentsByEmployee,
+  ServiceCategoryRevenue,
+  AppointmentPeakHour,
 } from '../types/report.types'
 
 interface BackendSalesMetrics {
@@ -68,6 +74,17 @@ export const reportService = {
     return data
   },
 
+  getTopCustomers: async (
+    startDate: string,
+    endDate: string,
+    limit = 10,
+  ): Promise<TopCustomer[]> => {
+    const { data } = await api.get<TopCustomer[]>('/reports/customers/top', {
+      params: { startDate, endDate, limit },
+    })
+    return data
+  },
+
   getExpensesByCategory: async (
     startDate: string,
     endDate: string,
@@ -80,6 +97,58 @@ export const reportService = {
 
   getRevenueByType: async (startDate: string, endDate: string): Promise<RevenueByType> => {
     const { data } = await api.get<RevenueByType>('/reports/revenue-by-type', {
+      params: { startDate, endDate },
+    })
+    return data
+  },
+
+  getAppointmentSummary: async (
+    startDate: string,
+    endDate: string,
+    groupBy: GroupBy,
+  ): Promise<AppointmentSummaryPoint[]> => {
+    const { data } = await api.get<AppointmentSummaryPoint[]>('/reports/appointments/summary', {
+      params: { startDate, endDate, groupBy },
+    })
+    return data
+  },
+
+  getTopServices: async (
+    startDate: string,
+    endDate: string,
+    limit = 10,
+  ): Promise<TopService[]> => {
+    const { data } = await api.get<TopService[]>('/reports/appointments/top-services', {
+      params: { startDate, endDate, limit },
+    })
+    return data
+  },
+
+  getAppointmentsByEmployee: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<AppointmentsByEmployee[]> => {
+    const { data } = await api.get<AppointmentsByEmployee[]>('/reports/appointments/by-employee', {
+      params: { startDate, endDate },
+    })
+    return data
+  },
+
+  getServiceCategoryRevenue: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<ServiceCategoryRevenue[]> => {
+    const { data } = await api.get<ServiceCategoryRevenue[]>('/reports/appointments/by-category', {
+      params: { startDate, endDate },
+    })
+    return data
+  },
+
+  getAppointmentPeakHours: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<AppointmentPeakHour[]> => {
+    const { data } = await api.get<AppointmentPeakHour[]>('/reports/appointments/peak-hours', {
       params: { startDate, endDate },
     })
     return data

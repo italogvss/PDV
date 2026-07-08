@@ -204,6 +204,52 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
   },
 
   // ------------------------------------------------------------------
+  // Accordion — mesma linguagem visual do SettingCard (cabeçalho + divider)
+  // ------------------------------------------------------------------
+  MuiAccordion: {
+    defaultProps: { elevation: 0, disableGutters: true },
+    styleOverrides: {
+      root: {
+        border: `1px solid ${theme.palette.border.subtle}`,
+        backgroundColor: theme.palette.surface.paper,
+        backgroundImage: 'none',
+        overflow: 'hidden',
+        // Por padrão o MUI só arredonda o primeiro/último item de uma pilha colada;
+        // aqui cada Accordion é um card avulso, então força o raio em todos os cantos.
+        '&, &:first-of-type, &:last-of-type': {
+          borderRadius: radius.lg,
+        },
+        '&::before': { display: 'none' },
+        '&.Mui-expanded': { margin: 0 },
+      },
+    },
+  },
+  MuiAccordionSummary: {
+    styleOverrides: {
+      root: {
+        padding: `0 ${theme.spacing(4)}`,
+        minHeight: 70,
+        '&.Mui-expanded': { minHeight: 70 },
+      },
+      content: {
+        margin: `${theme.spacing(3)} 0`,
+        '&.Mui-expanded': { margin: `${theme.spacing(3)} 0` },
+      },
+      expandIconWrapper: {
+        color: theme.palette.text.secondary,
+      },
+    },
+  },
+  MuiAccordionDetails: {
+    styleOverrides: {
+      root: {
+        padding: theme.spacing(2),
+        borderTop: `1px solid ${theme.palette.border.subtle}`,
+      },
+    },
+  },
+
+  // ------------------------------------------------------------------
   // App shell — AppBar / Drawer / Toolbar
   // ------------------------------------------------------------------
   MuiAppBar: {

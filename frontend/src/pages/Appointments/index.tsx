@@ -27,6 +27,7 @@ import { useCustomers } from '../../hooks/useCustomers'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useServices } from '../../hooks/useServices'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAppSelector } from '../../store'
 import type { Appointment, AppointmentStatus, Professional } from '../../types/appointment.types'
 import { APPOINTMENT_STATUS_LABELS } from '../../types/appointment.types'
@@ -69,9 +70,15 @@ const MONTHS = [
 export default function AppointmentsPage() {
   // ─── Data da API ────────────────────────────────────────────────────────────
 
-  const { userId: ownerUserId, name: ownerName, role } = useAppSelector((s) => s.auth)
+  const { userId: ownerUserId, name: ownerName, role, employeeId: selfEmployeeId } = useAppSelector((s) => s.auth)
+  const { hasPermission } = useUserPermissions()
   const { data: employeesPage } = useEmployees(1, 100)
   const professionals = useMemo<Professional[]>(() => {
+    // Sem ViewEmployees, o Employee não enxerga a lista de funcionários — só pode
+    // agendar para si mesmo (o único profissional selecionável nesse caso).
+    if (role === 'Employee' && !hasPermission('ViewEmployees')) {
+      return selfEmployeeId && ownerName ? [{ id: selfEmployeeId, name: ownerName }] : []
+    }
     const employees: Professional[] = (employeesPage?.data ?? [])
       .filter((e) => e.userId !== ownerUserId)
       .map((e) => ({ id: e.id, name: e.name }))
@@ -79,7 +86,7 @@ export default function AppointmentsPage() {
       return [{ id: ownerUserId, name: ownerName }, ...employees]
     }
     return employees
-  }, [employeesPage, ownerUserId, ownerName, role])
+  }, [employeesPage, ownerUserId, ownerName, role, hasPermission, selfEmployeeId])
 
   const { data: services = [] } = useServices()
   const { data: customersPage } = useCustomers(1, 500)
@@ -207,20 +214,22 @@ export default function AppointmentsPage() {
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const handleCreate = (appointment: Appointment) => {
-    createAppt.mutate({
-      customerId: appointment.customerId,
-      customerName: appointment.customerName,
-      customerPhone: appointment.customerPhone,
-      employeeId: appointment.employeeId!,
-      serviceIds: appointment.services.map((s) => s.id),
-      start: appointment.start,
-      durationMinutes: appointment.durationMinutes,
-      price: appointment.price,
-      status: appointment.status,
-      note: appointment.note,
-      color: appointment.color,
-    })
-    setNewOpen(false)
+    createAppt.mutate(
+      {
+        customerId: appointment.customerId,
+        customerName: appointment.customerName,
+        customerPhone: appointment.customerPhone,
+        employeeId: appointment.employeeId!,
+        serviceIds: appointment.services.map((s) => s.id),
+        start: appointment.start,
+        durationMinutes: appointment.durationMinutes,
+        price: appointment.price,
+        status: appointment.status,
+        note: appointment.note,
+        color: appointment.color,
+      },
+      { onSuccess: () => setNewOpen(false) },
+    )
   }
 
   const handleChangeStatus = (id: string, status: AppointmentStatus) => {
@@ -464,6 +473,7 @@ export default function AppointmentsPage() {
         onCreate={handleCreate}
         requireCustomerOnAppointment={requireCustomerOnAppointment}
         customersModuleActive={customersModuleActive}
+        isPending={createAppt.isPending}
       />
 
       <AppointmentDetailModal

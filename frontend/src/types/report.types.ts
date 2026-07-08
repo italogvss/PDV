@@ -46,6 +46,13 @@ export interface TopProduct {
   revenue: number
 }
 
+export interface TopCustomer {
+  customerId: string
+  name: string
+  purchaseCount: number
+  totalRevenue: number
+}
+
 export interface ExpensesByCategory {
   category: string
   total: number
@@ -55,4 +62,40 @@ export interface ExpensesByCategory {
 export interface RevenueByType {
   servicesRevenue: number
   productsRevenue: number
+}
+
+export interface AppointmentSummaryPoint {
+  label: string
+  total: number
+  completed: number
+  cancelled: number
+  inProgress: number
+  pending: number
+  revenueRealized: number
+  revenueTotal: number
+}
+
+export interface TopService {
+  serviceId: string
+  serviceName: string
+  count: number
+  revenue: number
+}
+
+export interface AppointmentsByEmployee {
+  employeeId: string
+  employeeName: string
+  count: number
+  revenue: number
+}
+
+export interface ServiceCategoryRevenue {
+  category: string
+  total: number
+  color: string | null
+}
+
+export interface AppointmentPeakHour {
+  hour: number
+  count: number
 }

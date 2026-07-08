@@ -1,8 +1,5 @@
-import { useTheme } from '@mui/material'
-import { BarChart } from '@mui/x-charts/BarChart'
+import RankingList from '../../../components/RankingList'
 import { formatBRL } from '../../../utils/currency'
-import { formatCompactBRL } from './chartHelpers'
-import ChartCard from './ChartCard'
 import type { SalesByOperator } from '../../../types/report.types'
 
 export interface OperatorRankingChartProps {
@@ -14,37 +11,23 @@ export default function OperatorRankingChart({
   data,
   loading = false,
 }: OperatorRankingChartProps) {
-  const theme = useTheme()
-
-  // Maior receita no topo (eixo de bandas é desenhado de baixo para cima)
-  const sorted = [...data].sort((a, b) => a.totalRevenue - b.totalRevenue)
-  const names = sorted.map((d) => d.operatorName)
-  const revenue = sorted.map((d) => d.totalRevenue)
+  const sorted = [...data].sort((a, b) => b.totalRevenue - a.totalRevenue)
+  const items = sorted.map((op) => ({
+    id: op.operatorId,
+    label: op.operatorName,
+    value: op.totalRevenue,
+    primaryText: formatBRL(op.totalRevenue),
+    secondaryText: `${op.totalSales} vendas`,
+  }))
 
   return (
-    <ChartCard
+    <RankingList
       title="Ranking por operador"
       subtitle="Receita por operador no período"
       info="Receita total das vendas registradas por cada operador no caixa durante o período."
+      items={items}
       loading={loading}
-      isEmpty={data.length === 0}
-    >
-      <BarChart
-        height={300}
-        layout="horizontal"
-        yAxis={[{ scaleType: 'band', data: names, width: 110 }]}
-        xAxis={[{ valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
-        series={[
-          {
-            data: revenue,
-            label: 'Receita',
-            color: theme.palette.data.purple.main,
-            valueFormatter: (v) => formatBRL(v ?? 0),
-          },
-        ]}
-        margin={{ left: 8 }}
-        hideLegend
-      />
-    </ChartCard>
+      emptyText="Sem dados no período selecionado."
+    />
   )
 }

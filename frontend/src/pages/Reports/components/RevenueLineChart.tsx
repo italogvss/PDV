@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
 import { formatBRL } from '../../../utils/currency'
 import { formatCompactBRL } from './chartHelpers'
-import ChartCard from './ChartCard'
+import ChartCard from '../../../components/ChartCard'
 import type { FinancialSummaryPoint } from '../../../types/report.types'
 
 export interface RevenueLineChartProps {

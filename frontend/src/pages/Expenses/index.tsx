@@ -14,7 +14,6 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
   Chip,
   CircularProgress,
   Tooltip,
@@ -23,6 +22,7 @@ import {
 import type { GridColDef } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
+import DonutChart from '../../components/DonutChart'
 import { DatePicker } from '@mui/x-date-pickers'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
@@ -41,7 +41,6 @@ import {
 import { useEntitlements } from '../../hooks/useSubscription'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { formatBRL } from '../../utils/currency'
-import DonutChart from './components/DonutChart'
 import ExpenseRowMenu from './components/ExpenseRowMenu'
 import ExpenseStatusChip from './components/ExpenseStatusChip'
 import NewExpenseModal from './components/NewExpenseModal'
@@ -399,14 +398,7 @@ export default function ExpensesPage() {
           ) : (
             <>
               {/* Gráfico por categoria */}
-              <Card>
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
-                    Por categoria
-                  </Typography>
-                  <DonutChart segments={donutSegments} />
-                </CardContent>
-              </Card>
+              <DonutChart title="Por categoria" segments={donutSegments} />
 
               {/* Próximas renovações */}
               <Card>

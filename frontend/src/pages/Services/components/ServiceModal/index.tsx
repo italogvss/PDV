@@ -5,6 +5,8 @@ import CloseRounded from '@mui/icons-material/CloseRounded'
 import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
 import RemoveRounded from '@mui/icons-material/RemoveRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
+import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import {
   Box,
   Collapse,
@@ -131,11 +133,22 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ServiceForm>({
     resolver: zodResolver(schema),
     defaultValues: buildDefaults(),
   })
+
+  const watchCostPrice = watch('costPrice')
+  const watchPrice = watch('price')
+  const showProfit = Number(watchCostPrice) > 0 && Number(watchPrice) > 0
+  const profitPerUnit = showProfit ? Number(watchPrice) - Number(watchCostPrice) : 0
+  const marginPercent =
+    showProfit && Number(watchCostPrice) > 0
+      ? (profitPerUnit / Number(watchCostPrice)) * 100
+      : 0
+  const isPositiveMargin = profitPerUnit >= 0
 
   useEffect(() => {
     if (open) {
@@ -381,6 +394,37 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
               />
             </Box>
           </Box>
+
+          {showProfit && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 2,
+                  py: 1,
+                  borderRadius: '10px',
+                  bgcolor: isPositiveMargin ? 'success.soft' : 'error.soft',
+                }}
+              >
+                {isPositiveMargin ? (
+                  <TrendingUpRounded sx={{ fontSize: 15, color: 'success.main' }} />
+                ) : (
+                  <TrendingDownRounded sx={{ fontSize: 15, color: 'error.main' }} />
+                )}
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, color: isPositiveMargin ? 'success.ink' : 'error.ink' }}
+                >
+                  Margem {isPositiveMargin ? '+' : ''}{marginPercent.toFixed(1)}%
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Lucro por unidade: <strong>{formatBRL(profitPerUnit)}</strong>
+              </Typography>
+            </Box>
+          )}
 
           {/* Categoria */}
           <Box>

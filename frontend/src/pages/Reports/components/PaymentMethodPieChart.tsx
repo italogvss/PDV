@@ -1,8 +1,6 @@
 import { useTheme } from '@mui/material'
-import { PieChart } from '@mui/x-charts/PieChart'
-import { formatBRL } from '../../../utils/currency'
-import { categoricalColors, PAYMENT_METHOD_LABELS } from './chartHelpers'
-import ChartCard from './ChartCard'
+import DonutChart from '../../../components/DonutChart'
+import { PAYMENT_METHOD_COLORS, PAYMENT_METHOD_LABELS } from '../../../constants/payment'
 import type { SalesByPaymentMethod } from '../../../types/report.types'
 
 export interface PaymentMethodPieChartProps {
@@ -15,34 +13,20 @@ export default function PaymentMethodPieChart({
   loading = false,
 }: PaymentMethodPieChartProps) {
   const theme = useTheme()
-  const colors = categoricalColors(theme)
 
-  const slices = data.map((d, i) => ({
-    id: d.paymentMethod,
-    value: d.total,
+  const segments = data.map((d) => ({
     label: PAYMENT_METHOD_LABELS[d.paymentMethod] ?? d.paymentMethod,
-    color: colors[i % colors.length],
+    value: d.total,
+    color: PAYMENT_METHOD_COLORS[d.paymentMethod]?.(theme) ?? theme.palette.neutral[500],
   }))
 
   return (
-    <ChartCard
+    <DonutChart
       title="Vendas por forma de pagamento"
       info="Valor total recebido em cada forma de pagamento no período. Ajuda a ver a preferência dos clientes e onde há mais taxas."
+      segments={segments}
       loading={loading}
-      isEmpty={data.length === 0}
-    >
-      <PieChart
-        height={300}
-        series={[
-          {
-            data: slices,
-            innerRadius: 55,
-            paddingAngle: 2,
-            cornerRadius: 4,
-            valueFormatter: (item) => formatBRL(item.value),
-          },
-        ]}
-      />
-    </ChartCard>
+      showTotal
+    />
   )
 }

@@ -141,6 +141,10 @@ export default function AppointmentDetailModal({
                 <Typography variant="body2" color="text.secondary">Duração</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>{data.durationMinutes} min</Typography>
               </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Profissional</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>{professional?.name ?? ""}</Typography>
+              </Box>
               <Divider sx={{ my: 0.5, borderColor: 'border.strong', borderStyle: 'dashed' }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>Total</Typography>
@@ -152,15 +156,6 @@ export default function AppointmentDetailModal({
           {/* Status e profissional */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip label={meta.label} sx={{ fontWeight: 600, ...toneSx(meta.tone) }} />
-            {professional && (
-              <Chip
-                variant="outlined"
-                label={professional.name}
-                avatar={
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color }} />
-                }
-              />
-            )}
           </Box>
 
           {/* Contato */}
@@ -208,7 +203,10 @@ export default function AppointmentDetailModal({
               <Button
                 variant="contained"
                 sx={{backgroundColor: "error.main"}}
-                onClick={() => onChangeStatus(data.id, 'cancelado')}
+                onClick={() => {
+                  onChangeStatus(data.id, 'cancelado')
+                  onClose()
+                }}
               >
                 Sim, cancelar
               </Button>
@@ -227,7 +225,13 @@ export default function AppointmentDetailModal({
                     variant="contained"
                     startIcon={<PointOfSaleRounded />}
                     onClick={() => {
-                      navigate('/vendas', { state: { appointmentServices: data.services } })
+                      navigate('/vendas', {
+                        state: {
+                          appointmentServices: data.services,
+                          appointmentCustomerId: data.customerId ?? undefined,
+                          appointmentCustomerName: data.customerId ? data.customerName : undefined,
+                        },
+                      })
                       onClose()
                     }}
                   >

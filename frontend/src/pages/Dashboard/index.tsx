@@ -17,6 +17,7 @@ import { FEATURES } from '../../constants/entitlements'
 import { useProducts } from '../../hooks/useProducts'
 import { useExpensesByCategory, useFinancialSummary, useSalesMetrics } from '../../hooks/useReports'
 import { useEntitlements } from '../../hooks/useSubscription'
+import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAppSelector } from '../../store'
 import { formatBRL } from '../../utils/currency'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
@@ -38,6 +39,10 @@ export default function DashboardPage() {
   const { has } = useEntitlements()
   const advancedDashboard = has(FEATURES.advancedDashboard)
   const advancedExpenses = has(FEATURES.advancedExpenses)
+
+  // Funcionário sem a permissão ViewReports não pode ver a visão analítica — só o painel de módulos.
+  const { hasPermission } = useUserPermissions()
+  const canViewAnalytics = hasPermission('ViewReports')
 
   const endDate = dayjs().format('YYYY-MM-DD')
   const startDate = useMemo(
@@ -82,7 +87,7 @@ export default function DashboardPage() {
         title={`Olá, ${name}`}
         description={`Aqui está o resumo do seu negócio em ${formattedDate}`}
       >
-        {advancedDashboard && (
+        {advancedDashboard && canViewAnalytics && (
           <ToggleButtonGroup
             exclusive
             size="small"
@@ -98,7 +103,7 @@ export default function DashboardPage() {
           </ToggleButtonGroup>
         )}
 
-        {view === 'analytics' && advancedDashboard && (
+        {view === 'analytics' && advancedDashboard && canViewAnalytics && (
           <ToggleButtonGroup
             exclusive
             size="small"
@@ -163,7 +168,7 @@ export default function DashboardPage() {
         </PageKpiGrid>
       )}
 
-      {view === 'modules' ? (
+      {!canViewAnalytics || view === 'modules' ? (
         <EmployeeDashboard />
       ) : advancedDashboard ? (
         <AnalyticsDashboard selectedDays={selectedDays} />

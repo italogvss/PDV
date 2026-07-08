@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom'
 import UpsellModal from '../../../../../../components/UpsellModal'
 import { FEATURES } from '../../../../../../constants/entitlements'
 import { useEntitlements } from '../../../../../../hooks/useSubscription'
+import { useUserPermissions } from '../../../../../../hooks/useUserPermissions'
 import { useAppDispatch, useAppSelector } from '../../../../../../store'
 import { clearAuth } from '../../../../../../store/slices/auth.slice'
 import { clearStoredPlanSlug } from '../../../../../../utils/planSelection'
@@ -32,11 +33,12 @@ interface AccountItem {
   icon: SvgIconComponent
   tab: string
   badge?: { label: string; tone: 'premium' | 'count' | 'neutral' }
+  ownerOnly?: boolean
 }
 
 const BASE_ACCOUNT_ITEMS: AccountItem[] = [
   { label: 'Meu perfil', icon: PersonOutlined, tab: 'perfil' },
-  { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios' },
+  { label: 'Minhas lojas', icon: StorefrontOutlined, tab: 'negocios', ownerOnly: true },
 ]
 
 const HELP_ITEMS: AccountItem[] = [
@@ -81,6 +83,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { has } = useEntitlements()
+  const { isOwner } = useUserPermissions()
   const [upsellOpen, setUpsellOpen] = useState(false)
 
   const isPaid = (auth.subscription?.planId ?? null) !== null
@@ -191,21 +194,23 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
         <Divider sx={{ borderColor: 'border.subtle' }} />
 
         <Box sx={{ py: 1 }}>
-          <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
-            <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
-            <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
-            <Chip
-              label={planName}
-              size="small"
-              sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
-            />
-          </MenuItem>
-          {BASE_ACCOUNT_ITEMS.map((item) => (
+          {isOwner && (
+            <MenuItem sx={{ gap: 2, py: 1.25, px: 2.5 }} onClick={() => goToTab('assinatura')}>
+              <WorkspacePremiumOutlined sx={{ fontSize: 18, color: 'text.tertiary' }} />
+              <Typography variant="body2" sx={{ flex: 1, color: 'text.primary' }}>Assinatura</Typography>
+              <Chip
+                label={planName}
+                size="small"
+                sx={{ height: 20, fontSize: 11, fontWeight: 600, px: 0.5, bgcolor: ts.chipBg, color: ts.chipColor }}
+              />
+            </MenuItem>
+          )}
+          {BASE_ACCOUNT_ITEMS.filter((item) => isOwner || !item.ownerOnly).map((item) => (
             <ItemRow key={item.label} item={item} onClick={() => goToTab(item.tab)} />
           ))}
         </Box>
 
-        {!isPaid && (
+        {!isPaid && isOwner && (
           <>
             <Divider sx={{ borderColor: 'border.subtle' }} />
             <Box sx={{ py: 1 }}>

@@ -64,6 +64,16 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("customers/top")]
+    public async Task<IActionResult> GetTopCustomers(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] int limit = 10)
+    {
+        var result = await service.GetTopCustomersAsync(startDate, endDate, limit);
+        return Ok(result);
+    }
+
     [HttpGet("expenses/by-category")]
     public async Task<IActionResult> GetExpensesByCategory(
         [FromQuery] DateTime startDate,
@@ -146,5 +156,52 @@ public class ReportsController(IReportService service) : ControllerBase
     {
         var csv = await service.ExportTeamCsvAsync();
         return File(csv, "text/csv", "equipe.csv");
+    }
+
+    [HttpGet("appointments/summary")]
+    public async Task<IActionResult> GetAppointmentSummary(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] string groupBy = "day")
+    {
+        var result = await service.GetAppointmentSummaryAsync(startDate, endDate, groupBy);
+        return Ok(result);
+    }
+
+    [HttpGet("appointments/top-services")]
+    public async Task<IActionResult> GetTopServices(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] int limit = 10)
+    {
+        var result = await service.GetTopServicesAsync(startDate, endDate, limit);
+        return Ok(result);
+    }
+
+    [HttpGet("appointments/by-employee")]
+    public async Task<IActionResult> GetAppointmentsByEmployee(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetAppointmentsByEmployeeAsync(startDate, endDate);
+        return Ok(result);
+    }
+
+    [HttpGet("appointments/by-category")]
+    public async Task<IActionResult> GetServiceCategoryRevenue(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetServiceCategoryRevenueAsync(startDate, endDate);
+        return Ok(result);
+    }
+
+    [HttpGet("appointments/peak-hours")]
+    public async Task<IActionResult> GetAppointmentPeakHours(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetAppointmentPeakHoursAsync(startDate, endDate);
+        return Ok(result);
     }
 }

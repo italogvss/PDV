@@ -19,6 +19,9 @@ public interface IReportService
     Task<List<TopProductResponse>> GetTopProductsAsync(
         DateTime startDate, DateTime endDate, int limit);
 
+    Task<List<TopCustomerResponse>> GetTopCustomersAsync(
+        DateTime startDate, DateTime endDate, int limit);
+
     Task<List<ExpensesByCategoryResponse>> GetExpensesByCategoryAsync(
         DateTime startDate, DateTime endDate);
 
@@ -44,4 +47,19 @@ public interface IReportService
     Task<RevenueByTypeResponse> GetRevenueByTypeAsync(DateTime startDate, DateTime endDate);
 
     Task<byte[]> ExportForTenantAsync(Guid tenantId, string category);
+
+    Task<List<AppointmentSummaryPoint>> GetAppointmentSummaryAsync(
+        DateTime startDate, DateTime endDate, string groupBy);
+
+    Task<List<TopServiceResponse>> GetTopServicesAsync(
+        DateTime startDate, DateTime endDate, int limit);
+
+    Task<List<AppointmentsByEmployeeResponse>> GetAppointmentsByEmployeeAsync(
+        DateTime startDate, DateTime endDate);
+
+    Task<List<ServiceCategoryRevenueResponse>> GetServiceCategoryRevenueAsync(
+        DateTime startDate, DateTime endDate);
+
+    Task<List<AppointmentPeakHourResponse>> GetAppointmentPeakHoursAsync(
+        DateTime startDate, DateTime endDate);
 }

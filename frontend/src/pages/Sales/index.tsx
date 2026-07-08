@@ -86,7 +86,11 @@ export default function SalesPage() {
   }, [search])
 
   useEffect(() => {
-    const state = location.state as { appointmentServices?: AppointmentServiceRef[] } | null
+    const state = location.state as {
+      appointmentServices?: AppointmentServiceRef[]
+      appointmentCustomerId?: string
+      appointmentCustomerName?: string
+    } | null
     if (!state?.appointmentServices?.length) return
     setCart(
       state.appointmentServices.map((s) => ({
@@ -97,6 +101,14 @@ export default function SalesPage() {
       })),
     )
     setCatalogMode('services')
+    if (state.appointmentCustomerId) {
+      setCustomer({
+        type: 'entity',
+        id: state.appointmentCustomerId,
+        name: state.appointmentCustomerName ?? '',
+        document: null,
+      })
+    }
     navigate('/vendas', { replace: true, state: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

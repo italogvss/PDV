@@ -21,6 +21,8 @@ export interface AuthState {
   mustChangePassword: boolean
   tenants: TenantListItem[]
   permissions: Permission[]
+  // Id do próprio registro de funcionário (só role Employee) — ver AuthUser.employeeId
+  employeeId: string | null
   // Módulos da operação ativos do tenant (vindo de /auth/me). Filtra nav e permissões.
   modules: OperationModule[]
   // Aparência aplicada (vinda de /auth/me; alimenta o ThemeModeProvider)
@@ -55,6 +57,7 @@ const initialState: AuthState = {
   mustChangePassword: false,
   tenants: [],
   permissions: [],
+  employeeId: null,
   modules: ALL_MODULES,
   theme: 'light',
   accentColor: 'green',
@@ -82,6 +85,7 @@ export const authSlice = createSlice({
       mustChangePassword: action.payload.mustChangePassword ?? false,
       tenants: action.payload.tenants ?? [],
       permissions: action.payload.permissions ?? [],
+      employeeId: action.payload.employeeId ?? null,
       modules: action.payload.modules ?? ALL_MODULES,
       theme: themeFromSettings(action.payload.settings),
       accentColor: accentFromSettings(action.payload.settings),

@@ -19,6 +19,7 @@ interface MeApiResponse {
   mustChangePassword?: boolean
   permissions?: string[]
   modules?: string[]
+  employeeId?: string | null
 }
 
 export const authService = {
@@ -54,6 +55,7 @@ export const authService = {
       mustChangePassword: data.mustChangePassword ?? false,
       permissions: (data.permissions ?? []) as Permission[],
       modules: (data.modules ?? ALL_MODULES) as OperationModule[],
+      employeeId: data.employeeId ?? null,
     }
   },
 

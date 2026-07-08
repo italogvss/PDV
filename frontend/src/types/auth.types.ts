@@ -20,4 +20,7 @@ export interface AuthUser {
   mustChangePassword: boolean
   permissions: Permission[]
   modules: OperationModule[]
+  // Id do próprio registro de funcionário (só para role Employee) — usado para
+  // permitir que ele se selecione como profissional mesmo sem ViewEmployees.
+  employeeId: string | null
 }

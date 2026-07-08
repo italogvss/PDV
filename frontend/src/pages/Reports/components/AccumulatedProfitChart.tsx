@@ -1,9 +1,9 @@
 import { useTheme } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
-import { formatBRL } from '../../../utils/currency'
-import { formatCompactBRL } from './chartHelpers'
-import ChartCard from './ChartCard'
 import type { FinancialSummaryPoint } from '../../../types/report.types'
+import { formatBRL } from '../../../utils/currency'
+import ChartCard from '../../../components/ChartCard'
+import { formatCompactBRL } from './chartHelpers'
 
 export interface AccumulatedProfitChartProps {
   data: FinancialSummaryPoint[]
@@ -36,18 +36,25 @@ export default function AccumulatedProfitChart({
       <LineChart
         height={300}
         xAxis={[{ scaleType: 'point', data: labels }]}
-        yAxis={[{ width: 100,valueFormatter: (v: number | null) => formatCompactBRL(v) }]}
+        yAxis={[{
+          width: 100, valueFormatter: (v: number | null) => formatCompactBRL(v),
+          colorMap: {
+            type: 'piecewise',
+            thresholds: [0],
+            colors: [theme.palette.error.main, theme.palette.success.main, theme.palette.data.blue.main],
+          }
+        }]}
         series={[
           {
             data: accumulated,
             label: 'Lucro acumulado',
             color: theme.palette.success.main,
-            area: true,
+            area: false,
             showMark: false,
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
         ]}
-        margin={{ left: 0}}
+        margin={{ left: 0 }}
         sx={{
           '& .MuiAreaElement-root': { fillOpacity: 0.15 },
         }}

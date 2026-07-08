@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { formatBRL } from '../../../utils/currency'
 import { formatCompactBRL } from './chartHelpers'
-import ChartCard from './ChartCard'
+import ChartCard from '../../../components/ChartCard'
 import type { FinancialSummaryPoint } from '../../../types/report.types'
 
 export interface FinancialBarChartProps {
@@ -19,9 +19,9 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
 
   return (
     <ChartCard
-      title="Receita × Resultado líquido"
+      title="Receita × Lucro líquido"
       subtitle="Resultado = margem (itens com custo) − taxas − despesas"
-      info="Receita é o total vendido no período. Resultado líquido = margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado não entram na margem."
+      info="Receita é o total vendido no período. Lucro líquido = margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado não entram na margem."
       loading={loading}
       isEmpty={data.length === 0}
     >
@@ -33,17 +33,24 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
           {
             data: revenue,
             label: 'Receita',
-            color: theme.palette.success.main,
+            color: theme.palette.data.blue.main,
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
           {
+            id: 'netResult',
             data: netResult,
-            label: 'Resultado líquido',
-            color: theme.palette.data.blue.main,
+            label: 'Lucro líquido',
+            color: theme.palette.success.main ,
             valueFormatter: (v) => formatBRL(v ?? 0),
           },
         ]}
         margin={{ left: 0 }}
+        slotProps={{
+          bar: (ownerState) =>
+            ownerState.seriesId === 'netResult' && (netResult[ownerState.dataIndex] ?? 0) < 0
+              ? { fill: theme.palette.error.main }
+              : {},
+        }}
       />
     </ChartCard>
   )
