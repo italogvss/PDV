@@ -1,12 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PDV.Domain.Constants;
 using PDV.Domain.Interfaces;
 
 namespace PDV.Infrastructure.Services;
 
-// Varre periodicamente as assinaturas vencidas (canceladas pós-período e trials PDV-side expirados)
-// e as marca como Expired.
+// Varre periodicamente as assinaturas vencidas (canceladas pós-período, trials PDV-side expirados
+// e checkouts Pending abandonados) e as marca como Expired.
 // Resolve o repositório num scope próprio (BackgroundService é singleton; o repo/DbContext é scoped).
 public class SubscriptionExpiryBackgroundService(
     IServiceScopeFactory scopeFactory,
@@ -30,6 +31,7 @@ public class SubscriptionExpiryBackgroundService(
         {
             using var scope = scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<ISubscriptionRepository>();
+            var paymentRepo = scope.ServiceProvider.GetRequiredService<IPaymentRepository>();
 
             var now = DateTime.UtcNow;
 
@@ -40,6 +42,15 @@ public class SubscriptionExpiryBackgroundService(
             var expiredTrials = await repo.ExpireTrialingPastEndAsync(now);
             if (expiredTrials > 0)
                 logger.LogInformation("Trials expirados por vencimento: {Count}", expiredTrials);
+
+            var pendingCutoff = now.AddHours(-CheckoutDefaults.PendingTtlHours);
+            var expiredPending = await repo.ExpireStalePendingAsync(pendingCutoff);
+            if (expiredPending > 0)
+                logger.LogInformation("Checkouts Pending órfãos expirados: {Count}", expiredPending);
+
+            var canceledPayments = await paymentRepo.ExpireStalePendingAsync(pendingCutoff);
+            if (canceledPayments > 0)
+                logger.LogInformation("Cobranças Pending órfãs canceladas: {Count}", canceledPayments);
         }
         catch (Exception ex)
         {
