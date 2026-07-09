@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import AnnouncementCenter from '../../components/AnnouncementCenter'
+import SubscriptionExpiredModal from '../../components/SubscriptionExpiredModal'
 import { useSyncSubscriptionToStore } from '../../hooks/useSubscription'
 
 export default function DashboardLayout() {
@@ -56,6 +57,7 @@ export default function DashboardLayout() {
         </Box>
       </Box>
       <AnnouncementCenter />
+      <SubscriptionExpiredModal />
     </Box>
   )
 }

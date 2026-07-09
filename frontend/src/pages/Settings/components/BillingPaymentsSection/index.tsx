@@ -33,8 +33,7 @@ function BadgeBox({ color, text, italic }: BadgeBoxProps) {
   )
 }
 
-function CardBrandBadge({ method, brand }: { method: string; brand: string | null }) {
-  if (method === 'Pix') return <BadgeBox color="#32bcad" text="PIX" />
+function CardBrandBadge({ brand }: { brand: string | null }) {
   const b = (brand ?? '').toLowerCase()
   if (b.includes('visa')) return <BadgeBox color="#1a1f71" text="VISA" italic />
   if (b.includes('master') || b === 'mc') return <BadgeBox color="#eb5c29" text="MC" />
@@ -71,7 +70,6 @@ function StatusChip({ status }: { status: string }) {
 // --- kind ---
 const KIND_LABELS: Record<string, string> = {
   CardSubscription: 'Assinatura',
-  PixSubscription: 'Assinatura',
   OneOffCheckout: 'Avulso',
 }
 
@@ -85,12 +83,10 @@ const columns: GridColDef<UserPayment>[] = [
     sortable: false,
     renderCell: ({ row }) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, height: '100%' }}>
-        <CardBrandBadge method={row.method} brand={row.cardBrand} />
+        <CardBrandBadge brand={row.cardBrand} />
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25 }}>
           <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
-            {row.method === 'Pix'
-              ? 'Pagamento via PIX'
-              : `•••• •••• •••• ${row.cardLastFour ?? '????'}`}
+            {`•••• •••• •••• ${row.cardLastFour ?? '????'}`}
           </Typography>
         </Box>
       </Box>

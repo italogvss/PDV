@@ -1,4 +1,5 @@
-import { Paper, Typography } from '@mui/material'
+import CheckRounded from '@mui/icons-material/CheckRounded'
+import { Box, Paper, Typography } from '@mui/material'
 import PremiumIconBadge from '../PremiumIconBadge'
 import UpsellButton from '../UpsellButton'
 import { premiumDashedSurfaceSx } from '../../utils/premium'
@@ -10,6 +11,7 @@ import type { Props } from './types'
 export default function UpsellCard({
   title = 'Recurso do plano Pro',
   description = 'Faça upgrade para o plano Pro e desbloqueie este recurso.',
+  highlights,
 }: Props) {
   return (
     <Paper
@@ -34,6 +36,19 @@ export default function UpsellCard({
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 280 }}>
         {description}
       </Typography>
+
+      {highlights && highlights.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, textAlign: 'left', my: 0.5 }}>
+          {highlights.map((item) => (
+            <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <PremiumIconBadge size="sm" tone="soft" icon={CheckRounded} sx={{ width: 22, height: 22 }} />
+              <Typography variant="body2" color="text.primary">
+                {item}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       <UpsellButton sx={{ mt: 1 }} />
     </Paper>

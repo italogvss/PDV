@@ -3,7 +3,7 @@
 > Documento informativo para manutenção do módulo de assinaturas/cobrança do PDV-Ultra.
 > Cobre **cartão** (assinatura recorrente) e o **trial PDV-side** (30 dias).
 >
-> Gateway: **AbacatePay**. _Revalidado em 2026-07-08 a partir do código atual._
+> Gateway: **AbacatePay**. _Revalidado em 2026-07-08, correções aplicadas em 2026-07-09._
 >
 > ⚠️ **Mudança estrutural desde a revisão anterior (2026-07-02):** o fluxo **PIX foi removido**
 > do billing de assinatura — hoje o produto é **somente cartão**. O gateway envia apenas
@@ -12,6 +12,11 @@
 >
 > ⚠️ Substitui os rascunhos em `.claude/subscription-flow.md` e `.claude/subscription-problems.md`
 > (modelo antigo com "plano Free" e trial no gateway) — **obsoletos**.
+>
+> ✅ **Correções aplicadas em 2026-07-09** (ver §13/§14 para o detalhe por item):
+> `SubscriptionExpiredModal` global de conversão (RF-01.4/RF-07.4), TTL de checkout `Pending`
+> órfão + CTA de retry (RF-02.7), banner de assinatura Expirada sem preço/recursos de um plano
+> que não vale mais (RF-07.5), e remoção do código morto de PIX remanescente no frontend (RF-13.2).
 
 ---
 
@@ -46,13 +51,13 @@ O plano de um tenant define acesso por **dois eixos independentes**, ambos persi
 | Service | `PDV.Infrastructure/Services/EntitlementService.cs` | Resolve o plano efetivo do tenant + enforcement 402 |
 | Service | `PDV.Infrastructure/Services/PaymentHistoryService.cs` | Mapeia `Payment` → DTO paginado |
 | Service | `PDV.Infrastructure/Services/TenantService.cs` | `StartTrialIfEligibleAsync` — concede o trial PDV-side |
-| Service | `PDV.Infrastructure/Services/SubscriptionExpiryBackgroundService.cs` | Varredura horária → marca vencidos como `Expired` |
+| Service | `PDV.Infrastructure/Services/SubscriptionExpiryBackgroundService.cs` | Varredura horária → marca vencidos como `Expired` (canceladas, trials **e checkouts `Pending` órfãos** — RF-02.7) |
 | Service | `PDV.Infrastructure/Services/PlanSeeder.cs` | Upsert idempotente dos planos no startup |
 | Gateway | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayGateway.cs` | Traduz domínio ↔ AbacatePay (**só cartão**: `Methods:["CARD"]`) |
 | Webhook | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayWebhookProcessor.cs` | Valida (secret + HMAC) e normaliza o payload → `PaymentWebhookEvent` |
 | Attrs | `PDV.Api/Attributes/{RequireModuleAttribute, RequireEntitlementAttribute}.cs` | Gating 402 nos controllers (delegam ao `IEntitlementService`) |
 | Repos | `SubscriptionRepository.cs`, `PaymentRepository.cs`, `BillingWebhookRepository.cs`, `GatewayCustomerRepository`, `PlanRepository` | Persistência (filtro **explícito por `UserId`** — sem query filter de tenant) |
-| Catálogo | `PDV.Domain/Constants/{EntitlementCatalog, PlanLimits, PlanSeedData, TrialDefaults}.cs` | Definição declarativa de planos, capabilities e limites |
+| Catálogo | `PDV.Domain/Constants/{EntitlementCatalog, PlanLimits, PlanSeedData, TrialDefaults, CheckoutDefaults}.cs` | Definição declarativa de planos, capabilities, limites e TTL de checkout `Pending` |
 
 ### Frontend
 
@@ -64,6 +69,7 @@ O plano de um tenant define acesso por **dois eixos independentes**, ambos persi
 | `pages/Settings/components/SubscriptionSection/PlansDialog/index.tsx` | Modal de escolha de plano (reassinatura) → abre o checkout do plano escolhido (usa `PlansGrid`) |
 | `pages/SubscriptionReturn/index.tsx` | Retorno pós-checkout (`/assinatura/retorno`) — polling de `/me` (3s, **timeout 60s**, com retry) |
 | `pages/Settings/components/BillingPaymentsSection/*` | Histórico de faturas (`GET /payments/history`) |
+| `components/SubscriptionExpiredModal/index.tsx` | Modal global de conversão (RF-01.4/RF-07.4) — montado no `DashboardLayout`, aparece para Owner/Admin sempre que `subscription.status === 'Expired'`; CTA "Ativar plano" leva a `/configuracoes?tab=assinatura` |
 | `hooks/useSubscription.ts` | React Query: `useSubscription`, `usePlans`, `useStartCheckout`, `useChangePlan`, `useCancelSubscription`, `useEntitlements`, `useSyncSubscriptionToStore` |
 | `services/subscription.service.ts` | HTTP + mapeamento backend↔frontend |
 | `types/subscription.types.ts` | Contrato (`Subscription`, `Plan`, `SubscriptionStatus`, `PaymentMethod`) |
@@ -167,9 +173,9 @@ AbacatePay com o ciclo correto. **Nenhum plano usa `trialDays` no gateway** — 
 - `EnsureWithinLimitAsync(limitKey, currentCount)` → **402 `PLAN_LIMIT_EXCEEDED`** (limite atingido; `-1` = ilimitado, nunca barra)
 
 > ⚠️ Módulo e feature compartilham o mesmo código **`NOT_IN_PLAN`** (não existe `MODULE_NOT_IN_PLAN`
-> no código — a menção no `backend/CLAUDE.md` está desatualizada). O `utils/apiError.ts` mapeia os
-> três (`NOT_IN_PLAN`, `MODULE_NOT_IN_PLAN`, `PLAN_LIMIT_EXCEEDED`); a entrada `MODULE_NOT_IN_PLAN`
-> hoje é **morta** (o backend nunca a emite), mas inofensiva.
+> no código — a menção no `backend/CLAUDE.md` está desatualizada, ver #15). O `utils/apiError.ts`
+> mapeia só `NOT_IN_PLAN`/`PLAN_LIMIT_EXCEEDED` — a entrada `MODULE_NOT_IN_PLAN` (morta, o backend
+> nunca a emite) foi removida em 2026-07-09 (RF-13.2).
 
 ---
 
@@ -236,6 +242,15 @@ novamente")** até `Active`/`Trialing`.
   (`Methods: ["CARD"]`, `ExternalId = sub.Id`) → `bill_...` + URL.
 - Persiste a `Subscription` + cria `Payment` `Pending` (`Kind=CardSubscription`, `GatewayChargeId=bill_`).
 - **Resposta:** `{ checkoutUrl }`. **Ativação vem por webhook** (§7.4), não pela resposta.
+
+> ✅ **Checkout abandonado (RF-02.7).** Se o usuário nunca voltar do gateway, a `Subscription`/o
+> `Payment` ficam `Pending` indefinidamente. Duas correções: (1) `SubscriptionSection` agora expõe
+> um card "Finalize sua assinatura" / CTA "Tentar novamente" para `status === 'Pending'` (o
+> `StartCheckoutAsync` já permitia retry — só faltava o CTA); (2) o
+> `SubscriptionExpiryBackgroundService` expira automaticamente `Subscription`s `Pending` há mais de
+> `CheckoutDefaults.PendingTtlHours` (24h) para `Expired` (libera nova tentativa e aciona o
+> `SubscriptionExpiredModal`, ver §7.9) e cancela (`Cancelled`) o `Payment` `Pending` órfão
+> correspondente, para não poluir o histórico de cobranças com um "Pendente" eterno.
 
 ### 7.3 — ATIVAÇÃO (pós-pagamento, via webhook)
 
@@ -321,15 +336,22 @@ Sem endpoint dedicado — reativação por **novo checkout** reaproveitando a `S
 ### 7.9 — SEM ASSINATURA (None) / EXPIRADO — app bloqueado
 
 Sem assinatura viva (nunca assinou, sem trial) ou expirada → `EntitlementService` resolve
-`Entitlements=[]`/`Limits={}` → **todo endpoint gateado retorna 402**. Hoje **não há guard/tela
-global** de "assine para continuar": o usuário chega ao dashboard e recebe toasts 402 por
-recurso. Só a `SubscriptionSection` (Configurações) comunica o estado e oferece reativação. Ver RF-07.
+`Entitlements=[]`/`Limits={}` → **todo endpoint gateado retorna 402**. Não há guard bloqueando
+rotas (o usuário continua navegando e recebe toasts 402 por recurso), mas desde a correção de
+2026-07-09 o `SubscriptionExpiredModal` (global, montado no `DashboardLayout`) aparece para o
+Owner/Admin **sempre que `status === 'Expired'`** — chama para ativar um plano
+(`/configuracoes?tab=assinatura`), dispensável por sessão ("Agora não"/X). A `SubscriptionSection`
+(Configurações) continua sendo quem detalha o estado e oferece a reativação em si. Ver RF-07.4.
 
-### 7.10 — TRIAL → PAGO (conversão) — lacuna
+### 7.10 — TRIAL → PAGO (conversão)
 
 Durante o trial não há caminho de checkout: `StartCheckoutAsync` bloqueia `Trialing` entitled, e o
-CTA de upgrade só troca o plano **local** (sem cobrança). Para virar pagante, hoje o usuário
-**espera o trial expirar** (`Expired`) e então assina — perdendo acesso no intervalo. Ver #12 / RF-01.4.
+CTA de upgrade só troca o plano **local** (sem cobrança). Isso **não mudou** — foi uma decisão
+consciente manter o bloqueio durante o trial em vez de abrir checkout antecipado. Em vez disso, a
+correção de RF-01.4 (2026-07-09) foi cobrir o momento em que o trial **vence**: assim que a
+`Subscription` vira `Expired`, o `SubscriptionExpiredModal` (§7.9) aparece imediatamente chamando
+para assinar — o usuário ainda perde o acesso no intervalo até o fim do trial, mas não fica sem
+nenhum aviso ativo pedindo a conversão.
 
 ---
 
@@ -369,8 +391,12 @@ Estritamente por `GatewayChargeId` (`bill_`). **Sem fallback** por "pendente mai
 `BackgroundService` singleton; varredura **a cada 1h** num scope próprio (repo/DbContext scoped):
 - `ExpireCanceledPastPeriodAsync(now)` → `Canceled` com `CurrentPeriodEnd < now` → `Expired`.
 - `ExpireTrialingPastEndAsync(now)` → `Trialing` com `TrialEndsAt < now` → `Expired`.
+- `ExpireStalePendingAsync(cutoff)` (`ISubscriptionRepository`) → `Pending` há mais de
+  `CheckoutDefaults.PendingTtlHours` (24h) → `Expired` (checkout abandonado, libera nova tentativa).
+- `IPaymentRepository.ExpireStalePendingAsync(cutoff)` → `Payment` `Pending` no mesmo corte de tempo
+  → `Cancelled` (evita "Pendente" eterno no histórico de cobranças). Ver RF-02.7.
 
-Ambos varrem **todos os usuários** (sem query filter de tenant, por design). Erros são logados
+Todos varrem **todos os usuários** (sem query filter de tenant, por design). Erros são logados
 (`try/catch`) sem derrubar o serviço.
 
 > ⚠️ **`Active` vencido NÃO é varrido** — não há job que mova `Active`→`Expired`. O acesso é barrado
@@ -433,11 +459,14 @@ código (`ApplyTrialStarted`) mas está **inativo** (planos sem `trialDays`).
   destaques de features/limites. CTA:
   - `isLiveCard` → **troca imediata** (`changePlan.mutate`, sem confirmação — #5);
   - senão → abre `PlanCheckoutDialog`.
-- **Reassinar/reativar (`showResubscribe`):** para `Canceled`/`Expired`/`None`. Card com CTA que abre
-  `PlansDialog`. Se `hasRemainingAccess` (Canceled dentro do período) → avisa da cobrança imediata (#6).
-- **Estado Expirado:** ainda mostra nome/preço do plano no banner (chip "EXPIRADO") e o card
-  "O que seu plano inclui" fica **vazio** (limites "—", sem módulos), porque `/me` popula `PlanId`
-  mas `Entitlements=[]`. Ver #4 (parcial).
+- **Reassinar/reativar (`showResubscribe`):** para `Canceled`/`Expired`/`None`/`Pending`. Card com
+  CTA que abre `PlansDialog`. Se `hasRemainingAccess` (Canceled dentro do período) → avisa da
+  cobrança imediata (#6). Se `Pending` (checkout abandonado) → copy própria "Finalize sua
+  assinatura" / "Tentar novamente" (RF-02.7 — antes desse ajuste, `Pending` não tinha nenhum CTA).
+- **Estado Expirado:** o banner mostra o nome do plano (chip "EXPIRADO"), mas o preço é **omitido**
+  e o card "O que seu plano inclui" **não é renderizado** (em vez de aparecer vazio) — ambos
+  derivados de `owned.length === 0` / `status === 'Expired'` em `SubscriptionSection/index.tsx`.
+  Resolve o antigo #4/RF-07.5.
 
 ---
 
@@ -452,7 +481,7 @@ código (`ApplyTrialStarted`) mas está **inativo** (planos sem `trialDays`).
 | #1 | Upgrade durante trial PDV-side falhava | ✅ **Resolvido (backend)** | `SubscriptionService.ChangePlanAsync` trata `Trialing` + sem `GatewaySubscriptionId` trocando só o plano local |
 | #2 | PIX no backend, inacessível no frontend | ✅ **Resolvido por remoção** | PIX eliminado do billing (gateway `["CARD"]`, sem `transparent.*`, `GatewayPaymentMethod=Card`, `PixQrDialog` excluído) |
 | #3 | Mensagem "Plano Gratuito" para estado sem plano | ✅ **Resolvido** | `STATUS_CONFIG.None="SEM PLANO"`, "Nenhum plano ativo — assine para usar o sistema." |
-| #4 | Banner incoerente para assinatura Expirada | 🟠 **Parcial** | Há CTA de reativação e subtítulo corrigido, mas `/me` ainda popula `PlanId` → card "O que seu plano inclui" vazio |
+| #4 | Banner incoerente para assinatura Expirada | ✅ **Resolvido (frontend)** | `SubscriptionSection` omite preço e o card "O que seu plano inclui" quando `owned.length === 0`/`status === 'Expired'` (RF-07.5) |
 | #5 | Troca/upgrade sem confirmação nem aviso de cobrança | 🔴 **Aberto** | `handleUpgrade → changePlan.mutate()` dispara direto (sem `ConfirmDialog`) — `index.tsx:195` |
 | #6 | Reativação dentro do período sem alerta | ✅ **Resolvido (UX)** | `hasRemainingAccess` → "Reativar agora gera uma nova cobrança imediata" |
 | #7 | "Economize ganhado 2 meses grátis." | 🟡 **Aberto** | `SubscriptionSection/index.tsx:560` ainda tem a frase errada |
@@ -461,12 +490,6 @@ código (`ApplyTrialStarted`) mas está **inativo** (planos sem `trialDays`).
 | #10 | Grafia "advancedExpanses" | ✅ **Resolvido** | `advancedExpenses` no backend, `entitlements.ts` e consumidores |
 
 ### Achados novos / ainda abertos
-
-**#4 (persiste, 🟠) — `/me` popula `PlanId` para sub não-entitled.** `GetMineAsync` devolve
-`sub?.PlanId` mesmo quando `IsEntitled==false` (Expired). No frontend `isPaid` fica `true` → banner
-com preço + card "O que seu plano inclui" vazio.
-- **Sugestão:** não popular `PlanId`/preço quando não-entitled, **ou** o frontend derivar "expirado"
-  de `status`+`entitlements.length===0` e esconder o card de recursos.
 
 **#5 (🔴) — Upgrade sem confirmação.** Risco de cobrança acidental (troca imediata gera cobrança no
 gateway). O cancelamento tem `ConfirmDialog`; o upgrade não.
@@ -479,23 +502,31 @@ plano anual."
 **#11 (🟡) — Comentário desatualizado em `EntitlementCatalog`.** O cabeçalho diz "9 FEATURES", mas
 `Features` tem **13** chaves. Só comentário — corrigir para evitar confusão.
 
-**#12 (🟠) — Sem caminho de conversão trial→pago.** Ver §7.10: durante o trial o checkout é bloqueado
-e o upgrade só troca o plano local. Para pagar, o usuário precisa esperar o trial vencer.
-- **Sugestão:** permitir checkout durante o trial (converter cedo, sem perder dias), ou expor um CTA
-  "Assinar agora" que faça `StartCheckoutAsync` mesmo em trial (relaxando o bloqueio para `Trialing`).
-
 **#13 (🟠) — Falha de renovação sem tratamento.** Sem `PastDue`/dunning/job de `Active` vencido: o
 acesso cai por `IsEntitled`, mas `Status` fica `Active` com data no passado (banner incoerente) e
 não há retry/aviso de cobrança falha. Ver §7.5 / §9.
 - **Sugestão:** tratar evento de falha de cobrança do gateway (se houver) e/ou job que marque `Active`
   vencido como `Expired`; comunicar "pagamento pendente" na UI.
 
-**#14 (🟡) — Código morto de PIX no `BillingPaymentsSection`.** Ainda há ramos `method === 'Pix'`,
-`PixSubscription` em `KIND_LABELS` e badge "PIX". Inofensivo (defensivo), mas nenhum `Payment` gera
-esses valores hoje. Limpar ou documentar como "legado".
-
 **#15 (🟠) — `backend/CLAUDE.md` desatualizado.** Diz que o gating de módulo emite `MODULE_NOT_IN_PLAN`;
 o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
+
+### ✅ Resolvidos nesta revisão (2026-07-09)
+
+- **#4 / RF-07.5** — Banner de assinatura Expirada não exibe mais preço nem o card "O que seu plano
+  inclui" de um plano que não vale mais (`owned.length === 0` / `status === 'Expired'` em
+  `SubscriptionSection/index.tsx`).
+- **#12 / RF-01.4 / RF-07.4** — `SubscriptionExpiredModal` (novo, global, `DashboardLayout`) aparece
+  para o Owner/Admin sempre que `status === 'Expired'`, chamando para ativar um plano. Decisão de
+  produto: o checkout continua bloqueado durante o trial vigente (§7.10) — em vez de converter
+  antecipadamente, o aviso ativo chega assim que o trial (ou qualquer assinatura) expira.
+- **#14 / RF-13.2** — Código morto de PIX removido do frontend: `BillingPaymentsSection`
+  (badge "PIX", `PixSubscription` em `KIND_LABELS`, texto "Pagamento via PIX") e a entrada
+  `MODULE_NOT_IN_PLAN` (nunca emitida pelo backend) em `utils/apiError.ts`. Tipos `UserPaymentKind`/
+  `UserPaymentMethod` (`types/billing.types.ts`) não têm mais variantes de PIX.
+- **RF-02.7** — Checkout `Pending` abandonado: `SubscriptionSection` agora expõe CTA de retry
+  ("Finalize sua assinatura"/"Tentar novamente") e o `SubscriptionExpiryBackgroundService` expira
+  automaticamente `Subscription`/`Payment` `Pending` após `CheckoutDefaults.PendingTtlHours` (24h).
 
 ### ✅ Resolvidos desde os docs antigos (mantidos)
 
@@ -528,8 +559,9 @@ o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
   `!HasUsedTrial` e sem assinatura viva; marcar `HasUsedTrial`; não tocar o gateway.
 - **RF-01.2** ✅ Trial concede o plano escolhido integralmente (entitled) até `TrialEndsAt`.
 - **RF-01.3** ✅ Trial expirado deve virar `Expired` e bloquear o acesso (job horário).
-- **RF-01.4** ❌ Deve existir caminho para **converter trial em assinatura paga antes do fim do trial**
-  sem perder acesso (hoje o checkout é bloqueado em `Trialing` — ver #12).
+- **RF-01.4** ✅ *(resolvido por decisão de produto — 2026-07-09)* O checkout continua bloqueado
+  durante o `Trialing` vigente (decisão consciente, não mudou), mas o `SubscriptionExpiredModal`
+  (global) chama para ativar um plano assim que a assinatura vira `Expired` — ver §7.10.
 - **RF-01.5** ✅ Slug ausente/desconhecido não deve falhar o onboarding (segue sem trial).
 - **RF-01.6** ✅ Trial é único por usuário (`HasUsedTrial` nunca é revertido, inclusive após cancelamento).
 
@@ -540,7 +572,9 @@ o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
 - **RF-02.4** ✅ Garantir `GatewayCustomer` (`cust_`) e sincronizar Document/Phone no `User`.
 - **RF-02.5** ✅ Criar `Payment` `Pending` (`bill_`) no checkout; ativação só por webhook.
 - **RF-02.6** ✅ Tela de retorno faz polling de `/me` até `Active`/`Trialing`, com timeout e retry; decide destino (painel/onboarding) por `tenantId`.
-- **RF-02.7** 🟠 Checkout abandonado/falho deixa a sub `Pending` (bloqueada) — retry é permitido, mas **não há limpeza de `Pending` órfão** nem aviso ativo (considerar TTL/expiração).
+- **RF-02.7** ✅ Checkout abandonado/falho deixa a sub `Pending` (bloqueada) — retry é permitido e
+  exposto na UI (`showResubscribe` cobre `Pending`); `SubscriptionExpiryBackgroundService` expira a
+  `Subscription`/cancela o `Payment` `Pending` órfão após `CheckoutDefaults.PendingTtlHours` (24h).
 
 ### RF-03 — Ativação por webhook
 - **RF-03.1** ✅ Validar autenticidade: `webhookSecret` (401) + HMAC do corpo raw (403).
@@ -575,8 +609,13 @@ o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
 - **RF-07.1** ✅ Sem assinatura válida → todo módulo/feature/limite gateado retorna 402 (`NOT_IN_PLAN`/`PLAN_LIMIT_EXCEEDED`).
 - **RF-07.2** ✅ 402 vira toast amigável de upgrade no frontend (`utils/apiError.ts`).
 - **RF-07.3** ✅ `SubscriptionSection` comunica "sem plano/expirado" e oferece reativação (`showResubscribe`).
-- **RF-07.4** ❌ **Experiência global de bloqueio** — não há guard/tela "assine para continuar" fora de Configurações; o usuário sem plano navega o app e recebe toasts 402 soltos (§7.9).
-- **RF-07.5** 🟠 Banner de Expirado não deve exibir preço/recursos de um plano que não vale mais (#4).
+- **RF-07.4** ✅ *(via modal, não guard de rota — 2026-07-09)* `SubscriptionExpiredModal`, global
+  (`DashboardLayout`), aparece para o Owner/Admin em qualquer rota autenticada sempre que
+  `status === 'Expired'`, chamando para ativar um plano. Não bloqueia a navegação (o usuário pode
+  fechar e segue recebendo toasts 402 soltos), mas cobre a lacuna de "nenhum aviso fora de
+  Configurações" — ver §7.9.
+- **RF-07.5** ✅ Banner de Expirado não exibe mais preço nem o card de recursos de um plano que não
+  vale mais (`SubscriptionSection` deriva de `owned.length === 0`/`status === 'Expired'` — #4).
 
 ### RF-08 — Reativação
 - **RF-08.1** ✅ Reativar via novo checkout (Canceled/Expired), reaproveitando a `Subscription`.
@@ -603,5 +642,8 @@ o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
 
 ### RF-13 — Consistência de produto (card-only)
 - **RF-13.1** ✅ Gateway envia apenas `Methods: ["CARD"]`; sem fluxo/endpoint PIX.
-- **RF-13.2** 🟠 Remover código morto de PIX remanescente (`BillingPaymentsSection`, entrada `MODULE_NOT_IN_PLAN` em `apiError.ts`) — #14/#15.
+- **RF-13.2** ✅ Código morto de PIX removido: `BillingPaymentsSection` (badge/branch `Pix`,
+  `PixSubscription` em `KIND_LABELS`) e a entrada `MODULE_NOT_IN_PLAN` (nunca emitida pelo backend)
+  em `apiError.ts` — #14. *(`backend/CLAUDE.md` desatualizado sobre `MODULE_NOT_IN_PLAN` é um item
+  à parte, ainda aberto — #15.)*
 - **RF-13.3** ✅ `Subscription.Method`/`Payment.Method` sempre `Card`; `PaymentKind` sem `PixSubscription`.

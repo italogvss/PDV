@@ -77,4 +77,24 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
         if (due.Count > 0) await context.SaveChangesAsync();
         return due.Count;
     }
+
+    // Expira checkouts Pending abandonados há mais que o TTL (usuário nunca voltou do gateway).
+    // Sem query filter de tenant — varre todos os usuários por design.
+    public async Task<int> ExpireStalePendingAsync(DateTime cutoff)
+    {
+        var due = await context.Subscriptions
+            .Where(s => s.IsActive
+                && s.Status == SubscriptionStatus.Pending
+                && s.UpdatedAt < cutoff)
+            .ToListAsync();
+
+        foreach (var sub in due)
+        {
+            sub.Status = SubscriptionStatus.Expired;
+            sub.UpdatedAt = DateTime.UtcNow;
+        }
+
+        if (due.Count > 0) await context.SaveChangesAsync();
+        return due.Count;
+    }
 }

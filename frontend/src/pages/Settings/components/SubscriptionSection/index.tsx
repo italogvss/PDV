@@ -85,6 +85,9 @@ export default function SubscriptionSection() {
   const currentPlan = plans.find((p) => p.id === subscription.planId) ?? null
   const isPaid = subscription.planId !== null
   const isTrial = subscription.status === 'Trialing'
+  // Expirada: o plano guardado em `subscription.planId` não vale mais (entitlements já vêm vazios
+  // do backend) — preço e o card de recursos não devem ser exibidos como se ainda valessem (#4/RF-07.5).
+  const isExpired = subscription.status === 'Expired'
   const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
   const isLiveCard = isLive && subscription.method === 'Card'
   const canCancel = isPaid && isLive
@@ -138,12 +141,17 @@ export default function SubscriptionSection() {
   // Upsell do Profissional só faz sentido para quem tem assinatura viva não-Pro (upgrade).
   const showUpgrade = isLive && !isPro && upgradeTarget !== null
 
-  // Reassinar/reativar: estados sem assinatura viva (cancelada/expirada/sem plano). Reativa o plano
-  // atual quando existe; senão sugere o Profissional (ou o 1º plano) como alvo padrão.
+  // Reassinar/reativar: estados sem assinatura viva (cancelada/expirada/sem plano/checkout
+  // abandonado). Reativa o plano atual quando existe; senão sugere o Profissional (ou o 1º plano)
+  // como alvo padrão. `Pending` entra aqui pra não deixar o usuário sem nenhum CTA quando o
+  // checkout anterior não foi concluído — StartCheckoutAsync já permite nova tentativa nesse
+  // estado, só faltava expor (RF-02.7).
+  const isPendingCheckout = subscription.status === 'Pending'
   const showResubscribe =
     subscription.status === 'Canceled' ||
     subscription.status === 'Expired' ||
-    subscription.status === 'None'
+    subscription.status === 'None' ||
+    isPendingCheckout
   const resubscribeTarget = currentPlan ?? proMonthly ?? plans[0] ?? null
   // Cancelada mas ainda dentro do período pago → reativar gera cobrança imediata (aviso na UI).
   const hasRemainingAccess =
@@ -320,7 +328,7 @@ export default function SubscriptionSection() {
               flexShrink: 0,
             }}
           >
-            {currentPlan && (
+            {currentPlan && !isExpired && (
               <Box sx={{ textAlign: { sm: 'right' } }}>
                 <Typography component="span" variant="h5" sx={{ fontWeight: 800, color: tier.ink }}>
                   R$ {formatPrice(currentPlan.price)}
@@ -352,7 +360,9 @@ export default function SubscriptionSection() {
         </Box>
       </Box>
 
-      {/* ══ Recursos e limites do plano ══ */}
+      {/* ══ Recursos e limites do plano — omitido sem entitlements (Expired/Pending/None não têm
+          direito a nada ainda; mostrar o card vazio insinuaria um plano que não vale, ver #4/RF-07.5) ══ */}
+      {owned.length > 0 && (
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Box sx={{ px: { xs: 3, sm: 4 }, py: 3 }}>
           <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 700 }}>
@@ -465,6 +475,7 @@ export default function SubscriptionSection() {
           )}
         </Box>
       </Paper>
+      )}
 
       {/* ══ Upsell do Profissional — só para quem ainda não é Pro ══ */}
       {showUpgrade && upgradeTarget && (
@@ -743,14 +754,20 @@ export default function SubscriptionSection() {
         >
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: brand[900], letterSpacing: '-0.01em' }}>
-              {hasRemainingAccess ? 'Reative sua assinatura' : 'Assine para continuar usando'}
+              {isPendingCheckout
+                ? 'Finalize sua assinatura'
+                : hasRemainingAccess
+                  ? 'Reative sua assinatura'
+                  : 'Assine para continuar usando'}
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.5, color: alpha(brand[900], 0.8), maxWidth: 560 }}>
-              {hasRemainingAccess
-                ? `Sua assinatura foi cancelada, mas você ainda tem acesso${
-                    statusLine?.date ? ` até ${statusLine.date}` : ''
-                  }. Reativar agora gera uma nova cobrança imediata.`
-                : 'Sua assinatura não está ativa. Escolha um plano para voltar a usar o sistema.'}
+              {isPendingCheckout
+                ? 'Seu último pagamento não foi concluído. Tente novamente para ativar seu plano.'
+                : hasRemainingAccess
+                  ? `Sua assinatura foi cancelada, mas você ainda tem acesso${
+                      statusLine?.date ? ` até ${statusLine.date}` : ''
+                    }. Reativar agora gera uma nova cobrança imediata.`
+                  : 'Sua assinatura não está ativa. Escolha um plano para voltar a usar o sistema.'}
             </Typography>
           </Box>
           <Button
@@ -760,7 +777,7 @@ export default function SubscriptionSection() {
             onClick={() => setPlansDialogOpen(true)}
             sx={{ flexShrink: 0, px: 3, py: 1.25, fontWeight: 700 }}
           >
-            {hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
+            {isPendingCheckout ? 'Tentar novamente' : hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
           </Button>
         </Paper>
       )}

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PDV.Domain.Entities;
+using PDV.Domain.Enums;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 
@@ -37,5 +38,22 @@ public class PaymentRepository(AppDbContext context) : IPaymentRepository
             .ToListAsync();
 
         return (data, totalCount);
+    }
+
+    // Cancela cobranças Pending órfãs (checkout iniciado e nunca confirmado pelo gateway).
+    public async Task<int> ExpireStalePendingAsync(DateTime cutoff)
+    {
+        var due = await context.Payments
+            .Where(p => p.Status == PaymentStatus.Pending && p.CreatedAt < cutoff)
+            .ToListAsync();
+
+        foreach (var payment in due)
+        {
+            payment.Status = PaymentStatus.Cancelled;
+            payment.UpdatedAt = DateTime.UtcNow;
+        }
+
+        if (due.Count > 0) await context.SaveChangesAsync();
+        return due.Count;
     }
 }

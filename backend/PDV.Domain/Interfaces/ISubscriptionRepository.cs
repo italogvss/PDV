@@ -19,4 +19,9 @@ public interface ISubscriptionRepository
     // Marca como Expired os trials PDV-side cujo TrialEndsAt já passou (sem conversão em assinatura
     // paga). O acesso já é barrado por IsEntitled; isto mantém o status coerente. Retorna a quantidade.
     Task<int> ExpireTrialingPastEndAsync(DateTime now);
+
+    // Marca como Expired os checkouts Pending abandonados há mais que o TTL (usuário nunca voltou do
+    // gateway) — libera a assinatura para uma nova tentativa (Expired não bloqueia checkout, ver
+    // StartCheckoutAsync). Retorna a quantidade.
+    Task<int> ExpireStalePendingAsync(DateTime cutoff);
 }

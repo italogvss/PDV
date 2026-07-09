@@ -11,6 +11,7 @@ import { AccentColor } from "../../types/usersettings.type"
 export type SettingsTab =
   | 'negocio'
   | 'operacao'
+  | 'modulos'
   | 'pagamentos'
   | 'fiscal'
   | 'aparencia'

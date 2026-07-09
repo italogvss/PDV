@@ -1,5 +1,5 @@
-export type UserPaymentKind = 'CardSubscription' | 'PixSubscription' | 'OneOffCheckout'
-export type UserPaymentMethod = 'Card' | 'Pix'
+export type UserPaymentKind = 'CardSubscription' | 'OneOffCheckout'
+export type UserPaymentMethod = 'Card'
 export type UserPaymentStatus = 'Pending' | 'Paid' | 'Refunded' | 'Disputed' | 'Expired' | 'Cancelled'
 
 export interface UserPayment {

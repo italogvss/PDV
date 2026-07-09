@@ -1,4 +1,4 @@
-import { ArchiveOutlined, Article, BackupOutlined, CloseRounded, CreditCardOutlined, FiberManualRecordOutlined, HelpOutlined, MenuRounded, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
+import { ArchiveOutlined, Article, BackupOutlined, CloseRounded, CreditCardOutlined, ExtensionOutlined, FiberManualRecordOutlined, HelpOutlined, MenuRounded, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { Box, Button, Divider, Drawer, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { useState } from 'react'
@@ -11,6 +11,7 @@ import BackupSection from './components/BackupSection'
 import BusinessSection from './components/BusinessSection'
 import BusinessesSection from './components/BusinessesSection'
 import FiscalSection from './components/FiscalSection'
+import ModulosSection from './components/ModulosSection'
 import NotificationsSection from './components/NotificationsSection'
 import OperationSection from './components/OperationSection'
 import PaymentsSection from './components/PaymentsSection'
@@ -46,6 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   // ── Negócio ──
   { id: 'negocio',    label: 'Negócio',        subtitle: 'Dados, endereço e horário', icon: StorefrontOutlined,        type: 'business' },
   { id: 'operacao',   label: 'Operação',       subtitle: 'Caixa, descontos, atalhos', icon: ShoppingCartOutlined,      type: 'business' },
+  { id: 'modulos',    label: 'Módulos',        subtitle: 'Ative os módulos usados pela loja', icon: ExtensionOutlined, type: 'business', ownerOnly: true },
   { id: 'fiscal',     label: 'Fiscal — NFC-e', subtitle: 'Notas e SEFAZ',            icon: ReceiptLongOutlined,       type: 'business' },
   { id: 'pagamentos', label: 'Pagamentos', subtitle: 'Métodos de Pagamento', icon: CreditCardOutlined, type: 'business', ownerOnly: true},
   { id: 'backup',      label: 'Backup & dados',    subtitle: 'Exportação e retenção',         icon: BackupOutlined,            type: 'business' },
@@ -57,6 +59,7 @@ function renderSection(tab: SettingsTab) {
   switch (tab) {
     case 'negocio':      return <BusinessSection />
     case 'operacao':     return <OperationSection />
+    case 'modulos':      return <ModulosSection />
     case 'pagamentos':   return <PaymentsSection />
     case 'fiscal':       return <FiscalSection />
     case 'aparencia':    return <AppearanceSection />
