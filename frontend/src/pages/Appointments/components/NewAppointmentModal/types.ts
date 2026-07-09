@@ -18,5 +18,7 @@ export interface NewAppointmentModalProps {
   onCreate: (appointment: Appointment) => void
   requireCustomerOnAppointment: boolean
   customersModuleActive: boolean
+  /** Quando false, o valor é sempre a soma dos serviços e o campo fica bloqueado. */
+  allowCustomAppointmentPrice: boolean
   isPending?: boolean
 }

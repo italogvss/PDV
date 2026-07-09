@@ -29,7 +29,7 @@ export default function AppointmentRevenueChart({
     <ChartCard
       title="Receita de agendamentos"
       subtitle="Realizada (concluídos) × total agendado"
-      info="Barras: soma do valor do agendamento (Appointment.Price) só para atendimentos concluídos. Linha: soma do valor de todos os agendamentos do período, independente do status. É o valor estimado no agendamento — pode diferir do que é de fato cobrado na venda no caixa."
+      info="Soma dos preços dos serviços do agendamento. Barras: só atendimentos concluídos (receita realizada). Linha: todos os agendamentos não cancelados do período (receita agendada). É o valor dos serviços do catálogo — pode diferir do que é de fato cobrado na venda no caixa."
       loading={loading}
       isEmpty={data.length === 0}
     >
@@ -51,7 +51,7 @@ export default function AppointmentRevenueChart({
             type: 'line',
             id: 'total',
             data: total,
-            label: 'Receita total agendada',
+            label: 'Receita agendada (não cancelada)',
             color: theme.palette.data.orange.main,
             valueFormatter: (v) => formatBRL(v ?? 0),
           },

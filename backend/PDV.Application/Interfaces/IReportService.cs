@@ -5,7 +5,7 @@ namespace PDV.Application.Interfaces;
 public interface IReportService
 {
     Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
-        DateTime startDate, DateTime endDate, string groupBy);
+        DateTime startDate, DateTime endDate, string groupBy, string expenseBasis);
 
     Task<SalesMetricsResponse> GetSalesMetricsAsync(
         string? period, DateTime? startDate, DateTime? endDate);
@@ -25,7 +25,9 @@ public interface IReportService
     Task<List<ExpensesByCategoryResponse>> GetExpensesByCategoryAsync(
         DateTime startDate, DateTime endDate);
 
-    Task<List<StockSnapshotResponse>> GetStockSnapshotAsync();
+    Task<List<ReportEmployeeResponse>> GetEmployeesListAsync();
+
+    Task<List<ReportCustomerResponse>> GetCustomersListAsync();
 
     Task<byte[]> ExportSalesCsvAsync(
         string? period, DateTime? startDate, DateTime? endDate);

@@ -72,6 +72,7 @@ export interface OperationSettings {
   requireCustomerOnAppointment: boolean
   requireCostPriceOnProducts: boolean
   requireCostPriceOnServices: boolean
+  allowCustomAppointmentPrice: boolean
 }
 
 // Pagamentos — cada método aceito tem um flag de habilitado e a taxa por venda (%).

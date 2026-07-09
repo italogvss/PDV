@@ -44,6 +44,7 @@ interface BackendOperationSettings {
   requireCustomerOnAppointment?: boolean
   requireCostPriceOnProducts?: boolean
   requireCostPriceOnServices?: boolean
+  allowCustomAppointmentPrice?: boolean
 }
 
 interface BackendSettings {
@@ -93,6 +94,7 @@ export const tenantSettingsService = {
         requireCustomerOnAppointment: data.operation.requireCustomerOnAppointment ?? false,
         requireCostPriceOnProducts: data.operation.requireCostPriceOnProducts ?? true,
         requireCostPriceOnServices: data.operation.requireCostPriceOnServices ?? true,
+        allowCustomAppointmentPrice: data.operation.allowCustomAppointmentPrice ?? false,
       },
       payments: data.payments,
       modules: data.modules.modules,

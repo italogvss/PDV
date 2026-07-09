@@ -5,8 +5,8 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ChartCard from '../../../components/ChartCard'
 import DataGridNoRowsOverlay from '../../../components/DataGridNoRowsOverlay'
-import { useEmployees } from '../../../hooks/useEmployees'
-import type { Employee } from '../../../types/employee.types'
+import { useReportEmployees } from '../../../hooks/useReports'
+import type { ReportEmployee } from '../../../types/report.types'
 import { formatBRL } from '../../../utils/currency'
 
 function initials(name: string): string {
@@ -17,17 +17,12 @@ function initials(name: string): string {
 
 export default function EmployeeListGrid() {
   const navigate = useNavigate()
-  const { data, isLoading } = useEmployees(1, 200)
+  const { data, isLoading } = useReportEmployees()
 
-  const rows = useMemo(
-    () =>
-      (data?.data ?? [])
-        .filter((employee) => employee.isActive)
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [data],
-  )
+  // Já vem ativo e ordenado por nome do backend (endpoint de relatórios).
+  const rows = data ?? []
 
-  const columns: GridColDef<Employee>[] = useMemo(
+  const columns: GridColDef<ReportEmployee>[] = useMemo(
     () => [
       {
         field: 'name',
@@ -36,7 +31,7 @@ export default function EmployeeListGrid() {
         minWidth: 180,
         renderCell: ({ row }) => (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, height: '100%', minWidth: 0 }}>
-            <Avatar src={row.avatarUrl} sx={{ width: 30, height: 30, fontSize: 12 }}>
+            <Avatar src={row.avatarUrl ?? undefined} sx={{ width: 30, height: 30, fontSize: 12 }}>
               {initials(row.name)}
             </Avatar>
             <Typography variant="body2" noWrap>

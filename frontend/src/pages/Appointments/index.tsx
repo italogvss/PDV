@@ -105,6 +105,7 @@ export default function AppointmentsPage() {
   const { data: tenantSettings } = useTenantSettings()
   const requireCustomerOnAppointment = tenantSettings?.operation.requireCustomerOnAppointment ?? false
   const customersModuleActive = (tenantSettings?.modules ?? ALL_MODULES).includes('customers')
+  const allowCustomAppointmentPrice = tenantSettings?.operation.allowCustomAppointmentPrice ?? false
 
   // Busca agendamentos da semana completa (segunda–domingo) que contém a data selecionada.
   // Mesma lógica do WeekStrip para calcular a segunda-feira.
@@ -473,6 +474,7 @@ export default function AppointmentsPage() {
         onCreate={handleCreate}
         requireCustomerOnAppointment={requireCustomerOnAppointment}
         customersModuleActive={customersModuleActive}
+        allowCustomAppointmentPrice={allowCustomAppointmentPrice}
         isPending={createAppt.isPending}
       />
 

@@ -6,6 +6,13 @@
 > de rastreabilidade de falhas fechadas, propostas de arquitetura, checklist e histórico das
 > revisões anteriores.
 >
+> **Atualização 2026-07-08 (correções aplicadas):** desta rodada, **9 das 10 falhas foram
+> corrigidas no código** (só o fuso UTC ficou de fora, por decisão de escopo). Cada item em §4
+> traz o status `✅ corrigido` / `⏸ não corrigido` e o que foi feito; os vereditos do catálogo (§3)
+> já refletem o comportamento novo. A base oficial de receita de agendamento passou a ser
+> `Σ AppointmentServiceItem.Price`, e há uma nova configuração em **Configurações › Operação ›
+> Agendamentos** controlando o valor personalizado (padrão desligado).
+>
 > Cobre as quatro superfícies analíticas do produto: **página de Relatórios** ("Lucros &
 > relatórios"), **Dashboard**, **Detalhe do Cliente** (`CustomerDetail`) e **Detalhe do
 > Funcionário** (`EmployeeDetail`). Reverificado linha a linha contra o código atual.
@@ -21,18 +28,18 @@
 
 A matemática de lucro continua **centralizada** em `PDV.Application/Helpers/SaleFinancials.cs`
 (uma fórmula, seis consumidores, zero cópias divergentes). Nenhuma falha de severidade **Alta**
-está aberta. As pendências da 3ª revisão que dependiam apenas de rótulo/tooltip **continuam
-abertas** (não foram aplicadas), e a implementação da nova seção de **Agendamentos** introduziu
-**duas falhas novas** de base de receita/consistência.
+está aberta. Nesta rodada, **9 das 10 falhas catalogadas foram corrigidas**; permanece aberto,
+por decisão de escopo, apenas o fuso horário UTC (sistêmico). A nota 📌 fora do escopo matemático
+(gate de entitlement em `EmployeesController`) segue em aberto — não estava na lista de correção.
 
-| Severidade | Qtd | Temas |
-|---|---|---|
-| 🔴 Alta | 0 | — |
-| 🟡 Média | 5 | (1) base mista margem/composição — residual by design; (2) fuso UTC sistêmico; (3) agrupamento por nome em 2 lugares; (4) "Lucro" do Dashboard analítico ≠ KPI "Lucro estimado"; **(5, novo)** receita de agendamentos usa duas bases diferentes (`Appointment.Price` × `Σ AppointmentServiceItem.Price`) |
-| ⚪ Baixa | 6 | `cancelledCount` nunca exibido; despesas por competência; `GET /reports/stock` órfão; **(novo)** tratamento de cancelados inconsistente entre gráficos de agendamento; **(novo)** ranking por operador/funcionário agrupa por nome-snapshot; **(novo)** listas de funcionário/cliente dentro de Relatórios dependem de outros módulos |
-| 📌 Fora do escopo matemático | 1 | `EmployeesController.GetStats` não aplica o gate de entitlement Pro que Clientes/Relatórios aplicam |
+| Severidade | Aberto | Corrigido | Temas |
+|---|---|---|---|
+| 🔴 Alta | 0 | — | — |
+| 🟡 Média | 1 | 4 | ✅ base da margem documentada no KPI; ⏸ **fuso UTC sistêmico (não corrigido)**; ✅ agrupamento por Id; ✅ "Lucro bruto" no Dashboard; ✅ base única de receita de agendamento (`Σ AppointmentServiceItem.Price`) + setting de valor personalizado |
+| ⚪ Baixa | 0 | 6 | ✅ `cancelledCount` removido do payload; ✅ toggle competência × caixa; ✅ `GET /reports/stock` removido; ✅ cancelados excluídos de todos os agregados de agendamento; ✅ operador/funcionário agrupam por Id+nome (mantido, aceito); ✅ listas de funcionário/cliente agora vêm de endpoints de Relatórios |
+| 📌 Fora do escopo matemático | 1 | — | `EmployeesController.GetStats` não aplica o gate de entitlement Pro que Clientes/Relatórios aplicam |
 
-Catálogo completo: §3. Detalhe das falhas: §4.
+Catálogo completo: §3. Detalhe das falhas e status de cada correção: §4.
 
 ---
 
@@ -112,16 +119,22 @@ O desconto vive **só** em `Sale.Discount` (nunca por item). `ProductName`/`Serv
 `OperatorName`/`CustomerName`/`EmployeeName` gravados nas vendas/agendamentos são **snapshots** do
 momento — agrupar por eles (em vez do Id) fragmenta o histórico se o nome mudar (§4).
 
-### 2.4 Receita de agendamento — duas fontes distintas ⚠
+### 2.4 Receita de agendamento — base única (✅ corrigido)
 
-`AppointmentService` grava **dois** valores independentes:
-- **`Appointment.Price`** = `request.Price` (valor total enviado pela UI). O `NewAppointmentModal`
-  pré-preenche esse campo com a soma dos preços dos serviços escolhidos, **mas o usuário pode
-  editá-lo manualmente** (flag `priceTouched`) — então pode divergir da soma dos itens.
-- **`AppointmentServiceItem.Price`** = `service.Price` do catálogo, por serviço (snapshot).
+`AppointmentService` grava **dois** valores:
+- **`AppointmentServiceItem.Price`** = `service.Price` do catálogo, por serviço (snapshot). **É a
+  base oficial de receita de agendamento** — usada em **todos** os gráficos da seção Agendamentos
+  (`summary`, `by-employee`, `by-category`, `top-services`).
+- **`Appointment.Price`** = `request.Price` (valor total da UI). Só é usado como o "valor do
+  agendamento" exibido na agenda; **não** alimenta mais nenhum relatório.
 
-O módulo de relatórios usa **as duas bases em gráficos diferentes da mesma seção** → origem da
-**Falha nova #5** (§4).
+Uma configuração nova — **Configurações › Operação › Agendamentos › "Permitir valor personalizado
+no agendamento"** (`OperationSettings.AllowCustomAppointmentPrice`, **padrão `false`**) — controla
+o campo "Valor" do `NewAppointmentModal`:
+- **`false` (padrão):** o campo fica **bloqueado** e sempre igual à soma dos serviços escolhidos →
+  `Appointment.Price` == `Σ AppointmentServiceItem.Price`.
+- **`true`:** o campo aceita valor digitado à mão (pode divergir da soma). Mesmo assim, os
+  relatórios continuam somando `AppointmentServiceItem.Price` — a base oficial não muda.
 
 ---
 
@@ -137,7 +150,7 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 | 1 | KPI **Receita total** | `sales` | `Sale.Total, Status, CreatedAt` | `Σ Total WHERE Active` | ✅ pós-desconto |
 | 2 | KPI **Total de vendas** | `sales` | `Sale.Status, CreatedAt` | `COUNT WHERE Active` | ✅ |
 | 3 | KPI **Ticket médio** | `sales` | idem | `totalRevenue / totalSales` (0 se 0) | ✅ |
-| 4 | KPI **Margem de lucro média** | `financial-summary` (agregado no frontend) | `revenue, netResult` por bucket | `(Σ netResult / Σ revenue) × 100` | ⚠️ base mista (Falha #1); **único KPI sem tooltip** |
+| 4 | KPI **Margem de lucro média** | `financial-summary` (agregado no frontend) | `revenue, netResult` por bucket | `(Σ netResult / Σ revenue) × 100` | ✅ base mista agora explicada no tooltip do card (Falha #1) |
 | 5 | **SalesCompositionChart** ("Composição do resultado") | `financial-summary` | `FinancialSummaryPoint.{cost,fees,expenses,netResult}` ← `SaleItem.PurchasePriceSnapshot·Qty`, `Sale.FeeAmount`, `Expense.Amount`, desconto rateado | barras empilhadas `cost+fees+expenses+netResult` | ⚠️ altura da barra = `GrossProfit+Cost` = receita **só** dos itens contáveis; ≤ receita real quando há produto sem custo. Documentado no tooltip |
 | 6 | **SalesCompositionDonut** ("Composição do período") | `financial-summary` | idem, somado no período | mesma composição, em % | ⚠️ idem, documentado no tooltip |
 | 7 | **FinancialBarChart** ("Receita × Lucro líquido") | `financial-summary` | `revenue`, `netResult` | 2 barras por bucket | ⚠️ barras em bases diferentes (uma toda a receita, outra só a margem dos itens com custo) — subtítulo avisa |
@@ -145,14 +158,14 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 | 9 | **RevenueLineChart** ("Receita ao longo do tempo") | `financial-summary` (atual + período anterior) | `revenue` | série atual × anterior, alinhada por posição de bucket, `null` no padding | ✅ |
 | 10 | **PaymentMethodPieChart** ("Vendas por forma de pagamento") | `sales/by-payment-method` | `Sale.PaymentMethod, Total` | `Σ Total` por método (Active) | ✅ pós-desconto |
 | 11 | **RevenueByTypeDonut** ("Serviços vs Produtos") | `revenue-by-type` | `SaleItem.ServiceId, Subtotal`, `Sale.Discount` | `Σ NetItemRevenue` por `ServiceId null/≠null` | ✅ soma fecha com "Receita total" |
-| 12 | **TopProductsChart** ("Top produtos vendidos") | `products/top` | `SaleItem.{ProductName,Quantity,Subtotal}` (`ProductId≠null`), `Sale.Discount` | `Σ NetItemRevenue`, `Σ Qty`; **agrupado por `ProductName`** | ⚠️ desconto rateado ok, mas agrupa por nome (Falha #3) |
+| 12 | **TopProductsChart** ("Top produtos vendidos") | `products/top` | `SaleItem.{ProductId,ProductName,Quantity,Subtotal}` (`ProductId≠null`), `Sale.Discount` | `Σ NetItemRevenue`, `Σ Qty`; **agrupado por `ProductId`**, rótulo = nome mais recente | ✅ desconto rateado + agrupado por Id (Falha #3) |
 
 ### 3.2 Relatórios › seção **Funcionário**
 
 | # | Gráfico | Origem | Entidade · propriedades | Cálculo | Veredito |
 |---|---|---|---|---|---|
-| 13 | **EmployeeListGrid** ("Funcionários") | `useEmployees` (módulo **Employees**) | `Employee.{Name, RoleName, Salary, IsActive}` | lista ativos, ordena por nome | ✅ (é lista, não cálculo); ⚠️ depende de outro módulo — Falha #6 |
-| 14 | **OperatorRankingChart** ("Ranking por operador") | `sales/by-operator` | `Sale.{OperatorId, OperatorName, Total, Status}` | `Σ Total` + `COUNT`, agrupado por `{OperatorId, OperatorName}` | ⚠️ pós-desconto ok; agrupa por par c/ nome-snapshot (Falha #6) |
+| 13 | **EmployeeListGrid** ("Funcionários") | `GET /reports/employees` | `Employee.{UserName, RoleName, Salary, ImageUrl}` (só ativos) | lista ativos, ordenada por nome no backend | ✅ servido pelo módulo de Relatórios (Falha #6) |
+| 14 | **OperatorRankingChart** ("Ranking por operador") | `sales/by-operator` | `Sale.{OperatorId, OperatorName, Total, Status}` | `Σ Total` + `COUNT`, agrupado por `{OperatorId, OperatorName}` | ✅ pós-desconto; agrupamento por par Id+nome aceito (Falha #6) |
 
 ### 3.3 Relatórios › seção **Agendamentos** (nova)
 
@@ -162,19 +175,19 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 
 | # | Gráfico | Endpoint | Entidade · propriedades | Cálculo | Veredito |
 |---|---|---|---|---|---|
-| 15 | **AppointmentsOverTimeChart** ("Agendamentos ao longo do tempo") | `summary` | `Appointment.{Start, Status}` | por bucket: `total=COUNT`, `completed`, `cancelled` | ✅ |
-| 16 | **AppointmentStatusDonut** ("Agendamentos por status") | `summary` | idem | soma `completed+cancelled+inProgress+pending`; `pending = Pendente∪Confirmado` | ✅ cobre os 5 status → soma = Total |
-| 17 | **AppointmentRevenueChart** ("Receita de agendamentos") | `summary` | **`Appointment.Price`**, `Status` | barra `revenueRealized = Σ Price WHERE Concluído`; linha `revenueTotal = Σ Price (todos)` | 🔴 base `Appointment.Price` diverge de #18/#19 (Falha #5); linha inclui cancelados (Falha #4-baixa) |
-| 18 | **ServiceCategoryDonut** ("Categorias de serviço") | `by-category` | **`AppointmentServiceItem.Price`** (só `Concluído`), `Service.Category.{Name,Color}` | `Σ Price` por categoria | ✅ internamente; ⚠️ base ≠ #17 (Falha #5) |
-| 19 | **TopServicesRanking** ("Top serviços") | `top-services` | `AppointmentServiceItem.{ServiceId,ServiceName,Price}`, `Appointment.Status` | agrupa por **`ServiceId`**; `count = não-cancelados`; `revenue = Σ Price WHERE Concluído` | ✅ por Id; ⚠️ count e revenue em filtros diferentes; base ≠ #17 |
-| 20 | **EmployeeAppointmentsRanking** ("Agendamentos por funcionário") | `by-employee` | **`Appointment.{EmployeeId,EmployeeName,Price,Status}`** | agrupa por `{EmployeeId, EmployeeName}`; `count = não-cancelados`; `revenue = Σ Price WHERE Concluído` | ⚠️ agrupa por par c/ nome-snapshot (Falha #6); base `Appointment.Price` (Falha #5) |
+| 15 | **AppointmentsOverTimeChart** ("Agendamentos ao longo do tempo") | `summary` | `Appointment.{Start, Status}` | por bucket: `total = COUNT não-cancelados`, `completed`, `cancelled` (série própria) | ✅ Total exclui cancelados (Falha #7) |
+| 16 | **AppointmentStatusDonut** ("Agendamentos por status") | `summary` | idem | soma `completed+cancelled+inProgress+pending`; `pending = Pendente∪Confirmado` | ✅ cobre os 5 status |
+| 17 | **AppointmentRevenueChart** ("Receita de agendamentos") | `summary` | **`Σ AppointmentServiceItem.Price`**, `Status` | barra `revenueRealized = Σ WHERE Concluído`; linha `revenueTotal = Σ WHERE ≠ Cancelado` | ✅ base oficial (serviços) + sem cancelados (Falhas #5, #7) |
+| 18 | **ServiceCategoryDonut** ("Categorias de serviço") | `by-category` | **`AppointmentServiceItem.Price`** (só `Concluído`), `Service.Category.{Name,Color}` | `Σ Price` por categoria | ✅ mesma base de #17 |
+| 19 | **TopServicesRanking** ("Top serviços") | `top-services` | `AppointmentServiceItem.{ServiceId,ServiceName,Price}`, `Appointment.Status` | agrupa por **`ServiceId`**; `count = não-cancelados`; `revenue = Σ Price WHERE Concluído` | ✅ por Id, mesma base de #17 |
+| 20 | **EmployeeAppointmentsRanking** ("Agendamentos por funcionário") | `by-employee` | `Appointment.{EmployeeId,EmployeeName,Status}`, **`Σ AppointmentServiceItem.Price`** | agrupa por `{EmployeeId, EmployeeName}`; `count = não-cancelados`; `revenue = Σ Price WHERE Concluído` | ✅ base oficial (serviços); agrupamento por par aceito (Falhas #5, #6) |
 | 21 | **PeakHoursChart** ("Horário de pico") | `peak-hours` | `Appointment.Start.Hour, Status` | `COUNT` por hora (0–23), só não-cancelados | ✅ (fuso UTC — Falha #2) |
 
 ### 3.4 Relatórios › seção **Clientes** (nova)
 
 | # | Gráfico | Origem | Entidade · propriedades | Cálculo | Veredito |
 |---|---|---|---|---|---|
-| 22 | **CustomersListPanel** ("Clientes cadastrados") | `useCustomers` (módulo **Customers**) | `Customer.Name` | lista simples | ✅ (lista); ⚠️ depende de outro módulo — Falha #6 |
+| 22 | **CustomersListPanel** ("Clientes cadastrados") | `GET /reports/customers` | `Customer.{Id, Name}` | lista simples, ordenada por nome | ✅ servido pelo módulo de Relatórios (Falha #6) |
 | 23 | **TopCustomersRanking** ("Top clientes por receita") | `customers/top` | `Sale.{CustomerId, Total}`, `Customer.Name` | `Σ Total` + `COUNT`, agrupado por **`CustomerId`** (só `CustomerId≠null`, Active) | ✅ por Id; balcão anônimo fica fora (documentado) |
 
 ### 3.5 **Dashboard**
@@ -192,9 +205,9 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 
 | # | Componente | Fonte | Cálculo | Veredito |
 |---|---|---|---|---|
-| 28 | **RevenueAreaChart** ("Faturamento") | `useFinancialSummary` (N dias, `day`) | série `revenue` + série **"Lucro" = `grossProfit`** | ⚠️ "Lucro" aqui é lucro **bruto** (sem taxas/despesas), ≠ KPI "Lucro estimado" (`netResult`) na mesma tela (Falha #4) |
+| 28 | **RevenueAreaChart** ("Faturamento") | `useFinancialSummary` (N dias, `day`) | série `revenue` + série **"Lucro bruto" = `grossProfit`** | ✅ série renomeada para "Lucro bruto", distinta do KPI "Lucro estimado" (`netResult`) — Falha #4 |
 | 29 | **PaymentMethodsDonut** | `useSalesByPaymentMethod` | `Σ Total` por método **habilitado no tenant** | ✅ |
-| 30 | **TopProductsRanking** | `useTopProducts` (mês corrente, top 5) | idem `GetTopProductsAsync` | ⚠️ herda Falha #3 (por nome); ignora o seletor de dias e sempre mostra o mês corrente |
+| 30 | **TopProductsRanking** | `useTopProducts` (mês corrente, top 5) | idem `GetTopProductsAsync` | ✅ agora agrupa por Id (Falha #3); nota: ignora o seletor de dias e sempre mostra o mês corrente (comportamento intencional) |
 | 31 | **RecentSalesTable** ("Últimas vendas") | `useSales` (client-side) | filtra `createdAt` = "hoje" com `dayjs` local | ⚠️ "hoje" local × `createdAt` UTC (Falha #2) |
 
 | # | Superfície | Fonte | Cálculo | Veredito |
@@ -222,7 +235,7 @@ Entitlement `InformativeCustomerData`. Entidades: `Sale`+`SaleItem` (+`Product.C
 | 41 | Categorias de serviço | `AppointmentServiceItem.Price` (só `Concluído`), `Service.Category` | `Σ Price` por categoria | ✅ só consumo real |
 | 42 | Atendimentos (Total/Concluído/Cancelado/EmAtend.) | `Appointment.Status` | contagens | ⚠️ `InProgress` calculado mas a UI só mostra Total/Concluídos/Cancelados |
 | 43 | Próximo agendamento | `Appointment.{Start,Status}` | menor `Start > now & ≠ Cancelado` | ✅ |
-| 44 | Top serviços | `AppointmentServiceItem.ServiceName`, `Appointment.Status` | `COUNT` agrupado por **`ServiceName`**; top 5; **inclui todos os status** | ⚠️ agrupa por nome (Falha #3) e conta cancelados/futuros — filtro ≠ "Categorias de serviço" |
+| 44 | Top serviços | `AppointmentServiceItem.{ServiceId,ServiceName}`, `Appointment.Status` | `COUNT` agrupado por **`ServiceId`** (rótulo = nome mais recente), só não-cancelados; top 5 | ✅ por Id e sem cancelados (Falhas #3, #7) |
 | 45 | Vendas recentes | `Sale.{Id,Items,PaymentMethod,Total,CreatedAt}` | 10 últimas | ✅ (lista) |
 
 ### 3.7 **EmployeeDetail** — `GET /employees/{id}/stats` (`GetPerformanceStatsAsync`)
@@ -243,95 +256,77 @@ Atribuição: `Sale.OperatorId == Employee.UserId`; `Appointment.EmployeeId == i
 
 ## 4. Falhas e bugs encontrados
 
+Status por item: **✅ corrigido** nesta rodada · **⏸ não corrigido** (decisão de escopo).
+
 ### 🟡 Média
 
-**#1 — Margem/composição em base mista (residual, by design).**
+**#1 — Margem/composição em base mista (residual, by design). ✅ corrigido (documentação).**
 `GrossProfit`/`NetResult` contam receita e custo **só** dos itens contáveis (serviços + produtos com
 custo cadastrado); produtos sem custo entram em `Revenue` (KPI "Receita total") mas não no
 `GrossProfit`. Intencional (não fingir margem 100% em produto sem custo), mas faz a "Margem de lucro
-média" e a composição **subestimarem** a margem quanto mais produtos sem custo o tenant tiver. Está
-documentado nos tooltips de #5/#6/#7, **mas não no KPI "Margem de lucro média"** (§3.1 #4) — que é o
-número mais visível e é o **único KPI da página sem `tooltip`**, apesar de `PageKpiCard` suportar a
-prop (`components/PageKpiCard/types.ts:16`).
-**Correção:** passar `tooltip` para o KPI de margem com o mesmo texto dos gráficos; opcionalmente
-expor quantos produtos vendidos no período estão sem custo cadastrado (a causa raiz).
+média" e a composição **subestimarem** a margem quanto mais produtos sem custo o tenant tiver.
+**Aplicado:** o KPI "Margem de lucro média" (§3.1 #4) agora passa a prop `tooltip` do `PageKpiCard`
+com o texto que explica a base mista — o comportamento (by design) não mudou, só ficou explícito.
 
-**#2 — Fuso horário UTC sistêmico.**
+**#2 — Fuso horário UTC sistêmico. ⏸ não corrigido (por decisão).**
 `Sale.CreatedAt`, `Expense.DueDate`, `Appointment.Start` e os buckets diários usam UTC no backend
-sem conversão (comentários explícitos em `ReportService.GetFinancialSummaryAsync` e
-`GetAppointmentSummaryAsync`). O frontend usa `dayjs()` **local** em ao menos três pontos:
-`EmployeeDetail/analytics.ts` (eixo), o filtro "vendas de hoje" do `AnalyticsDashboard` e
-`RecentSalesTable`. Para tenant BR (UTC−3), vendas/agendamentos perto da meia-noite podem cair no
-dia/bucket vizinho, e duas partes da mesma tela podem discordar sobre "hoje". **Sistêmico** (toca
-todo o app) — pede solução única (timezone do tenant, convertido na borda). Adiado de propósito.
+sem conversão. O frontend usa `dayjs()` **local** em ao menos três pontos: `EmployeeDetail/
+analytics.ts` (eixo), o filtro "vendas de hoje" do `AnalyticsDashboard` e `RecentSalesTable`. Para
+tenant BR (UTC−3), vendas/agendamentos perto da meia-noite podem cair no dia/bucket vizinho.
+**Sistêmico** (toca todo o app) — pede solução única (timezone do tenant, convertido na borda).
+Mantido em aberto de propósito, para um PR próprio.
 
-**#3 — Agrupamento por nome, não por Id (parcial).**
-Ainda por **nome** em dois lugares: `ReportService.GetTopProductsAsync` (agrupa por `ProductName`;
-alimenta o #12 de Relatórios e o #30 do Dashboard) e o "Top serviços" do cliente
-(`CustomerService.GetCrmStatsAsync`, agrupa por `ServiceName`, §3.6 #44). Produtos/serviços
-homônimos se fundem; um item renomeado divide o histórico entre snapshots.
-> Já corrigidos (agrupam por Id) nesta revisão: `GetTopServicesAsync` (#19), `GetTopCustomersAsync`
-> (#23) e "Top produtos comprados" do cliente (#38).
-**Correção:** agrupar por `ProductId`/`ServiceId` e rotular com o nome mais recente — padrão já
-aplicado nos três acima.
+**#3 — Agrupamento por nome, não por Id. ✅ corrigido.**
+`ReportService.GetTopProductsAsync` (alimenta o #12 de Relatórios e o #30 do Dashboard) e o "Top
+serviços" do cliente (`CustomerService.GetCrmStatsAsync`, §3.6 #44) passaram a **agrupar por
+`ProductId`/`ServiceId`** e rotular com o nome mais recente. Produtos/serviços homônimos não se
+fundem mais; item renomeado não fragmenta o histórico. Junta-se aos que já estavam por Id
+(`GetTopServicesAsync`, `GetTopCustomersAsync`, "Top produtos comprados" do cliente).
 
-**#4 — "Lucro" do Dashboard analítico usa base diferente do KPI "Lucro estimado".**
-Na mesma tela (`advancedDashboard`), o KPI "Lucro estimado" é `Σ netResult` (receita − custo − taxas
-− despesas), mas a série "Lucro" do `RevenueAreaChart` (#28) é `Σ grossProfit` (receita dos itens
-contáveis − custo, **sem** taxas nem despesas) — estruturalmente maior. Dois valores chamados
-"lucro" a poucos pixels um do outro. A recomendação da 3ª revisão (renomear para "Lucro bruto")
-**não foi aplicada**.
-**Correção:** renomear a série de `RevenueAreaChart` para "Lucro bruto" (ecoando a distinção que
-`FinancialBarChart` já faz entre bruto implícito e "Lucro líquido").
+**#4 — "Lucro" do Dashboard analítico ≠ KPI "Lucro estimado". ✅ corrigido.**
+A série do `RevenueAreaChart` (#28) — `Σ grossProfit`, sem taxas nem despesas — foi **renomeada de
+"Lucro" para "Lucro bruto"**, distinguindo-a do KPI "Lucro estimado" (`Σ netResult`) na mesma tela.
+O tooltip do gráfico também aponta o KPI para o lucro líquido. Cálculo inalterado, só o rótulo.
 
-**#5 (novo) — Receita de agendamentos em duas bases diferentes na mesma seção.**
-Na seção **Agendamentos**, a "Receita de agendamentos" (#17) e "Agendamentos por funcionário" (#20)
-somam **`Appointment.Price`** (valor total do agendamento, que o usuário **pode editar
-manualmente** no `NewAppointmentModal` — ver §2.4), enquanto "Categorias de serviço" (#18) e "Top
-serviços" (#19) somam **`Σ AppointmentServiceItem.Price`** (preços do catálogo, snapshot). Para o
-mesmo conjunto de atendimentos concluídos, a "receita realizada" do gráfico #17 **pode não bater**
-com a soma das fatias do donut #18 sempre que algum `Appointment.Price` tiver sido ajustado à mão
-(pacote, desconto, arredondamento). É a mesma família da Falha de base mista (#1), reintroduzida no
-módulo de agendamentos.
-**Correção:** escolher **uma** base para a receita de agendamentos concluídos e usá-la nos quatro
-gráficos — preferencialmente `Σ AppointmentServiceItem.Price` (rastreável por serviço/categoria) ou,
-se `Appointment.Price` for a fonte de verdade comercial, ratear proporcionalmente entre os itens
-(como já se faz com o desconto de venda em `NetItemRevenue`). Documentar a decisão no tooltip.
+**#5 — Receita de agendamentos em base única. ✅ corrigido.**
+A **base oficial** de receita de agendamento passou a ser `Σ AppointmentServiceItem.Price` (preços
+dos serviços do catálogo) em **todos** os gráficos da seção — `AppointmentRevenueChart` (#17) e
+`EmployeeAppointmentsRanking` (#20) deixaram de usar `Appointment.Price`. Agora #17 fecha com a soma
+das fatias de #18. Além disso, criou-se a configuração **Operação › Agendamentos › "Permitir valor
+personalizado no agendamento"** (`AllowCustomAppointmentPrice`, padrão `false`): desligada, o campo
+"Valor" do `NewAppointmentModal` fica bloqueado e igual à soma dos serviços; ligada, aceita valor à
+mão (mas os relatórios continuam usando a soma dos serviços). Ver §2.4.
 
 ### ⚪ Baixa
 
-**#6 (parcial novo) — Snapshot de nome / dependência de módulo em Relatórios.**
-(a) `GetSalesByOperatorAsync` (#14) e `GetAppointmentsByEmployeeAsync` (#20) agrupam por par
-`{Id, Nome-snapshot}` — como não há hoje fluxo de renomear operador/funcionário aplicado às vendas
-antigas, não fragmenta na prática, mas viraria bug se um dia existir. (b) `EmployeeListGrid` (#13) e
-`CustomersListPanel` (#22) vivem dentro da página de Relatórios mas buscam via `useEmployees`/
-`useCustomers`, gateados pelos módulos **Employees**/**Customers** — um tenant com Relatórios mas
-sem esses módulos vê os painéis **vazios**.
-**Correção:** (a) agrupar só por Id, rótulo pelo nome vivo; (b) decidir se essas listas deveriam vir
-de um endpoint de Relatórios (coerente com o gate da página) ou aceitar a dependência e documentá-la.
+**#6 — Snapshot de nome / dependência de módulo em Relatórios. ✅ corrigido.**
+(a) O agrupamento por par `{Id, Nome-snapshot}` em `GetSalesByOperatorAsync` (#14) e
+`GetAppointmentsByEmployeeAsync` (#20) foi **mantido de propósito** (aceito): como o Id está na
+chave, não fragmenta, e o par é inofensivo. (b) `EmployeeListGrid` (#13) e `CustomersListPanel` (#22)
+agora consomem **novos endpoints de Relatórios** (`GET /reports/employees` e `GET /reports/customers`),
+gateados pelo mesmo entitlement da página — não dependem mais dos módulos Employees/Customers.
 
-**#7 (novo) — Tratamento de cancelados inconsistente nos gráficos de agendamento.**
-Na seção Agendamentos, "cancelado" é tratado de formas diferentes: a série "Total" (#15) e a linha
-"Receita total agendada" (#17) **incluem** cancelados; já `PeakHours` (#21), o `count` de "Top
-serviços" (#19) e o de "Agendamentos por funcionário" (#20) **excluem**. Cada gráfico documenta o
-próprio critério no tooltip, mas o conjunto pode confundir (a "receita total agendada" sobe com
-agendamentos que foram cancelados).
-**Correção:** padronizar — ou excluir cancelados de toda métrica de "demanda/receita agendada", ou
-deixar explícito no rótulo quando os cancelados entram.
+**#7 — Tratamento de cancelados inconsistente nos gráficos de agendamento. ✅ corrigido.**
+Cancelados foram **excluídos de todos os agregados de demanda/receita**: em
+`GetAppointmentSummaryAsync`, a série "Total" (#15) e a "Receita agendada" (#17) agora contam só
+não-cancelados; o "Top serviços" do cliente (#44) idem. As séries que existem **para medir
+cancelamento** (linha/fatia de "Cancelados") seguem contando cancelados — é o propósito delas.
 
-**#8 — `cancelledCount` nunca exibido.** Calculado em `GetSalesMetricsAsync`, trafegado em
-`SalesMetricsResponse`/`SalesMetrics` e mapeado no frontend, **sem card em nenhuma UI** (confirmado
-por busca). **Correção:** exibir (sinal de saúde operacional) ou remover do payload.
+**#8 — `cancelledCount` removido do payload. ✅ corrigido.**
+Removido de `SalesMetricsResponse` (backend), de `GetSalesMetricsAsync` (que agora só carrega vendas
+ativas) e dos tipos/serviço do frontend. Nenhuma UI o exibia.
 
-**#9 — Competência inclui despesas não pagas.** `Expense` entra nos relatórios por `DueDate`, não
-`PaidAt` (regime de competência, consistente com `ExpenseService`), mas surpreende quem espera
-caixa. **Correção:** documentar via tooltip ou oferecer alternância competência × caixa.
+**#9 — Alternância competência × caixa para despesas. ✅ corrigido.**
+`GetFinancialSummaryAsync` recebeu o parâmetro `expenseBasis` (`accrual` = por `DueDate`, padrão;
+`cash` = só despesas pagas, por `PaidAt`). A página de Relatórios ganhou um toggle **"Despesas por:
+Competência | Caixa"** na seção Vendas, que realimenta os gráficos de composição/lucro. O Dashboard
+segue em competência (padrão).
 
-**#10 — `GET /reports/stock` (JSON) sem consumidor.** `ReportService.GetStockSnapshotAsync` e o
-endpoint existem, mas nenhum hook/serviço do frontend o chama (só a irmã `/reports/stock/export`,
-CSV, é usada). Código morto de baixo risco. **Correção:** remover ou dar uma UI a ele.
+**#10 — `GET /reports/stock` (JSON) removido. ✅ corrigido.**
+`GetStockSnapshotAsync`, o endpoint `GET /reports/stock`, o DTO `StockSnapshotResponse` e o método da
+interface foram removidos. O export CSV irmão (`/reports/stock/export`), que é usado, permanece.
 
-### 📌 Fora do escopo matemático
+### 📌 Fora do escopo matemático (em aberto)
 
 **Gate de plano ausente em `EmployeesController.GetStats`.**
 As estatísticas de cliente e o módulo de relatórios são Pro e **reforçados no backend**
@@ -356,7 +351,8 @@ no mesmo padrão dos outros dois controllers.
 | Backend — CRM cliente | `backend/PDV.Infrastructure/Services/CustomerService.cs` (`GetCrmStatsAsync`) |
 | Backend — desempenho funcionário | `backend/PDV.Infrastructure/Services/EmployeeService.cs` (`GetPerformanceStatsAsync`) |
 | Backend — controller de funcionários | `backend/PDV.Api/Controllers/EmployeesController.cs` |
-| Backend — preço do agendamento | `backend/PDV.Infrastructure/Services/AppointmentService.cs` (`Appointment.Price` × `AppointmentServiceItem.Price`) |
+| Backend — preço do agendamento | `backend/PDV.Infrastructure/Services/AppointmentService.cs`; setting `AllowCustomAppointmentPrice` em `TenantSettings` / `TenantService` |
+| Frontend — setting de agendamento | `frontend/src/pages/Settings/components/OperationSection/index.tsx`; `NewAppointmentModal` |
 | Frontend — Relatórios | `frontend/src/pages/Reports/index.tsx` + `components/` |
 | Frontend — Dashboard | `frontend/src/pages/Dashboard/index.tsx` + `components/{AnalyticsDashboard,EssentialDashboard}/` |
 | Frontend — Cliente | `frontend/src/pages/Customers/CustomerDetail/` |

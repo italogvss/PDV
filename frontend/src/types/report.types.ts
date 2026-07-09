@@ -9,11 +9,13 @@ export interface RangePreset {
 
 export type GroupBy = 'day' | 'week' | 'month'
 
+// Regime das despesas nos relatórios: competência (por vencimento) × caixa (por pagamento).
+export type ExpenseBasis = 'accrual' | 'cash'
+
 export interface SalesMetrics {
   totalSales: number
   totalRevenue: number
   averageTicket: number
-  cancelledCount: number
   period: string
 }
 
@@ -98,4 +100,17 @@ export interface ServiceCategoryRevenue {
 export interface AppointmentPeakHour {
   hour: number
   count: number
+}
+
+export interface ReportEmployee {
+  id: string
+  name: string
+  roleName: string | null
+  salary: number | null
+  avatarUrl: string | null
+}
+
+export interface ReportCustomer {
+  id: string
+  name: string
 }

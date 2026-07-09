@@ -15,6 +15,7 @@ import {
   Skeleton,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers'
@@ -37,7 +38,7 @@ import {
   useTopProducts,
   useTopServices
 } from '../../hooks/useReports'
-import type { GroupBy, RangePreset } from '../../types/report.types'
+import type { ExpenseBasis, GroupBy, RangePreset } from '../../types/report.types'
 import { formatBRL } from '../../utils/currency'
 import AccumulatedProfitChart from './components/AccumulatedProfitChart'
 import AppointmentRevenueChart from './components/AppointmentRevenueChart'
@@ -84,6 +85,7 @@ export default function ReportsPage() {
   const [end, setEnd] = useState<Dayjs>(dayjs())
   const [selectedPreset, setSelectedPreset] = useState<string | null>('30d')
   const [groupBy, setGroupBy] = useState<GroupBy>('day')
+  const [expenseBasis, setExpenseBasis] = useState<ExpenseBasis>('accrual')
 
   const startDate = start.format('YYYY-MM-DD')
   const endDate = end.format('YYYY-MM-DD')
@@ -115,11 +117,13 @@ export default function ReportsPage() {
     startDate,
     endDate,
     groupBy,
+    expenseBasis,
   )
   const { data: prevFinancial, isLoading: prevFinancialLoading } = useFinancialSummary(
     prevStartDate,
     prevEndDate,
     groupBy,
+    expenseBasis,
   )
   const { data: byOperator, isLoading: operatorLoading } = useSalesByOperator(startDate, endDate)
   const { data: byPayment, isLoading: paymentLoading } = useSalesByPaymentMethod(startDate, endDate)
@@ -219,28 +223,57 @@ export default function ReportsPage() {
         <ReportSection
           icon={PointOfSaleOutlined}
           title="Vendas"
-          subtitle="Receita, produtos, pagamentos e desempenho no período"          
+          subtitle="Receita, produtos, pagamentos e desempenho no período"
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Granularidade das séries temporais */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'end', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Agrupar por
-              </Typography>
-              <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={groupBy}
-                onChange={(_, value) => {
-                  if (value) setGroupBy(value as GroupBy)
-                }}
-              >
-                <ToggleButton value="day" disabled={daysSpan > MAX_DAYS_FOR_DAY_GROUPING}>
-                  Dia
-                </ToggleButton>
-                <ToggleButton value="week">Semana</ToggleButton>
-                <ToggleButton value="month">Mês</ToggleButton>
-              </ToggleButtonGroup>
+            {/* Granularidade das séries temporais + regime das despesas */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'end',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Tooltip title="Competência conta as despesas pela data de vencimento; Caixa conta só as despesas já pagas, pela data de pagamento. Afeta os gráficos de composição, lucro líquido e lucro acumulado.">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ cursor: 'help' }}>
+                    Despesas por
+                  </Typography>
+
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={expenseBasis}
+                    onChange={(_, value) => {
+                      if (value) setExpenseBasis(value as ExpenseBasis)
+                    }}
+                  >
+                    <ToggleButton value="accrual">Competência</ToggleButton>
+                    <ToggleButton value="cash">Caixa</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              </Tooltip>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Agrupar por
+                </Typography>
+                <ToggleButtonGroup
+                  size="small"
+                  exclusive
+                  value={groupBy}
+                  onChange={(_, value) => {
+                    if (value) setGroupBy(value as GroupBy)
+                  }}
+                >
+                  <ToggleButton value="day" disabled={daysSpan > MAX_DAYS_FOR_DAY_GROUPING}>
+                    Dia
+                  </ToggleButton>
+                  <ToggleButton value="week">Semana</ToggleButton>
+                  <ToggleButton value="month">Mês</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
             </Box>
             {metricsLoading ? (
               <PageKpiGrid>
@@ -270,9 +303,10 @@ export default function ReportsPage() {
                   label="Margem de lucro média"
                   value={avgProfitMargin !== null ? `${avgProfitMargin}%` : '—'}
                   isLoading={financialLoading}
+                  tooltip="Resultado líquido total ÷ receita total do período. A margem considera só itens com custo cadastrado (produtos sem custo entram na receita, mas não no lucro), então tende a ficar subestimada quanto mais produtos sem custo houver."
                 />
               </PageKpiGrid>
-            )}            
+            )}
 
             <Box
               sx={{
@@ -303,8 +337,8 @@ export default function ReportsPage() {
                 />
               </Box>
               <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 4' } }}>
-              <PaymentMethodPieChart data={byPayment ?? []} loading={paymentLoading} />
-                
+                <PaymentMethodPieChart data={byPayment ?? []} loading={paymentLoading} />
+
               </Box>
 
               <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
@@ -313,7 +347,7 @@ export default function ReportsPage() {
               <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 6' } }}>
                 <TopProductsChart data={topProducts ?? []} loading={productsLoading} />
               </Box>
-              
+
             </Box>
           </Box>
         </ReportSection>

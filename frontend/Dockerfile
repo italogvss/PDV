@@ -1,5 +1,5 @@
 # =============================================================
-# Frontend PDV-Ultra - imagem multi-estagio
+# Frontend Kashing - imagem multi-estagio
 #   dev    -> desenvolvimento: Vite dev server com HMR
 #   final  -> producao: build estatico servido por nginx
 # =============================================================

@@ -51,6 +51,10 @@ public class TenantSettings : BaseEntity
     public bool RequireCustomerOnSale { get; set; } = false;
     public bool RequireCustomerOnAppointment { get; set; } = false;
 
+    // Agendamentos — se true, o valor do agendamento pode ser digitado à mão (diferente da soma
+    // dos serviços). Se false (padrão), o valor é sempre a soma dos preços dos serviços escolhidos.
+    public bool AllowCustomAppointmentPrice { get; set; } = false;
+
     // Preço de custo
     public bool RequireCostPriceOnProducts { get; set; } = true;
     public bool RequireCostPriceOnServices { get; set; } = true;

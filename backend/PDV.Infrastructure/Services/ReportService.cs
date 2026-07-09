@@ -9,14 +9,18 @@ using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
-public class ReportService(AppDbContext context) : IReportService
+public class ReportService(AppDbContext context, IStorageService storage) : IReportService
 {
     public async Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
-        DateTime startDate, DateTime endDate, string groupBy)
+        DateTime startDate, DateTime endDate, string groupBy, string expenseBasis)
     {
         var gb = groupBy.ToLower();
         if (gb is not ("day" or "week" or "month" or "year"))
             throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
+
+        var basis = expenseBasis.ToLower();
+        if (basis is not ("accrual" or "cash"))
+            throw new BusinessException("Parâmetro expenseBasis inválido. Use: accrual ou cash.");
 
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
@@ -42,11 +46,18 @@ public class ReportService(AppDbContext context) : IReportService
                     .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
             .ToListAsync();
 
-        // Despesas pela data de vencimento (competência) — consistente com ExpenseService.GetChartAsync
-        var expenses = await context.Expenses
-            .Where(e => e.DueDate >= start && e.DueDate <= end)
-            .Select(e => new { e.DueDate, e.Amount })
-            .ToListAsync();
+        // Despesas por regime:
+        // - accrual (competência): pela data de vencimento (DueDate), todas as despesas do período.
+        // - cash (caixa): pela data de pagamento (PaidAt), só as despesas efetivamente pagas.
+        var expenses = basis == "cash"
+            ? await context.Expenses
+                .Where(e => e.IsPaid && e.PaidAt != null && e.PaidAt >= start && e.PaidAt <= end)
+                .Select(e => new { Date = e.PaidAt!.Value, e.Amount })
+                .ToListAsync()
+            : await context.Expenses
+                .Where(e => e.DueDate >= start && e.DueDate <= end)
+                .Select(e => new { Date = e.DueDate, e.Amount })
+                .ToListAsync();
 
         var salesByBucket = sales
             .GroupBy(s => BucketKey(s.CreatedAt, gb))
@@ -61,7 +72,7 @@ public class ReportService(AppDbContext context) : IReportService
             });
 
         var expensesByBucket = expenses
-            .GroupBy(e => BucketKey(e.DueDate, gb))
+            .GroupBy(e => BucketKey(e.Date, gb))
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 
         var result = new List<FinancialSummaryPoint>();
@@ -83,17 +94,17 @@ public class ReportService(AppDbContext context) : IReportService
         var label = ResolvePeriodLabel(period, start, end);
 
         var rows = await context.Sales
-            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
-            .Select(s => new { s.Total, s.Status })
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CreatedAt >= start
+                     && s.CreatedAt <= end)
+            .Select(s => new { s.Total })
             .ToListAsync();
 
-        var active = rows.Where(s => s.Status == SaleStatus.Active).ToList();
-        var totalSales = active.Count;
-        var totalRevenue = active.Sum(s => s.Total);
+        var totalSales = rows.Count;
+        var totalRevenue = rows.Sum(s => s.Total);
         var averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0m;
-        var cancelledCount = rows.Count(s => s.Status == SaleStatus.Cancelled);
 
-        return new SalesMetricsResponse(totalSales, totalRevenue, averageTicket, cancelledCount, label);
+        return new SalesMetricsResponse(totalSales, totalRevenue, averageTicket, label);
     }
 
     public async Task<List<SalesByOperatorResponse>> GetSalesByOperatorAsync(
@@ -158,26 +169,32 @@ public class ReportService(AppDbContext context) : IReportService
                 .Where(i => i.ProductId != null)
                 .Select(i => new
                 {
+                    ProductId = i.ProductId!.Value,
                     i.ProductName,
                     i.Quantity,
                     i.Subtotal,
                     s.Discount,
+                    s.CreatedAt,
                     ItemsTotal = s.Items.Sum(x => x.Subtotal),
                 }))
             .ToListAsync();
 
         // Receita líquida por produto = Subtotal − parte proporcional do desconto da venda
-        // (rateado pelo peso do item no total da venda).
+        // (rateado pelo peso do item no total da venda). Agrupado por ProductId (não por nome) —
+        // produtos homônimos não se fundem e um item renomeado não fragmenta o histórico; o rótulo
+        // usa o nome mais recente (maior CreatedAt).
         return items
             .Select(i => new
             {
+                i.ProductId,
                 i.ProductName,
                 i.Quantity,
+                i.CreatedAt,
                 NetRevenue = SaleFinancials.NetItemRevenue(i.Subtotal, i.Discount, i.ItemsTotal),
             })
-            .GroupBy(i => i.ProductName)
+            .GroupBy(i => i.ProductId)
             .Select(g => new TopProductResponse(
-                g.Key,
+                g.OrderByDescending(i => i.CreatedAt).First().ProductName,
                 g.Sum(i => i.Quantity),
                 g.Sum(i => i.NetRevenue)))
             .OrderByDescending(r => r.Revenue)
@@ -236,17 +253,39 @@ public class ReportService(AppDbContext context) : IReportService
             .ToList();
     }
 
-    public async Task<List<StockSnapshotResponse>> GetStockSnapshotAsync()
+    // Lista de funcionários para a seção "Funcionário" dos Relatórios — servida pelo módulo de
+    // Relatórios (mesmo gate da página), não pelo módulo de Funcionários. Só ativos (filtro global).
+    public async Task<List<ReportEmployeeResponse>> GetEmployeesListAsync()
     {
-        return await context.Products
-            .OrderBy(p => p.Name)
-            .Select(p => new StockSnapshotResponse(
-                p.Id,
-                p.Name,
-                p.Barcode,
-                p.Stock,
-                p.Price,
-                p.IsActive))
+        var employees = await context.Employees
+            .Include(e => e.Role)
+            .OrderBy(e => e.UserName)
+            .Select(e => new
+            {
+                e.Id,
+                e.UserName,
+                RoleName = e.Role != null ? e.Role.Name : null,
+                e.Salary,
+                e.ImageUrl,
+                e.UpdatedAt,
+            })
+            .ToListAsync();
+
+        var result = new List<ReportEmployeeResponse>(employees.Count);
+        foreach (var e in employees)
+        {
+            var avatarUrl = await storage.ResolveReadUrlAsync(e.ImageUrl, MediaCategory.Profile, e.UpdatedAt);
+            result.Add(new ReportEmployeeResponse(e.Id, e.UserName, e.RoleName, e.Salary, avatarUrl));
+        }
+        return result;
+    }
+
+    // Lista de clientes para a seção "Clientes" dos Relatórios — servida pelo módulo de Relatórios.
+    public async Task<List<ReportCustomerResponse>> GetCustomersListAsync()
+    {
+        return await context.Customers
+            .OrderBy(c => c.Name)
+            .Select(c => new ReportCustomerResponse(c.Id, c.Name))
             .ToListAsync();
     }
 
@@ -759,24 +798,32 @@ public class ReportService(AppDbContext context) : IReportService
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
         // NOTA (fuso): Start é gravado em UTC e aqui é filtrado/agrupado sem conversão de fuso,
-        // igual ao resto da aplicação (GetFinancialSummaryAsync). RevenueTotal usa Appointment.Price
-        // (valor do agendamento) — pode divergir do que é de fato cobrado na Venda no caixa.
+        // igual ao resto da aplicação (GetFinancialSummaryAsync).
+        // Base oficial de receita = Σ AppointmentServiceItem.Price (preços dos serviços do catálogo),
+        // a mesma usada em by-category/top-services — NÃO Appointment.Price (que pode ter valor
+        // personalizado). Cancelados são excluídos de Total/RevenueTotal (só entram na série própria
+        // "Cancelled"), para não inflar demanda nem receita agendada.
         var appointments = await context.Appointments
             .Where(a => a.Start >= start && a.Start <= end)
-            .Select(a => new { a.Start, a.Status, a.Price })
+            .Select(a => new
+            {
+                a.Start,
+                a.Status,
+                ServicesPrice = a.ServiceItems.Sum(si => si.Price),
+            })
             .ToListAsync();
 
         var byBucket = appointments
             .GroupBy(a => BucketKey(a.Start, gb))
             .ToDictionary(g => g.Key, g => new
             {
-                Total = g.Count(),
+                Total = g.Count(a => a.Status != AppointmentStatus.Cancelado),
                 Completed = g.Count(a => a.Status == AppointmentStatus.Concluido),
                 Cancelled = g.Count(a => a.Status == AppointmentStatus.Cancelado),
                 InProgress = g.Count(a => a.Status == AppointmentStatus.EmAtendimento),
                 Pending = g.Count(a => a.Status == AppointmentStatus.Pendente || a.Status == AppointmentStatus.Confirmado),
-                RevenueRealized = g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.Price),
-                RevenueTotal = g.Sum(a => a.Price),
+                RevenueRealized = g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.ServicesPrice),
+                RevenueTotal = g.Where(a => a.Status != AppointmentStatus.Cancelado).Sum(a => a.ServicesPrice),
             });
 
         var result = new List<AppointmentSummaryPoint>();
@@ -835,9 +882,17 @@ public class ReportService(AppDbContext context) : IReportService
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
+        // Receita = Σ AppointmentServiceItem.Price dos atendimentos CONCLUÍDOS (base oficial, não
+        // Appointment.Price); count = agendamentos não cancelados atribuídos ao funcionário.
         var rows = await context.Appointments
             .Where(a => a.Start >= start && a.Start <= end)
-            .Select(a => new { a.EmployeeId, a.EmployeeName, a.Status, a.Price })
+            .Select(a => new
+            {
+                a.EmployeeId,
+                a.EmployeeName,
+                a.Status,
+                ServicesPrice = a.ServiceItems.Sum(si => si.Price),
+            })
             .ToListAsync();
 
         return rows
@@ -846,7 +901,7 @@ public class ReportService(AppDbContext context) : IReportService
                 g.Key.EmployeeId ?? Guid.Empty,
                 g.Key.EmployeeName,
                 g.Count(a => a.Status != AppointmentStatus.Cancelado),
-                g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.Price)))
+                g.Where(a => a.Status == AppointmentStatus.Concluido).Sum(a => a.ServicesPrice)))
             .OrderByDescending(r => r.Revenue)
             .ToList();
     }

@@ -39,9 +39,10 @@ public class ReportsController(IReportService service) : ControllerBase
     public async Task<IActionResult> GetFinancialSummary(
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate,
-        [FromQuery] string groupBy = "month")
+        [FromQuery] string groupBy = "month",
+        [FromQuery] string expenseBasis = "accrual")
     {
-        var result = await service.GetFinancialSummaryAsync(startDate, endDate, groupBy);
+        var result = await service.GetFinancialSummaryAsync(startDate, endDate, groupBy, expenseBasis);
         return Ok(result);
     }
 
@@ -109,10 +110,17 @@ public class ReportsController(IReportService service) : ControllerBase
         return File(csv, "text/csv", "vendas.csv");
     }
 
-    [HttpGet("stock")]
-    public async Task<IActionResult> GetStock()
+    [HttpGet("employees")]
+    public async Task<IActionResult> GetEmployeesList()
     {
-        var result = await service.GetStockSnapshotAsync();
+        var result = await service.GetEmployeesListAsync();
+        return Ok(result);
+    }
+
+    [HttpGet("customers")]
+    public async Task<IActionResult> GetCustomersList()
+    {
+        var result = await service.GetCustomersListAsync();
         return Ok(result);
     }
 

@@ -3,7 +3,7 @@ import type { GridColDef } from '@mui/x-data-grid'
 import { useNavigate } from 'react-router-dom'
 import ChartCard from '../../../components/ChartCard'
 import DataGridNoRowsOverlay from '../../../components/DataGridNoRowsOverlay'
-import { useCustomers } from '../../../hooks/useCustomers'
+import { useReportCustomers } from '../../../hooks/useReports'
 
 const PANEL_HEIGHT = 420
 
@@ -11,8 +11,8 @@ const columns: GridColDef[] = [{ field: 'name', headerName: 'Nome', flex: 1 }]
 
 export default function CustomersListPanel() {
   const navigate = useNavigate()
-  const { data, isLoading } = useCustomers(1, 500)
-  const rows = data?.data ?? []
+  const { data, isLoading } = useReportCustomers()
+  const rows = data ?? []
 
   return (
     <ChartCard

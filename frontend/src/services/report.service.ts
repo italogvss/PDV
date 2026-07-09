@@ -9,18 +9,20 @@ import type {
   ExpensesByCategory,
   RevenueByType,
   GroupBy,
+  ExpenseBasis,
   AppointmentSummaryPoint,
   TopService,
   AppointmentsByEmployee,
   ServiceCategoryRevenue,
   AppointmentPeakHour,
+  ReportEmployee,
+  ReportCustomer,
 } from '../types/report.types'
 
 interface BackendSalesMetrics {
   totalSales: number
   totalRevenue: number
   averageTicket: number
-  cancelledCount: number
   period: string
 }
 
@@ -36,9 +38,10 @@ export const reportService = {
     startDate: string,
     endDate: string,
     groupBy: GroupBy,
+    expenseBasis: ExpenseBasis = 'accrual',
   ): Promise<FinancialSummaryPoint[]> => {
     const { data } = await api.get<FinancialSummaryPoint[]>('/reports/financial-summary', {
-      params: { startDate, endDate, groupBy },
+      params: { startDate, endDate, groupBy, expenseBasis },
     })
     return data
   },
@@ -151,6 +154,16 @@ export const reportService = {
     const { data } = await api.get<AppointmentPeakHour[]>('/reports/appointments/peak-hours', {
       params: { startDate, endDate },
     })
+    return data
+  },
+
+  getEmployeesList: async (): Promise<ReportEmployee[]> => {
+    const { data } = await api.get<ReportEmployee[]>('/reports/employees')
+    return data
+  },
+
+  getCustomersList: async (): Promise<ReportCustomer[]> => {
+    const { data } = await api.get<ReportCustomer[]>('/reports/customers')
     return data
   },
 

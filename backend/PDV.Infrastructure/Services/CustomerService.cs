@@ -202,10 +202,13 @@ public class CustomerService(
                 nextAppointment.Status.ToString()
             );
 
+        // Agrupado por ServiceId (não por nome) e sem cancelados — mesmo critério do ranking de
+        // serviços dos Relatórios. appointments vem ordenado por Start desc → g.First() é o nome mais recente.
         var topServices = appointments
+            .Where(a => a.Status != AppointmentStatus.Cancelado)
             .SelectMany(a => a.ServiceItems)
-            .GroupBy(s => s.ServiceName)
-            .Select(g => new { Name = g.Key, Count = g.Count() })
+            .GroupBy(s => s.ServiceId)
+            .Select(g => new { Name = g.First().ServiceName, Count = g.Count() })
             .OrderByDescending(s => s.Count)
             .Take(5)
             .ToList();

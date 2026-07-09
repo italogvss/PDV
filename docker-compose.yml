@@ -1,5 +1,5 @@
 # =============================================================
-# PDV-Ultra - Stack de DESENVOLVIMENTO
+# Kashing - Stack de DESENVOLVIMENTO
 # Backend com hot reload (dotnet watch) + Vite dev server (HMR),
 # ambos depuraveis pelo VS Code (ver .vscode/launch.json).
 # Subir: docker compose up

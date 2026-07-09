@@ -68,6 +68,9 @@ export default function OperationSection() {
     op?.requireCustomerOnSale !== form.requireCustomerOnSale ||
     op?.requireCustomerOnAppointment !== form.requireCustomerOnAppointment
 
+  const appointmentsChanged =
+    op?.allowCustomAppointmentPrice !== form.allowCustomAppointmentPrice
+
   const handleSave = () => update.mutate(form)
 
   const handleDiscountCancel = () =>
@@ -90,6 +93,9 @@ export default function OperationSection() {
       requireCustomerOnSale: op.requireCustomerOnSale,
       requireCustomerOnAppointment: op.requireCustomerOnAppointment,
     } : f)
+
+  const handleAppointmentsCancel = () =>
+    op && setForm((f) => f ? { ...f, allowCustomAppointmentPrice: op.allowCustomAppointmentPrice } : f)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -161,6 +167,16 @@ export default function OperationSection() {
         hasChanges={customersChanged}
         onSave={handleSave}
         onCancel={handleCustomersCancel}
+        isPending={update.isPending}
+        enabledModules={enabledModules}
+      />
+
+      <AppointmentsCard
+        form={form}
+        set={set}
+        hasChanges={appointmentsChanged}
+        onSave={handleSave}
+        onCancel={handleAppointmentsCancel}
         isPending={update.isPending}
         enabledModules={enabledModules}
       />
@@ -365,6 +381,61 @@ function CustomersCard({ form, set, hasChanges, onSave, onCancel, isPending, ena
           </SettingRow>
         )}
       </PremiumLock>
+    </SettingCard>
+  )
+}
+
+// ─── Card de agendamentos ─────────────────────────────────────────────────────
+
+interface AppointmentsCardProps {
+  form: OperationSettings
+  set: (patch: Partial<OperationSettings>) => void
+  hasChanges: boolean
+  onSave: () => void
+  onCancel: () => void
+  isPending: boolean
+  enabledModules: OperationModule[]
+}
+
+function AppointmentsCard({ form, set, hasChanges, onSave, onCancel, isPending, enabledModules }: AppointmentsCardProps) {
+  const hasScheduling = enabledModules.includes('services') || enabledModules.includes('appointments')
+
+  if (!hasScheduling) return null
+
+  return (
+    <SettingCard
+      title="Agendamentos"
+      subtitle="Regras de valor dos agendamentos."
+      action={
+        hasChanges ? (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button variant="outlined" size="small" onClick={onCancel} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="secondary"
+              startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+              onClick={onSave}
+              disabled={isPending}
+            >
+              Salvar alterações
+            </Button>
+          </Box>
+        ) : undefined
+      }
+    >
+      <SettingRow
+        label="Permitir valor personalizado no agendamento"
+        sublabel="Quando desligado, o valor é sempre a soma dos serviços escolhidos e o campo fica bloqueado. Ao ligar, o valor pode ser digitado à mão — mas aí ele pode divergir da soma dos serviços, e os relatórios de receita de agendamentos continuam usando a soma dos serviços do catálogo como base oficial."
+      >
+        <Switch
+          checked={form.allowCustomAppointmentPrice}
+          onChange={(e) => set({ allowCustomAppointmentPrice: e.target.checked })}
+          color="secondary"
+        />
+      </SettingRow>
     </SettingCard>
   )
 }

@@ -114,6 +114,7 @@ export default function NewAppointmentModal({
   onCreate,
   requireCustomerOnAppointment,
   customersModuleActive,
+  allowCustomAppointmentPrice,
   isPending = false,
 }: NewAppointmentModalProps) {
   const [customerId, setCustomerId] = useState<string | null>(null)
@@ -185,7 +186,8 @@ export default function NewAppointmentModal({
     if (!durationTouched) {
       setValue('duration', chosen.reduce((sum, s) => sum + (s.durationMinutes ?? 30), 0))
     }
-    if (!priceTouched) {
+    // Sem valor personalizado, o preço é SEMPRE a soma dos serviços (ignora edição manual).
+    if (!allowCustomAppointmentPrice || !priceTouched) {
       setValue('price', chosen.reduce((sum, s) => sum + s.price, 0))
     }
   }
@@ -594,8 +596,12 @@ export default function NewAppointmentModal({
                     }}
                     onBlur={field.onBlur}
                     fullWidth
+                    disabled={!allowCustomAppointmentPrice}
                     error={!!errors.price}
-                    helperText={errors.price?.message}
+                    helperText={
+                      errors.price?.message ??
+                      (!allowCustomAppointmentPrice ? 'Soma dos serviços selecionados' : undefined)
+                    }
                   />
                 )}
               />

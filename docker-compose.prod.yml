@@ -1,5 +1,5 @@
 # =============================================================
-# PDV-Ultra - Stack de PRODUCAO
+# Kashing - Stack de PRODUCAO
 # nginx (reverse proxy) -> frontend (build estatico) + api (.NET).
 # Subir: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 # =============================================================

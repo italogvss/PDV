@@ -201,6 +201,7 @@ public class TenantService(
         settings.RequireCustomerOnAppointment  = request.RequireCustomerOnAppointment;
         settings.RequireCostPriceOnProducts    = request.RequireCostPriceOnProducts;
         settings.RequireCostPriceOnServices    = request.RequireCostPriceOnServices;
+        settings.AllowCustomAppointmentPrice   = request.AllowCustomAppointmentPrice;
 
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
@@ -275,7 +276,8 @@ public class TenantService(
                 s.RequireCustomerOnSale,
                 s.RequireCustomerOnAppointment,
                 s.RequireCostPriceOnProducts,
-                s.RequireCostPriceOnServices),
+                s.RequireCostPriceOnServices,
+                s.AllowCustomAppointmentPrice),
             new PaymentsSettingsDto(
                 s.PaymentFeesEnabled,
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),

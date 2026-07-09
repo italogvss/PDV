@@ -72,15 +72,15 @@ export default function NotificationButton() {
         size="small"
         sx={{
           color: 'text.tertiary',
-          border: hasUnread ? 1 : 2,
-          borderColor: hasUnread ? 'border.subtle' : 'secondary.main',
+          border: hasUnread ? 2 : 1,
+          borderColor: hasUnread ? 'secondary.main' : 'border.subtle',
           borderRadius: 2,
           bgcolor: 'background.paper',
           width: 36,
           height: 36,
         }}
       >
-        <NotificationsNone sx={{ fontSize: 18, color: hasUnread ? 'border.subtle' : 'secondary.main' }} />
+        <NotificationsNone sx={{ fontSize: 18, color: hasUnread ? 'secondary.main' : 'border.subtle' }} />
       </IconButton>
       <NotificationPanel
         open={open}

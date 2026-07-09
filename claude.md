@@ -1,4 +1,4 @@
-# PDV-Ultra — Visão Geral
+# Kashing — Visão Geral
 
 SaaS de gestão para pequenos comércios. Foco em simplicidade — interface direta, sem excesso de funcionalidades.
 

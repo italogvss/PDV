@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { reportService } from '../services/report.service'
-import type { GroupBy } from '../types/report.types'
+import type { ExpenseBasis, GroupBy } from '../types/report.types'
 import { useUserPermissions } from './useUserPermissions'
 
 const METRICS_KEY = (start: string, end: string) =>
   ['reports', 'sales', start, end] as const
-const FINANCIAL_KEY = (start: string, end: string, groupBy: GroupBy) =>
-  ['reports', 'financial-summary', start, end, groupBy] as const
+const FINANCIAL_KEY = (start: string, end: string, groupBy: GroupBy, expenseBasis: ExpenseBasis) =>
+  ['reports', 'financial-summary', start, end, groupBy, expenseBasis] as const
+const EMPLOYEES_LIST_KEY = ['reports', 'employees-list'] as const
+const CUSTOMERS_LIST_KEY = ['reports', 'customers-list'] as const
 const BY_OPERATOR_KEY = (start: string, end: string) =>
   ['reports', 'by-operator', start, end] as const
 const BY_PAYMENT_KEY = (start: string, end: string) =>
@@ -39,11 +41,34 @@ export function useSalesMetrics(startDate: string, endDate: string) {
   })
 }
 
-export function useFinancialSummary(startDate: string, endDate: string, groupBy: GroupBy) {
+export function useFinancialSummary(
+  startDate: string,
+  endDate: string,
+  groupBy: GroupBy,
+  expenseBasis: ExpenseBasis = 'accrual',
+) {
   const { hasPermission, isModuleEnabled } = useUserPermissions()
   return useQuery({
-    queryKey: FINANCIAL_KEY(startDate, endDate, groupBy),
-    queryFn: () => reportService.getFinancialSummary(startDate, endDate, groupBy),
+    queryKey: FINANCIAL_KEY(startDate, endDate, groupBy, expenseBasis),
+    queryFn: () => reportService.getFinancialSummary(startDate, endDate, groupBy, expenseBasis),
+    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+  })
+}
+
+export function useReportEmployees() {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  return useQuery({
+    queryKey: EMPLOYEES_LIST_KEY,
+    queryFn: () => reportService.getEmployeesList(),
+    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+  })
+}
+
+export function useReportCustomers() {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  return useQuery({
+    queryKey: CUSTOMERS_LIST_KEY,
+    queryFn: () => reportService.getCustomersList(),
     enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
   })
 }
