@@ -1,0 +1,14 @@
+{
+  "id": "{{LOG_ID}}",
+  "event": "payout.completed",
+  "apiVersion": 2,
+  "devMode": true,
+  "data": {
+    "customer": {
+      "id": "{{CUSTOMER_ID}}",
+      "name": "QA Kashing",
+      "email": "qa@exemplo.com",
+      "taxId": "123.***.***-**"
+    }
+  }
+}

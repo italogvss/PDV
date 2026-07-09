@@ -1,0 +1,35 @@
+{
+  "event": "checkout.completed",
+  "apiVersion": 2,
+  "devMode": true,
+  "data": {
+    "checkout": {
+      "id": "{{RENEW_BILL_ID}}",
+      "externalId": null,
+      "url": "https://app.abacatepay.com/pay/{{RENEW_BILL_ID}}",
+      "amount": 2999,
+      "paidAmount": 2999,
+      "platformFee": 120,
+      "frequency": "SUBSCRIPTION",
+      "items": [{ "id": "{{PRODUCT_ID}}", "quantity": 1 }],
+      "status": "PAID",
+      "methods": ["CARD"],
+      "customerId": "{{CUSTOMER_ID}}",
+      "receiptUrl": "https://app.abacatepay.com/receipt/{{RENEW_BILL_ID}}",
+      "installmentsCount": 1,
+      "devMode": true,
+      "createdAt": "2026-08-09T12:00:00.000Z",
+      "updatedAt": "2026-08-09T12:00:05.000Z"
+    },
+    "customer": {
+      "id": "{{CUSTOMER_ID}}",
+      "name": "QA Kashing",
+      "email": "qa@exemplo.com",
+      "taxId": "123.***.***-**"
+    },
+    "payerInformation": {
+      "method": "CARD",
+      "CARD": { "number": "4242", "brand": "visa" }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "{{LOG_ID}}",
+  "event": "subscription.trial_started",
+  "apiVersion": 2,
+  "devMode": true,
+  "data": {
+    "subscription": {
+      "id": "{{SUBS_ID}}",
+      "amount": 2999,
+      "currency": "BRL",
+      "method": "CARD",
+      "status": "ACTIVE",
+      "frequency": "MONTHLY",
+      "trialDays": 7,
+      "trialEndsAt": "2026-07-16T23:59:59.999Z",
+      "createdAt": "2026-07-09T12:00:00.000Z",
+      "updatedAt": "2026-07-09T12:00:00.000Z",
+      "canceledAt": null,
+      "cancelPolicy": null,
+      "cancelledDueTo": null
+    },
+    "customer": {
+      "id": "{{CUSTOMER_ID}}",
+      "name": "QA Kashing",
+      "email": "qa@exemplo.com",
+      "taxId": "123.***.***-**"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "event": "checkout.completed",
+  "apiVersion": 2,
+  "devMode": true,
+  "data": {
+    "checkout": {
+      "id": "{{BILL_ID}}",
+      "externalId": "{{SUBSCRIPTION_ID}}",
+      "amount": 0,
+      "paidAmount": null,
+      "status": "PENDING",
+      "methods": ["CARD"],
+      "frequency": "SUBSCRIPTION",
+      "items": [{ "id": "{{PRODUCT_ID}}", "quantity": 1 }],
+      "customerId": "{{CUSTOMER_ID}}",
+      "trialDays": 30,
+      "trialEndsAt": "2026-08-08T23:59:59.999Z",
+      "nextChargeAt": "2026-08-08T23:59:59.999Z",
+      "card": { "maxInstallments": 1 },
+      "devMode": true,
+      "createdAt": "2026-07-09T12:00:00.000Z",
+      "updatedAt": "2026-07-09T12:00:00.000Z"
+    },
+    "customer": {
+      "id": "{{CUSTOMER_ID}}",
+      "name": "QA Kashing",
+      "email": "qa@exemplo.com",
+      "taxId": null
+    },
+    "payerInformation": {
+      "method": "CARD",
+      "CARD": { "number": "4242", "brand": "visa" }
+    }
+  }
+}
