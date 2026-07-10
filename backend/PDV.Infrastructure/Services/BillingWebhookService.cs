@@ -8,7 +8,7 @@ using PDV.Domain.Interfaces;
 namespace PDV.Infrastructure.Services;
 
 // Aplica um evento de webhook (já verificado e normalizado) ao estado de assinatura/pagamento.
-// Resolve a assinatura/pagamento por metadata.userId + gateway-ids — sem tenant/user context.
+// Resolve a assinatura pelos ids do gateway — sem tenant/user context.
 public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<BillingWebhookService> logger) : IBillingWebhookService
 {
     public async Task ProcessAsync(PaymentWebhookEvent evt)
@@ -16,42 +16,36 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         var sub = await ResolveSubscriptionAsync(evt);
         var payment = await ResolvePaymentAsync(evt);
 
-        logger.LogInformation("Assinatura resolvida {SubscriptionId} (status {Status}) para evento {EventType}",
-            sub?.Id, sub?.Status, evt.Type);
-        logger.LogInformation("Pagamento resolvido {PaymentId} (status {Status}) para evento {EventType}",
-            payment?.Id, payment?.Status, evt.Type);
+        logger.LogInformation(
+            "Evento {EventType}: assinatura {SubscriptionId} (status {Status}), cobrança {PaymentId}",
+            evt.RawEventType, sub?.Id, sub?.Status, payment?.Id);
 
         switch (evt.Type)
         {
-            // Baixa de pagamento (cartão) — o lifecycle da assinatura vem dos eventos subscription.*.
+            // Baixa de pagamento — o lifecycle da assinatura vem dos eventos subscription.*.
             case PaymentWebhookType.CheckoutCompleted:
                 await ApplyCheckoutCompletedAsync(sub, payment, evt);
                 break;
 
-            // Eventos subscription.* só sincronizam o estado da assinatura (sem tocar em pagamento).
             case PaymentWebhookType.SubscriptionCompleted:
-                ApplySubscriptionActive(sub, evt);
-                break;
-
-            case PaymentWebhookType.SubscriptionTrialStarted:
-                await ApplyTrialStarted(sub, evt);
+                ApplyActivated(sub, evt);
                 break;
 
             case PaymentWebhookType.SubscriptionRenewed:
-                ApplyRenewed(sub, evt);
+                await ApplyRenewedAsync(sub, evt);
+                break;
+
+            case PaymentWebhookType.SubscriptionPaymentFailed:
+                await ApplyPaymentFailedAsync(sub, evt);
                 break;
 
             case PaymentWebhookType.SubscriptionCancelled:
-                ApplyCancelled(sub, payment);
+                ApplyCancelled(sub, evt);
                 break;
 
             case PaymentWebhookType.CheckoutRefunded:
             case PaymentWebhookType.CheckoutDisputed:
                 ApplyReversed(sub, payment, evt);
-                break;
-
-            case PaymentWebhookType.SubscriptionPlanChanged:
-                await ApplyPlanChangedAsync(sub, payment, evt);
                 break;
         }
 
@@ -69,100 +63,182 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
         await repo.SaveChangesAsync();
     }
 
-    // Os payloads do gateway não carregam metadata; a correlação confiável vem do externalId (= nossa
-    // Subscription.Id, definida ao criar a cobrança) e, em último caso, do cliente no gateway (cust_).
+    // Cada usuário tem no máximo UMA assinatura (índice único em Subscription.UserId), então basta
+    // chegar ao usuário certo por qualquer identificador do evento — do mais específico ao mais
+    // genérico. Renovações não trazem externalId nem metadata; caem no cust_.
     private async Task<Subscription?> ResolveSubscriptionAsync(PaymentWebhookEvent evt)
     {
-        if (evt.Metadata.TryGetValue("subscriptionId", out var sid) && Guid.TryParse(sid, out var metaSubId))
-        {
-            var byMeta = await repo.GetSubscriptionByIdAsync(metaSubId);
-            if (byMeta is not null) return byMeta;
-        }
+        if (evt.Metadata.TryGetValue("subscriptionId", out var sid) && Guid.TryParse(sid, out var metaSubId)
+            && await repo.GetSubscriptionByIdAsync(metaSubId) is { } byMeta)
+            return byMeta;
 
         // ExternalId = nossa Subscription.Id — chave primária para checkout.*.
-        if (Guid.TryParse(evt.ExternalId, out var externalSubId))
-        {
-            var byExternal = await repo.GetSubscriptionByIdAsync(externalSubId);
-            if (byExternal is not null) return byExternal;
-        }
+        if (Guid.TryParse(evt.ExternalId, out var externalSubId)
+            && await repo.GetSubscriptionByIdAsync(externalSubId) is { } byExternal)
+            return byExternal;
 
-        // Id da assinatura no gateway (subs_) — eventos subscription.* após a 1ª ativação.
-        if (!string.IsNullOrEmpty(evt.SubscriptionId))
-        {
-            var byGateway = await repo.GetSubscriptionByGatewayIdAsync(evt.SubscriptionId);
-            if (byGateway is not null) return byGateway;
-        }
+        if (!string.IsNullOrEmpty(evt.SubscriptionId)
+            && await repo.GetSubscriptionByGatewayIdAsync(evt.SubscriptionId) is { } byGateway)
+            return byGateway;
 
-        if (evt.Metadata.TryGetValue("userId", out var uid) && Guid.TryParse(uid, out var userId))
-        {
-            var byUser = await repo.GetLiveSubscriptionByUserIdAsync(userId);
-            if (byUser is not null) return byUser;
-        }
+        if (evt.Metadata.TryGetValue("userId", out var uid) && Guid.TryParse(uid, out var userId)
+            && await repo.GetSubscriptionByUserIdAsync(userId) is { } byUser)
+            return byUser;
 
-        // Cliente no gateway (cust_) — eventos subscription.* na 1ª ativação e renovações sem externalId.
-        if (!string.IsNullOrEmpty(evt.CustomerId))
-            return await repo.GetLiveSubscriptionByGatewayCustomerIdAsync(evt.Provider, evt.CustomerId);
-
-        return null;
+        return string.IsNullOrEmpty(evt.CustomerId)
+            ? null
+            : await repo.GetSubscriptionByGatewayCustomerIdAsync(evt.Provider, evt.CustomerId);
     }
 
-    // Resolve o Payment desta cobrança estritamente pelo id no gateway (bill_), que é o que
-    // gravamos em GatewayChargeId ao criar o checkout/PIX. Sem fallback por "pendente mais recente":
-    // numa renovação não há Payment pré-criado e CompleteChargeAsync deve criar um novo — não marcar
-    // por engano um pendente avulso de um checkout anterior.
+    // Resolve o Payment estritamente pelo id da cobrança no gateway (bill_). Sem fallback por
+    // "pendente mais recente": numa renovação não há Payment pré-criado e CompleteChargeAsync deve
+    // criar um novo — não marcar por engano um pendente avulso de um checkout anterior.
     private async Task<Payment?> ResolvePaymentAsync(PaymentWebhookEvent evt) =>
         string.IsNullOrEmpty(evt.ChargeId)
             ? null
             : await repo.GetPaymentByGatewayChargeIdAsync(evt.ChargeId);
 
-    // subscription.completed — a assinatura ficou ativa após o checkout. Só sincroniza o estado e captura
-    // o id da assinatura no gateway (subs_, necessário para change-plan/cancel). A baixa vem do checkout.
-    private static void ApplySubscriptionActive(Subscription? sub, PaymentWebhookEvent evt)
-    {
-        if (sub is null) return;
+    // -----------------------------------------------------------------------
+    // Datas: sempre derivadas do evento, nunca do relógio local
+    // -----------------------------------------------------------------------
 
-        if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
+    // Instante em que o gateway processou o evento. Usar DateTime.UtcNow aqui estenderia o ciclo
+    // indevidamente quando o webhook chega atrasado ou é retentado horas depois.
+    private static DateTime AnchorOf(PaymentWebhookEvent evt) =>
+        evt.SubscriptionUpdatedAt ?? evt.PaidAt ?? DateTime.UtcNow;
 
-        sub.Status = SubscriptionStatus.Active;
-        sub.CurrentPeriodEnd = NextPeriodEnd(DateTime.UtcNow, sub.Plan);
-        sub.UpdatedAt = DateTime.UtcNow;
-    }
+    // Fim do período que este evento inaugura. O gateway informa nextChargeAt quando sabe; senão,
+    // soma o ciclo do plano à âncora.
+    private static DateTime PeriodEndFor(PaymentWebhookEvent evt, Plan? plan) =>
+        evt.NextChargeAt ?? NextPeriodEnd(AnchorOf(evt), plan);
 
-    // Fim do próximo período conforme o ciclo do plano (cartão mensal/anual).
     private static DateTime NextPeriodEnd(DateTime from, Plan? plan) =>
         plan?.BillingPeriod == BillingPeriod.Annual ? from.AddYears(1) : from.AddMonths(1);
 
-    private async Task ApplyTrialStarted(Subscription? sub, PaymentWebhookEvent evt)
-    {
-        if (sub is null) return;
+    // -----------------------------------------------------------------------
+    // Handlers
+    // -----------------------------------------------------------------------
 
-        if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
-
-        sub.Status = SubscriptionStatus.Trialing;
-        sub.TrialEndsAt = evt.TrialEndsAt
-            ?? (sub.Plan?.TrialDays is int days ? DateTime.UtcNow.AddDays(days) : sub.TrialEndsAt);
-        sub.CurrentPeriodEnd = sub.TrialEndsAt;
-        sub.UpdatedAt = DateTime.UtcNow;
-
-        await repo.MarkTrialUsedAsync(sub.UserId);
-    }
-
-    // subscription.renewed — só estende o ciclo. O pagamento da renovação chega por
-    // checkout.completed (não é registrado aqui).
-    private static void ApplyRenewed(Subscription? sub, PaymentWebhookEvent evt)
+    // subscription.completed — a assinatura ficou ativa após o checkout. Captura o subs_ (necessário
+    // para change-plan/cancel) e define o período. A baixa da cobrança vem do checkout.completed.
+    private static void ApplyActivated(Subscription? sub, PaymentWebhookEvent evt)
     {
         if (sub is null) return;
 
         if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
 
         sub.Status = SubscriptionStatus.Active;
-        sub.CurrentPeriodEnd = NextPeriodEnd(DateTime.UtcNow, sub.Plan);
+        // Âncora da janela de reembolso. StartCheckoutAsync zera StartedAt, então uma reativação
+        // passa por aqui e abre uma janela nova; uma renovação não passa e preserva a original.
+        sub.StartedAt ??= AnchorOf(evt);
+        sub.CurrentPeriodEnd = PeriodEndFor(evt, sub.Plan);
+        sub.TrialEndsAt = null;   // assinatura paga não carrega data de teste
+        sub.CanceledAt = null;
         sub.UpdatedAt = DateTime.UtcNow;
     }
 
-    // checkout.completed reaproveitado para trial E cobrança real. No trial chega PENDING/amount 0 (sem
-    // cobrança) — só captura o cartão no Payment pendente; o lifecycle vem de subscription.trial_started.
-    // Numa cobrança real (PAID) dá a baixa normalmente.
+    // subscription.renewed — estende o ciclo. StartedAt fica intacto: renovar não reabre a janela de
+    // reembolso. O pagamento da renovação chega no checkout.completed correspondente.
+    //
+    // É aqui que um DOWNGRADE agendado entra em vigor: o gateway já cobrou o valor do plano novo, e é
+    // agora que o usuário deixa de ter os recursos do plano antigo. A promoção vem ANTES de calcular o
+    // período — o plano novo pode ter outro ciclo (mensal → anual).
+    private async Task ApplyRenewedAsync(Subscription? sub, PaymentWebhookEvent evt)
+    {
+        if (sub is null) return;
+
+        if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
+
+        var plan = await PromotePendingPlanAsync(sub);
+
+        sub.Status = SubscriptionStatus.Active;
+        sub.CurrentPeriodEnd = PeriodEndFor(evt, plan);
+        sub.UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Promove o downgrade agendado e devolve o plano que passa a valer neste ciclo.
+    private async Task<Plan?> PromotePendingPlanAsync(Subscription sub)
+    {
+        if (sub.PendingPlanId is not Guid pendingId) return sub.Plan;
+
+        var pendingPlan = await repo.GetPlanByIdAsync(pendingId);
+        sub.PendingPlanId = null;
+
+        if (pendingPlan is null)
+        {
+            logger.LogWarning("Plano agendado {PlanId} não existe mais; assinatura {SubscriptionId} renovou no plano atual.",
+                pendingId, sub.Id);
+            return sub.Plan;
+        }
+
+        logger.LogInformation("Assinatura {SubscriptionId} renovou trocando para o plano {PlanName}.", sub.Id, pendingPlan.Name);
+        sub.PlanId = pendingPlan.Id;
+        return pendingPlan;
+    }
+
+    // subscription.payment_failed — a cobrança da renovação foi recusada e o gateway vai retentar
+    // conforme a retryPolicy. Não mexe no Status da assinatura: o acesso já está barrado porque o
+    // CurrentPeriodEnd venceu. Registra a falha no histórico (uma linha por parcela, idempotente
+    // pelo installmentId) para o usuário saber que precisa atualizar o cartão.
+    private async Task ApplyPaymentFailedAsync(Subscription? sub, PaymentWebhookEvent evt)
+    {
+        if (sub is null || string.IsNullOrEmpty(evt.InstallmentId)) return;
+
+        logger.LogWarning(
+            "Cobrança recusada na assinatura {SubscriptionId}: parcela {InstallmentId}, tentativa {RetryNumber}",
+            sub.Id, evt.InstallmentId, evt.RetryNumber);
+
+        // Retentativas da mesma parcela reusam o installmentId — só avança o contador.
+        if (await repo.GetPaymentByGatewayChargeIdAsync(evt.InstallmentId) is { } existing)
+        {
+            existing.RetryNumber = evt.RetryNumber;
+            existing.UpdatedAt = DateTime.UtcNow;
+            return;
+        }
+
+        await repo.AddPaymentAsync(new Payment
+        {
+            UserId = sub.UserId,
+            SubscriptionId = sub.Id,
+            PlanId = sub.PlanId,
+            Provider = sub.Provider,
+            GatewayChargeId = evt.InstallmentId,
+            Kind = PaymentKind.CardSubscription,
+            Method = GatewayPaymentMethod.Card,
+            AmountCents = evt.AmountCents ?? sub.Plan?.PriceCents ?? 0,
+            Status = PaymentStatus.Failed,
+            RetryNumber = evt.RetryNumber,
+        });
+    }
+
+    // subscription.cancelled — idempotente com o cancelamento manual, que já pode ter aplicado o
+    // estado. NÃO toca no Payment: o payload traz o bill_ do checkout ORIGINAL, que está pago, e
+    // marcá-lo como cancelado reescreveria uma fatura legítima do histórico.
+    private static void ApplyCancelled(Subscription? sub, PaymentWebhookEvent evt)
+    {
+        if (sub is null) return;
+
+        sub.CanceledAt ??= AnchorOf(evt);
+        sub.UpdatedAt = DateTime.UtcNow;
+
+        // Involuntário (a cobrança esgotou as tentativas): não há período pago a honrar, o acesso cai.
+        if (evt.CancelledDueTo == CancelReasons.MaxPaymentRetriesExceeded)
+        {
+            sub.Status = SubscriptionStatus.Expired;
+            sub.CurrentPeriodEnd = DateTime.UtcNow;
+            return;
+        }
+
+        // Cancelamento dentro da janela de reembolso: o estado final é ditado pelo checkout.refunded,
+        // quando o estorno for aprovado no painel. Este evento é só o eco do cancelamento no gateway.
+        if (sub.Status == SubscriptionStatus.RefundRequested) return;
+
+        // Voluntário: acesso preservado até o fim do período já pago (CurrentPeriodEnd intacto).
+        sub.Status = SubscriptionStatus.Canceled;
+    }
+
+    // checkout.completed. PAID → dá baixa/cria a cobrança. Caso contrário só captura o cartão no
+    // Payment pendente (o checkout foi criado, o dinheiro ainda não saiu).
     private async Task ApplyCheckoutCompletedAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
     {
         if (evt.Status != GatewayChargeStatus.Paid)
@@ -171,85 +247,14 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
             return;
         }
 
-        await CompleteChargeAsync(sub, payment, evt, PaymentKind.CardSubscription, GatewayPaymentMethod.Card);
+        if (await CompleteChargeAsync(sub, payment, evt) is null)
+            logger.LogWarning(
+                "Cobrança {ChargeId} paga não pôde ser registrada: assinatura não resolvida (externalId {ExternalId}, cliente {CustomerId})",
+                evt.ChargeId, evt.ExternalId, evt.CustomerId);
     }
 
-    // subscription.plan_changed — a troca já foi aplicada de imediato no ChangePlanAsync. Aqui é apenas
-    // confirmação idempotente: captura o id da assinatura, garante o PlanId (mapeado pelo produto) e
-    // registra a cobrança aprovada do payload. NÃO altera datas (preserva o período do ciclo atual).
-    private async Task ApplyPlanChangedAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
-    {
-        if (sub is null) return;
-
-        if (!string.IsNullOrEmpty(evt.SubscriptionId)) sub.GatewaySubscriptionId = evt.SubscriptionId;
-
-        if (!string.IsNullOrEmpty(evt.ProductId))
-        {
-            var planId = (await repo.GetPlanByExternalProductIdAsync(evt.ProductId))?.Id;
-            if (planId is Guid pid && pid != sub.PlanId) sub.PlanId = pid;
-        }
-
-        sub.UpdatedAt = DateTime.UtcNow;
-
-        // Registra a cobrança da troca (presente só quando há cobrança real, fora de trial).
-        if (evt.Status == GatewayChargeStatus.Paid)
-            await CompleteChargeAsync(sub, payment, evt, PaymentKind.CardSubscription, GatewayPaymentMethod.Card);
-    }
-
-    // Dá baixa na cobrança: marca o Payment pré-existente como pago ou, se não houver (renovação),
-    // registra um novo já pago (idempotente pelo ChargeId). Retorna o Payment afetado (ou null).
-    private async Task<Payment?> CompleteChargeAsync(
-        Subscription? sub, Payment? payment, PaymentWebhookEvent evt, PaymentKind kind, GatewayPaymentMethod method)
-    {
-        if (payment is not null)
-        {
-            MarkPaid(payment, evt);
-            SetPeriod(payment, sub);
-            return payment;
-        }
-
-        if (sub is null || string.IsNullOrEmpty(evt.ChargeId)) return null;
-        if (await repo.GetPaymentByGatewayChargeIdAsync(evt.ChargeId) is not null) return null;
-
-        var created = new Payment
-        {
-            UserId = sub.UserId,
-            SubscriptionId = sub.Id,
-            PlanId = sub.PlanId,
-            Provider = sub.Provider,
-            GatewayChargeId = evt.ChargeId,
-            Kind = kind,
-            Method = method,
-            AmountCents = evt.AmountCents ?? sub.Plan?.PriceCents ?? 0,
-            Status = PaymentStatus.Paid,
-            PaidAt = evt.PaidAt ?? DateTime.UtcNow,
-            ReceiptUrl = evt.ReceiptUrl,
-            CardLastFour = evt.CardLastFour,
-            CardBrand = evt.CardBrand,
-        };
-        SetPeriod(created, sub);
-        await repo.AddPaymentAsync(created);
-        return created;
-    }
-
-    // Registra o período coberto pela cobrança no histórico (fim = fim do período corrente da assinatura).
-    private static void SetPeriod(Payment payment, Subscription? sub)
-    {
-        payment.PeriodStart = DateTime.UtcNow;
-        payment.PeriodEnd = sub?.CurrentPeriodEnd;
-    }
-
-    private static void ApplyCancelled(Subscription? sub, Payment? payment)
-    {
-        if (sub is null ) return;
-        sub.Status = SubscriptionStatus.Canceled;
-        sub.CanceledAt ??= DateTime.UtcNow;
-        sub.UpdatedAt = DateTime.UtcNow;
-
-        if(payment is null) return;
-        payment.Status = PaymentStatus.Cancelled;
-    }
-
+    // checkout.refunded / checkout.disputed. O estorno é aprovado manualmente no painel do AbacatePay
+    // — este evento é a confirmação de que o dinheiro voltou.
     private static void ApplyReversed(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
     {
         if (payment is not null)
@@ -260,23 +265,76 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
             payment.UpdatedAt = DateTime.UtcNow;
         }
 
-        if (sub is not null)
-        {
-            sub.Status = SubscriptionStatus.Expired;
-            sub.CurrentPeriodEnd = DateTime.UtcNow;
-            sub.UpdatedAt = DateTime.UtcNow;
-        }
+        if (sub is null || !RevokesAccess(sub, payment)) return;
+
+        sub.Status = SubscriptionStatus.Expired;
+        sub.CurrentPeriodEnd = DateTime.UtcNow;
+        sub.UpdatedAt = DateTime.UtcNow;
     }
 
-    private static void MarkPaid(Payment? payment, PaymentWebhookEvent evt)
+    // Estornar uma cobrança antiga de quem hoje tem assinatura válida não pode derrubar o acesso.
+    // Derruba quando a assinatura aguarda o estorno, quando a cobrança revertida é a que custeia o
+    // período corrente, ou quando não dá para saber qual foi (chargeback → conservador).
+    private static bool RevokesAccess(Subscription sub, Payment? payment) =>
+        sub.Status == SubscriptionStatus.RefundRequested
+        || payment?.PeriodEnd is null
+        || payment.PeriodEnd > DateTime.UtcNow;
+
+    // -----------------------------------------------------------------------
+    // Cobranças
+    // -----------------------------------------------------------------------
+
+    // Dá baixa na cobrança: marca o Payment pré-existente como pago ou, se não houver (renovação),
+    // registra um novo já pago (idempotente pelo ChargeId). Retorna o Payment afetado (ou null).
+    private async Task<Payment?> CompleteChargeAsync(Subscription? sub, Payment? payment, PaymentWebhookEvent evt)
     {
-        if (payment is null) return;
+        if (payment is not null)
+        {
+            MarkPaid(payment, evt);
+            SetPeriod(payment, evt, sub?.Plan);
+            return payment;
+        }
+
+        if (sub is null || string.IsNullOrEmpty(evt.ChargeId)) return null;
+
+        var created = new Payment
+        {
+            UserId = sub.UserId,
+            SubscriptionId = sub.Id,
+            PlanId = sub.PlanId,
+            Provider = sub.Provider,
+            GatewayChargeId = evt.ChargeId,
+            Kind = PaymentKind.CardSubscription,
+            Method = GatewayPaymentMethod.Card,
+            AmountCents = evt.AmountCents ?? sub.Plan?.PriceCents ?? 0,
+            Status = PaymentStatus.Paid,
+            PaidAt = evt.PaidAt ?? DateTime.UtcNow,
+            ReceiptUrl = evt.ReceiptUrl,
+            CardLastFour = evt.CardLastFour,
+            CardBrand = evt.CardBrand,
+        };
+        SetPeriod(created, evt, sub.Plan);
+        await repo.AddPaymentAsync(created);
+        return created;
+    }
+
+    // Período que ESTA cobrança custeia, derivado do evento — não de sub.CurrentPeriodEnd. A
+    // assinatura só é estendida no subscription.completed/renewed, que pode chegar depois deste
+    // checkout.completed: ler a data da assinatura aqui gravaria o período anterior no histórico.
+    private static void SetPeriod(Payment payment, PaymentWebhookEvent evt, Plan? plan)
+    {
+        var start = evt.PaidAt ?? AnchorOf(evt);
+        payment.PeriodStart = start;
+        payment.PeriodEnd = evt.NextChargeAt ?? NextPeriodEnd(start, plan);
+    }
+
+    private static void MarkPaid(Payment payment, PaymentWebhookEvent evt)
+    {
         payment.Status = PaymentStatus.Paid;
         payment.PaidAt = evt.PaidAt ?? DateTime.UtcNow;
         if (!string.IsNullOrEmpty(evt.ReceiptUrl)) payment.ReceiptUrl = evt.ReceiptUrl;
         if (evt.AmountCents is int amount) payment.AmountCents = amount;
         ApplyCard(payment, evt);
-        payment.UpdatedAt = DateTime.UtcNow;
     }
 
     // Captura o cartão (últimos 4 + bandeira) no histórico de cobrança quando o webhook o traz.

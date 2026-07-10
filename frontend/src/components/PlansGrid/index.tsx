@@ -88,7 +88,13 @@ function buildComparisonRows(tiers: Tier[]): ComparisonRow[] {
   return [...featureRows, ...limitRows]
 }
 
-export default function PlansGrid({ plans, onSelectPlan, disabled = false }: PlansGridProps) {
+export default function PlansGrid({
+  plans,
+  onSelectPlan,
+  disabled = false,
+  currentPlanId = null,
+  ctaLabel = 'Assinar agora',
+}: PlansGridProps) {
   const theme = useTheme()
   const [cycle, setCycle] = useState<BillingCycle>('monthly')
 
@@ -178,6 +184,8 @@ export default function PlansGrid({ plans, onSelectPlan, disabled = false }: Pla
       >
         {tiers.map((tier) => {
           const variant = (cycle === 'annual' ? tier.annual : tier.monthly) ?? tier.monthly ?? tier.annual
+          // Compara a variante exata (Pro Mensal ≠ Pro Anual): trocar de periodicidade é uma troca válida.
+          const isCurrent = !!variant && variant.id === currentPlanId
           const content = TIER_CONTENT[tier.label]
           const description = content?.description ?? variant?.description ?? ''
           const itens = content?.itens ?? []
@@ -258,14 +266,14 @@ export default function PlansGrid({ plans, onSelectPlan, disabled = false }: Pla
               )}
 
               <Button
-                variant="contained"
-                endIcon={<ArrowForwardRounded />}
-                disabled={!variant || disabled}
+                variant={isCurrent ? 'outlined' : 'contained'}
+                endIcon={isCurrent ? undefined : <ArrowForwardRounded />}
+                disabled={!variant || disabled || isCurrent}
                 onClick={() => variant && onSelectPlan(variant)}
                 sx={{
                   mt: 'auto',
                   fontWeight: 700,
-                  ...(tier.isPro
+                  ...(tier.isPro && !isCurrent
                     ? {
                         bgcolor: tone[900],
                         color: tone[50],
@@ -274,7 +282,7 @@ export default function PlansGrid({ plans, onSelectPlan, disabled = false }: Pla
                     : {}),
                 }}
               >
-                Assinar agora
+                {isCurrent ? 'Plano atual' : ctaLabel}
               </Button>
             </Paper>
           )

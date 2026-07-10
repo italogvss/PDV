@@ -95,12 +95,13 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         // paidAmount = valor efetivamente debitado (null enquanto não há cobrança real).
         // amount     = valor nominal do plano.
         //
-        // Cascata: checkout.paidAmount → payment.paidAmount → checkout.amount
-        // Atenção: checkout.amount = 0 no checkout.completed de fluxos trial;
-        //          nesse caso 0 é o correto (nada foi cobrado).
+        // Cascata: checkout.paidAmount → payment.paidAmount → checkout.amount → subscription.amount.
+        // O último degrau cobre subscription.payment_failed, que não traz nó `checkout` — o valor
+        // recusado é o da assinatura.
         var amountCents = checkout?.PaidAmount
                        ?? payment?.PaidAmount
-                       ?? checkout?.Amount;
+                       ?? checkout?.Amount
+                       ?? sub?.Amount;
 
         // ---- Status --------------------------------------------------------
         // subscription.status é CANCELLED no evento cancelled;
@@ -113,7 +114,6 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
 
         // ---- PaidAt --------------------------------------------------------
         // Só tem sentido quando houve cobrança real (checkout.status = "PAID").
-        // Eventos de trial têm updatedAt mas nenhum dinheiro foi movido — PaidAt = null.
         var paidAt = checkout?.Status == "PAID" ? checkout.UpdatedAt : (DateTime?)null;
 
         // ---- ReceiptUrl ----------------------------------------------------
@@ -124,7 +124,7 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         // ---- CustomerId ----------------------------------------------------
         // customer.id é o ID canônico do cliente.
         // checkout.customerId pode divergir de customer.id — inconsistência documentada
-        // da API no evento subscription.trial_started; nunca usá-lo como primário.
+        // da API; nunca usá-lo como primário.
         var customerId = customer?.Id ?? checkout?.CustomerId;
 
         // ---- Metadata ------------------------------------------------------
@@ -139,39 +139,47 @@ public class AbacatePayWebhookProcessor(IOptions<AbacatePayOptions> options) : I
         ) ?? new Dictionary<string, string>();
 
         return new PaymentWebhookEvent(
-            Type:           MapType(payload.Event),
-            Provider:       Provider,
-            RawEventType:   payload.Event,
-            EventId:        eventId,
-            ChargeId:       chargeId,
-            ExternalId:     externalId,
-            SubscriptionId: sub?.Id,
-            CustomerId:     customerId,
-            Status:         AbacatePayGateway.MapStatus(statusRaw),
-            Metadata:       metadata,
-            AmountCents:    amountCents,
-            PaidAt:         paidAt,
-            ReceiptUrl:     receiptUrl,
-            CardLastFour:   card?.Number,
-            CardBrand:      card?.Brand,
-            ProductId:      data?.ProductId,
-            TrialEndsAt:    checkout?.TrialEndsAt);
+            Type:                  MapType(payload.Event),
+            Provider:              Provider,
+            RawEventType:          payload.Event,
+            EventId:               eventId,
+            ChargeId:              chargeId,
+            ExternalId:            externalId,
+            SubscriptionId:        sub?.Id,
+            CustomerId:            customerId,
+            Status:                AbacatePayGateway.MapStatus(statusRaw),
+            Metadata:              metadata,
+            AmountCents:           amountCents,
+            PaidAt:                paidAt,
+            ReceiptUrl:            receiptUrl,
+            CardLastFour:          card?.Number,
+            CardBrand:             card?.Brand,
+            // Âncora do período: o instante em que o gateway processou o evento. Usar o relógio
+            // local estenderia o ciclo indevidamente quando o webhook chega atrasado ou é retentado.
+            SubscriptionUpdatedAt: sub?.UpdatedAt,
+            NextChargeAt:          checkout?.NextChargeAt,
+            CancelledDueTo:        sub?.CancelledDueTo,
+            InstallmentId:         data?.InstallmentId,
+            RetryNumber:           data?.RetryNumber);
     }
 
     // -----------------------------------------------------------------------
     // Mapeamento de tipo de evento
     // -----------------------------------------------------------------------
 
+    // Dois eventos que NÃO existem e não devem ser recriados aqui:
+    //   subscription.trial_started — o trial é PDV-side e nenhum produto do catálogo tem trialDays;
+    //   subscription.plan_changed  — o AbacatePay não avisa a troca de plano por webhook; ela é
+    //                                aplicada de forma síncrona na resposta do endpoint change-plan.
     private static PaymentWebhookType MapType(string e) => e switch
     {
-        "checkout.completed"         => PaymentWebhookType.CheckoutCompleted,
-        "checkout.refunded"          => PaymentWebhookType.CheckoutRefunded,
-        "checkout.disputed"          => PaymentWebhookType.CheckoutDisputed,
-        "subscription.trial_started" => PaymentWebhookType.SubscriptionTrialStarted,
-        "subscription.completed"     => PaymentWebhookType.SubscriptionCompleted,
-        "subscription.renewed"       => PaymentWebhookType.SubscriptionRenewed,
-        "subscription.cancelled"     => PaymentWebhookType.SubscriptionCancelled,
-        "subscription.plan_changed"  => PaymentWebhookType.SubscriptionPlanChanged,
-        _                            => PaymentWebhookType.Unknown,
+        "checkout.completed"           => PaymentWebhookType.CheckoutCompleted,
+        "checkout.refunded"            => PaymentWebhookType.CheckoutRefunded,
+        "checkout.disputed"            => PaymentWebhookType.CheckoutDisputed,
+        "subscription.completed"       => PaymentWebhookType.SubscriptionCompleted,
+        "subscription.renewed"         => PaymentWebhookType.SubscriptionRenewed,
+        "subscription.payment_failed"  => PaymentWebhookType.SubscriptionPaymentFailed,
+        "subscription.cancelled"       => PaymentWebhookType.SubscriptionCancelled,
+        _                              => PaymentWebhookType.Unknown,
     };
 }

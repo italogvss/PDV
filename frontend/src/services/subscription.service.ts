@@ -1,5 +1,7 @@
 import { api } from './api'
 import type {
+  CancelSubscriptionResult,
+  ChangePlanResult,
   PaymentMethod,
   Plan,
   Subscription,
@@ -16,6 +18,12 @@ interface BackendSubscription {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   canceledAt: string | null
+  refundEligibleUntil: string | null
+  pendingPlanId: string | null
+  pendingPlanName: string | null
+  pendingPlanStartsAt: string | null
+  lastPaymentFailedAt: string | null
+  paymentRetryNumber: number | null
   entitlements: string[]
   limits: Record<string, number>
   hasUsedTrial: boolean
@@ -29,7 +37,6 @@ interface BackendPlan {
   price: number
   entitlements: string[]
   limits: Record<string, number>
-  trialDays: number | null
   slug: string
 }
 
@@ -38,13 +45,10 @@ interface BackendCheckout {
 }
 
 interface BackendCancelResult {
-  accessRevoked: boolean
-}
-
-// Resultado do cancelamento. accessRevoked = true quando o acesso caiu na hora (cancelamento em
-// trial) → o app desloga e vai para a landing; false quando mantém acesso até o fim do período.
-export interface CancelResult {
-  accessRevoked: boolean
+  status: string
+  refundRequested: boolean
+  accessUntil: string | null
+  dataAvailableUntil: string
 }
 
 function mapSubscription(s: BackendSubscription): Subscription {
@@ -57,6 +61,12 @@ function mapSubscription(s: BackendSubscription): Subscription {
     trialEndsAt: s.trialEndsAt ?? null,
     currentPeriodEnd: s.currentPeriodEnd ?? null,
     canceledAt: s.canceledAt ?? null,
+    refundEligibleUntil: s.refundEligibleUntil ?? null,
+    pendingPlanId: s.pendingPlanId ?? null,
+    pendingPlanName: s.pendingPlanName ?? null,
+    pendingPlanStartsAt: s.pendingPlanStartsAt ?? null,
+    lastPaymentFailedAt: s.lastPaymentFailedAt ?? null,
+    paymentRetryNumber: s.paymentRetryNumber ?? null,
     entitlements: s.entitlements ?? [],
     limits: s.limits ?? {},
     hasUsedTrial: s.hasUsedTrial ?? false,
@@ -71,7 +81,6 @@ function mapPlan(p: BackendPlan): Plan {
     price: p.price,
     entitlements: p.entitlements ?? [],
     limits: p.limits ?? {},
-    trialDays: p.trialDays ?? null,
     slug: p.slug,
   }
 }
@@ -110,13 +119,25 @@ export const subscriptionService = {
     return { checkoutUrl: data.checkoutUrl ?? null }
   },
 
-  // Troca de plano de uma assinatura ativa — aplicada imediatamente.
-  changePlan: async (planId: string): Promise<void> => {
-    await api.post('/subscriptions/change-plan', { planId })
+  // Troca de plano de uma assinatura ativa. Nada é cobrado agora: o valor novo entra na próxima
+  // renovação. Upgrade vale na hora; downgrade fica agendado para a virada do ciclo (`scheduled`).
+  changePlan: async (planId: string): Promise<ChangePlanResult> => {
+    const { data } = await api.post<ChangePlanResult>('/subscriptions/change-plan', { planId })
+    return {
+      planName: data.planName,
+      scheduled: data.scheduled ?? false,
+      effectiveAt: data.effectiveAt ?? null,
+      nextChargeAt: data.nextChargeAt ?? null,
+    }
   },
 
-  cancel: async (): Promise<CancelResult> => {
+  cancel: async (): Promise<CancelSubscriptionResult> => {
     const { data } = await api.post<BackendCancelResult>('/subscriptions/cancel')
-    return { accessRevoked: data?.accessRevoked ?? false }
+    return {
+      status: data.status as CancelSubscriptionResult['status'],
+      refundRequested: data.refundRequested ?? false,
+      accessUntil: data.accessUntil ?? null,
+      dataAvailableUntil: data.dataAvailableUntil,
+    }
   },
 }

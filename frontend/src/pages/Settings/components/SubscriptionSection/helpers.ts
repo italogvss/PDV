@@ -6,6 +6,7 @@ import { ALL_MODULES, OPERATION_MODULES } from '../../../../constants/modules'
 export {
   formatPrice,
   entitlementSet,
+  isDowngrade,
   FEATURE_KEYS,
   LIMIT_ORDER,
   LIMIT_LABELS,
@@ -15,6 +16,13 @@ export {
   shortPlanName,
   type BillingCycle,
 } from '../../../../utils/plans'
+
+// Espelha RetentionDefaults.DaysAfterAccessLoss no backend: prazo para exportar os dados ou
+// reassinar depois que o plano cai, antes da exclusão definitiva da loja.
+export const RETENTION_DAYS = 90
+
+// Espelha RefundDefaults.WindowDays: janela de arrependimento contada do início da assinatura paga.
+export const REFUND_WINDOW_DAYS = 7
 
 // Configuração visual por status — rótulo + tokens de cor do tema (nunca hex).
 export interface StatusConfig {
@@ -28,6 +36,7 @@ export const STATUS_CONFIG: Record<SubscriptionStatus, StatusConfig> = {
   Pending: { label: 'PROCESSANDO', chipBg: 'warning.soft', chipColor: 'warning.ink' },
   Active: { label: 'ATIVO', chipBg: 'success.soft', chipColor: 'success.ink' },
   Trialing: { label: 'EM TESTE', chipBg: 'premium.100', chipColor: 'premium.900' },
+  RefundRequested: { label: 'REEMBOLSO EM ANÁLISE', chipBg: 'warning.soft', chipColor: 'warning.ink' },
   Canceled: { label: 'CANCELADO', chipBg: 'surface.raised', chipColor: 'text.secondary' },
   Expired: { label: 'EXPIRADO', chipBg: 'error.soft', chipColor: 'error.ink' },
 }
@@ -58,6 +67,10 @@ export function getStatusLine(subscription: Subscription): { label: string; date
       const date = formatDate(subscription.currentPeriodEnd ?? subscription.trialEndsAt)
       return date ? { label: 'Acesso até', date } : null
     }
+    case 'RefundRequested': {
+      const date = formatDate(subscription.canceledAt)
+      return date ? { label: 'Reembolso solicitado em', date } : null
+    }
     case 'Active': {
       const date = formatDate(subscription.currentPeriodEnd)
       return date ? { label: 'Renovação em', date } : null
@@ -65,4 +78,11 @@ export function getStatusLine(subscription: Subscription): { label: string; date
     default:
       return null
   }
+}
+
+// Dentro da janela de arrependimento o cancelamento encerra a assinatura na hora e devolve o
+// dinheiro; fora dela, só interrompe as próximas faturas.
+export function isWithinRefundWindow(subscription: Subscription): boolean {
+  if (!subscription.refundEligibleUntil) return false
+  return new Date(subscription.refundEligibleUntil) > new Date()
 }

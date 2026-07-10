@@ -165,7 +165,7 @@ export function useCreateProduct() {
 ## Tratamento de erro
 
 `useApiError()` retorna `handleError(error, fallback)` — usar em todo `onError`. Resolve a mensagem via `getApiErrorMessage` (`utils/apiError.ts`), nesta ordem:
-1. **402 com `code`** de gating de plano → mensagem amigável de upgrade (`PLAN_LIMIT_EXCEEDED`, `MODULE_NOT_IN_PLAN`).
+1. **402 com `code`** de gating de plano → mensagem amigável de upgrade (`PLAN_LIMIT_EXCEEDED`, `NOT_IN_PLAN`).
 2. `detail` (BusinessException / FluentValidation via ExceptionMiddleware).
 3. `errors` (ValidationProblemDetails do `[ApiController]`).
 4. `title` ou o fallback. Sufixo `[status]` quando houver.

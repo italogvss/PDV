@@ -1,6 +1,8 @@
 import ConstructionOutlined from '@mui/icons-material/ConstructionOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import {
+  Alert,
+  AlertTitle,
   Box,
   Button,
   CircularProgress,
@@ -10,11 +12,18 @@ import { useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
 import { useToast } from '../../../../hooks/useToast'
 import { reportService } from '../../../../services/report.service'
+import { useAppSelector } from '../../../../store'
 import { EXPORT_CATEGORIES } from '../../types'
 
 export default function BackupSection() {
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const showToast = useToast()
+  const tenantId = useAppSelector((s) => s.auth.tenantId)
+  const tenants = useAppSelector((s) => s.auth.tenants)
+
+  // Esta é a página de saída de quem perdeu o plano: a exportação continua liberada mesmo sem
+  // assinatura, e é aqui que o prazo de exclusão precisa ficar explícito.
+  const deletionAt = tenants.find((t) => t.tenantId === tenantId)?.scheduledDeletionAt
 
   const handleExport = async (categoryId: string) => {
     if (loadingId) return
@@ -30,6 +39,15 @@ export default function BackupSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {deletionAt && (
+        <Alert severity="error" variant="outlined" sx={{ borderRadius: 3 }}>
+          <AlertTitle sx={{ fontWeight: 700 }}>Exclusão agendada</AlertTitle>
+          Esta loja e todo o seu histórico serão apagados definitivamente em{' '}
+          <strong>{new Date(deletionAt).toLocaleDateString('pt-BR')}</strong>. Exporte o que precisar
+          antes dessa data — depois dela, os dados não podem ser recuperados.
+        </Alert>
+      )}
+
       <SettingCard title="Backup de dados" subtitle="Está pagina esta em construção e ficara disponível em breve.">
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 200 }}>
           <ConstructionOutlined sx={{ fontSize: 48, color: 'text.disabled' }} />

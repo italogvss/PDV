@@ -12,7 +12,6 @@ public record PlanResponse(
     // Capabilities inclusas no plano (eixo de billing): módulos + sub-features. Informativo.
     IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
-    int? TrialDays,
     // Ponto de entrada do trial na landing (`?plano=<slug>`) — o frontend reusa pra iniciar o
     // onboarding já com o plano certo quando o usuário escolhe na tela de planos.
     string Slug);
@@ -26,6 +25,18 @@ public record SubscriptionResponse(
     DateTime? TrialEndsAt,
     DateTime? CurrentPeriodEnd,
     DateTime? CanceledAt,
+    // Prazo final para cancelar com reembolso (início da assinatura paga + janela de arrependimento).
+    // null quando a assinatura nunca foi paga (trial) ou já terminou — o frontend usa para escolher
+    // a mensagem de cancelamento.
+    DateTime? RefundEligibleUntil,
+    // Troca de plano agendada no gateway: entra em vigor em PendingPlanStartsAt (virada do ciclo).
+    // Até lá valem PlanId/Entitlements atuais e nada é cobrado.
+    Guid? PendingPlanId,
+    string? PendingPlanName,
+    DateTime? PendingPlanStartsAt,
+    // Cobrança de renovação recusada e ainda em retentativa. null = nenhuma falha pendente.
+    DateTime? LastPaymentFailedAt,
+    int? PaymentRetryNumber,
     // Capabilities inclusas no PLANO (eixo de billing): módulos + sub-features. Informativo no
     // frontend — NÃO esconde UI; o bloqueio acontece via 402 no backend. Não confundir com os
     // módulos do tenant (/auth/me).
@@ -47,7 +58,23 @@ public record StartCheckoutResponse(
 
 public record ChangePlanRequest(Guid PlanId);
 
-// Resultado do cancelamento. AccessRevoked = true quando o acesso caiu na hora (cancelamento em
-// trial: assinatura removida + loja(s) desativada(s)) → o frontend desloga e vai para a landing.
-// false quando a assinatura ativa foi cancelada mas o acesso segue até o fim do período pago.
-public record CancelSubscriptionResult(bool AccessRevoked);
+// Resultado da troca de plano. Nunca há cobrança no ato — o gateway não calcula diferença.
+//   Scheduled    — true num downgrade: o plano novo só passa a valer na virada do ciclo (§7.4).
+//   EffectiveAt  — quando o plano novo passa a valer. null = agora (upgrade ou trial).
+//   NextChargeAt — quando o valor do plano novo é cobrado. null no trial, que ainda não cobra nada.
+public record ChangePlanResult(
+    string PlanName,
+    bool Scheduled,
+    DateTime? EffectiveAt,
+    DateTime? NextChargeAt);
+
+// Resultado do cancelamento — o frontend deriva daqui a mensagem de confirmação.
+//   Status              — estado resultante: "Expired" (trial), "RefundRequested" ou "Canceled".
+//   RefundRequested     — estorno solicitado; a aprovação é manual e chega por webhook.
+//   AccessUntil         — até quando o plano continua valendo; null = o acesso caiu agora.
+//   DataAvailableUntil  — prazo para exportar os dados ou reassinar antes da exclusão definitiva.
+public record CancelSubscriptionResult(
+    string Status,
+    bool RefundRequested,
+    DateTime? AccessUntil,
+    DateTime DataAvailableUntil);

@@ -42,6 +42,28 @@ export function formatLimit(key: PlanLimitKey, value: number | undefined): strin
   return String(value)
 }
 
+// ── Upgrade × downgrade ───────────────────────────────────────────────────────────────────────
+// Espelha `PlanChange.IsDowngrade` no backend: a troca é downgrade quando o plano-alvo retira uma
+// capability ou encolhe um limite. Downgrade fica agendado para a virada do ciclo (o usuário já
+// pagou o plano maior); qualquer outra troca — upgrade ou mudança de periodicidade — vale na hora.
+type PlanShape = Pick<Plan, 'entitlements' | 'limits'>
+
+export function isDowngrade(current: PlanShape, target: PlanShape): boolean {
+  const targetKeys = entitlementSet(target.entitlements)
+  for (const key of entitlementSet(current.entitlements)) {
+    if (!targetKeys.has(key)) return true
+  }
+  // Limite ausente no plano-alvo = capability não concedida = 0.
+  return Object.entries(current.limits).some(([key, value]) => shrinks(target.limits[key] ?? 0, value))
+}
+
+// Ilimitado (-1) é maior que qualquer número — a comparação direta o trataria como o menor.
+function shrinks(target: number, current: number): boolean {
+  if (target === UNLIMITED) return false
+  if (current === UNLIMITED) return true
+  return target < current
+}
+
 // ── Período de cobrança ───────────────────────────────────────────────────────────────────────
 // O contrato do frontend não expõe o período — inferimos pelo nome do plano ("... Anual"/"... Mensal").
 export type BillingCycle = 'monthly' | 'annual'

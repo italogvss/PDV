@@ -47,6 +47,7 @@ function CardBrandBadge({ brand }: { brand: string | null }) {
 const STATUS_LABELS: Record<string, string> = {
   Paid: 'Pago',
   Pending: 'Pendente',
+  Failed: 'Recusado',
   Refunded: 'Reembolsado',
   Disputed: 'Contestado',
   Expired: 'Expirado',
@@ -56,15 +57,20 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, { bgcolor: string; color: string }> = {
   Paid: { bgcolor: 'success.soft', color: 'success.ink' },
   Pending: { bgcolor: 'warning.soft', color: 'warning.ink' },
+  Failed: { bgcolor: 'error.soft', color: 'error.ink' },
   Refunded: { bgcolor: 'info.soft', color: 'info.ink' },
   Disputed: { bgcolor: 'error.soft', color: 'error.ink' },
   Expired: { bgcolor: 'action.hover', color: 'text.secondary' },
   Cancelled: { bgcolor: 'action.hover', color: 'text.secondary' },
 }
 
-function StatusChip({ status }: { status: string }) {
+// Numa cobrança recusada o gateway ainda retenta — o número da tentativa diz ao usuário quanto
+// tempo ele tem para atualizar o cartão antes do cancelamento automático.
+function StatusChip({ status, retryNumber }: { status: string; retryNumber?: number | null }) {
   const sx = STATUS_COLORS[status] ?? { bgcolor: 'action.hover', color: 'text.secondary' }
-  return <Chip label={STATUS_LABELS[status] ?? status} size="small" sx={{ ...sx, fontWeight: 600 }} />
+  const label = STATUS_LABELS[status] ?? status
+  const suffix = status === 'Failed' && retryNumber ? ` (tentativa ${retryNumber})` : ''
+  return <Chip label={`${label}${suffix}`} size="small" sx={{ ...sx, fontWeight: 600 }} />
 }
 
 // --- kind ---
@@ -117,9 +123,9 @@ const columns: GridColDef<UserPayment>[] = [
   {
     field: 'status',
     headerName: 'Status',
-    width: 140,
+    width: 180,
     sortable: false,
-    renderCell: ({ row }) => <StatusChip status={row.status} />,
+    renderCell: ({ row }) => <StatusChip status={row.status} retryNumber={row.retryNumber} />,
   },
   {
     field: 'paidAt',

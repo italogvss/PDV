@@ -1,6 +1,6 @@
 {
   "id": "{{LOG_ID}}",
-  "event": "subscription.trial_started",
+  "event": "subscription.payment_failed",
   "apiVersion": 2,
   "devMode": true,
   "data": {
@@ -11,19 +11,18 @@
       "method": "CARD",
       "status": "ACTIVE",
       "frequency": "MONTHLY",
-      "trialDays": 7,
-      "trialEndsAt": "2026-07-16T23:59:59.999Z",
+      "retryPolicy": {
+        "maxRetry": 3,
+        "retryEvery": 2
+      },
       "createdAt": "2026-07-09T12:00:00.000Z",
-      "updatedAt": "2026-07-09T12:00:00.000Z",
+      "updatedAt": "2026-08-09T12:00:05.000Z",
       "canceledAt": null,
       "cancelPolicy": null,
       "cancelledDueTo": null
     },
-    "customer": {
-      "id": "{{CUSTOMER_ID}}",
-      "name": "QA Kashing",
-      "email": "qa@exemplo.com",
-      "taxId": "123.***.***-**"
-    }
+    "installmentId": "{{INSTALLMENT_ID}}",
+    "installmentNumber": 2,
+    "retryNumber": {{RETRY_NUMBER}}
   }
 }

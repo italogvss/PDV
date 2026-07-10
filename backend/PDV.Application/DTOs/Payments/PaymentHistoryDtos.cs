@@ -12,6 +12,8 @@ public record PaymentHistoryItemResponse(
     string? CardBrand,
     DateTime? PeriodStart,
     DateTime? PeriodEnd,
+    // Tentativa de cobrança recusada — só em Status = "Failed".
+    int? RetryNumber,
     DateTime CreatedAt);
 
 public record PaymentHistoryResponse(

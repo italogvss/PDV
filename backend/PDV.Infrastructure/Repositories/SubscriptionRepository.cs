@@ -7,14 +7,17 @@ using PDV.Infrastructure.Persistence;
 namespace PDV.Infrastructure.Repositories;
 
 // Assinatura é scoped por UserId (Owner) — filtro explícito, sem query filter de tenant.
+//
+// Nenhuma query filtra por IsActive: a Subscription NUNCA é soft-deleted (o cancelamento muda o
+// Status), e o filtro só criava a armadilha de sumir com a assinatura de quem cancelou — junto com
+// seu histórico e sua elegibilidade a reassinar.
 public class SubscriptionRepository(AppDbContext context) : ISubscriptionRepository
 {
-    public async Task<Subscription?> GetLiveByUserIdAsync(Guid userId) =>
+    // Uma assinatura por usuário — índice único em UserId.
+    public async Task<Subscription?> GetByUserIdAsync(Guid userId) =>
         await context.Subscriptions
             .Include(s => s.Plan)
-            .Where(s => s.UserId == userId && s.IsActive)
-            .OrderByDescending(s => s.CreatedAt)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(s => s.UserId == userId);
 
     public async Task AddAsync(Subscription subscription)
     {
@@ -28,21 +31,12 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
         await context.SaveChangesAsync();
     }
 
-    // Remoção FÍSICA (não soft delete) — cancelamento em trial bloqueia o acesso sem deixar
-    // assinatura para reativar em trial. Deletar os Payment da sub antes (FK).
-    public async Task DeleteAsync(Subscription subscription)
-    {
-        context.Subscriptions.Remove(subscription);
-        await context.SaveChangesAsync();
-    }
-
     // Expira assinaturas canceladas cujo período já terminou (varrido pelo BackgroundService).
     // Sem query filter de tenant — varre todos os usuários por design.
     public async Task<int> ExpireCanceledPastPeriodAsync(DateTime now)
     {
         var due = await context.Subscriptions
-            .Where(s => s.IsActive
-                && s.Status == SubscriptionStatus.Canceled
+            .Where(s => s.Status == SubscriptionStatus.Canceled
                 && s.CurrentPeriodEnd != null
                 && s.CurrentPeriodEnd < now)
             .ToListAsync();
@@ -58,12 +52,10 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
     }
 
     // Expira trials PDV-side vencidos (TrialEndsAt no passado, sem virar assinatura paga).
-    // Sem query filter de tenant — varre todos os usuários por design.
     public async Task<int> ExpireTrialingPastEndAsync(DateTime now)
     {
         var due = await context.Subscriptions
-            .Where(s => s.IsActive
-                && s.Status == SubscriptionStatus.Trialing
+            .Where(s => s.Status == SubscriptionStatus.Trialing
                 && s.TrialEndsAt != null
                 && s.TrialEndsAt < now)
             .ToListAsync();
@@ -79,13 +71,10 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
     }
 
     // Expira checkouts Pending abandonados há mais que o TTL (usuário nunca voltou do gateway).
-    // Sem query filter de tenant — varre todos os usuários por design.
     public async Task<int> ExpireStalePendingAsync(DateTime cutoff)
     {
         var due = await context.Subscriptions
-            .Where(s => s.IsActive
-                && s.Status == SubscriptionStatus.Pending
-                && s.UpdatedAt < cutoff)
+            .Where(s => s.Status == SubscriptionStatus.Pending && s.UpdatedAt < cutoff)
             .ToListAsync();
 
         foreach (var sub in due)

@@ -13,6 +13,7 @@ interface BackendPayment {
   cardBrand: string | null
   periodStart: string | null
   periodEnd: string | null
+  retryNumber: number | null
   createdAt: string
 }
 
@@ -37,6 +38,7 @@ function mapPayment(p: BackendPayment): UserPayment {
     cardBrand: p.cardBrand,
     periodStart: p.periodStart,
     periodEnd: p.periodEnd,
+    retryNumber: p.retryNumber ?? null,
     createdAt: p.createdAt,
   }
 }

@@ -157,8 +157,12 @@ record AbacateEnvelope<T>(T? Data, bool Success, JsonElement? Error);
 
 **Request:** `{ "id": "subs_...", "productId": "prod_...", "quantity": 1 }`
 
-**Response** (`data`): `{ "id": "subu_...", "subscriptionId", "status": "PENDING", "productId", "quantity", "newAmount" }`
-— objeto de atualização pendente; confirmação chega via webhook `subscription.plan_changed`.
+**Response** (`data`): `{ "id": "subu_...", "subscriptionId", "status", "productId", "quantity", "newAmount" }`
+
+- A troca é aplicada **na hora**, sem calcular proporcional e **sem emitir fatura**: o `newAmount` só é
+  cobrado na próxima renovação.
+- **Não há webhook de confirmação** — `subscription.plan_changed` não existe. Esta resposta é o único
+  retorno. Quando os recursos passam a valer no PDV é decisão nossa: ver `docs/subscriptions.md` §7.4.
 
 ### 4.4 `POST subscriptions/cancel`
 
@@ -215,19 +219,14 @@ Anônimo (`[AllowAnonymous]`), em `WebhooksController`. Pipeline de processament
 
 ### 5.4 Eventos e ações aplicadas
 
-Mapa `event` (AbacatePay) → `PaymentWebhookType` → ação em `BillingWebhookService`:
+Os sete eventos que o gateway emite e a ação de cada um em `BillingWebhookService` estão em
+**`docs/subscriptions.md` §10** — fonte única, para não divergir daqui. Dois eventos que **não
+existem** e já foram removidos do mapeamento:
 
-| `event` | Tipo interno | Ação |
-|---|---|---|
-| `checkout.completed` | `CheckoutCompleted` | Se `PAID`: dá baixa no `Payment` (ou cria um novo já pago — renovação). Se `PENDING` (trial): apenas captura o cartão no `Payment` pendente. |
-| `subscription.trial_started` | `SubscriptionTrialStarted` | `Status = Trialing`, grava `GatewaySubscriptionId`, define `TrialEndsAt`/`CurrentPeriodEnd`, marca trial usado. *(defensivo — ver §8)* |
-| `subscription.completed` | `SubscriptionCompleted` | `Status = Active`, grava `GatewaySubscriptionId`, `CurrentPeriodEnd = agora + ciclo`. |
-| `subscription.renewed` | `SubscriptionRenewed` | Estende o ciclo (`CurrentPeriodEnd`). A baixa do pagamento vem no `checkout.completed` correspondente. |
-| `subscription.plan_changed` | `SubscriptionPlanChanged` | Confirmação idempotente: garante `PlanId` (mapeado pelo `productId`) e registra a cobrança da troca. Não altera datas. |
-| `subscription.cancelled` | `SubscriptionCancelled` | `Status = Canceled`, `CanceledAt`; marca `Payment` como cancelado. |
-| `checkout.refunded` | `CheckoutRefunded` | `Payment = Refunded`; assinatura → `Expired`, `CurrentPeriodEnd = agora`. |
-| `checkout.disputed` | `CheckoutDisputed` | `Payment = Disputed`; assinatura → `Expired`. |
-| *(desconhecido)* | `Unknown` | Registrado como processado, sem efeito. |
+- `subscription.trial_started` — o trial é PDV-side, nenhum produto tem `trialDays`;
+- `subscription.plan_changed` — a troca de plano não gera webhook (ver §4.3).
+
+Qualquer `event` fora do mapa cai em `Unknown`: registrado como processado, sem efeito.
 
 **Correlação da assinatura** (`ResolveSubscriptionAsync`, em ordem de prioridade):
 `metadata.subscriptionId` → `externalId` (= `Subscription.Id`) → `SubscriptionId` do gateway (`subs_`) →

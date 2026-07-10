@@ -55,7 +55,6 @@ public record AdminPlanDto(
     string? Description,
     int PriceCents,
     string BillingPeriod,
-    int? TrialDays,
     bool IsActive,
     string ExternalProductId,
     IReadOnlyList<string> Modules,
@@ -66,5 +65,4 @@ public record AdminPlanDto(
 public record UpdatePlanRequest(
     string Name,
     string? Description,
-    int PriceCents,
-    int? TrialDays);
+    int PriceCents);

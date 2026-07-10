@@ -25,11 +25,8 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
 
     [HttpPost("change-plan")]
     [Authorize(Roles = "Owner,Admin")]
-    public async Task<IActionResult> ChangePlan([FromBody] ChangePlanRequest request)
-    {
-        await service.ChangePlanAsync(request);
-        return NoContent();
-    }
+    public async Task<IActionResult> ChangePlan([FromBody] ChangePlanRequest request) =>
+        Ok(await service.ChangePlanAsync(request));
 
     [HttpPost("cancel")]
     [Authorize(Roles = "Owner,Admin")]

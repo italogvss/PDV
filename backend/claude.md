@@ -77,12 +77,19 @@ Apenas planos pagos (`Plan`, semeados por `PlanSeeder` no startup). **Não exist
 
 **Trial de 30 dias (PDV-side).** Controlado inteiramente pela aplicação, **sem tocar o gateway**. Quando um plano é escolhido na landing (`?plano=<slug>` → `Plan.Slug`), o `TenantService` cria, na criação do tenant, uma `Subscription` `Trialing` (`TrialEndsAt = now + TrialDefaults.DurationDays`) e marca `User.HasUsedTrial`. Uma vez por usuário; sem `planSlug` → sem trial. Os planos no gateway **não** usam `trialDays`. `SubscriptionExpiryBackgroundService` marca trials vencidos como `Expired`.
 
-- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant** → sua `Subscription` viva. `IsEntitled` cobre `Trialing` (até `TrialEndsAt`) e `Active`/`Canceled` (até `CurrentPeriodEnd`); fora disso → módulos/limites vazios (bloqueado).
-- Gating de **módulo**: `RequireModuleAsync` → 402 `MODULE_NOT_IN_PLAN`.
+**Reembolso (7 dias) e retenção (90 dias).** Cancelar dentro de `RefundDefaults.WindowDays` a partir de `Subscription.StartedAt` encerra a assinatura na hora e a marca `RefundRequested` — o estorno **não tem endpoint na API do AbacatePay**, é aprovado manualmente no painel e confirmado pelo webhook `checkout.refunded`. Fora da janela, cancelar só interrompe as próximas faturas. Em nenhum caso a loja é desativada: ela sobrevive por `RetentionDefaults.DaysAfterAccessLoss` para o dono exportar os dados ou reassinar.
+
+**Troca de plano: upgrade imediato, downgrade agendado.** `subscriptions/change-plan` troca o produto no gateway na hora e não calcula diferença — o valor novo só é cobrado na próxima renovação. O que `ChangePlanAsync` decide é **quando os recursos mudam**: se `PlanChange.IsDowngrade(atual, alvo)` (o alvo retira alguma capability ou encolhe algum limite), grava `Subscription.PendingPlanId` e `ApplyRenewed` o promove a `PlanId` na virada do ciclo (antes de calcular o período, porque o ciclo pode mudar); senão `PlanId` muda na hora. Tirar recursos no meio de um ciclo já pago seria cobrar por algo que não entregamos. **Não existe evento `subscription.plan_changed`** — o gateway não avisa a troca por webhook; ela é aplicada de forma síncrona na resposta do endpoint.
+
+- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant** → sua `Subscription` viva. A regra de direito ao plano é `Subscription.IsEntitledAt(now)` (mora na **entidade**, não no service — o job de retenção precisa dela sem contexto de tenant): cobre `Trialing` (até `TrialEndsAt`) e `Active`/`Canceled` (até `CurrentPeriodEnd`); fora disso → módulos/limites vazios (bloqueado).
+- Gating de **módulo** e de **feature**: `RequireModuleAsync` / `RequireEntitlementAsync` → 402 `NOT_IN_PLAN` (o mesmo código para os dois).
 - Gating de **limite numérico**: o **service** chama `EnsureWithinLimitAsync(limitKey, currentCount)` antes de criar (ex.: `ProductService` checa `PlanLimits.MaxProducts`) → 402 `PLAN_LIMIT_EXCEEDED`.
 - Módulos/limites são armazenados como JSON no `Plan` (`EntitledModulesJson`, `LimitsJson`), lidos via `PlanJson` helper.
+- A **exportação de dados** (`DataExportController`) fica **fora** do gate de plano por design — é o que permite baixar os dados depois do cancelamento.
 
 **Gateway: AbacatePay** (`Services/Payments/AbacatePay`). `IPaymentGateway` cria cobranças; `IPaymentWebhookProcessor` valida e parseia webhooks. `WebhooksController` (`POST /api/webhooks/abacatepay`, anônimo): valida secret na URL → valida HMAC do corpo raw → checa idempotência (`WebhookEvent`) → `BillingWebhookService.ProcessAsync` aplica estado + registra evento num **único `SaveChanges` atômico**.
+
+> Regra de ouro nos handlers de webhook: **datas vêm do evento** (`subscription.updatedAt`, `checkout.nextChargeAt`), nunca de `DateTime.UtcNow` — um webhook atrasado ou retentado estenderia o ciclo indevidamente. Ver `docs/subscriptions.md` §8.
 
 ---
 
@@ -154,13 +161,13 @@ Exceções de domínio herdam `AppException` (`Title`, `Detail`, `HttpStatus`, `
 | `NotFoundException` | 404 |
 | `BusinessException` | 400 |
 | `UnauthorizedException` | 401 |
-| `PaymentRequiredException` | 402 (`code`: `MODULE_NOT_IN_PLAN` / `PLAN_LIMIT_EXCEEDED`) |
+| `PaymentRequiredException` | 402 (`code`: `NOT_IN_PLAN` / `PLAN_LIMIT_EXCEEDED`) |
 | `PaymentGatewayException` | erro de integração com gateway |
 | `ValidationException` (FluentValidation) | 400 |
 
 Resposta sempre Problem Details (RFC 7807) com campo opcional `code`; `null` é omitido. Stack trace só em Development:
 ```json
-{ "type": "...", "title": "Mensagem.", "status": 402, "detail": "...", "code": "MODULE_NOT_IN_PLAN" }
+{ "type": "...", "title": "Mensagem.", "status": 402, "detail": "...", "code": "NOT_IN_PLAN" }
 ```
 
 Validators em `PDV.Application/Validators/{Feature}/`. Paginação: `new PaginatedResponse<T>(data.Select(Map), page, pageSize, totalCount, totalPages)`.

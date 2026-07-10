@@ -170,6 +170,7 @@ builder.Services.AddScoped<IGatewayCustomerRepository, GatewayCustomerRepository
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IUserTenantRepository, UserTenantRepository>();
 builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>();
+builder.Services.AddScoped<IDataRetentionRepository, DataRetentionRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IContactMessageRepository, ContactMessageRepository>();

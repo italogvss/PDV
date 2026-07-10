@@ -20,12 +20,11 @@ public class PaymentRepository(AppDbContext context) : IPaymentRepository
         await context.SaveChangesAsync();
     }
 
-    // Remoção FÍSICA (não soft delete) dos pagamentos da assinatura — cancelamento em trial,
-    // onde não há cobrança paga e o histórico não precisa ser preservado.
-    public async Task DeleteBySubscriptionIdAsync(Guid subscriptionId) =>
+    public async Task<Payment?> GetLatestBySubscriptionIdAsync(Guid subscriptionId) =>
         await context.Payments
             .Where(p => p.SubscriptionId == subscriptionId)
-            .ExecuteDeleteAsync();
+            .OrderByDescending(p => p.CreatedAt)
+            .FirstOrDefaultAsync();
 
     public async Task<(IEnumerable<Payment> Data, int TotalCount)> GetByUserIdAsync(Guid userId, int page, int pageSize)
     {

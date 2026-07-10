@@ -1,9 +1,13 @@
 Envelope raiz: `{ id?, event, apiVersion, devMode, data }`. Seções de `data` presentes por família de evento:
 
-- `checkout`, `customer`, `payerInformation` → **sempre**.
+- `checkout`, `customer`, `payerInformation` → **sempre**, exceto em `subscription.payment_failed` e no
+  `subscription.cancelled` por `max_payment_retries_exceeded`.
 - `subscription`, `payment` → **ausentes** no `checkout.completed`.
-- Campos extras na raiz de `data` (`productId`, `newAmount`, `pendingUpdateId`…) → **exclusivos** de
-  `subscription.plan_changed`.
+- `installmentId`, `installmentNumber`, `retryNumber` na raiz de `data` → **exclusivos** de
+  `subscription.payment_failed`.
+
+> Não existe `subscription.plan_changed`: a troca de plano é aplicada de forma síncrona pelo endpoint
+> `subscriptions/change-plan` e não gera webhook.
 
 ## checkout.completed
 Disparado quando um pagamento via checkout é realizado. O payerInformation varia conforme o método.

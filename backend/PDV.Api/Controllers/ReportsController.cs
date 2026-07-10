@@ -93,23 +93,6 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("sales/export")]
-    public async Task<IActionResult> ExportSalesCSV(
-        [FromQuery] string? period,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
-    {
-        var csv = await service.ExportSalesCsvAsync(period, startDate, endDate);
-        return File(csv, "text/csv", "vendas.csv");
-    }
-
-    [HttpGet("sales/export/all")]
-    public async Task<IActionResult> ExportAllSalesCSV()
-    {
-        var csv = await service.ExportAllSalesCsvAsync();
-        return File(csv, "text/csv", "vendas.csv");
-    }
-
     [HttpGet("employees")]
     public async Task<IActionResult> GetEmployeesList()
     {
@@ -122,48 +105,6 @@ public class ReportsController(IReportService service) : ControllerBase
     {
         var result = await service.GetCustomersListAsync();
         return Ok(result);
-    }
-
-    [HttpGet("stock/export")]
-    public async Task<IActionResult> ExportStockCSV()
-    {
-        var csv = await service.ExportStockCsvAsync();
-        return File(csv, "text/csv", "estoque.csv");
-    }
-
-    [HttpGet("customers/export")]
-    public async Task<IActionResult> ExportCustomersCSV()
-    {
-        var csv = await service.ExportCustomersCsvAsync();
-        return File(csv, "text/csv", "clientes.csv");
-    }
-
-    [HttpGet("services/export")]
-    public async Task<IActionResult> ExportServicesCSV()
-    {
-        var csv = await service.ExportServicesCsvAsync();
-        return File(csv, "text/csv", "servicos.csv");
-    }
-
-    [HttpGet("expenses/export")]
-    public async Task<IActionResult> ExportExpensesCSV()
-    {
-        var csv = await service.ExportExpensesCsvAsync();
-        return File(csv, "text/csv", "despesas.csv");
-    }
-
-    [HttpGet("billing/export")]
-    public async Task<IActionResult> ExportBillingCSV()
-    {
-        var csv = await service.ExportBillingCsvAsync();
-        return File(csv, "text/csv", "faturamento.csv");
-    }
-
-    [HttpGet("team/export")]
-    public async Task<IActionResult> ExportTeamCSV()
-    {
-        var csv = await service.ExportTeamCsvAsync();
-        return File(csv, "text/csv", "equipe.csv");
     }
 
     [HttpGet("appointments/summary")]

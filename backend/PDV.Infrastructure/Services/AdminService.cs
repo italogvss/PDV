@@ -112,7 +112,6 @@ public class AdminService(AppDbContext context) : IAdminService
         plan.Name = request.Name;
         plan.Description = request.Description;
         plan.PriceCents = request.PriceCents;
-        plan.TrialDays = request.TrialDays;
         plan.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
@@ -145,7 +144,6 @@ public class AdminService(AppDbContext context) : IAdminService
             p.Description,
             p.PriceCents,
             p.BillingPeriod.ToString(),
-            p.TrialDays,
             p.IsActive,
             p.ExternalProductId,
             modules,

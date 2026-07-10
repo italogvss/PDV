@@ -17,8 +17,8 @@ public class Plan : BaseEntity
     public int PriceCents { get; set; }
 
     // Produto correspondente no gateway. O ciclo (mensal/anual) é definido por BillingPeriod.
+    // Nenhum produto usa trialDays: o trial é PDV-side (ver TrialDefaults).
     public string ExternalProductId { get; set; } = string.Empty;
-    public int? TrialDays { get; set; }
 
     // Ciclo de cobrança do produto no gateway — base para calcular o fim do período no cartão.
     public BillingPeriod BillingPeriod { get; set; } = BillingPeriod.Monthly;

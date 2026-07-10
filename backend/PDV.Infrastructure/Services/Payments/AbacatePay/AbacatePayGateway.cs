@@ -6,7 +6,6 @@ using PDV.Infrastructure.Services.Payments.AbacatePay.Models;
 namespace PDV.Infrastructure.Services.Payments.AbacatePay;
 
 // Orquestração de negócio: traduz os modelos neutros do domínio para os payloads do AbacatePay
-// (via IAbacatePayApiClient) e de volta. Implementa a interface genérica IPaymentGateway.
 public class AbacatePayGateway(IAbacatePayApiClient api) : IPaymentGateway
 {
     public const string ProviderName = "AbacatePay";

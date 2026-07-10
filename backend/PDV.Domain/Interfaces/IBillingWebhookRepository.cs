@@ -12,17 +12,14 @@ public interface IBillingWebhookRepository
 
     Task<Subscription?> GetSubscriptionByIdAsync(Guid id);
     Task<Subscription?> GetSubscriptionByGatewayIdAsync(string gatewaySubscriptionId);
-    Task<Subscription?> GetLiveSubscriptionByUserIdAsync(Guid userId);
-    Task<Subscription?> GetLiveSubscriptionByGatewayCustomerIdAsync(string provider, string gatewayCustomerId);
+    Task<Subscription?> GetSubscriptionByUserIdAsync(Guid userId);
+    Task<Subscription?> GetSubscriptionByGatewayCustomerIdAsync(string provider, string gatewayCustomerId);
 
     Task<Payment?> GetPaymentByGatewayChargeIdAsync(string chargeId);
     Task AddPaymentAsync(Payment payment);
 
-    // Mapeia o produto do gateway (prod_...) para o Plan — usado ao aplicar troca de plano via webhook.
-    Task<Plan?> GetPlanByExternalProductIdAsync(string externalProductId);
-
-    Task<User?> GetUserByIdAsync(Guid id);
-    Task MarkTrialUsedAsync(Guid userId);
+    // Downgrade agendado (Subscription.PendingPlanId) — promovido na renovação.
+    Task<Plan?> GetPlanByIdAsync(Guid id);
 
     Task SaveChangesAsync();
 }

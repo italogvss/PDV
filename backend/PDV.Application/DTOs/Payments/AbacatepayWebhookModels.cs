@@ -22,9 +22,10 @@ public record WebhookEnvelope(
 // ---------------------------------------------------------------------------
 
 // Seções presentes por família de evento:
-//   checkout, customer, payerInformation  → sempre
+//   checkout, customer, payerInformation  → sempre, EXCETO em subscription.payment_failed e no
+//                                           subscription.cancelled por max_payment_retries_exceeded
 //   subscription, payment                 → ausentes no checkout.completed
-//   campos extras na raiz (ProductId...)  → exclusivos de subscription.plan_changed
+//   installmentId/retryNumber             → exclusivos de subscription.payment_failed
 public record WebhookData(
     WebhookCheckout? Checkout,
     WebhookSubscription? Subscription,
@@ -32,14 +33,11 @@ public record WebhookData(
     WebhookCustomer? Customer,
     WebhookPayerInformation? PayerInformation,
 
-    // Exclusivos de subscription.plan_changed — ficam na raiz de data, fora de qualquer sub-objeto
-    string? PendingUpdateId,
-    string? ProductId,
-    int? NewAmount,
-    string? ChangeSource,
-    string? Status,        // Status da atualização pendente ("PENDING")
-    DateTime? RequestedAt,
-    int? Quantity
+    // Exclusivos de subscription.payment_failed — na raiz de data, fora de qualquer sub-objeto
+    string? InstallmentId,     // intl_... — identifica a parcela recusada
+    int? InstallmentNumber,
+    int? RetryNumber           // tentativa atual; ao atingir subscription.retryPolicy.maxRetry
+                               // o gateway cancela e envia subscription.cancelled
 );
 
 // ---------------------------------------------------------------------------
@@ -49,13 +47,12 @@ public record WebhookData(
 // Presente em todos os eventos com o mesmo shape.
 //
 // Variações documentadas:
-//   amount      = 0 no checkout.completed de fluxos trial (nenhuma cobrança)
 //   externalId  = null no sub.completed e sub.renewed (checkout gerado internamente)
-//   paidAmount  = null até haver cobrança real; preenchido no plan_changed, sub.completed, sub.renewed
-//   status      = PENDING nos eventos de trial/trial; PAID quando há cobrança real
+//   paidAmount  = null até haver cobrança real; preenchido no sub.completed e sub.renewed
+//   status      = PENDING enquanto não há cobrança real; PAID quando o dinheiro foi debitado
 //   receiptUrl  = null até sub.completed / sub.renewed
-//   trialDays, trialEndsAt, nextChargeAt = presentes apenas no checkout.completed
-//   utms        = presente nos primeiros 4 eventos; ausente no sub.completed e sub.renewed
+//   nextChargeAt = fim do período custeado por esta cobrança, quando o gateway o informa
+//   utms        = ausente no sub.completed e sub.renewed
 public record WebhookCheckout(
     string Id,
     string? ExternalId,
@@ -79,8 +76,6 @@ public record WebhookCheckout(
     bool DevMode,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    int? TrialDays,
-    DateTime? TrialEndsAt,
     DateTime? NextChargeAt,
     WebhookUtms? Utms
 );
@@ -93,11 +88,14 @@ public record WebhookItem(string Id, int Quantity);
 // data.subscription
 // ---------------------------------------------------------------------------
 
-// Ausente no checkout.completed; presente nos demais 5 eventos.
+// Ausente no checkout.completed; presente nos demais eventos.
 //
 // Variações:
-//   status      = "ACTIVE" na maioria; "CANCELLED" apenas no subscription.cancelled
+//   status         = "ACTIVE" na maioria; "CANCELLED" apenas no subscription.cancelled
+//   updatedAt      = quando o gateway processou o evento — âncora do período (nunca o relógio local)
 //   canceledAt, cancelPolicy = preenchidos somente no subscription.cancelled
+//   cancelledDueTo = "max_payment_retries_exceeded" quando o cancelamento foi involuntário
+//   retryPolicy    = presente no payment_failed e no cancelled por esgotamento de tentativas
 public record WebhookSubscription(
     string Id,
     int Amount,
@@ -109,24 +107,27 @@ public record WebhookSubscription(
     DateTime UpdatedAt,
     DateTime? CanceledAt,
     string? CancelPolicy,  // "NOW" no subscription.cancelled
-    string? CancelledDueTo
+    string? CancelledDueTo,
+    WebhookRetryPolicy? RetryPolicy
 );
+
+// Política de retentativa da cobrança recorrente, definida ao criar a assinatura.
+public record WebhookRetryPolicy(int MaxRetry, int RetryEvery);
 
 // ---------------------------------------------------------------------------
 // data.payment
 // ---------------------------------------------------------------------------
 
-// Ausente no checkout.completed; presente nos demais 5 eventos.
+// Ausente no checkout.completed; presente nos demais eventos que carregam cobrança.
 //
 // O prefixo do id muda conforme o contexto:
-//   card_  → tokenização sem débito (trial_started, cancelled)
-//   char_  → cobrança real (plan_changed, sub.completed, sub.renewed)
+//   card_  → tokenização sem débito (cancelled)
+//   char_  → cobrança real (sub.completed, sub.renewed)
 //
 // Variações:
 //   status      = "APPROVED" (tokenização); "PAID" (dinheiro debitado)
-//   paidAmount  = null no trial; preenchido quando há cobrança real
-//   platformFee = ausente nos eventos de trial
-//   receiptUrl  = null no trial; preenchido no sub.completed e sub.renewed
+//   paidAmount  = null enquanto não há cobrança real
+//   receiptUrl  = preenchido no sub.completed e sub.renewed
 public record WebhookPayment(
     string Id,
     string? ExternalId,

@@ -4,7 +4,7 @@ import ModalHeader from '../../../../../components/ModalHeader'
 import FieldLabel from '../../../../../components/FieldLabel'
 import FormModalActions from '../../../../../components/FormModalActions'
 import { useStartCheckout } from '../../../../../hooks/useSubscription'
-import { cycleSuffix, formatPrice, planCycle } from '../helpers'
+import { REFUND_WINDOW_DAYS, cycleSuffix, formatPrice, planCycle } from '../helpers'
 import type { PlanCheckoutDialogProps } from './types'
 
 export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckoutDialogProps) {
@@ -81,11 +81,9 @@ export default function PlanCheckoutDialog({ open, plan, onClose }: PlanCheckout
             </Typography>
           </Box>
 
-          {plan.trialDays ? (
-            <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 600 }}>
-              {plan.trialDays} dias grátis — a primeira cobrança ocorre ao fim do teste.
-            </Typography>
-          ) : null}
+          <Typography variant="caption" color="text.secondary">
+            Você pode cancelar com reembolso integral em até {REFUND_WINDOW_DAYS} dias.
+          </Typography>
         </Box>
       </DialogContent>
 

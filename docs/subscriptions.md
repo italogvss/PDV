@@ -1,39 +1,48 @@
 # Módulo de Assinaturas — Documentação de Referência
 
-> Documento informativo para manutenção do módulo de assinaturas/cobrança do PDV-Ultra.
-> Cobre **cartão** (assinatura recorrente) e o **trial PDV-side** (30 dias).
+> Documento de manutenção do módulo de assinaturas/cobrança do Kashing.
+> Cobre **cartão** (assinatura recorrente), o **trial PDV-side** (30 dias), a **janela de reembolso**
+> (7 dias) e a **retenção de dados** (90 dias).
 >
-> Gateway: **AbacatePay**. _Revalidado em 2026-07-08, correções aplicadas em 2026-07-09._
->
-> ⚠️ **Mudança estrutural desde a revisão anterior (2026-07-02):** o fluxo **PIX foi removido**
-> do billing de assinatura — hoje o produto é **somente cartão**. O gateway envia apenas
-> `Methods: ["CARD"]`, não há eventos `transparent.*`, `GatewayPaymentMethod` só tem `Card` e
-> `PixQrDialog` foi excluído. Todo texto sobre PIX dos docs anteriores está **obsoleto**.
->
-> ⚠️ Substitui os rascunhos em `.claude/subscription-flow.md` e `.claude/subscription-problems.md`
-> (modelo antigo com "plano Free" e trial no gateway) — **obsoletos**.
->
-> ✅ **Correções aplicadas em 2026-07-09** (ver §13/§14 para o detalhe por item):
-> `SubscriptionExpiredModal` global de conversão (RF-01.4/RF-07.4), TTL de checkout `Pending`
-> órfão + CTA de retry (RF-02.7), banner de assinatura Expirada sem preço/recursos de um plano
-> que não vale mais (RF-07.5), e remoção do código morto de PIX remanescente no frontend (RF-13.2).
+> Gateway: **AbacatePay**. _Revisado em 2026-07-09._
+
+## Invariantes
+
+Quatro regras governam todo o resto. Quando algo aqui parecer arbitrário, é por causa de uma delas.
+
+1. **Um usuário tem no máximo uma assinatura.** Garantido por índice único em `Subscription.UserId`.
+   A linha é *reaproveitada* em reativações — nunca se cria uma segunda.
+2. **O trial é PDV-side, 30 dias.** O gateway nunca recebe `trialDays`; ele controla apenas a
+   recorrência e a política de retentativa. Não existe `Plan.TrialDays` nem
+   `subscription.trial_started`.
+3. **Sete dias de arrependimento**, contados de `Subscription.StartedAt` (o instante em que a
+   assinatura *paga* passou a valer). Dentro da janela, cancelar encerra a assinatura na hora e abre
+   uma solicitação de reembolso. Fora dela, cancelar só interrompe as próximas faturas.
+4. **Noventa dias de retenção** após a perda de acesso — inclusive para quem nunca assinou. A loja
+   continua ativa nesse período para o dono exportar os dados ou reassinar.
+
+E uma quinta, que não é invariante mas engana quem lê o código rápido: **trocar de plano nunca cobra
+nada.** O gateway troca o produto na hora, sem calcular diferença; o valor novo entra na próxima
+renovação. O que muda entre upgrade e downgrade é apenas *quando os recursos trocam de lado*. Ver §7.4.
 
 ---
 
 ## 1. Conceito central: dois eixos de billing
 
-O plano de um tenant define acesso por **dois eixos independentes**, ambos persistidos como JSON no `Plan`:
+O plano define acesso por **dois eixos independentes**, ambos persistidos como JSON no `Plan`:
 
-1. **Entitlements** (`Plan.EntitledModulesJson`) — capabilities **booleanas**. Fonte única: `EntitlementCatalog`.
-   Unifica **módulos** (coarse, ex.: `sales`, `inventory` — mantêm `[RequireModule]` funcionando) e
-   **features** (fine, ex.: `advancedDashboard`, `customRoles` — diferencial do plano Pro).
-   Conceder a chave = liberado; ausência = **402** no enforcement.
+1. **Entitlements** (`Plan.EntitledModulesJson`) — capabilities **booleanas**. Fonte única:
+   `EntitlementCatalog`. Unifica **módulos** (coarse, ex.: `sales`, `inventory`) e **features**
+   (fine, ex.: `advancedDashboard` — diferencial do Pro). Ausência da chave = **402** no enforcement.
 2. **Limits** (`Plan.LimitsJson`) — limites **numéricos** (`PlanLimits`): `employees`, `stores`,
    `saleHistoryDays`, `auditDays`. Valor `-1` = ilimitado (`PlanLimits.Unlimited`).
 
+São também os dois eixos que classificam uma troca de plano (§7.4): o alvo que retira uma capability
+ou encolhe um limite é um downgrade.
+
 > ⚠️ **Não confundir com o eixo de _acesso_ do tenant** (`OperationModule`/permissões de cargo em
 > `/auth/me`). O plano é **billing**: nunca esconde/desabilita UI no frontend — o backend barra com
-> **402** e o erro vira toast amigável de upgrade. Ver `CLAUDE.md` (frontend) → "Controle de acesso".
+> **402** e o erro vira toast amigável de upgrade.
 
 ---
 
@@ -44,163 +53,165 @@ O plano de um tenant define acesso por **dois eixos independentes**, ambos persi
 | Camada | Arquivo | Papel |
 |---|---|---|
 | Controller | `PDV.Api/Controllers/SubscriptionsController.cs` | `/me`, `/plans`, `checkout`, `change-plan`, `cancel` |
-| Controller | `PDV.Api/Controllers/PaymentHistoryController.cs` | `GET /api/payments/history` (histórico de cobranças) |
-| Controller | `PDV.Api/Controllers/WebhooksController.cs` | Recebe webhooks (`POST /api/webhooks/abacatepay`, anônimo) |
+| Controller | `PDV.Api/Controllers/PaymentHistoryController.cs` | `GET /api/payments/history` |
+| Controller | `PDV.Api/Controllers/WebhooksController.cs` | `POST /api/webhooks/abacatepay` (anônimo) |
+| Controller | `PDV.Api/Controllers/DataExportController.cs` | Exportação CSV — **sem gate de plano**, ver §7.9 |
 | Service | `PDV.Infrastructure/Services/SubscriptionService.cs` | Orquestra checkout / change-plan / cancel |
-| Service | `PDV.Infrastructure/Services/BillingWebhookService.cs` | Aplica evento de webhook ao estado da assinatura/pagamento |
-| Service | `PDV.Infrastructure/Services/EntitlementService.cs` | Resolve o plano efetivo do tenant + enforcement 402 |
+| Service | `PDV.Infrastructure/Services/BillingWebhookService.cs` | Aplica o evento de webhook ao estado |
+| Service | `PDV.Infrastructure/Services/EntitlementService.cs` | Resolve o plano efetivo + enforcement 402 |
 | Service | `PDV.Infrastructure/Services/PaymentHistoryService.cs` | Mapeia `Payment` → DTO paginado |
-| Service | `PDV.Infrastructure/Services/TenantService.cs` | `StartTrialIfEligibleAsync` — concede o trial PDV-side |
-| Service | `PDV.Infrastructure/Services/SubscriptionExpiryBackgroundService.cs` | Varredura horária → marca vencidos como `Expired` (canceladas, trials **e checkouts `Pending` órfãos** — RF-02.7) |
+| Service | `PDV.Infrastructure/Services/TenantService.cs` | `StartTrialIfEligibleAsync` — concede o trial |
+| Service | `PDV.Infrastructure/Services/SubscriptionExpiryBackgroundService.cs` | Varredura horária: expira vencidos + reconcilia retenção |
+| Service | `PDV.Infrastructure/Services/TenantDeletionBackgroundService.cs` | Varredura diária: apaga tenants com prazo vencido |
 | Service | `PDV.Infrastructure/Services/PlanSeeder.cs` | Upsert idempotente dos planos no startup |
-| Gateway | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayGateway.cs` | Traduz domínio ↔ AbacatePay (**só cartão**: `Methods:["CARD"]`) |
-| Webhook | `PDV.Infrastructure/Services/Payments/AbacatePay/AbacatePayWebhookProcessor.cs` | Valida (secret + HMAC) e normaliza o payload → `PaymentWebhookEvent` |
-| Attrs | `PDV.Api/Attributes/{RequireModuleAttribute, RequireEntitlementAttribute}.cs` | Gating 402 nos controllers (delegam ao `IEntitlementService`) |
-| Repos | `SubscriptionRepository.cs`, `PaymentRepository.cs`, `BillingWebhookRepository.cs`, `GatewayCustomerRepository`, `PlanRepository` | Persistência (filtro **explícito por `UserId`** — sem query filter de tenant) |
-| Catálogo | `PDV.Domain/Constants/{EntitlementCatalog, PlanLimits, PlanSeedData, TrialDefaults, CheckoutDefaults}.cs` | Definição declarativa de planos, capabilities, limites e TTL de checkout `Pending` |
+| Helper | `PDV.Application/Helpers/PlanChange.cs` | `IsDowngrade(atual, alvo)` — classifica a troca (§7.4) |
+| Helper | `PDV.Application/Helpers/PlanJson.cs` | Lê/serializa `EntitledModulesJson` e `LimitsJson` |
+| Gateway | `.../Payments/AbacatePay/AbacatePayGateway.cs` | Traduz domínio ↔ AbacatePay (`Methods:["CARD"]`) |
+| Webhook | `.../Payments/AbacatePay/AbacatePayWebhookProcessor.cs` | Valida (secret + HMAC) e normaliza → `PaymentWebhookEvent` |
+| Repos | `SubscriptionRepository`, `PaymentRepository`, `BillingWebhookRepository`, `DataRetentionRepository`, `GatewayCustomerRepository`, `PlanRepository` | Persistência (filtro **explícito por `UserId`**) |
+| Catálogo | `PDV.Domain/Constants/{EntitlementCatalog, PlanLimits, PlanSeedData, TrialDefaults, CheckoutDefaults, RefundDefaults, RetentionDefaults}.cs` | Definições declarativas |
 
 ### Frontend
 
 | Arquivo | Papel |
 |---|---|
-| `pages/Settings/components/SubscriptionSection/index.tsx` | Tela principal: banner do plano, recursos/limites, upsell do Pro, reativação, cancelar |
-| `pages/Settings/components/SubscriptionSection/helpers.ts` | `STATUS_CONFIG`, `getStatusLine`, `formatDate`, `MODULE_LABELS` (reexporta helpers de `utils/plans`) |
-| `pages/Settings/components/SubscriptionSection/PlanCheckoutDialog/index.tsx` | Modal de checkout (cupom) → redireciona ao gateway (cartão) |
-| `pages/Settings/components/SubscriptionSection/PlansDialog/index.tsx` | Modal de escolha de plano (reassinatura) → abre o checkout do plano escolhido (usa `PlansGrid`) |
-| `pages/SubscriptionReturn/index.tsx` | Retorno pós-checkout (`/assinatura/retorno`) — polling de `/me` (3s, **timeout 60s**, com retry) |
-| `pages/Settings/components/BillingPaymentsSection/*` | Histórico de faturas (`GET /payments/history`) |
-| `components/SubscriptionExpiredModal/index.tsx` | Modal global de conversão (RF-01.4/RF-07.4) — montado no `DashboardLayout`, aparece para Owner/Admin sempre que `subscription.status === 'Expired'`; CTA "Ativar plano" leva a `/configuracoes?tab=assinatura` |
-| `hooks/useSubscription.ts` | React Query: `useSubscription`, `usePlans`, `useStartCheckout`, `useChangePlan`, `useCancelSubscription`, `useEntitlements`, `useSyncSubscriptionToStore` |
+| `pages/Settings/components/SubscriptionSection/index.tsx` | Banner, recursos/limites, upsell, troca, reativação, cancelar |
+| `pages/Settings/components/SubscriptionSection/helpers.ts` | `STATUS_CONFIG`, `RETENTION_DAYS`, `REFUND_WINDOW_DAYS`, `isWithinRefundWindow` |
+| `.../SubscriptionSection/PlanCheckoutDialog/index.tsx` | Modal de checkout (cupom) → redireciona ao gateway |
+| `.../SubscriptionSection/PlansDialog/index.tsx` | Grade de planos em dois modos: `checkout` (reassinar) e `change` (trocar) |
+| `components/PlansGrid/index.tsx` | Cards + comparativo; marca a variante vigente como "Plano atual" |
+| `utils/plans.ts` | `isDowngrade` (espelho de `PlanChange`), ciclo, rótulos de limite |
+| `pages/SubscriptionReturn/index.tsx` | Retorno pós-checkout — polling de `/me` (3s, timeout 60s) |
+| `pages/Settings/components/BillingPaymentsSection/*` | Histórico de faturas (inclui `Failed` + nº da tentativa) |
+| `pages/Settings/components/BackupSection/index.tsx` | Exportação CSV + prazo de exclusão |
+| `components/SubscriptionExpiredModal/index.tsx` | Modal global de conversão (`DashboardLayout`) |
+| `components/PaymentFailedModal/index.tsx` | Modal global de cobrança recusada (1×/sessão) |
+| `components/DataDeletionBanner/index.tsx` | Faixa global persistente da exclusão agendada |
+| `hooks/useSubscription.ts` | React Query + mensagens de troca e cancelamento |
 | `services/subscription.service.ts` | HTTP + mapeamento backend↔frontend |
-| `types/subscription.types.ts` | Contrato (`Subscription`, `Plan`, `SubscriptionStatus`, `PaymentMethod`) |
-| `utils/plans.ts` | `formatPrice/Limit`, `planCycle`, `cycleSuffix`, `shortPlanName`, `entitlementSet`, `FEATURE_KEYS`, `LIMIT_ORDER` |
-| `constants/entitlements.ts` | Espelho das chaves de FEATURE + LIMIT + rótulos PT-BR |
-
-> **Removido do frontend:** `PixQrDialog` (não existe mais). `PlanCheckoutDialog` e `startCheckout`
-> **não enviam mais `method`** — o backend sempre usa cartão.
+| `types/subscription.types.ts` | Contrato (`Subscription`, `Plan`, `SubscriptionStatus`, `ChangePlanResult`, `CancelSubscriptionResult`) |
 
 ---
 
 ## 3. Modelo de dados
 
-### `Subscription` (`PDV.Domain/Entities/Subscription.cs`)
-Uma assinatura **viva por `User` (Owner)** — cobre todas as lojas dele. **NÃO é tenant-scoped**
-(sem query filter); os repositórios filtram por `UserId` explicitamente.
+### `Subscription`
+Uma assinatura por `User` (Owner) — cobre todas as lojas dele. **NÃO é tenant-scoped**; os
+repositórios filtram por `UserId` explicitamente.
 
 | Campo | Significado |
 |---|---|
 | `UserId` | Owner dono da assinatura |
-| `PlanId` / `Plan` | Plano atual (fonte de entitlements/limits) |
-| `Status` | `Pending → Trialing/Active → Canceled → Expired` (enum sem `PastDue`) |
-| `Method` | `GatewayPaymentMethod` — **só `Card`** (enum tem um único valor hoje) |
+| `PlanId` / `Plan` | Plano **vigente** — o que está sendo pago e cujos entitlements valem |
+| **`PendingPlanId`** | **Downgrade** agendado; entra em vigor na virada do ciclo (§7.4). Promovido em `ApplyRenewed`. Upgrades não passam por aqui |
+| `Status` | Ver §11 |
+| `Method` | `GatewayPaymentMethod` — só `Card` |
 | `IsRenewable` | `true` no checkout de cartão; `false` no trial PDV-side |
-| `Provider` | `"AbacatePay"` (string **vazia** no trial PDV-side, que não toca o gateway) |
-| `GatewaySubscriptionId` | `subs_...` — capturado nos eventos `subscription.*`. **Necessário p/ change-plan (gateway) e cancel** |
+| `Provider` | `"AbacatePay"` (string **vazia** no trial, que não toca o gateway) |
+| `GatewaySubscriptionId` | `subs_...` — necessário p/ change-plan e cancel |
 | `GatewayCustomerId` | `cust_...` |
-| `TrialEndsAt` | Fim do trial |
-| `CurrentPeriodEnd` | Fim do período vigente (pago ou trial) — base do entitlement |
+| **`StartedAt`** | Quando a assinatura **paga** passou a valer. Âncora da janela de reembolso. Renovações não a movem; uma reativação sim (`StartCheckoutAsync` zera, `subscription.completed` regrava) |
+| `TrialEndsAt` | Fim do trial. Limpo ao virar assinatura paga |
+| `CurrentPeriodEnd` | Fim do período vigente — base do entitlement |
 | `CanceledAt` | Quando foi cancelada |
 
-### `Payment` (`PDV.Domain/Entities/Payment.cs`)
+Métodos de domínio: `IsEntitledAt(now)` (a regra de direito ao plano vive na entidade, não no
+service — o job de retenção precisa dela sem contexto de tenant) e `AccessLostAt(now)`.
+
+### `Payment`
 Histórico de cobranças, scoped por `UserId`.
 
 | Campo | Observação |
 |---|---|
-| `GatewayChargeId` | `bill_...` — **chave de idempotência** |
-| `SubscriptionId` / `PlanId` | Vínculo com a assinatura/plano |
-| `Kind` | `CardSubscription` \| `OneOffCheckout` (o `PixSubscription` **não existe mais**) |
-| `Method` | `Card` |
-| `Status` | `Pending → Paid` (ou `Refunded`/`Disputed`/`Cancelled`) |
-| `AmountCents`, `PaidAt`, `ReceiptUrl`, `CouponCode` | Dados da cobrança |
-| `CardLastFour`, `CardBrand` | Cartão usado (do webhook `data.payerInformation.CARD`) |
-| `PeriodStart` / `PeriodEnd` | Período coberto — preenchido via `SetPeriod` em `CompleteChargeAsync` |
+| `GatewayChargeId` | `bill_...` numa cobrança; `intl_...` numa parcela recusada. **Chave de idempotência** |
+| `Kind` | `CardSubscription` \| `OneOffCheckout` |
+| `Status` | `Pending → Paid`, ou `Failed`/`Refunded`/`Disputed`/`Cancelled` |
+| `RetryNumber` | Tentativa da cobrança recusada — só em `Failed` |
+| `PeriodStart` / `PeriodEnd` | Período **que esta cobrança custeia**, derivado do evento (§8) |
 
-### Enums (`PDV.Domain/Enums`)
-- `SubscriptionStatus`: `Pending, Trialing, Active, Canceled, Expired`
+### Enums
+- `SubscriptionStatus`: `Pending, Trialing, Active, RefundRequested, Canceled, Expired`
   (o `/me` também devolve a string sintética **`"None"`** quando não há assinatura)
-- `PaymentStatus`: `Pending, Paid, Refunded, Disputed, Expired, Cancelled`
-- `PaymentKind`: `CardSubscription, OneOffCheckout`
-- `GatewayPaymentMethod`: **`Card`** (único valor)
-- `BillingPeriod`: `Monthly, Annual`
-- `PaymentWebhookType` (`PDV.Application/DTOs/Payments/GatewayModels.cs`): `CheckoutCompleted,
-  CheckoutRefunded, CheckoutDisputed, SubscriptionTrialStarted, SubscriptionCompleted,
-  SubscriptionRenewed, SubscriptionCancelled, SubscriptionPlanChanged, Unknown` (**sem eventos PIX/transparent**)
-
-### Entidades de apoio
-- `GatewayCustomer` — `cust_...` por usuário/provider (evita recriar cliente no gateway).
-- `WebhookEvent` — idempotência: `(Provider, EventId)` já processado → 200 sem reprocessar.
+- `PaymentStatus`: `Pending, Paid, Failed, Refunded, Disputed, Expired, Cancelled`
+- `PaymentWebhookType`: `CheckoutCompleted, CheckoutRefunded, CheckoutDisputed, SubscriptionCompleted,
+  SubscriptionRenewed, SubscriptionPaymentFailed, SubscriptionCancelled, Unknown`
 
 ---
 
-## 4. Catálogo de planos (semente)
+## 4. Catálogo de planos
 
-`PlanSeeder` faz **upsert idempotente por `ExternalProductId`** no startup. Os produtos já existem no
-AbacatePay com o ciclo correto. **Nenhum plano usa `trialDays` no gateway** — o trial é PDV-side.
+`PlanSeeder` faz upsert idempotente por `ExternalProductId` no startup.
 
-| Plano | `ExternalProductId` (prod_) | Preço | Ciclo | Slug (landing `?plano=`) | Entitlements | Limites |
-|---|---|---|---|---|---|---|
-| Essencial Mensal | `…Lzwzn…Rq5uX` | R$ 29,99 | Mensal | `essencial-mensal` | Todos os módulos, **0 features** | emp 2 · lojas 1 · vendas 90d · auditoria 7d |
-| Essencial Anual | `…1Fq6L…6FWX` | R$ 299,99 | Anual | `essencial-anual` | idem | idem |
-| Profissional Mensal | `…czbpx…6XGZ` | R$ 49,99 | Mensal | `profissional-mensal` | Todos os módulos **+ todas as features** | emp ∞ · lojas 5 · vendas ∞ · auditoria ∞ |
-| Profissional Anual | `…wmAAU…f4cL` | R$ 499,99 | Anual | `profissional-anual` | idem | idem |
+| Plano | Preço | Ciclo | Slug | Entitlements | Limites |
+|---|---|---|---|---|---|
+| Essencial Mensal | R$ 29,99 | Mensal | `essencial-mensal` | Todos os módulos, 0 features | emp 2 · lojas 1 · vendas 90d · auditoria 7d |
+| Essencial Anual | R$ 299,99 | Anual | `essencial-anual` | idem | idem |
+| Profissional Mensal | R$ 49,99 | Mensal | `profissional-mensal` | Módulos + todas as features | emp ∞ · lojas 5 · vendas ∞ · auditoria ∞ |
+| Profissional Anual | R$ 499,99 | Anual | `profissional-anual` | idem | idem |
 
-> **Modelo definitivo:** ambos os planos concedem **todos os módulos** (módulo não é diferencial).
-> O diferencial Essencial × Pro são as **features** (só no Pro) + os **limites numéricos**.
-> Hoje o `EntitlementCatalog.Features` tem **13 chaves** (o comentário "9 FEATURES" no código está
-> desatualizado — ver §13 #11). O anual embute "2 meses grátis" (12× mensal vs. preço anual).
+O diferencial Essencial × Pro são as **features** + os **limites**. O anual embute "2 meses grátis".
+
+Como Essencial e Pro só diferem nesses dois eixos, `PlanChange.IsDowngrade` produz exatamente:
+
+| De → Para | Classificação |
+|---|---|
+| Essencial → Pro (qualquer ciclo) | imediato |
+| Essencial ↔ Essencial (troca de ciclo) | imediato |
+| Pro ↔ Pro (troca de ciclo) | imediato |
+| Pro → Essencial (qualquer ciclo) | **downgrade → agendado** |
 
 ---
 
 ## 5. Resolução do plano efetivo (`EntitlementService`)
 
 `ResolveForCurrentTenantAsync()`:
-1. Descobre o **Owner** do tenant atual (`userTenantRepository.GetOwnerUserIdAsync`).
-   Sem tenant (onboarding pendente) → usa o **próprio `userContext.UserId`**.
-2. Busca a assinatura viva do Owner (`GetLiveByUserIdAsync` — `IsActive`, mais recente).
-3. Se `IsEntitled(sub)` → `Entitlements`/`Limits` vêm do `Plan` da assinatura.
-4. **Senão → SEM acesso** (não há Free): `Plan = null`, `Entitlements = []`, `Limits = {}`.
-   Todo `[RequireModule]`/`[RequireEntitlement]` retorna **402**. A `Subscription` ainda pode ser
-   devolvida (ex.: expirada) para a UI mostrar status.
+1. Descobre o **Owner** do tenant atual. Sem tenant (onboarding) → usa o próprio `userContext.UserId`.
+2. Busca a assinatura do Owner (`GetByUserIdAsync`).
+3. Se `IsEntitledAt(now)` → `Entitlements`/`Limits` vêm do `Plan`.
+4. Senão → **sem acesso**: `Plan = null`, `Entitlements = []`, `Limits = {}`. Todo `[RequireModule]`/
+   `[RequireEntitlement]` retorna **402**. A `Subscription` ainda é devolvida para a UI mostrar o status.
 
-`IsEntitled(sub)`:
+`Subscription.IsEntitledAt(now)`:
 - `Trialing` → `TrialEndsAt` nulo ou no futuro
-- `Active` **ou** `Canceled` → `CurrentPeriodEnd` nulo ou no futuro *(cancelado mantém acesso até o fim do período pago; **Active com período vencido deixa de ser entitled mesmo sem job** — ver §9)*
-- demais (`Pending`, `Expired`) → sem direito
+- `Active` ou `Canceled` → `CurrentPeriodEnd` nulo ou no futuro *(cancelar só interrompe as próximas
+  faturas; um `Active` com período vencido **deixa de ser entitled sem depender do job**)*
+- `Pending`, `RefundRequested`, `Expired` → sem direito
 
-**Enforcement (código real):**
-- `RequireModuleAsync(module)` → `RequireEntitlementAsync(EntitlementCatalog.ForModule(module))` → **402 `NOT_IN_PLAN`**
-- `RequireEntitlementAsync(key)` → **402 `NOT_IN_PLAN`** (feature/módulo fora do plano)
-- `EnsureWithinLimitAsync(limitKey, currentCount)` → **402 `PLAN_LIMIT_EXCEEDED`** (limite atingido; `-1` = ilimitado, nunca barra)
-
-> ⚠️ Módulo e feature compartilham o mesmo código **`NOT_IN_PLAN`** (não existe `MODULE_NOT_IN_PLAN`
-> no código — a menção no `backend/CLAUDE.md` está desatualizada, ver #15). O `utils/apiError.ts`
-> mapeia só `NOT_IN_PLAN`/`PLAN_LIMIT_EXCEEDED` — a entrada `MODULE_NOT_IN_PLAN` (morta, o backend
-> nunca a emite) foi removida em 2026-07-09 (RF-13.2).
+**Enforcement:** `RequireModuleAsync`/`RequireEntitlementAsync` → **402 `NOT_IN_PLAN`**.
+`EnsureWithinLimitAsync` → **402 `PLAN_LIMIT_EXCEEDED`**.
 
 ---
 
 ## 6. Endpoints
 
-| Método | Rota | Auth | Service |
+| Método | Rota | Auth |
+|---|---|---|
+| GET | `/api/subscriptions/me` | Autenticado |
+| GET | `/api/subscriptions/plans` | Autenticado |
+| POST | `/api/subscriptions/checkout` | Owner,Admin |
+| POST | `/api/subscriptions/change-plan` | Owner,Admin |
+| POST | `/api/subscriptions/cancel` | Owner,Admin |
+| GET | `/api/payments/history?page=&pageSize=` | Owner,Admin |
+| GET | `/api/reports/{sales,stock,customers,…}/export` | `ViewReports` — **sem gate de plano** |
+| POST | `/api/webhooks/abacatepay?webhookSecret=` | Anônimo (secret + HMAC) |
+
+`/me` devolve, além do estado:
+- `refundEligibleUntil` (= `StartedAt + 7d`) — escolhe a mensagem de cancelamento;
+- `pendingPlanId`/`pendingPlanName`/`pendingPlanStartsAt` — downgrade agendado;
+- `lastPaymentFailedAt`/`paymentRetryNumber` — cobrança recusada em retentativa (§7.6).
+
+`change-plan` devolve `{ planName, scheduled, effectiveAt, nextChargeAt }`:
+
+| Caso | `scheduled` | `effectiveAt` | `nextChargeAt` |
 |---|---|---|---|
-| GET | `/api/subscriptions/me` | Autenticado (qualquer) | `GetMineAsync` |
-| GET | `/api/subscriptions/plans` | Autenticado | `GetPlansAsync` |
-| POST | `/api/subscriptions/checkout` | Owner,Admin | `StartCheckoutAsync` |
-| POST | `/api/subscriptions/change-plan` | Owner,Admin | `ChangePlanAsync` |
-| POST | `/api/subscriptions/cancel` | Owner,Admin | `CancelAsync` |
-| GET | `/api/payments/history?page=&pageSize=` | Owner,Admin | `PaymentHistoryService.GetHistoryAsync` |
-| POST | `/api/webhooks/abacatepay?webhookSecret=` | Anônimo (secret+HMAC) | `BillingWebhookService.ProcessAsync` |
+| Upgrade numa assinatura paga | `false` | agora | fim do período vigente |
+| Downgrade numa assinatura paga | `true` | fim do período vigente | fim do período vigente |
+| Troca no trial | `false` | `null` (já vale) | `null` (não há cobrança) |
+| Desistir do downgrade agendado | `false` | `null` | `null` |
 
-### `/me` → `SubscriptionResponse`
-Campos: `planId`, `planName`, `status`, `method`, `isRenewable`, `trialEndsAt`, `currentPeriodEnd`,
-`canceledAt`, `entitlements[]`, `limits{}`, `hasUsedTrial`.
-`planId == null` ⇒ **sem assinatura válida** (acesso bloqueado; não é "Free").
-O `useSyncSubscriptionToStore` espelha um resumo no `auth` slice (Redux) para banner global e
-gating síncrono de features sem endpoint (`useEntitlements`).
+`cancel` devolve `{ status, refundRequested, accessUntil, dataAvailableUntil }`.
 
-### `checkout` → `StartCheckoutResponse`
-Hoje devolve apenas **`{ checkoutUrl }`** (o campo `pix` foi removido). O frontend faz
-`window.location.href = checkoutUrl`.
+Nos dois casos o frontend deriva a mensagem da resposta, sem reimplementar a regra.
 
 ---
 
@@ -208,442 +219,349 @@ Hoje devolve apenas **`{ checkoutUrl }`** (o campo `pix` foi removido). O fronte
 
 ### 7.1 — TRIAL PDV-side (30 dias, sem cartão)
 
-Concedido em `TenantService.StartTrialIfEligibleAsync` na **criação do tenant**:
+`TenantService.StartTrialIfEligibleAsync`, na criação do tenant:
 - Condições: veio `?plano=<slug>` da landing **e** `!user.HasUsedTrial` **e** não há assinatura viva.
 - Cria `Subscription` `Trialing`, `Provider = ""`, `IsRenewable = false`,
-  `TrialEndsAt = CurrentPeriodEnd = now + 30d` (`TrialDefaults.DurationDays`). Marca `user.HasUsedTrial = true`.
+  `TrialEndsAt = CurrentPeriodEnd = now + 30d`. Marca `user.HasUsedTrial = true` (irreversível).
 - **Não chama o gateway** → sem `GatewaySubscriptionId`, sem `Payment`.
-- Slug ausente/desconhecido → onboarding segue **sem trial** (não falha) → app **bloqueado (402)** até assinar.
-- Fim do trial: `SubscriptionExpiryBackgroundService` marca `Expired` (§9).
+- Slug ausente → `resolvePostLoginPath` manda o usuário para `/planos` após o login.
+- Fim do trial: o job horário marca `Expired` (§9).
 
-> ⚠️ O `Method` é `Card` (único valor do enum) mas não há `GatewaySubscriptionId`. O upgrade durante
-> o trial é tratado no backend como **troca local do plano** (ver §7.5 e #1) — funciona.
+### 7.2 — CHECKOUT (cartão)
 
-### 7.2 — CRIAR CHECKOUT (cartão)
+`StartCheckoutAsync`:
+- Plano existe localmente e no gateway.
+- `EnsureCanCheckout` **bloqueia**: `Active`/`Trialing` entitled (evita cobrança dupla) e
+  `RefundRequested` (o estorno pendente precisa se resolver antes — senão o `checkout.refunded`
+  derrubaria a assinatura nova). `Canceled`/`Expired`/`Pending`/`None` passam.
+- `EnsureCustomerAsync` → garante `cust_` e sincroniza Document/Phone no `User`.
+- `DiscardGatewaySubscriptionAsync` cancela a recorrência anterior no gateway (best-effort) e zera o
+  `GatewaySubscriptionId`. Sem isso, quem reassina depois de uma renovação que falhou fica com **duas
+  assinaturas vivas** no gateway — a antiga ainda em dunning —, e o `subs_` novo colide no índice único.
+- Reaproveita a `Subscription`: `Status = Pending`, `IsRenewable = true`, `CanceledAt = null`,
+  **`PendingPlanId = null`**, **`StartedAt = null`** (janela de reembolso nova), **`TrialEndsAt = null`**,
+  **`UpdatedAt = now`** (é daqui que o TTL de `Pending` conta — sem isso o job expiraria a reativação
+  no meio do checkout).
+- Cria `Payment` `Pending` (`bill_`). **Ativação só por webhook.**
+- Resposta: `{ checkoutUrl }`. A tela de retorno faz polling de `/me` até `Active`.
 
-**Frontend:** `SubscriptionSection` (upgrade) ou `PlansDialog` (reassinatura) → `PlanCheckoutDialog`
-(cupom opcional) → `useStartCheckout` monta `returnUrl` (default `/configuracoes?tab=assinatura`) e
-`completionUrl = /assinatura/retorno` e chama `POST /checkout`. Backend devolve `checkoutUrl` →
-`window.location.href`. Após pagar, o gateway redireciona para `/assinatura/retorno`
-(`SubscriptionReturnPage`), que faz **polling de `/me` a cada 3s (timeout 60s, com botão "Verificar
-novamente")** até `Active`/`Trialing`.
+**Checkout abandonado:** o job expira `Subscription` `Pending` mais velha que
+`CheckoutDefaults.PendingTtlHours` (24h) e cancela o `Payment` órfão. A UI expõe "Finalize sua
+assinatura" / "Tentar novamente".
 
-**Backend — `StartCheckoutAsync`:**
-- Plano existe localmente e no gateway (`CheckIfPlanExistsAsync`).
-- Se plano tem `TrialDays` no gateway **e** `user.HasUsedTrial` → `BusinessException` (na prática os
-  planos têm `TrialDays = null`, então este ramo não dispara hoje).
-- **Bloqueia** se já houver assinatura `Active`/`Trialing` **e** entitled ("ativa até {data}").
-  ⚠️ Isso inclui o **trial vigente** → um usuário em trial **não consegue** contratar/pagar antes do
-  fim do trial por este endpoint (ver §7.10 e #12). `Canceled`/`Expired`/`Pending` **não bloqueiam** → reativação/retry.
-- `EnsureCustomerAsync` → garante `GatewayCustomer` (`cust_...`) e sincroniza Document/Phone no `User`.
-- Reaproveita a `Subscription` do usuário (uma por usuário): `Status = Pending`, `Method = Card`,
-  `IsRenewable = true`, `CanceledAt = null`, `GatewayCustomerId`, `PlanId`.
-- `metadata = { userId, planId, subscriptionId }`; `gateway.CreateSubscriptionCheckoutAsync`
-  (`Methods: ["CARD"]`, `ExternalId = sub.Id`) → `bill_...` + URL.
-- Persiste a `Subscription` + cria `Payment` `Pending` (`Kind=CardSubscription`, `GatewayChargeId=bill_`).
-- **Resposta:** `{ checkoutUrl }`. **Ativação vem por webhook** (§7.4), não pela resposta.
+### 7.3 — ATIVAÇÃO (por webhook)
 
-> ✅ **Checkout abandonado (RF-02.7).** Se o usuário nunca voltar do gateway, a `Subscription`/o
-> `Payment` ficam `Pending` indefinidamente. Duas correções: (1) `SubscriptionSection` agora expõe
-> um card "Finalize sua assinatura" / CTA "Tentar novamente" para `status === 'Pending'` (o
-> `StartCheckoutAsync` já permitia retry — só faltava o CTA); (2) o
-> `SubscriptionExpiryBackgroundService` expira automaticamente `Subscription`s `Pending` há mais de
-> `CheckoutDefaults.PendingTtlHours` (24h) para `Expired` (libera nova tentativa e aciona o
-> `SubscriptionExpiredModal`, ver §7.9) e cancela (`Cancelled`) o `Payment` `Pending` órfão
-> correspondente, para não poluir o histórico de cobranças com um "Pendente" eterno.
+Os dois eventos chegam **logo após o pagamento** — não há espera pela janela de reembolso.
 
-### 7.3 — ATIVAÇÃO (pós-pagamento, via webhook)
+- `checkout.completed (PAID)` → `CompleteChargeAsync` marca o `Payment` (`bill_`) como `Paid` e grava
+  `PeriodStart`/`PeriodEnd` **derivados do evento** (§8).
+- `subscription.completed` → `ApplyActivated`: captura `subs_`, `Status = Active`,
+  **`StartedAt ??= âncora`**, `CurrentPeriodEnd = PeriodEndFor(evt)`, limpa `TrialEndsAt`/`CanceledAt`.
 
-**Cartão (cobrança imediata):**
-- `checkout.completed (PAID)` → `ApplyCheckoutCompletedAsync` → `CompleteChargeAsync` marca o
-  `Payment` (`bill_`) como `Paid` (PaidAt, ReceiptUrl, cartão, `PeriodStart/End`). Se PENDING (ou trial
-  gateway, inativo hoje) → só captura o cartão no pendente.
-- `subscription.completed` → `ApplySubscriptionActive`: captura `subs_`, `Status = Active`,
-  `CurrentPeriodEnd = NextPeriodEnd(now, plan)` (**mensal → +1 mês; anual → +1 ano**).
+A ordem de entrega dos dois eventos não importa: nenhum handler lê datas do outro.
 
-### 7.4 — MUDAR DE PLANO (upgrade/downgrade)
+### 7.4 — TROCA DE PLANO (upgrade imediato, downgrade agendado)
 
-**Frontend:** o CTA "Fazer upgrade agora" aparece quando `isLiveCard` (`isLive && method === 'Card'`) —
-o que **inclui o trial PDV-side** (method default `Card`). Chama `useChangePlan.mutate(planId)` →
-`POST /change-plan` (**sem modal de confirmação** — ver #5). Toast "Plano alterado." + invalida `/me`.
+`POST /subscriptions/change-plan` do AbacatePay **troca o produto da assinatura na hora**. Ele não
+calcula proporcional, não emite fatura e **não dispara webhook nenhum** — não existe evento
+`subscription.plan_changed`. O único efeito visível é que a **próxima renovação** cobra o valor novo.
 
-**Backend — `ChangePlanAsync`:**
-- Exige sub `Active`/`Trialing` (senão `BusinessException "Nenhuma assinatura ativa para trocar."`).
-- Plano novo ≠ atual (senão `"Você já está neste plano."`).
-- **Trial PDV-side (`Trialing` + sem `GatewaySubscriptionId`):** troca **só o plano local**, preserva
-  `TrialEndsAt`/`CurrentPeriodEnd`, **não chama o gateway**. (Resolve o antigo bug #1.)
-- Fora desse caso, exige `GatewaySubscriptionId` (senão `"Troca de plano disponível apenas para
-  assinaturas já ativadas no gateway."`).
-- Fora de trial: não pode trocar para plano com `TrialDays`.
-- `gateway.ChangeSubscriptionPlanAsync(subs_, novoProduto, 1)` → `sub.PlanId = novo` **imediatamente**.
-- Em trial-gateway (inativo hoje): recalcula `TrialEndsAt`/`CurrentPeriodEnd` se o novo plano tem `TrialDays`.
+Isso deixa uma decisão só nossa: **quando os recursos do plano novo passam a valer no PDV.**
+`PlanChange.IsDowngrade(atual, alvo)` responde, olhando os dois eixos do plano (§1) — o alvo é um
+downgrade se retira alguma capability ou encolhe algum limite:
 
-**Webhook `subscription.plan_changed` → `ApplyPlanChangedAsync`** (confirmação idempotente):
-captura `subs_`, reconcilia `PlanId` via `evt.ProductId`, **não altera datas**, registra cobrança
-(`CompleteChargeAsync`) se `PAID`.
+| Troca | `PlanId` | `PendingPlanId` | Efeito |
+|---|---|---|---|
+| **Upgrade** (nada é retirado) | muda **agora** | limpo | usa os recursos novos já; paga o valor novo na renovação |
+| **Downgrade** (algo é retirado) | intacto | recebe o alvo | mantém os recursos até o fim do período **já pago**; a troca vale na virada |
 
-### 7.5 — RENOVAR (automático, cartão)
+> ⚠️ Os dois erros simétricos: aplicar `PlanId` na hora num **downgrade** tira features que o usuário
+> já pagou naquele ciclo; agendar um **upgrade** faz ele esperar por algo que não custa nada entregar.
+
+`ChangePlanAsync` exige `Active`/`Trialing`.
+
+- **Trial PDV-side** (sem `subs_`): o gateway não conhece a assinatura e não há nada pago a preservar.
+  A troca é sempre imediata, as datas do trial ficam intactas, e a escolha definitiva fica para a hora
+  de assinar.
+- **Assinatura paga**: chama o gateway e então aplica a tabela acima. Um upgrade também **cancela um
+  downgrade que estivesse agendado** — o gateway guarda um produto só por assinatura, e é o que
+  acabamos de gravar lá.
+- **Desistir do downgrade:** reescolher o plano **vigente** com `PendingPlanId` preenchido volta o
+  produto no gateway e limpa o agendamento. Sem isso, quem agenda um downgrade no plano anual ficaria
+  preso a ele por até um ano. Reescolher o plano vigente **sem** agendamento continua sendo erro
+  ("Você já está neste plano").
+
+Quem promove `PendingPlanId` → `PlanId` é `ApplyRenewed` (§7.5).
+
+### 7.5 — RENOVAÇÃO
 
 Sem endpoint. No fim do ciclo o gateway cobra e envia:
-- `checkout.completed (PAID)` (gerado internamente, **sem `externalId`/metadata**):
-  `ResolveSubscriptionAsync` cai no fallback por **`CustomerId` (`cust_`)**; `ResolvePaymentAsync` não
-  acha `Payment` (novo `bill_`) → `CompleteChargeAsync` **cria um `Payment` já `Paid`** (idempotente).
-- `subscription.renewed` → `ApplyRenewed`: `Status = Active`, `CurrentPeriodEnd = NextPeriodEnd(now, plan)`.
+- `checkout.completed (PAID)` — sem `externalId`/metadata; `ResolveSubscriptionAsync` cai no `cust_`.
+  Não há `Payment` pré-criado → cria um novo já `Paid` (idempotente por `bill_`).
+- `subscription.renewed` → **promove `PendingPlanId` → `PlanId`**, depois `Status = Active` e
+  `CurrentPeriodEnd = PeriodEndFor(evt, plano novo)`. A ordem importa: o plano novo pode ter outro
+  ciclo (mensal → anual), e calcular o período antes da promoção erraria a data por 11 meses.
+  **`StartedAt` fica intacto** — renovar não reabre a janela de reembolso.
 
-> ⚠️ **Falha de renovação não tem tratamento dedicado** (não há mais `PastDue`, nem dunning, nem job
-> que expire `Active` vencido). Se a renovação não chegar, a sub fica `Active` com `CurrentPeriodEnd`
-> no passado → `IsEntitled` retorna `false` (acesso corretamente bloqueado), mas o banner ainda diz
-> "Ativo / Renovação em {data passada}". Ver #13 e RF-05.4.
+> ⚠️ Se a troca mudou o ciclo e o `checkout.completed` chegar **antes** do `subscription.renewed`, o
+> `Payment.PeriodEnd` daquela fatura sai calculado pelo ciclo antigo — a menos que o gateway informe
+> `checkout.nextChargeAt`, que tem precedência. A `Subscription` fica correta em qualquer ordem.
 
-### 7.6 — CANCELAR
+### 7.6 — FALHA DE RENOVAÇÃO (dunning)
 
-**Frontend:** botão "Cancelar plano" quando `isPaid && isLive`. `ConfirmDialog` com mensagem por
-estado (trial → aviso forte de perda de acesso + exclusão da loja em 30 dias + link para exportar
-dados; ativa → "não renova, acesso até {data}") → `useCancelSubscription.mutate()` → `POST /cancel`.
-O endpoint devolve `{ accessRevoked }`: **true** (trial) → `authService.logout()` + `clearAuth()` +
-`clearStoredPlanSlug()` + redirect para `VITE_LANDING_URL`; **false** (ativa) → toast + invalida a query.
+`subscription.payment_failed` chega a cada tentativa recusada, com `installmentId`, `retryNumber` e
+`subscription.retryPolicy.maxRetry`.
 
-**Backend — `CancelAsync` → `CancelSubscriptionResult(AccessRevoked)`:**
-- Se `GatewaySubscriptionId` presente → `gateway.CancelSubscriptionAsync` **primeiro**.
-- **Em trial (`Trialing`):** bloqueio imediato com **remoção FÍSICA** (hard delete) da `Subscription`
-  e dos `Payment` da sub (FK: pagamentos antes). Exceção justificada ao soft delete. Além disso,
-  **desativa todas as lojas ativas do Owner** (`IsActive=false`, `ScheduledDeletionAt = now+30d` →
-  excluídas pelo `TenantDeletionBackgroundService`). `User.HasUsedTrial` permanece `true`. Retorna
-  `AccessRevoked = true`.
-- **Pós-trial (`Active`):** `Status = Canceled`, `CanceledAt = now`, **`CurrentPeriodEnd` preservado**
-  → acesso mantido até o fim do período. Retorna `AccessRevoked = false`. **Não** há janela de
-  reembolso.
+- **Não muda o `Status` da assinatura**: o acesso já está barrado porque `CurrentPeriodEnd` venceu.
+- Registra a falha no histórico: uma linha `Payment` `Failed` por parcela, idempotente pelo
+  `installmentId` (retentativas da mesma parcela só avançam o `RetryNumber`).
+- Ao esgotar as tentativas, o gateway envia `subscription.cancelled` com
+  `cancelledDueTo = "max_payment_retries_exceeded"` → `ApplyCancelled` distingue o involuntário e
+  marca `Expired` com `CurrentPeriodEnd = now`. **Não há período de cortesia para quem não pagou.**
 
-**Webhook `subscription.cancelled` → `ApplyCancelled`:** `Status = Canceled`, `CanceledAt ??= now`
-(idempotente com o cancel manual). Cancelamento em trial: sub já removida → resolve nada → no-op
-(o `WebhookEvent` ainda é gravado, preservando idempotência).
+**Como o usuário fica sabendo.** `/me` deriva `lastPaymentFailedAt`/`paymentRetryNumber` da **última
+cobrança da assinatura**: se ela está `Failed`, o dunning está em curso. Uma retentativa bem-sucedida
+grava um `Paid` mais novo e o aviso some sozinho — não há flag a limpar. Com isso:
+- `PaymentFailedModal` (global, `DashboardLayout`) aparece **uma vez por sessão** para o Owner/Admin,
+  com CTA "Assinar novamente". Tem precedência sobre o `SubscriptionExpiredModal`, que explicaria
+  pior o mesmo estado.
+- `SubscriptionSection` mostra um alerta permanente de erro com a data e o número da tentativa.
 
-### 7.7 — REATIVAR
+> ⚠️ Não enviamos `retryPolicy` em `subscriptions/create` — vale a do gateway. Se a política importar
+> para o produto, é preciso passá-la explicitamente no `CreateSubscriptionBody`.
 
-Sem endpoint dedicado — reativação por **novo checkout** reaproveitando a `Subscription`:
-- `StartCheckoutAsync` bloqueia apenas `Active`/`Trialing` entitled; `Canceled`/`Expired`/`Pending` → permitido.
-- Frontend: card "Reative sua assinatura" / "Assine para continuar usando" (`showResubscribe`) →
-  `PlansDialog` → `PlanCheckoutDialog`.
-- Reativar **dentro** do período pago (Canceled, `CurrentPeriodEnd` futuro): a UI avisa
-  ("Reativar agora gera uma nova cobrança imediata", `hasRemainingAccess`) — resolve o antigo #6.
+### 7.7 — CANCELAMENTO
+
+`CancelAsync` exige `Active`/`Trialing`, cancela no gateway primeiro (quando há `subs_`) e então
+escolhe um de três desfechos:
+
+| Situação | Estado | Acesso | Dinheiro |
+|---|---|---|---|
+| Em trial | `Expired`, `TrialEndsAt = CurrentPeriodEnd = now` | cai na hora | não houve cobrança |
+| Pago, `now ≤ StartedAt + 7d` | `RefundRequested`, `CurrentPeriodEnd = now` | cai na hora | estorno solicitado |
+| Pago, fora da janela | `Canceled`, `CurrentPeriodEnd` **preservado** | até o fim do período | nada a devolver |
+
+Em nenhum caso a loja é desativada e em nenhum caso o usuário é deslogado. Ele continua entrando
+para exportar os dados ou reassinar durante os 90 dias de retenção (§9). `HasUsedTrial` permanece
+`true` — trial é único por usuário.
+
+**O estorno não tem endpoint na API do AbacatePay.** `RefundRequested` significa "aguardando
+aprovação manual no painel". Quando o admin aprova, chega `checkout.refunded` e o ciclo fecha (§7.8).
+
+`subscription.cancelled` (o eco do gateway) é idempotente: preserva `RefundRequested`, distingue o
+cancelamento involuntário, e **nunca toca no `Payment`** — o payload traz o `bill_` do checkout
+original, que está pago.
 
 ### 7.8 — REEMBOLSO / CHARGEBACK
 
-`checkout.refunded`/`checkout.disputed` → `ApplyReversed`:
-`Payment.Status = Refunded/Disputed`, `Subscription.Status = Expired`, `CurrentPeriodEnd = now`
-(acesso cai imediatamente).
+`checkout.refunded`/`checkout.disputed` → `ApplyReversed`: `Payment` vira `Refunded`/`Disputed`.
 
-### 7.9 — SEM ASSINATURA (None) / EXPIRADO — app bloqueado
+A assinatura só é derrubada (`Expired`, `CurrentPeriodEnd = now`) quando `RevokesAccess`:
+- a assinatura está em `RefundRequested` (o caso normal), **ou**
+- a cobrança revertida custeia o período corrente (`PeriodEnd` no futuro), **ou**
+- não dá para saber qual cobrança foi revertida (conservador, para chargeback).
 
-Sem assinatura viva (nunca assinou, sem trial) ou expirada → `EntitlementService` resolve
-`Entitlements=[]`/`Limits={}` → **todo endpoint gateado retorna 402**. Não há guard bloqueando
-rotas (o usuário continua navegando e recebe toasts 402 por recurso), mas desde a correção de
-2026-07-09 o `SubscriptionExpiredModal` (global, montado no `DashboardLayout`) aparece para o
-Owner/Admin **sempre que `status === 'Expired'`** — chama para ativar um plano
-(`/configuracoes?tab=assinatura`), dispensável por sessão ("Agora não"/X). A `SubscriptionSection`
-(Configurações) continua sendo quem detalha o estado e oferece a reativação em si. Ver RF-07.4.
+Estornar manualmente uma cobrança antiga de quem hoje tem assinatura válida **não** revoga o acesso.
 
-### 7.10 — TRIAL → PAGO (conversão)
+### 7.9 — SEM ACESSO (None/Expired/RefundRequested)
 
-Durante o trial não há caminho de checkout: `StartCheckoutAsync` bloqueia `Trialing` entitled, e o
-CTA de upgrade só troca o plano **local** (sem cobrança). Isso **não mudou** — foi uma decisão
-consciente manter o bloqueio durante o trial em vez de abrir checkout antecipado. Em vez disso, a
-correção de RF-01.4 (2026-07-09) foi cobrir o momento em que o trial **vence**: assim que a
-`Subscription` vira `Expired`, o `SubscriptionExpiredModal` (§7.9) aparece imediatamente chamando
-para assinar — o usuário ainda perde o acesso no intervalo até o fim do trial, mas não fica sem
-nenhum aviso ativo pedindo a conversão.
+Todo endpoint gateado retorna 402. Não há guard de rota; o `SubscriptionExpiredModal` (global, no
+`DashboardLayout`) chama o Owner/Admin para ativar um plano quando `status === 'Expired'`.
+
+**A exportação de dados vive fora do gate de plano** (`DataExportController`, só
+`[RequirePermission(ViewReports)]`) — é o que torna possível "cancelar e ainda baixar seus dados".
+Antes dessa separação, os exports estavam no `ReportsController` sob
+`[RequireEntitlement(AdvancedReports)]`, e nem os assinantes do **Essencial** conseguiam exportar.
 
 ---
 
-## 8. Pipeline de webhook (entrada)
+## 8. Pipeline de webhook
 
 `WebhooksController.AbacatePay`:
-1. Valida `webhookSecret` da query (`VerifySecret`, tempo-constante). Falha → **401**.
+1. Valida `webhookSecret` da query (tempo-constante). Falha → **401**.
 2. Lê o corpo **raw** (`EnableBuffering`).
-3. Valida **HMAC-SHA256** do corpo com a chave pública fixa do AbacatePay (header `X-Webhook-Signature`). Falha → **403**.
-4. `processor.Parse(rawBody)` → `PaymentWebhookEvent` normalizado.
-5. **Idempotência:** `ProcessedEventExistsAsync(provider, eventId)` → **200** sem reprocessar.
-6. `billingService.ProcessAsync(evt)` aplica o estado **e** grava o `WebhookEvent` (Processed) no
-   **mesmo `SaveChangesAsync`** — atômico.
-7. Erro no processamento → **500** (nada persistido → gateway pode retentar).
+3. Valida **HMAC-SHA256** do corpo (header `X-Webhook-Signature`). Falha → **403**.
+4. `processor.Parse(rawBody)` → `PaymentWebhookEvent`.
+5. **Idempotência:** `(Provider, EventId)` já processado → **200** sem reprocessar.
+6. `billingService.ProcessAsync(evt)` aplica o estado **e** grava o `WebhookEvent` no **mesmo
+   `SaveChangesAsync`** — atômico.
+7. Erro → **500** (nada persistido → o gateway retenta).
 
-### Normalização (`AbacatePayWebhookProcessor.MapToEvent`)
-- **EventId:** `subscription.*` traz `log_...`; `checkout.*` não têm → **hash SHA256 (hex) do corpo**.
+Um evento fora da lista de §10 cai em `Unknown` e é um no-op registrado — inclusive um
+`subscription.plan_changed` legado, que não existe mais no contrato.
+
+### Datas: sempre do evento, nunca do relógio local
+
+Esta é a regra que evita os bugs mais silenciosos do módulo. Um webhook atrasado ou retentado horas
+depois **não pode** estender o ciclo a partir de `DateTime.UtcNow`.
+
+```
+AnchorOf(evt)      = subscription.updatedAt ?? paidAt ?? UtcNow   // quando o gateway processou
+PeriodEndFor(evt)  = checkout.nextChargeAt ?? AnchorOf(evt) + ciclo do plano
+```
+
+O mesmo vale para o `Payment`: `SetPeriod` deriva `PeriodStart`/`PeriodEnd` do evento, **não** de
+`sub.CurrentPeriodEnd`. A assinatura só é estendida no `subscription.completed`/`renewed`, que pode
+chegar *depois* do `checkout.completed` — ler a data da assinatura ali gravaria o período anterior.
+
+### Normalização (`AbacatePayWebhookProcessor`)
+- **EventId:** `subscription.*` traz `log_...`; `checkout.*` não tem → **hash SHA256 (hex) do corpo**.
 - **ChargeId:** `checkout.id` (`bill_`).
-- **ExternalId:** `checkout.externalId ?? payment.externalId` (= nossa `Subscription.Id`; **null** em `subscription.completed`/`renewed`).
-- **AmountCents:** cascata `checkout.paidAmount → payment.paidAmount → checkout.amount`.
-- **Status:** `subscription.cancelled` usa `subscription.status` (`CANCELLED`); demais → `checkout.status`.
-- **CustomerId:** `customer.id` (canônico; `checkout.customerId` pode divergir — nunca primário).
-- **Cartão:** `data.payerInformation.CARD.number/brand`. **ProductId** e **TrialEndsAt** também extraídos.
+- **ExternalId:** `checkout.externalId ?? payment.externalId` (= nossa `Subscription.Id`).
+- **AmountCents:** `checkout.paidAmount → payment.paidAmount → checkout.amount → subscription.amount`
+  (o último degrau cobre `payment_failed`, que não traz nó `checkout`).
+- **Status:** `subscription.cancelled` usa `subscription.status`; demais → `checkout.status`.
+- **CustomerId:** `customer.id` (canônico; `checkout.customerId` pode divergir).
+- Também extraídos: `subscription.updatedAt`, `checkout.nextChargeAt`, `cancelledDueTo`,
+  `installmentId`, `retryNumber`, cartão (`payerInformation.CARD`).
 
-### Resolução da `Subscription` (`ResolveSubscriptionAsync`, em ordem)
-1. `metadata.subscriptionId` → 2. `ExternalId` (= `Subscription.Id`) → 3. `subs_` do gateway →
-4. `metadata.userId` → 5. `CustomerId` (`cust_`, usado em renovações sem externalId).
+### Resolução da `Subscription`
+Como cada usuário tem no máximo uma assinatura, basta chegar ao usuário certo — do identificador mais
+específico ao mais genérico: `metadata.subscriptionId` → `ExternalId` → `subs_` → `metadata.userId` →
+`cust_` (renovações, que não trazem `externalId`).
 
 ### Resolução do `Payment`
-Estritamente por `GatewayChargeId` (`bill_`). **Sem fallback** por "pendente mais recente"
-(evita marcar por engano um pendente avulso; numa renovação não há `Payment` pré-criado).
+Estritamente por `GatewayChargeId`. **Sem fallback** por "pendente mais recente" — numa renovação não
+há `Payment` pré-criado, e marcar um pendente avulso corromperia o histórico.
+
+Um `checkout.completed (PAID)` que não resolve assinatura é no-op, mas emite `LogWarning`: entrou
+dinheiro que não foi registrado.
 
 ---
 
-## 9. Expiração automática (`SubscriptionExpiryBackgroundService`)
+## 9. Jobs
 
-`BackgroundService` singleton; varredura **a cada 1h** num scope próprio (repo/DbContext scoped):
-- `ExpireCanceledPastPeriodAsync(now)` → `Canceled` com `CurrentPeriodEnd < now` → `Expired`.
-- `ExpireTrialingPastEndAsync(now)` → `Trialing` com `TrialEndsAt < now` → `Expired`.
-- `ExpireStalePendingAsync(cutoff)` (`ISubscriptionRepository`) → `Pending` há mais de
-  `CheckoutDefaults.PendingTtlHours` (24h) → `Expired` (checkout abandonado, libera nova tentativa).
-- `IPaymentRepository.ExpireStalePendingAsync(cutoff)` → `Payment` `Pending` no mesmo corte de tempo
-  → `Cancelled` (evita "Pendente" eterno no histórico de cobranças). Ver RF-02.7.
+### `SubscriptionExpiryBackgroundService` (a cada 1h)
+1. `Canceled` com `CurrentPeriodEnd < now` → `Expired`.
+2. `Trialing` com `TrialEndsAt < now` → `Expired`.
+3. `Pending` há mais de 24h → `Expired`; `Payment` `Pending` no mesmo corte → `Cancelled`.
+4. **`DataRetentionRepository.SyncScheduledDeletionAsync(now, 90)`** — reconcilia a retenção.
 
-Todos varrem **todos os usuários** (sem query filter de tenant, por design). Erros são logados
-(`try/catch`) sem derrubar o serviço.
+### Retenção (`DataRetentionRepository`)
+Reconciliação **idempotente**, derivada do estado da assinatura do Owner. Concentrar a regra aqui
+evita espalhar `ScheduledDeletionAt` por todo handler que expira uma assinatura.
 
-> ⚠️ **`Active` vencido NÃO é varrido** — não há job que mova `Active`→`Expired`. O acesso é barrado
-> corretamente por `IsEntitled` (período passado), mas o `Status` permanece `Active` até um webhook
-> mudá-lo (renovação/cancelamento). Ver §7.5 e RF-05.4.
+| Estado do Owner | `Tenant.ScheduledDeletionAt` |
+|---|---|
+| Assinatura entitled | `null` (agendamento cancelado) |
+| Assinatura sem acesso | `AccessLostAt + 90d` |
+| **Nenhuma assinatura** | `Tenant.CreatedAt + 90d` |
 
----
+Lojas **inativas** são puladas: quem encerrou o estabelecimento manualmente já tem prazo próprio
+(`TenantService.DeactivateCurrentAsync`, também 90d).
 
-## 10. Eventos × ações (resumo)
+### `TenantDeletionBackgroundService` (a cada 24h)
+Apaga permanentemente os tenants com `ScheduledDeletionAt <= now`. **Não filtra por `IsActive`** — a
+loja fica ativa durante a retenção, e filtrar por `IsActive` deixaria de excluir justamente esses casos.
 
-| Evento (AbacatePay) | Handler | Subscription | Payment |
-|---|---|---|---|
-| `checkout.completed` (PAID) | `ApplyCheckoutCompletedAsync` | — | marca/cria `Paid` + `PeriodStart/End` |
-| `checkout.completed` (PENDING) | `ApplyCheckoutCompletedAsync` | — | captura cartão no pendente |
-| `subscription.completed` | `ApplySubscriptionActive` | `Active`, `NextPeriodEnd`, `subs_` | — |
-| `subscription.trial_started` | `ApplyTrialStarted` | `Trialing`, `TrialEndsAt`, `subs_`, `HasUsedTrial` | — |
-| `subscription.renewed` | `ApplyRenewed` | `Active`, `NextPeriodEnd`, `subs_` | (cobrança vem no `checkout.completed`) |
-| `subscription.plan_changed` | `ApplyPlanChangedAsync` | reconcilia `PlanId`, **sem alterar datas** | cria `Paid` se cobrado |
-| `subscription.cancelled` | `ApplyCancelled` | `Canceled`, `CanceledAt` | `Cancelled` (se resolvido) |
-| `checkout.refunded` \| `checkout.disputed` | `ApplyReversed` | `Expired`, `CurrentPeriodEnd = now` | `Refunded`/`Disputed` |
+### Como o usuário fica sabendo
+`Tenant.ScheduledDeletionAt` já vem em `/auth/me` (dentro de `tenants[]`), então o frontend não
+precisa de endpoint novo:
+- `DataDeletionBanner` (global, `DashboardLayout`) — faixa **não dispensável** com a contagem
+  regressiva e dois caminhos de saída: "Baixar meus dados" (`?tab=backup`) e "Assinar um plano".
+- `BackupSection` repete o prazo com a data exata, já que é o destino desses botões.
 
-> `NextPeriodEnd(from, plan)` = `AddYears(1)` se `BillingPeriod.Annual`, senão `AddMonths(1)`.
-> ⚠️ `subscription.trial_started` do **gateway** só ocorreria se um produto tivesse `trialDays` — hoje
-> os planos não têm, então esse fluxo está **inativo** (o trial é PDV-side). Eventos PIX/`transparent.*`
-> **não existem mais**.
+> ⚠️ Job destrutivo e irreversível. O aviso é in-app; **não há e-mail** antes da exclusão.
 
 ---
 
-## 11. Ciclo de vida (`Subscription.Status`)
+## 10. Eventos × ações
+
+| Evento | Subscription | Payment |
+|---|---|---|
+| `checkout.completed` (PAID) | — | marca/cria `Paid` + período do evento |
+| `checkout.completed` (PENDING) | — | captura cartão no pendente |
+| `subscription.completed` | `Active`, `StartedAt ??=`, `CurrentPeriodEnd`, `subs_` | — |
+| `subscription.renewed` | promove `PendingPlanId`, `Active`, `CurrentPeriodEnd` (`StartedAt` intacto) | (vem no `checkout.completed`) |
+| `subscription.payment_failed` | — | cria/atualiza `Failed` + `RetryNumber` (idempotente por `intl_`) |
+| `subscription.cancelled` (voluntário) | `Canceled`, `CanceledAt` (período preservado) | **intocado** |
+| `subscription.cancelled` (max retries) | `Expired`, `CurrentPeriodEnd = now` | **intocado** |
+| `subscription.cancelled` (em `RefundRequested`) | no-op (espera o `checkout.refunded`) | **intocado** |
+| `checkout.refunded` \| `checkout.disputed` | `Expired` **se** `RevokesAccess` (§7.8) | `Refunded`/`Disputed` |
+
+A troca de plano **não aparece nesta tabela**: ela não gera evento algum.
+
+---
+
+## 11. Ciclo de vida
 
 ```
-  Landing ?plano=<slug>          checkout (cartão)            webhook
-  ───────────────▶ Trialing*     (sem sub) ──▶ Pending ──▶ Active ◀── renewed
-       (PDV-side, 30d)               │            │            │
-            │                        │            │      cancel │ (pós-trial)
-       expira (job)                  │            │            ▼
-            ▼                        │            │         Canceled ──(vence, job)──▶ Expired
-         Expired                     │            │            │
-            │                        │            │            │  reativar → novo checkout
-      reassinar → novo checkout      │            │            │
-                                     │            │      refund/dispute ──▶ Expired
-   cancel em trial (hard delete) ────┘
-       → volta ao bloqueio (sem sub)
+Landing ?plano=<slug>
+   └──▶ Trialing ──(job: TrialEndsAt)──▶ Expired
+           └── cancel ─────────────────▶ Expired        (sem hard delete, sem logout)
+
+checkout ──▶ Pending ──(subscription.completed)──▶ Active   [grava StartedAt]
+               │                                     │
+               │ (TTL 24h, job)                      ├── cancel ≤ 7d de StartedAt ──▶ RefundRequested
+               ▼                                     │        └──(checkout.refunded)──▶ Expired
+            Expired                                  ├── cancel > 7d ───────────────▶ Canceled
+                                                     │                                   │ (job)
+                                                     ├── subscription.renewed ──▶ Active ▼
+                                                     └── max_payment_retries ─────▶ Expired
+
+Expired / Canceled(vencida) / None ──▶ reassinar (novo checkout, mesma linha)
+                                   └──▶ 90 dias de retenção → exclusão definitiva
 ```
-\* Sem assinatura viva = **acesso bloqueado (402)**, não "Free". O caminho gateway-trial existe no
-código (`ApplyTrialStarted`) mas está **inativo** (planos sem `trialDays`).
+
+A troca de plano não muda o `Status` — ela troca `PlanId` (upgrade) ou grava `PendingPlanId`
+(downgrade), sem sair de `Active`/`Trialing`.
+
+Sem assinatura viva = **acesso bloqueado (402)**, não "Free".
 
 ---
 
-## 12. Comportamento da UI (`SubscriptionSection`)
+## 12. Comportamento da UI
 
-- **Banner do plano:** estilo _premium_ (dourado) se o plano concede alguma feature (Pro); _accent_
-  (Essencial) caso contrário. Mostra nome curto, chip de status (`STATUS_CONFIG`), preço + sufixo de
-  ciclo, e "Cancelar plano" quando `isPaid && isLive`.
-  - Sem plano/None: título "Plano Sem plano ativo", subtítulo "Nenhum plano ativo — assine para usar
-    o sistema." (resolve o antigo #3; `STATUS_CONFIG.None.label = "SEM PLANO"`).
-- **Recursos e limites:** grid de 4 limites (`LIMIT_ORDER`) + módulos inclusos + features avançadas
-  (só aparece se houver features). Deriva tudo de `subscription.entitlements`/`limits`.
-- **Upsell do Pro (`showUpgrade`):** só para quem tem assinatura viva não-Pro. Toggle mensal/anual,
-  destaques de features/limites. CTA:
-  - `isLiveCard` → **troca imediata** (`changePlan.mutate`, sem confirmação — #5);
-  - senão → abre `PlanCheckoutDialog`.
-- **Reassinar/reativar (`showResubscribe`):** para `Canceled`/`Expired`/`None`/`Pending`. Card com
-  CTA que abre `PlansDialog`. Se `hasRemainingAccess` (Canceled dentro do período) → avisa da
-  cobrança imediata (#6). Se `Pending` (checkout abandonado) → copy própria "Finalize sua
-  assinatura" / "Tentar novamente" (RF-02.7 — antes desse ajuste, `Pending` não tinha nenhum CTA).
-- **Estado Expirado:** o banner mostra o nome do plano (chip "EXPIRADO"), mas o preço é **omitido**
-  e o card "O que seu plano inclui" **não é renderizado** (em vez de aparecer vazio) — ambos
-  derivados de `owned.length === 0` / `status === 'Expired'` em `SubscriptionSection/index.tsx`.
-  Resolve o antigo #4/RF-07.5.
+### Avisos globais (`DashboardLayout`)
+Três, em ordem de precedência quando coexistem:
+1. **`DataDeletionBanner`** — faixa persistente, não dispensável, quando há exclusão agendada.
+2. **`PaymentFailedModal`** — cobrança recusada; uma vez por sessão, Owner/Admin.
+3. **`SubscriptionExpiredModal`** — assinatura expirada; suprimido quando (2) está ativo, que explica
+   melhor o mesmo estado.
 
----
+### `SubscriptionSection`
+- **Banner:** estilo premium (dourado) se o plano concede features (Pro); accent (Essencial) caso
+  contrário. Sem plano → "Nenhum plano ativo — assine para usar o sistema."
+- **Expirado:** o banner mostra o nome do plano (chip "EXPIRADO"), mas **omite o preço** e não
+  renderiza o card de recursos — o plano guardado não vale mais.
+- **`RefundRequested`:** chip "REEMBOLSO EM ANÁLISE" + card explicativo **sem CTA** (o checkout está
+  bloqueado até o estorno se resolver).
+- **Cobrança recusada:** alerta de erro permanente com data, número da tentativa e CTA de reassinatura.
+- **Downgrade agendado:** alerta informativo — "você passa para o {plano} em {data}; até lá seu plano
+  atual continua valendo por inteiro" — com botão **"Cancelar troca"** (§7.4).
+- **Troca de plano:** dois caminhos, ambos com `ConfirmDialog` obrigatório:
+  - o **upsell do Profissional** (só para quem não é Pro), e
+  - o botão **"Trocar de plano"** no banner, que abre a `PlansDialog` em modo `change` — único
+    caminho para descer de plano ou trocar a periodicidade.
 
-## 13. Bugs e melhorias — status revalidado (2026-07-08)
-
-> Severidade: 🔴 bug/risco · 🟠 inconsistência · 🟡 UX/limpeza · ✅ resolvido · ⚪ observação
-
-### Status dos itens do doc anterior
-
-| # | Item | Status atual | Evidência |
-|---|---|---|---|
-| #1 | Upgrade durante trial PDV-side falhava | ✅ **Resolvido (backend)** | `SubscriptionService.ChangePlanAsync` trata `Trialing` + sem `GatewaySubscriptionId` trocando só o plano local |
-| #2 | PIX no backend, inacessível no frontend | ✅ **Resolvido por remoção** | PIX eliminado do billing (gateway `["CARD"]`, sem `transparent.*`, `GatewayPaymentMethod=Card`, `PixQrDialog` excluído) |
-| #3 | Mensagem "Plano Gratuito" para estado sem plano | ✅ **Resolvido** | `STATUS_CONFIG.None="SEM PLANO"`, "Nenhum plano ativo — assine para usar o sistema." |
-| #4 | Banner incoerente para assinatura Expirada | ✅ **Resolvido (frontend)** | `SubscriptionSection` omite preço e o card "O que seu plano inclui" quando `owned.length === 0`/`status === 'Expired'` (RF-07.5) |
-| #5 | Troca/upgrade sem confirmação nem aviso de cobrança | 🔴 **Aberto** | `handleUpgrade → changePlan.mutate()` dispara direto (sem `ConfirmDialog`) — `index.tsx:195` |
-| #6 | Reativação dentro do período sem alerta | ✅ **Resolvido (UX)** | `hasRemainingAccess` → "Reativar agora gera uma nova cobrança imediata" |
-| #7 | "Economize ganhado 2 meses grátis." | 🟡 **Aberto** | `SubscriptionSection/index.tsx:560` ainda tem a frase errada |
-| #8 | Branch morto de trial no `PlanCheckoutDialog` | 🟡 **Aberto** | `PlanCheckoutDialog/index.tsx:84-88` — `{plan.trialDays ? ...}` nunca executa (planos com `TrialDays=null`) |
-| #9 | `EntitlementCatalog.All` desatualizado | ✅ **Resolvido** | `advancedInventory`/`advancedEmployee`/`advancedExpenses` em `Features` e `All` |
-| #10 | Grafia "advancedExpanses" | ✅ **Resolvido** | `advancedExpenses` no backend, `entitlements.ts` e consumidores |
-
-### Achados novos / ainda abertos
-
-**#5 (🔴) — Upgrade sem confirmação.** Risco de cobrança acidental (troca imediata gera cobrança no
-gateway). O cancelamento tem `ConfirmDialog`; o upgrade não.
-
-**#7 (🟡) — Erro de português.** `"Economize ganhado 2 meses grátis."` → ex.: "Economize 2 meses no
-plano anual."
-
-**#8 (🟡) — Branch morto no checkout dialog.** Remover ou reaproveitar (planos não têm `trialDays`).
-
-**#11 (🟡) — Comentário desatualizado em `EntitlementCatalog`.** O cabeçalho diz "9 FEATURES", mas
-`Features` tem **13** chaves. Só comentário — corrigir para evitar confusão.
-
-**#13 (🟠) — Falha de renovação sem tratamento.** Sem `PastDue`/dunning/job de `Active` vencido: o
-acesso cai por `IsEntitled`, mas `Status` fica `Active` com data no passado (banner incoerente) e
-não há retry/aviso de cobrança falha. Ver §7.5 / §9.
-- **Sugestão:** tratar evento de falha de cobrança do gateway (se houver) e/ou job que marque `Active`
-  vencido como `Expired`; comunicar "pagamento pendente" na UI.
-
-**#15 (🟠) — `backend/CLAUDE.md` desatualizado.** Diz que o gating de módulo emite `MODULE_NOT_IN_PLAN`;
-o código emite `NOT_IN_PLAN` (§5). Corrigir a doc do backend.
-
-### ✅ Resolvidos nesta revisão (2026-07-09)
-
-- **#4 / RF-07.5** — Banner de assinatura Expirada não exibe mais preço nem o card "O que seu plano
-  inclui" de um plano que não vale mais (`owned.length === 0` / `status === 'Expired'` em
-  `SubscriptionSection/index.tsx`).
-- **#12 / RF-01.4 / RF-07.4** — `SubscriptionExpiredModal` (novo, global, `DashboardLayout`) aparece
-  para o Owner/Admin sempre que `status === 'Expired'`, chamando para ativar um plano. Decisão de
-  produto: o checkout continua bloqueado durante o trial vigente (§7.10) — em vez de converter
-  antecipadamente, o aviso ativo chega assim que o trial (ou qualquer assinatura) expira.
-- **#14 / RF-13.2** — Código morto de PIX removido do frontend: `BillingPaymentsSection`
-  (badge "PIX", `PixSubscription` em `KIND_LABELS`, texto "Pagamento via PIX") e a entrada
-  `MODULE_NOT_IN_PLAN` (nunca emitida pelo backend) em `utils/apiError.ts`. Tipos `UserPaymentKind`/
-  `UserPaymentMethod` (`types/billing.types.ts`) não têm mais variantes de PIX.
-- **RF-02.7** — Checkout `Pending` abandonado: `SubscriptionSection` agora expõe CTA de retry
-  ("Finalize sua assinatura"/"Tentar novamente") e o `SubscriptionExpiryBackgroundService` expira
-  automaticamente `Subscription`/`Payment` `Pending` após `CheckoutDefaults.PendingTtlHours` (24h).
-
-### ✅ Resolvidos desde os docs antigos (mantidos)
-
-- Transição para `Expired` por vencimento (canceladas **e** trials) via `SubscriptionExpiryBackgroundService`.
-- Histórico de cobranças exposto (`GET /api/payments/history`).
-- `PastDue` removido do enum.
-- Idempotência atômica do webhook (estado + `WebhookEvent` num único `SaveChanges`).
-- Período anual correto (`NextPeriodEnd` usa `AddYears(1)`).
-
-### ⚪ Observações a validar
-
-- **Idempotência de `checkout.*` por hash do corpo** — depende do gateway reenviar o **mesmo** corpo
-  exato; reserialização quebraria a dedup. Validar com o comportamento real do AbacatePay.
-- **`ResolveSubscriptionAsync` por `CustomerId`** assume **1 sub viva por cliente**; se a invariante
-  quebrar, uma renovação pode cair na assinatura errada.
-- **`CancelAsync` chama o gateway antes de persistir** — se a persistência local falhar, o webhook
-  `subscription.cancelled` reconcilia (idempotente).
-- **`GetLiveByUserIdAsync` filtra por `IsActive`** — nenhum fluxo deve dar soft delete em `Subscription`
-  (removeria a sub do filtro → perderia entitlement/histórico).
+  O diálogo escolhe o texto por `isDowngrade` (espelho de `PlanChange` em `utils/plans.ts`):
+  upgrade diz "passa a valer imediatamente, o valor novo entra na renovação de {data}"; downgrade diz
+  "você continua no {plano atual} até {data}" e **lista as features que serão perdidas**.
+- **Cancelamento:** o `ConfirmDialog` diz exatamente qual dos três desfechos (§7.7) se aplica, usando
+  `refundEligibleUntil`, e sempre lembra dos 90 dias + link de exportação.
+- **Reassinar (`showResubscribe`):** `Canceled`/`Expired`/`None`/`Pending`. Se `hasRemainingAccess`
+  (cancelada dentro do período) → avisa da cobrança imediata.
+- **Histórico:** `Failed` aparece como "Recusado (tentativa N)".
 
 ---
 
-## 14. Lista de requisitos (cobrindo todos os cenários)
+## 13. Pontos abertos
 
-> Requisitos funcionais (RF) derivados dos cenários da §7. **Status:** ✅ atendido · 🟠 parcial ·
-> ❌ não atendido / lacuna. Serve de checklist para manutenção e regressão.
-
-### RF-01 — Trial PDV-side
-- **RF-01.1** ✅ Conceder trial de 30 dias na criação do tenant **somente** com `?plano=<slug>` válido,
-  `!HasUsedTrial` e sem assinatura viva; marcar `HasUsedTrial`; não tocar o gateway.
-- **RF-01.2** ✅ Trial concede o plano escolhido integralmente (entitled) até `TrialEndsAt`.
-- **RF-01.3** ✅ Trial expirado deve virar `Expired` e bloquear o acesso (job horário).
-- **RF-01.4** ✅ *(resolvido por decisão de produto — 2026-07-09)* O checkout continua bloqueado
-  durante o `Trialing` vigente (decisão consciente, não mudou), mas o `SubscriptionExpiredModal`
-  (global) chama para ativar um plano assim que a assinatura vira `Expired` — ver §7.10.
-- **RF-01.5** ✅ Slug ausente/desconhecido não deve falhar o onboarding (segue sem trial).
-- **RF-01.6** ✅ Trial é único por usuário (`HasUsedTrial` nunca é revertido, inclusive após cancelamento).
-
-### RF-02 — Checkout (cartão)
-- **RF-02.1** ✅ Só `Owner`/`Admin` iniciam checkout; plano deve existir local e no gateway.
-- **RF-02.2** ✅ Bloquear novo checkout quando já há assinatura `Active`/`Trialing` **entitled** (evita cobrança dupla).
-- **RF-02.3** ✅ Permitir checkout quando `Canceled`/`Expired`/`Pending`/`None` (reativação/retry), reaproveitando a mesma `Subscription`.
-- **RF-02.4** ✅ Garantir `GatewayCustomer` (`cust_`) e sincronizar Document/Phone no `User`.
-- **RF-02.5** ✅ Criar `Payment` `Pending` (`bill_`) no checkout; ativação só por webhook.
-- **RF-02.6** ✅ Tela de retorno faz polling de `/me` até `Active`/`Trialing`, com timeout e retry; decide destino (painel/onboarding) por `tenantId`.
-- **RF-02.7** ✅ Checkout abandonado/falho deixa a sub `Pending` (bloqueada) — retry é permitido e
-  exposto na UI (`showResubscribe` cobre `Pending`); `SubscriptionExpiryBackgroundService` expira a
-  `Subscription`/cancela o `Payment` `Pending` órfão após `CheckoutDefaults.PendingTtlHours` (24h).
-
-### RF-03 — Ativação por webhook
-- **RF-03.1** ✅ Validar autenticidade: `webhookSecret` (401) + HMAC do corpo raw (403).
-- **RF-03.2** ✅ Idempotência por `(Provider, EventId)`; reprocessamento retorna 200 sem efeito.
-- **RF-03.3** ✅ Aplicar estado + gravar `WebhookEvent` num único `SaveChanges` (atômico); erro → 500 para retentativa.
-- **RF-03.4** ✅ `checkout.completed (PAID)` dá baixa/cria `Payment` `Paid` com período; `subscription.completed` ativa e define `CurrentPeriodEnd`.
-- **RF-03.5** ✅ Resolver a assinatura em cascata (metadata → externalId → `subs_` → userId → `cust_`).
-- **RF-03.6** ✅ Resolver `Payment` só por `GatewayChargeId` (sem fallback por pendente).
-- **RF-03.7** ⚪ Eventos que não resolvem assinatura são no-op mas ainda gravam `WebhookEvent` (idempotência preservada).
-
-### RF-04 — Troca de plano
-- **RF-04.1** ✅ Trocar plano exige assinatura viva (`Active`/`Trialing`) e plano-alvo diferente.
-- **RF-04.2** ✅ Trial PDV-side: trocar **só o plano local**, preservando datas, sem cobrança.
-- **RF-04.3** ✅ Com `GatewaySubscriptionId`: aplicar troca no gateway + local imediatamente; `subscription.plan_changed` reconcilia (sem alterar datas).
-- **RF-04.4** ✅ Fora de trial, impedir migração para plano com `TrialDays`.
-- **RF-04.5** ❌ **Confirmar antes de trocar** (aviso de cobrança/diferença) — hoje dispara direto (#5).
-
-### RF-05 — Renovação
-- **RF-05.1** ✅ Renovação automática por webhook estende `CurrentPeriodEnd` conforme o ciclo (mensal/anual).
-- **RF-05.2** ✅ Cobrança de renovação sem `Payment` pré-criado gera um novo `Payment` `Paid` (idempotente por `bill_`).
-- **RF-05.3** ✅ Período anual usa `AddYears(1)`; mensal `AddMonths(1)`.
-- **RF-05.4** ❌ **Tratar falha de renovação** (dunning/aviso/expiração de `Active` vencido): hoje `Active` vencido só é barrado por `IsEntitled`, com `Status` incoerente e sem retry/aviso (#13).
-
-### RF-06 — Cancelamento
-- **RF-06.1** ✅ Só `Owner`/`Admin` cancelam; cancelar no gateway primeiro quando há `subs_`.
-- **RF-06.2** ✅ Cancelar em trial: hard delete da sub + `Payment` (FK ordem), desativar lojas do Owner (exclusão em 30d), `AccessRevoked=true` → logout + landing.
-- **RF-06.3** ✅ Cancelar pós-trial: `Canceled` + `CanceledAt`, preserva `CurrentPeriodEnd` (acesso até o fim), `AccessRevoked=false`.
-- **RF-06.4** ✅ Confirmar cancelamento com mensagem por estado (trial vs. ativa) e link de exportação.
-- **RF-06.5** ✅ Webhook `subscription.cancelled` idempotente com o cancel manual (no-op se sub já removida).
-
-### RF-07 — Estado sem acesso (None/Expired)
-- **RF-07.1** ✅ Sem assinatura válida → todo módulo/feature/limite gateado retorna 402 (`NOT_IN_PLAN`/`PLAN_LIMIT_EXCEEDED`).
-- **RF-07.2** ✅ 402 vira toast amigável de upgrade no frontend (`utils/apiError.ts`).
-- **RF-07.3** ✅ `SubscriptionSection` comunica "sem plano/expirado" e oferece reativação (`showResubscribe`).
-- **RF-07.4** ✅ *(via modal, não guard de rota — 2026-07-09)* `SubscriptionExpiredModal`, global
-  (`DashboardLayout`), aparece para o Owner/Admin em qualquer rota autenticada sempre que
-  `status === 'Expired'`, chamando para ativar um plano. Não bloqueia a navegação (o usuário pode
-  fechar e segue recebendo toasts 402 soltos), mas cobre a lacuna de "nenhum aviso fora de
-  Configurações" — ver §7.9.
-- **RF-07.5** ✅ Banner de Expirado não exibe mais preço nem o card de recursos de um plano que não
-  vale mais (`SubscriptionSection` deriva de `owned.length === 0`/`status === 'Expired'` — #4).
-
-### RF-08 — Reativação
-- **RF-08.1** ✅ Reativar via novo checkout (Canceled/Expired), reaproveitando a `Subscription`.
-- **RF-08.2** ✅ Avisar que reativar dentro do período pago gera cobrança imediata (#6).
-
-### RF-09 — Reembolso / chargeback
-- **RF-09.1** ✅ `checkout.refunded`/`disputed` → `Payment` `Refunded`/`Disputed` + `Subscription` `Expired` com `CurrentPeriodEnd=now` (acesso cai na hora).
-
-### RF-10 — Multi-tenant / multi-loja
-- **RF-10.1** ✅ Uma assinatura do Owner cobre todas as lojas dele; entitlement resolvido via o Owner do tenant atual.
-- **RF-10.2** ✅ Limite de lojas (`stores`) barrado na criação de negócio adicional (`EnsureWithinLimitAsync`).
-- **RF-10.3** ✅ Funcionário (Employee) enxerga o plano do Owner em `/me` (leitura liberada a qualquer autenticado).
-- **RF-10.4** ✅ Cancelar em trial desativa **todas** as lojas ativas do Owner.
-- **RF-10.5** ✅ Entidades de billing filtram por `UserId` explicitamente (sem query filter de tenant); `IgnoreQueryFilters` não é usado indevidamente.
-
-### RF-11 — Histórico de cobranças
-- **RF-11.1** ✅ `GET /payments/history` paginado, scoped por `UserId`, só `Owner`/`Admin`.
-- **RF-11.2** ✅ Exibir método/cartão, tipo, valor, status, data e recibo (quando houver).
-
-### RF-12 — Catálogo / seed
-- **RF-12.1** ✅ `PlanSeeder` faz upsert idempotente por `ExternalProductId` no startup (reescreve entitlements/limites).
-- **RF-12.2** ✅ Ambos os planos concedem todos os módulos; Pro adiciona todas as features + limites ampliados.
-- **RF-12.3** ✅ Chaves de entitlement/limite espelhadas no frontend (`entitlements.ts`) com rótulos PT-BR.
-
-### RF-13 — Consistência de produto (card-only)
-- **RF-13.1** ✅ Gateway envia apenas `Methods: ["CARD"]`; sem fluxo/endpoint PIX.
-- **RF-13.2** ✅ Código morto de PIX removido: `BillingPaymentsSection` (badge/branch `Pix`,
-  `PixSubscription` em `KIND_LABELS`) e a entrada `MODULE_NOT_IN_PLAN` (nunca emitida pelo backend)
-  em `apiError.ts` — #14. *(`backend/CLAUDE.md` desatualizado sobre `MODULE_NOT_IN_PLAN` é um item
-  à parte, ainda aberto — #15.)*
-- **RF-13.3** ✅ `Subscription.Method`/`Payment.Method` sempre `Card`; `PaymentKind` sem `PixSubscription`.
+- **Upgrade a partir de um plano anual sai de graça até a renovação.** A regra "upgrade vale na hora,
+  cobra na renovação" (§7.4) é barata num ciclo mensal, mas quem está no Essencial Anual e sobe para o
+  Profissional ganha o plano superior por todo o resto do ano. Sem API de proporcional no gateway, as
+  saídas seriam agendar o upgrade também, ou cobrar a diferença num checkout avulso.
+- **`retryPolicy` não é enviada** em `subscriptions/create` — a política de retentativa é a default do
+  gateway, e é ela que determina quando vem o cancelamento por `max_payment_retries_exceeded`.
+- **Troca de plano feita fora do app** (direto no painel do gateway) não chega até nós: não há webhook
+  para ela. O `PlanId` local ficaria divergindo do produto cobrado.
+- **`Payment.PeriodEnd` de uma renovação que muda o ciclo** depende de `checkout.nextChargeAt`; sem
+  ele, e se o `checkout.completed` chegar antes do `subscription.renewed`, a fatura registra o período
+  pelo ciclo antigo. A `Subscription` fica correta em qualquer ordem.
+- **Idempotência de `checkout.*` por hash do corpo** depende de o gateway reenviar bytes idênticos;
+  uma reserialização quebraria a dedup.
+- **Exclusão de dados sem e-mail.** O aviso é in-app (`DataDeletionBanner`); quem não abrir o sistema
+  nos 90 dias perde os dados sem nunca ter sido notificado.
+- **Sem e-mail de cobrança recusada** — o aviso também é só in-app.
+- **A `Subscription` nunca é soft-deleted.** Nenhum repositório filtra por `IsActive` (era uma
+  armadilha: escondia a assinatura de quem cancelou, junto com o histórico). Não reintroduzir.

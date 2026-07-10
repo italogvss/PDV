@@ -6,9 +6,9 @@ using PDV.Domain.Interfaces;
 
 namespace PDV.Infrastructure.Services;
 
-// Varre periodicamente as assinaturas vencidas (canceladas pós-período, trials PDV-side expirados
-// e checkouts Pending abandonados) e as marca como Expired.
-// Resolve o repositório num scope próprio (BackgroundService é singleton; o repo/DbContext é scoped).
+// Varre periodicamente as assinaturas vencidas (canceladas pós-período, trials PDV-side expirados e
+// checkouts Pending abandonados), marca-as como Expired e reconcilia a retenção de dados das lojas.
+// Resolve os repositórios num scope próprio (BackgroundService é singleton; o repo/DbContext é scoped).
 public class SubscriptionExpiryBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<SubscriptionExpiryBackgroundService> logger) : BackgroundService
@@ -32,6 +32,7 @@ public class SubscriptionExpiryBackgroundService(
             using var scope = scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<ISubscriptionRepository>();
             var paymentRepo = scope.ServiceProvider.GetRequiredService<IPaymentRepository>();
+            var retentionRepo = scope.ServiceProvider.GetRequiredService<IDataRetentionRepository>();
 
             var now = DateTime.UtcNow;
 
@@ -51,6 +52,12 @@ public class SubscriptionExpiryBackgroundService(
             var canceledPayments = await paymentRepo.ExpireStalePendingAsync(pendingCutoff);
             if (canceledPayments > 0)
                 logger.LogInformation("Cobranças Pending órfãs canceladas: {Count}", canceledPayments);
+
+            // Só depois de expirar o que venceu: quem ficou sem acesso ganha data de exclusão, quem
+            // voltou a ter plano tem o agendamento cancelado.
+            var (scheduled, cleared) = await retentionRepo.SyncScheduledDeletionAsync(now, RetentionDefaults.DaysAfterAccessLoss);
+            if (scheduled > 0 || cleared > 0)
+                logger.LogInformation("Retenção reconciliada: {Scheduled} loja(s) agendada(s), {Cleared} liberada(s)", scheduled, cleared);
         }
         catch (Exception ex)
         {

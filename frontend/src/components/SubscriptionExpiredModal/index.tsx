@@ -20,7 +20,10 @@ export default function SubscriptionExpiredModal() {
   const [dismissed, setDismissed] = useState(false)
 
   const isOwner = role === 'Owner' || role === 'Admin'
-  const open = isOwner && !dismissed && subscription?.status === 'Expired'
+  // Quando o acesso caiu por cobrança recusada, o PaymentFailedModal explica melhor o motivo —
+  // ele tem precedência para os dois não abrirem ao mesmo tempo.
+  const paymentFailed = Boolean(subscription?.lastPaymentFailedAt)
+  const open = isOwner && !dismissed && !paymentFailed && subscription?.status === 'Expired'
 
   const handleClose = () => setDismissed(true)
 

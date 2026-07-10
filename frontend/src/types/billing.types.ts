@@ -1,6 +1,13 @@
 export type UserPaymentKind = 'CardSubscription' | 'OneOffCheckout'
 export type UserPaymentMethod = 'Card'
-export type UserPaymentStatus = 'Pending' | 'Paid' | 'Refunded' | 'Disputed' | 'Expired' | 'Cancelled'
+export type UserPaymentStatus =
+  | 'Pending'
+  | 'Paid'
+  | 'Failed' // cobrança de renovação recusada; o gateway ainda vai retentar
+  | 'Refunded'
+  | 'Disputed'
+  | 'Expired'
+  | 'Cancelled'
 
 export interface UserPayment {
   id: string
@@ -14,6 +21,8 @@ export interface UserPayment {
   cardBrand: string | null
   periodStart: string | null
   periodEnd: string | null
+  // Número da tentativa recusada — só em status 'Failed'.
+  retryNumber: number | null
   createdAt: string
 }
 

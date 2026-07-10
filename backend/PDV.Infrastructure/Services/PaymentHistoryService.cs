@@ -34,5 +34,6 @@ public class PaymentHistoryService(
         p.CardBrand,
         p.PeriodStart,
         p.PeriodEnd,
+        p.RetryNumber,
         p.CreatedAt);
 }

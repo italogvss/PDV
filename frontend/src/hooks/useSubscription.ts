@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { subscriptionService } from '../services/subscription.service'
-import { authService } from '../services/auth.service'
 import { UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 import { useAppDispatch, useAppSelector } from '../store'
-import { clearAuth, setSubscription } from '../store/slices/auth.slice'
+import { setSubscription } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { clearStoredPlanSlug } from '../utils/planSelection'
 import { entitlementSet } from '../utils/plans'
+import type { CancelSubscriptionResult, ChangePlanResult, Subscription } from '../types/subscription.types'
 
 export const SUBSCRIPTION_QUERY_KEY = ['subscription'] as const
 const PLANS_QUERY_KEY = ['plans'] as const
@@ -63,6 +63,7 @@ export function useSyncSubscriptionToStore() {
   const status = data?.status ?? null
   const currentPeriodEnd = data?.currentPeriodEnd ?? null
   const trialEndsAt = data?.trialEndsAt ?? null
+  const lastPaymentFailedAt = data?.lastPaymentFailedAt ?? null
   // Assinaturas primitivas para os campos não-escalares (arrays/objetos trocam de referência a
   // cada refetch mesmo sem mudar de conteúdo) — mantêm o dispatch estável.
   const entitlementsKey = (data?.entitlements ?? []).join(',')
@@ -71,13 +72,13 @@ export function useSyncSubscriptionToStore() {
   useEffect(() => {
     if (!isAuthenticated || !data) return
     dispatch(setSubscription({
-      planId, planName, status: data.status, currentPeriodEnd, trialEndsAt,
+      planId, planName, status: data.status, currentPeriodEnd, trialEndsAt, lastPaymentFailedAt,
       entitlements: data.entitlements ?? [],
       limits: data.limits ?? {},
     }))
     // Dependências primitivas: só refaz o dispatch quando um campo do resumo realmente muda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt, entitlementsKey, limitsKey])
+  }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt, lastPaymentFailedAt, entitlementsKey, limitsKey])
 }
 
 export interface StartCheckoutInput {
@@ -109,50 +110,71 @@ export function useStartCheckout() {
   })
 }
 
-// Troca de plano de uma assinatura ativa (upgrade/downgrade). Aplicada imediatamente.
+// Troca de plano. Nada é cobrado agora — o valor novo entra na próxima renovação. Um upgrade vale
+// na hora; um downgrade fica agendado para a virada do ciclo, preservando o que já foi pago.
 export function useChangePlan() {
   const queryClient = useQueryClient()
   const showToast = useToast()
   const handleError = useApiError()
   return useMutation({
     mutationFn: (planId: string) => subscriptionService.changePlan(planId),
-    onSuccess: () => {
+    onSuccess: (result, planId) => {
+      // Reescolher o plano vigente desiste do downgrade agendado. Lido ANTES da invalidação, que
+      // dispara o refetch e substituiria o estado que distingue os dois casos.
+      const current = queryClient.getQueryData<Subscription>(SUBSCRIPTION_QUERY_KEY)
+      const keptCurrentPlan = current?.planId === planId
+
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
-      showToast('Plano alterado.', 'success')
+      showToast(
+        keptCurrentPlan
+          ? `Troca cancelada. Você continua no ${result.planName}.`
+          : changePlanMessage(result),
+        'success',
+      )
     },
     onError: (error) => handleError(error, 'Erro ao trocar de plano.'),
   })
 }
 
+function changePlanMessage(result: ChangePlanResult): string {
+  if (result.scheduled && result.effectiveAt)
+    return `Troca agendada. O plano ${result.planName} passa a valer em ${formatDate(result.effectiveAt)}.`
+
+  if (result.nextChargeAt)
+    return `Plano alterado para ${result.planName}. O novo valor entra na renovação de ${formatDate(result.nextChargeAt)}.`
+
+  return `Plano alterado para ${result.planName}.`
+}
+
+// Cancelar nunca mais desloga: a conta e as lojas continuam de pé durante a retenção, para o dono
+// exportar os dados ou reassinar. O que muda é só o direito ao plano — que o /me reflete.
 export function useCancelSubscription() {
   const queryClient = useQueryClient()
-  const dispatch = useAppDispatch()
   const showToast = useToast()
   const handleError = useApiError()
   return useMutation({
     mutationFn: () => subscriptionService.cancel(),
-    onSuccess: async (result) => {
-      // Cancelamento em trial: o acesso e a(s) loja(s) já caíram no backend. Encerra a sessão
-      // (invalida o refresh token) e manda para a landing — não há mais app para voltar.
-      if (result.accessRevoked) {
-        try {
-          await authService.logout()
-        } catch {
-          // logout best-effort — segue para a landing de qualquer forma.
-        }
-        dispatch(clearAuth())
-        queryClient.clear()
-        // Sem esse clear, o slug sobrevive no sessionStorage e, num novo login, `resolvePostLoginPath`
-        // mandaria um usuário `hasUsedTrial` direto pro onboarding, pulando o checkout pago.
-        clearStoredPlanSlug()
-        window.location.href = import.meta.env.VITE_LANDING_URL
-        return
-      }
-
-      // Assinatura ativa cancelada: mantém acesso até o fim do período. Só atualiza o banner.
+    onSuccess: (result) => {
+      // O slug sobrevive no sessionStorage e, num novo login, `resolvePostLoginPath` mandaria um
+      // usuário `hasUsedTrial` direto pro onboarding, pulando o checkout pago.
+      clearStoredPlanSlug()
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
-      showToast('Assinatura cancelada. Você mantém o acesso até o fim do período.', 'info')
+      showToast(cancelMessage(result), 'info')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar a assinatura.'),
   })
+}
+
+function cancelMessage(result: CancelSubscriptionResult): string {
+  if (result.refundRequested)
+    return 'Reembolso solicitado. Assim que ele for processado você recebe a confirmação por e-mail.'
+
+  if (result.accessUntil)
+    return `Assinatura cancelada. Você mantém o acesso até ${formatDate(result.accessUntil)}.`
+
+  return `Assinatura encerrada. Seus dados ficam disponíveis até ${formatDate(result.dataAvailableUntil)}.`
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR')
 }

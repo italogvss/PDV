@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Logging;
 using PDV.Application.DTOs.Payments;
 using PDV.Application.DTOs.Subscriptions;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Application.Interfaces.Payments;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -18,8 +20,8 @@ public class SubscriptionService(
     IGatewayCustomerRepository gatewayCustomerRepository,
     IPaymentRepository paymentRepository,
     IUserRepository userRepository,
-    ITenantRepository tenantRepository,
-    IPaymentGateway gateway) : ISubscriptionService
+    IPaymentGateway gateway,
+    ILogger<SubscriptionService> logger) : ISubscriptionService
 {
     public async Task<SubscriptionResponse> GetMineAsync()
     {
@@ -27,6 +29,16 @@ public class SubscriptionService(
         var sub = resolved.Subscription;
 
         var user = await userRepository.GetByIdAsync(userContext.UserId);
+
+        var pendingPlan = sub?.PendingPlanId is Guid pendingId
+            ? await planRepository.GetByIdAsync(pendingId)
+            : null;
+
+        // A última cobrança da assinatura. Se ela foi recusada, o dunning está em curso: o gateway
+        // ainda retenta, e o usuário precisa saber que o cartão falhou. Uma retentativa bem-sucedida
+        // registra um Payment `Paid` mais novo, então basta olhar a mais recente.
+        var lastCharge = sub is null ? null : await paymentRepository.GetLatestBySubscriptionIdAsync(sub.Id);
+        var failedCharge = lastCharge?.Status == PaymentStatus.Failed ? lastCharge : null;
 
         return new SubscriptionResponse(
             PlanId: sub?.PlanId,
@@ -37,6 +49,13 @@ public class SubscriptionService(
             TrialEndsAt: sub?.TrialEndsAt,
             CurrentPeriodEnd: sub?.CurrentPeriodEnd,
             CanceledAt: sub?.CanceledAt,
+            RefundEligibleUntil: sub is null ? null : RefundDeadlineOf(sub),
+            PendingPlanId: pendingPlan?.Id,
+            PendingPlanName: pendingPlan?.Name,
+            // A troca agendada entra em vigor na virada do ciclo.
+            PendingPlanStartsAt: pendingPlan is null ? null : sub?.CurrentPeriodEnd,
+            LastPaymentFailedAt: failedCharge?.UpdatedAt,
+            PaymentRetryNumber: failedCharge?.RetryNumber,
             Entitlements: resolved.Entitlements,
             Limits: resolved.Limits,
             HasUsedTrial: user?.HasUsedTrial ?? false);
@@ -60,34 +79,33 @@ public class SubscriptionService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Usuário não encontrado.");
 
-        if (plan.TrialDays.HasValue && user.HasUsedTrial)
-            throw new BusinessException("Você já utilizou o período de trial. Escolha um plano sem trial.");
-
-        var existingSub = await subscriptionRepository.GetLiveByUserIdAsync(userId);
-        // Bloqueia nova contratação apenas se já houver assinatura ativa/em trial vigente
-        // (evita pagar duas vezes). Uma assinatura cancelada pode ser reativada a qualquer
-        // momento — inclusive dentro do período já pago — reaproveitando a mesma linha.
-        if (existingSub is not null
-            && existingSub.Status is SubscriptionStatus.Active or SubscriptionStatus.Trialing
-            && entitlementService.IsEntitled(existingSub))
-        {
-            var until = (existingSub.TrialEndsAt ?? existingSub.CurrentPeriodEnd)?.ToString("dd/MM/yyyy") ?? "breve";
-            throw new BusinessException(
-                $"Sua assinatura está ativa até {until}. " +
-                "Aguarde o fim desse período para contratar novamente.");
-        }
+        var existingSub = await subscriptionRepository.GetByUserIdAsync(userId);
+        EnsureCanCheckout(existingSub);
 
         var customer = await EnsureCustomerAsync(userId, user);
 
-        // Uma assinatura por usuário — reaproveita a existente (reativação).
+        // Reassinar cria uma assinatura NOVA no gateway. Se a anterior ainda estiver viva lá (ex.: a
+        // renovação falhou e o dunning segue tentando cobrar), o usuário acabaria com duas.
+        if (existingSub is not null) await DiscardGatewaySubscriptionAsync(existingSub);
+
+        // Uma assinatura por usuário — reaproveita a linha existente (reativação/retry).
         var sub = existingSub ?? new Subscription { UserId = userId };
         var isNew = existingSub is null;
         sub.Provider = gateway.Provider;
         sub.PlanId = plan.Id;
+        sub.PendingPlanId = null;
         sub.Method = GatewayPaymentMethod.Card;
+        sub.IsRenewable = true;
         sub.GatewayCustomerId = customer.GatewayCustomerId;
         sub.Status = SubscriptionStatus.Pending;
         sub.CanceledAt = null;
+        // Uma contratação nova abre uma janela de reembolso nova — o webhook subscription.completed
+        // grava o StartedAt. TrialEndsAt some: quem paga não carrega data de teste.
+        sub.StartedAt = null;
+        sub.TrialEndsAt = null;
+        // Marca o início da espera pelo gateway: é daqui que ExpireStalePendingAsync conta o TTL.
+        // Sem isto, uma reativação nasceria "velha" e o job a expiraria no meio do checkout.
+        sub.UpdatedAt = DateTime.UtcNow;
 
         var metadata = new Dictionary<string, string>
         {
@@ -96,125 +114,12 @@ public class SubscriptionService(
             ["subscriptionId"] = sub.Id.ToString(),
         };
 
-        return await StartCardCheckoutAsync(plan, sub, isNew, customer, request, metadata, userId);
-    }
-
-    // Troca de plano imediata. Trial PDV-side (sem gateway): só troca o plano local, sem cobrança.
-    // Com gateway — fora de trial: troca o produto no gateway e o plano local, mantendo as datas de
-    // renovação/fim de período; em trial-gateway: troca e recalcula o trial.
-    public async Task ChangePlanAsync(ChangePlanRequest request)
-    {
-        var sub = await subscriptionRepository.GetLiveByUserIdAsync(userContext.UserId)
-            ?? throw new BusinessException("Nenhuma assinatura ativa para trocar.");
-
-        // Troca só vale para assinatura viva — uma cancelada deve reativar via novo checkout.
-        if (sub.Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing))
-            throw new BusinessException("Nenhuma assinatura ativa para trocar.");
-
-        var newPlan = await planRepository.GetByIdAsync(request.PlanId)
-            ?? throw new NotFoundException("Plano não encontrado.");
-
-        if (newPlan.Id == sub.PlanId)
-            throw new BusinessException("Você já está neste plano.");
-
-        var inTrial = sub.Status == SubscriptionStatus.Trialing;
-
-        // Trial PDV-side: não há assinatura no gateway para alterar. Troca só o plano local;
-        // o gateway recebe o plano no checkout do fim do trial (que usa o PlanId corrente).
-        // TrialEndsAt/CurrentPeriodEnd são preservados (janela de 30 dias inalterada).
-        if (inTrial && string.IsNullOrEmpty(sub.GatewaySubscriptionId))
-        {
-            sub.PlanId = newPlan.Id;
-            sub.UpdatedAt = DateTime.UtcNow;
-            await subscriptionRepository.UpdateAsync(sub);
-            return;
-        }
-
-        if (string.IsNullOrEmpty(sub.GatewaySubscriptionId))
-            throw new BusinessException("Troca de plano disponível apenas para assinaturas já ativadas no gateway.");
-
-        // Fora de trial não se pode migrar para um plano com período de trial.
-        if (!inTrial && newPlan.TrialDays.HasValue)
-            throw new BusinessException("Não é possível trocar para um plano com período de teste.");
-
-        await gateway.ChangeSubscriptionPlanAsync(sub.GatewaySubscriptionId, newPlan.ExternalProductId, 1);
-
-        sub.PlanId = newPlan.Id;
-
-        // Em trial: reinicia o prazo de trial/renovação com base no novo plano.
-        if (inTrial && newPlan.TrialDays is int trialDays)
-        {
-            sub.TrialEndsAt = DateTime.UtcNow.AddDays(trialDays);
-            sub.CurrentPeriodEnd = sub.TrialEndsAt;
-        }
-
-        sub.UpdatedAt = DateTime.UtcNow;
-        await subscriptionRepository.UpdateAsync(sub);
-    }
-
-    public async Task<CancelSubscriptionResult> CancelAsync()
-    {
-        var userId = userContext.UserId;
-        var sub = await subscriptionRepository.GetLiveByUserIdAsync(userId)
-            ?? throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
-
-        // Cancela no gateway primeiro (assinatura com subs_) — impede a cobrança ao fim do trial/período.
-        if (!string.IsNullOrEmpty(sub.GatewaySubscriptionId))
-            await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId!);
-
-        // Em trial: bloqueia o acesso imediatamente com remoção FÍSICA da assinatura e dos pagamentos
-        // (exceção justificada à regra de soft delete — em trial não há cobrança paga, e o usuário
-        // não pode reativar em trial). User.HasUsedTrial permanece true, então não há novo trial.
-        // Pagamentos antes da assinatura por causa da FK. As lojas do Owner também são desativadas
-        // (acesso cai na hora) e agendadas para exclusão — o frontend desloga e vai para a landing.
-        if (sub.Status == SubscriptionStatus.Trialing)
-        {
-            await paymentRepository.DeleteBySubscriptionIdAsync(sub.Id);
-            await subscriptionRepository.DeleteAsync(sub);
-            await DeactivateOwnedTenantsAsync(userId);
-            return new CancelSubscriptionResult(AccessRevoked: true);
-        }
-
-        // Pós-trial (Active): mantém acesso até o fim do período já pago (CurrentPeriodEnd preservado).
-        sub.Status = SubscriptionStatus.Canceled;
-        sub.CanceledAt = DateTime.UtcNow;
-        await subscriptionRepository.UpdateAsync(sub);
-        return new CancelSubscriptionResult(AccessRevoked: false);
-    }
-
-    // Desativa todas as lojas ativas onde o usuário é Owner e agenda a exclusão definitiva em 30 dias
-    // (mesmo padrão de TenantService.DeactivateCurrentAsync + TenantDeletionBackgroundService). A
-    // assinatura é do Owner e cobre todas as suas lojas — ao cancelar em trial, todas caem juntas.
-    private async Task DeactivateOwnedTenantsAsync(Guid userId)
-    {
-        var user = await userRepository.GetByIdAsync(userId);
-        if (user is null) return;
-
-        var now = DateTime.UtcNow;
-        var ownedActive = user.UserTenants
-            .Where(ut => ut.Role == UserRole.Owner && ut.Tenant.IsActive)
-            .Select(ut => ut.Tenant);
-
-        foreach (var tenant in ownedActive)
-        {
-            tenant.IsActive = false;
-            tenant.ScheduledDeletionAt = now.AddMonths(1);
-            tenant.UpdatedAt = now;
-            await tenantRepository.UpdateAsync(tenant);
-        }
-    }
-
-    private async Task<StartCheckoutResponse> StartCardCheckoutAsync(
-        Plan plan, Subscription sub, bool isNew, GatewayCustomer customer,
-        StartCheckoutRequest request, Dictionary<string, string> metadata, Guid userId)
-    {
-        sub.IsRenewable = true;
-
         var checkout = await gateway.CreateSubscriptionCheckoutAsync(new SubscriptionCheckoutRequest(
             plan.ExternalProductId, customer.GatewayCustomerId, sub.Id.ToString(),
             request.CouponCode, request.ReturnUrl, request.CompletionUrl, metadata));
 
-        await PersistSubscriptionAsync(sub, isNew);
+        if (isNew) await subscriptionRepository.AddAsync(sub);
+        else await subscriptionRepository.UpdateAsync(sub);
 
         await paymentRepository.AddAsync(new Payment
         {
@@ -230,8 +135,209 @@ public class SubscriptionService(
             CouponCode = request.CouponCode,
         });
 
+        // Ativação vem por webhook (subscription.completed), nunca desta resposta.
         return new StartCheckoutResponse(checkout.Url);
     }
+
+    // Encerra a recorrência anterior no gateway antes de abrir uma nova. Best-effort: se a assinatura
+    // já tiver sido cancelada lá (cancelamento voluntário, esgotamento de tentativas, estorno), a
+    // chamada falha e não há nada a fazer — o que não pode é ficar uma recorrência viva cobrando.
+    // Zerar o GatewaySubscriptionId também libera o índice único para o subs_ novo.
+    private async Task DiscardGatewaySubscriptionAsync(Subscription sub)
+    {
+        if (string.IsNullOrEmpty(sub.GatewaySubscriptionId)) return;
+
+        try
+        {
+            await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId);
+        }
+        catch (PaymentGatewayException ex)
+        {
+            logger.LogWarning(ex, "Assinatura {GatewaySubscriptionId} não pôde ser cancelada no gateway antes do novo checkout.",
+                sub.GatewaySubscriptionId);
+        }
+
+        sub.GatewaySubscriptionId = null;
+    }
+
+    // Bloqueia a cobrança dupla: assinatura viva e vigente não contrata de novo. Canceled/Expired/
+    // Pending liberam (reativação/retry). RefundRequested aguarda o estorno ser aprovado no painel —
+    // reassinar antes disso faria o checkout.refunded derrubar a assinatura nova.
+    private void EnsureCanCheckout(Subscription? sub)
+    {
+        if (sub is null) return;
+
+        if (sub.Status == SubscriptionStatus.RefundRequested)
+            throw new BusinessException(
+                "Sua solicitação de reembolso está em análise. " +
+                "Assim que ela for concluída você poderá assinar novamente.");
+
+        if (sub.Status is SubscriptionStatus.Active or SubscriptionStatus.Trialing
+            && entitlementService.IsEntitled(sub))
+        {
+            var until = (sub.TrialEndsAt ?? sub.CurrentPeriodEnd)?.ToString("dd/MM/yyyy") ?? "breve";
+            throw new BusinessException(
+                $"Sua assinatura está ativa até {until}. " +
+                "Aguarde o fim desse período para contratar novamente.");
+        }
+    }
+
+    // Troca de plano. O gateway troca o produto da assinatura na hora, sem calcular diferença: o
+    // valor novo só é cobrado na próxima renovação. O que decidimos aqui é QUANDO os recursos do
+    // plano novo passam a valer no PDV:
+    //
+    //   upgrade   → imediato. Ele ganha os recursos agora e paga por eles na renovação.
+    //   downgrade → agendado (PendingPlanId). Ele já pagou o plano maior por este ciclo; tirar
+    //               recursos agora seria cobrar por algo que não entregamos. ApplyRenewed promove.
+    //
+    // No trial PDV-side não há assinatura no gateway nem cobrança: a troca é sempre imediata, e a
+    // escolha definitiva fica para a hora de assinar.
+    public async Task<ChangePlanResult> ChangePlanAsync(ChangePlanRequest request)
+    {
+        var sub = await subscriptionRepository.GetByUserIdAsync(userContext.UserId)
+            ?? throw new BusinessException("Nenhuma assinatura ativa para trocar.");
+
+        // Troca só vale para assinatura viva — uma cancelada deve reativar via novo checkout.
+        if (sub.Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing))
+            throw new BusinessException("Nenhuma assinatura ativa para trocar.");
+
+        var newPlan = await planRepository.GetByIdAsync(request.PlanId)
+            ?? throw new NotFoundException("Plano não encontrado.");
+
+        var now = DateTime.UtcNow;
+
+        // Escolher de novo o plano vigente com um downgrade agendado = desistir da troca. O gateway
+        // precisa voltar a apontar para o produto atual, senão a próxima fatura viria com o valor menor.
+        if (newPlan.Id == sub.PlanId)
+        {
+            if (sub.PendingPlanId is null)
+                throw new BusinessException("Você já está neste plano.");
+
+            if (!string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+                await gateway.ChangeSubscriptionPlanAsync(sub.GatewaySubscriptionId, newPlan.ExternalProductId, 1);
+
+            sub.PendingPlanId = null;
+            sub.UpdatedAt = now;
+            await subscriptionRepository.UpdateAsync(sub);
+
+            logger.LogInformation("Assinatura {SubscriptionId}: troca agendada cancelada.", sub.Id);
+            return new ChangePlanResult(newPlan.Name, Scheduled: false, EffectiveAt: null, NextChargeAt: null);
+        }
+
+        // Trial PDV-side: o gateway não conhece esta assinatura. Nenhuma regra de upgrade/downgrade
+        // se aplica — não há nada pago a preservar. As datas do trial ficam intactas.
+        if (string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+        {
+            if (sub.Status != SubscriptionStatus.Trialing)
+                throw new BusinessException("Troca de plano disponível apenas para assinaturas já ativadas no gateway.");
+
+            sub.PlanId = newPlan.Id;
+            sub.UpdatedAt = now;
+            await subscriptionRepository.UpdateAsync(sub);
+            return new ChangePlanResult(newPlan.Name, Scheduled: false, EffectiveAt: null, NextChargeAt: null);
+        }
+
+        if (newPlan.Id == sub.PendingPlanId)
+            throw new BusinessException("A troca para este plano já está agendada.");
+
+        // O gateway troca o produto agora e não emite fatura. Reenviar é seguro: a chamada é idempotente
+        // do ponto de vista do resultado (o produto da assinatura passa a ser o novo).
+        await gateway.ChangeSubscriptionPlanAsync(sub.GatewaySubscriptionId, newPlan.ExternalProductId, 1);
+
+        var scheduled = PlanChange.IsDowngrade(sub.Plan, newPlan);
+
+        if (scheduled)
+        {
+            sub.PendingPlanId = newPlan.Id;
+        }
+        else
+        {
+            sub.PlanId = newPlan.Id;
+            // Subir de plano cancela um downgrade que estivesse agendado — o gateway também só
+            // guarda um produto por assinatura, e é o que acabamos de gravar lá.
+            sub.PendingPlanId = null;
+        }
+
+        sub.UpdatedAt = now;
+        await subscriptionRepository.UpdateAsync(sub);
+
+        logger.LogInformation(
+            "Assinatura {SubscriptionId}: troca para o plano {PlanName} ({Kind}).",
+            sub.Id, newPlan.Name, scheduled ? "agendada" : "imediata");
+
+        return new ChangePlanResult(
+            newPlan.Name,
+            Scheduled: scheduled,
+            EffectiveAt: scheduled ? sub.CurrentPeriodEnd : now,
+            NextChargeAt: sub.CurrentPeriodEnd);
+    }
+
+    public async Task<CancelSubscriptionResult> CancelAsync()
+    {
+        var userId = userContext.UserId;
+        var sub = await subscriptionRepository.GetByUserIdAsync(userId)
+            ?? throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
+
+        if (sub.Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing))
+            throw new BusinessException("Nenhuma assinatura ativa para cancelar.");
+
+        // Encerra a recorrência no gateway antes de qualquer coisa — impede a cobrança do próximo
+        // ciclo mesmo que a persistência local falhe (o webhook subscription.cancelled reconcilia).
+        if (!string.IsNullOrEmpty(sub.GatewaySubscriptionId))
+            await gateway.CancelSubscriptionAsync(sub.GatewaySubscriptionId);
+
+        var now = DateTime.UtcNow;
+        var result = sub.Status == SubscriptionStatus.Trialing
+            ? CancelTrial(sub, now)
+            : IsWithinRefundWindow(sub, now) ? RequestRefund(sub, now) : CancelAtPeriodEnd(sub, now);
+
+        sub.UpdatedAt = now;
+        await subscriptionRepository.UpdateAsync(sub);
+        return result;
+    }
+
+    // Trial cancelado: o acesso ao plano cai na hora, mas a conta e as lojas continuam de pé para
+    // exportar os dados ou assinar de novo. HasUsedTrial permanece true — trial é único por usuário.
+    private static CancelSubscriptionResult CancelTrial(Subscription sub, DateTime now)
+    {
+        sub.Status = SubscriptionStatus.Expired;
+        sub.CanceledAt = now;
+        sub.TrialEndsAt = now;
+        sub.CurrentPeriodEnd = now;
+        return new CancelSubscriptionResult("Expired", RefundRequested: false, AccessUntil: null,
+            DataAvailableUntil: now.AddDays(RetentionDefaults.DaysAfterAccessLoss));
+    }
+
+    // Dentro da janela de arrependimento: a assinatura termina agora e abre-se uma solicitação de
+    // reembolso. O estorno NÃO tem endpoint na API — é aprovado manualmente no painel do AbacatePay,
+    // e o webhook checkout.refunded fecha o ciclo (Payment=Refunded, Subscription=Expired).
+    private static CancelSubscriptionResult RequestRefund(Subscription sub, DateTime now)
+    {
+        sub.Status = SubscriptionStatus.RefundRequested;
+        sub.CanceledAt = now;
+        sub.CurrentPeriodEnd = now;
+        return new CancelSubscriptionResult("RefundRequested", RefundRequested: true, AccessUntil: null,
+            DataAvailableUntil: now.AddDays(RetentionDefaults.DaysAfterAccessLoss));
+    }
+
+    // Fora da janela: só as próximas faturas são canceladas. O período já pago é honrado até o fim
+    // (CurrentPeriodEnd preservado) e o job de expiração o move para Expired depois.
+    private static CancelSubscriptionResult CancelAtPeriodEnd(Subscription sub, DateTime now)
+    {
+        sub.Status = SubscriptionStatus.Canceled;
+        sub.CanceledAt = now;
+        var accessUntil = sub.CurrentPeriodEnd ?? now;
+        return new CancelSubscriptionResult("Canceled", RefundRequested: false, AccessUntil: accessUntil,
+            DataAvailableUntil: accessUntil.AddDays(RetentionDefaults.DaysAfterAccessLoss));
+    }
+
+    // Janela contada a partir do momento em que a assinatura paga passou a valer. Renovações não a
+    // reabrem; uma reativação sim, porque grava um StartedAt novo.
+    private static bool IsWithinRefundWindow(Subscription sub, DateTime now) =>
+        RefundDeadlineOf(sub) is DateTime deadline && now <= deadline;
+
+    private static DateTime? RefundDeadlineOf(Subscription sub) =>
+        sub.StartedAt?.AddDays(RefundDefaults.WindowDays);
 
     private async Task<GatewayCustomer> EnsureCustomerAsync(Guid userId, User user)
     {
@@ -277,9 +383,6 @@ public class SubscriptionService(
         await userRepository.UpdateAsync(user);
     }
 
-    private Task PersistSubscriptionAsync(Subscription sub, bool isNew) =>
-        isNew ? subscriptionRepository.AddAsync(sub) : subscriptionRepository.UpdateAsync(sub);
-
     private static PlanResponse MapPlan(Plan p) => new(
         p.Id,
         p.Name,
@@ -287,6 +390,5 @@ public class SubscriptionService(
         p.PriceCents / 100m,
         PlanJson.ReadEntitlements(p.EntitledModulesJson),
         PlanJson.ReadLimits(p.LimitsJson),
-        p.TrialDays,
         p.Slug);
 }

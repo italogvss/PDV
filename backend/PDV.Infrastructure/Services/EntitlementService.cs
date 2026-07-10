@@ -23,7 +23,7 @@ public class EntitlementService(
         Guid? ownerId = tenantContext.TenantId == Guid.Empty
             ? userContext.UserId
             : await userTenantRepository.GetOwnerUserIdAsync(tenantContext.TenantId);
-        var subscription = ownerId is null ? null : await subscriptionRepository.GetLiveByUserIdAsync(ownerId.Value);
+        var subscription = ownerId is null ? null : await subscriptionRepository.GetByUserIdAsync(ownerId.Value);
 
         if (subscription is not null && IsEntitled(subscription))
         {
@@ -67,17 +67,7 @@ public class EntitlementService(
                 "PLAN_LIMIT_EXCEEDED");
     }
 
-    // Tem direito ao plano enquanto: em trial não expirado; ou ativo/cancelado dentro do período.
-    public bool IsEntitled(Subscription s)
-    {
-        var now = DateTime.UtcNow;
-        return s.Status switch
-        {
-            SubscriptionStatus.Trialing => s.TrialEndsAt is null || s.TrialEndsAt > now,
-            SubscriptionStatus.Active or SubscriptionStatus.Canceled => s.CurrentPeriodEnd is null || s.CurrentPeriodEnd > now,
-            _ => false,
-        };
-    }
+    public bool IsEntitled(Subscription s) => s.IsEntitledAt(DateTime.UtcNow);
 
     private static readonly IReadOnlyDictionary<string, int> EmptyLimits = new Dictionary<string, int>();
 }

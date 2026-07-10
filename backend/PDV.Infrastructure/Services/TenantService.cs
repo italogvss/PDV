@@ -119,7 +119,7 @@ public class TenantService(
     {
         if (string.IsNullOrWhiteSpace(planSlug) || user.HasUsedTrial) return;
 
-        var existing = await subscriptionRepository.GetLiveByUserIdAsync(user.Id);
+        var existing = await subscriptionRepository.GetByUserIdAsync(user.Id);
         if (existing is not null) return;
 
         var plan = await planRepository.GetBySlugAsync(planSlug);
@@ -377,7 +377,9 @@ public class TenantService(
 
         var tenant = currentLink.Tenant;
         tenant.IsActive = false;
-        tenant.ScheduledDeletionAt = DateTime.UtcNow.AddMonths(1);
+        // Mesmo prazo de retenção prometido no cancelamento de plano. Como a loja fica inativa, o
+        // DataRetentionRepository não mexe neste agendamento.
+        tenant.ScheduledDeletionAt = DateTime.UtcNow.AddDays(RetentionDefaults.DaysAfterAccessLoss);
         tenant.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateAsync(tenant);
 

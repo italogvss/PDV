@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Button, CircularProgress, Divider, Link, Paper, Typography } from '@mui/material'
+import { Alert, AlertTitle, Box, Button, CircularProgress, Divider, Link, Paper, Typography } from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
 import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded'
 import CancelOutlined from '@mui/icons-material/CancelOutlined'
+import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined'
@@ -24,8 +25,12 @@ import { FEATURE_LABELS, UNLIMITED, type PlanLimitKey } from '../../../../consta
 import type { Plan } from '../../../../types/subscription.types'
 import {
   STATUS_CONFIG,
+  RETENTION_DAYS,
   formatPrice,
+  formatDate,
   getStatusLine,
+  isWithinRefundWindow,
+  isDowngrade,
   cycleSuffix,
   planCycle,
   shortPlanName,
@@ -39,6 +44,7 @@ import {
 } from './helpers'
 import PlanCheckoutDialog from './PlanCheckoutDialog'
 import PlansDialog from './PlansDialog'
+import type { PlansDialogMode } from './PlansDialog/types'
 import ConfirmDialog from '../../../../components/ConfirmDialog'
 
 const LIMIT_ICONS: Record<PlanLimitKey, SvgIconComponent> = {
@@ -58,12 +64,15 @@ export default function SubscriptionSection() {
 
   // Checkout de contratação nova (assinatura não-viva) → redireciona para o gateway via este diálogo.
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null)
-  // Modal de escolha de plano (reassinatura) — só abre o checkout depois de um plano ser selecionado.
-  const [plansDialogOpen, setPlansDialogOpen] = useState(false)
+  // Grade de planos: `checkout` leva ao pagamento (reassinatura); `change` troca o plano de uma
+  // assinatura viva. null = fechada.
+  const [plansDialogMode, setPlansDialogMode] = useState<PlansDialogMode | null>(null)
   // Período escolhido no upsell (só afeta qual variante do Profissional é contratada).
   const [cycle, setCycle] = useState<BillingCycle>('monthly')
   // Confirmação de cancelamento de assinatura.
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  // Plano-alvo de uma troca aguardando confirmação — a mensagem muda conforme upgrade × downgrade.
+  const [changeTarget, setChangeTarget] = useState<Plan | null>(null)
 
   if (loadingSub || loadingPlans || !subscription || !plans) {
     return (
@@ -147,6 +156,9 @@ export default function SubscriptionSection() {
   // checkout anterior não foi concluído — StartCheckoutAsync já permite nova tentativa nesse
   // estado, só faltava expor (RF-02.7).
   const isPendingCheckout = subscription.status === 'Pending'
+  // Reembolso pendente não oferece reativação: o backend bloqueia o checkout até o estorno ser
+  // aprovado, senão o `checkout.refunded` derrubaria a assinatura nova.
+  const awaitingRefund = subscription.status === 'RefundRequested'
   const showResubscribe =
     subscription.status === 'Canceled' ||
     subscription.status === 'Expired' ||
@@ -197,36 +209,110 @@ export default function SubscriptionSection() {
       ? 'Fazer upgrade agora'
       : 'Assinar Profissional'
 
-  const handleUpgrade = () => {
-    if (!upgradeTarget) return
-    // Assinatura viva no cartão → troca imediata; demais estados → checkout no gateway.
-    if (isLiveCard) changePlan.mutate(upgradeTarget.id)
-    else setCheckoutPlan(upgradeTarget)
+  // Assinatura viva → troca de plano (confirma antes); demais estados → checkout.
+  const askToChangePlan = (plan: Plan) => {
+    if (isLiveCard) setChangeTarget(plan)
+    else setCheckoutPlan(plan)
   }
+
+  const handleConfirmChange = () => {
+    if (!changeTarget) return
+    changePlan.mutate(changeTarget.id, { onSuccess: () => setChangeTarget(null) })
+  }
+
+  // Um downgrade retira recursos ou encolhe limites, e o usuário já pagou o plano maior por este
+  // ciclo — a troca só vale na virada. Qualquer outra troca vale na hora. Em nenhum caso há cobrança.
+  const changeIsDowngrade = !!currentPlan && !!changeTarget && !isTrial && isDowngrade(currentPlan, changeTarget)
+  const changeTargetSet = changeTarget ? entitlementSet(changeTarget.entitlements) : null
+  const lostFeatures = changeTargetSet
+    ? FEATURE_KEYS.filter((k) => has(k) && !changeTargetSet.has(k.toLowerCase())).map((k) => FEATURE_LABELS[k])
+    : []
+
+  const changeDescription = changeTarget && (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {isTrial && (
+        <Typography variant="body2">
+          O plano <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer imediatamente pelo
+          resto do seu período de teste. Nenhuma cobrança é feita agora, e você escolhe o plano
+          definitivo na hora de assinar.
+        </Typography>
+      )}
+
+      {!isTrial && !changeIsDowngrade && (
+        <>
+          <Typography variant="body2">
+            O plano <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer{' '}
+            <strong>imediatamente</strong> — os novos recursos já ficam disponíveis.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Nenhuma cobrança é feita agora: o valor de R$ {formatPrice(changeTarget.price)} entra{' '}
+            {statusLine?.date ? `na renovação de ${statusLine.date}` : 'na próxima renovação'}.
+          </Typography>
+        </>
+      )}
+
+      {!isTrial && changeIsDowngrade && (
+        <>
+          <Typography variant="body2">
+            Você continua no plano <strong>{planTitle}</strong>{' '}
+            {statusLine?.date ? `até ${statusLine.date}` : 'até o fim do período já pago'} — o período
+            que já pagou é honrado por inteiro. A partir daí o plano{' '}
+            <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer, por R${' '}
+            {formatPrice(changeTarget.price)}.
+          </Typography>
+          {lostFeatures.length > 0 && (
+            <Typography variant="body2" color="text.secondary">
+              Quando a troca entrar em vigor, você deixa de ter: {lostFeatures.join(', ')}.
+            </Typography>
+          )}
+        </>
+      )}
+    </Box>
+  )
 
   const goToExport = () => navigate('/configuracoes?tab=backup')
 
-  // Em trial, cancelar derruba o acesso e agenda a exclusão do negócio → aviso forte + link de
-  // exportação. Fora do trial, a assinatura só deixa de renovar e o acesso segue até o fim do período.
-  const cancelDescription = isTrial ? (
+  // Três desfechos possíveis, e a confirmação precisa dizer exatamente qual é o do usuário:
+  //   trial            → o teste acaba na hora, sem cobrança envolvida;
+  //   janela de 7 dias → a assinatura acaba na hora e o dinheiro é devolvido;
+  //   fora da janela   → só as próximas faturas param; o período pago segue valendo.
+  // Em todos, a loja continua acessível durante a retenção — daí o link de exportação.
+  const inRefundWindow = isWithinRefundWindow(subscription)
+
+  const cancelDescription = (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {isTrial && (
+        <Typography variant="body2">
+          Ao cancelar agora, seu período de teste termina <strong>imediatamente</strong> e você perde
+          o acesso ao plano.
+        </Typography>
+      )}
+
+      {!isTrial && inRefundWindow && (
+        <Typography variant="body2">
+          Você está dentro do prazo de arrependimento (até{' '}
+          {formatDate(subscription.refundEligibleUntil)}). Sua assinatura será encerrada{' '}
+          <strong>imediatamente</strong> e o valor pago será devolvido — o reembolso é processado em
+          alguns dias úteis.
+        </Typography>
+      )}
+
+      {!isTrial && !inRefundWindow && (
+        <Typography variant="body2">
+          Sua assinatura não será renovada. Você mantém o acesso{' '}
+          {statusLine?.date ? `até ${statusLine.date}` : 'até o fim do período já pago'}.
+        </Typography>
+      )}
+
       <Typography variant="body2">
-        Ao cancelar agora, seu período de teste termina <strong>imediatamente</strong> e você perde o
-        acesso. Seu negócio será desativado e <strong>excluído definitivamente em 30 dias</strong>.
-      </Typography>
-      <Typography variant="body2">
-        Exporte seus dados antes de continuar —{' '}
+        Sua conta continua ativa e seus dados ficam disponíveis por{' '}
+        <strong>{RETENTION_DAYS} dias</strong> para você exportá-los ou assinar novamente —{' '}
         <Link component="button" type="button" onClick={goToExport} sx={{ fontWeight: 700 }}>
           exportar meus dados
         </Link>
         .
       </Typography>
     </Box>
-  ) : (
-    <Typography variant="body2">
-      Sua assinatura não será renovada. Você mantém o acesso{' '}
-      {statusLine?.date ? `até ${statusLine.date}` : 'até o fim do período já pago'}.
-    </Typography>
   )
 
   const handleCancel = () => {
@@ -235,6 +321,53 @@ export default function SubscriptionSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* ══ Cobrança recusada — o gateway ainda retenta, mas o cartão precisa ser atualizado ══ */}
+      {subscription.lastPaymentFailedAt && (
+        <Alert
+          severity="error"
+          variant="outlined"
+          sx={{ borderRadius: 3, alignItems: 'center' }}
+          action={
+            <Button color="error" variant="contained" size="small" onClick={() => setPlansDialogMode('checkout')}>
+              Assinar novamente
+            </Button>
+          }
+        >
+          <AlertTitle sx={{ fontWeight: 700 }}>Não conseguimos cobrar seu cartão</AlertTitle>
+          A cobrança da renovação de {formatDate(subscription.lastPaymentFailedAt)} foi recusada
+          {subscription.paymentRetryNumber ? ` (tentativa ${subscription.paymentRetryNumber})` : ''}. Seu
+          acesso ficará bloqueado até que um pagamento seja concluído.
+        </Alert>
+      )}
+
+      {/* ══ Downgrade agendado — o plano menor só vale na virada do ciclo já pago ══ */}
+      {subscription.pendingPlanName && (
+        <Alert
+          severity="info"
+          variant="outlined"
+          sx={{ borderRadius: 3, alignItems: 'center' }}
+          action={
+            // Sem isto, quem agenda um downgrade fica preso a ele até a renovação — que pode ser
+            // daqui a um ano no plano anual.
+            <Button
+              color="info"
+              size="small"
+              disabled={changePlan.isPending}
+              onClick={() => subscription.planId && changePlan.mutate(subscription.planId)}
+            >
+              Cancelar troca
+            </Button>
+          }
+        >
+          <AlertTitle sx={{ fontWeight: 700 }}>Mudança de plano na próxima renovação</AlertTitle>
+          Você passa para o {shortPlanName(subscription.pendingPlanName)}{' '}
+          {subscription.pendingPlanStartsAt
+            ? `em ${formatDate(subscription.pendingPlanStartsAt)}`
+            : 'na próxima renovação'}
+          . Até lá seu plano atual continua valendo por inteiro — você não perde nada do que já pagou.
+        </Alert>
+      )}
+
       {/* ══ Banner do plano atual ══ */}
       <Box
         sx={{
@@ -340,21 +473,39 @@ export default function SubscriptionSection() {
               </Box>
             )}
             {canCancel && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<CancelOutlined />}
-                onClick={() => setConfirmCancelOpen(true)}
-                disabled={cancel.isPending}
-                sx={{
-                  backgroundColor: tier.pillBg,
-                  color: tier.ink,
-                  borderColor: alpha(tier.ink, 0.4),
-                  '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
-                }}
-              >
-                Cancelar plano
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {/* Único caminho para descer de plano (ou trocar a periodicidade) — o upsell só sobe. */}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<SwapHorizRounded />}
+                  onClick={() => setPlansDialogMode('change')}
+                  disabled={changePlan.isPending}
+                  sx={{
+                    backgroundColor: tier.pillBg,
+                    color: tier.ink,
+                    borderColor: alpha(tier.ink, 0.4),
+                    '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
+                  }}
+                >
+                  Trocar de plano
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CancelOutlined />}
+                  onClick={() => setConfirmCancelOpen(true)}
+                  disabled={cancel.isPending}
+                  sx={{
+                    backgroundColor: tier.pillBg,
+                    color: tier.ink,
+                    borderColor: alpha(tier.ink, 0.4),
+                    '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
+                  }}
+                >
+                  Cancelar plano
+                </Button>
+              </Box>
             )}
           </Box>
         </Box>
@@ -567,7 +718,7 @@ export default function SubscriptionSection() {
                 </Box>
                 {cycle === 'annual' && annualSavings > 0 && (
                   <Typography variant="body2" sx={{ mt: 0.5, color: gold[800], fontWeight: 600 }}>
-                    Economize ganhado 2 meses grátis.
+                    No plano anual você economiza 2 meses.
                   </Typography>
                 )}
               </Box>
@@ -707,7 +858,7 @@ export default function SubscriptionSection() {
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardRounded />}
-                onClick={handleUpgrade}
+                onClick={() => askToChangePlan(upgradeTarget)}
                 disabled={changePlan.isPending}
                 sx={{
                   px: 3,
@@ -728,7 +879,7 @@ export default function SubscriptionSection() {
               </Button>
               <Typography variant="caption" sx={{ color: alpha(gold[900], 0.7) }}>
                 {isLiveCard
-                  ? 'Upgrade imediato — a diferença entra na próxima fatura.'
+                  ? 'Upgrade imediato — o novo valor entra só na próxima renovação.'
                   : 'Cobrança recorrente. Cancele quando quiser.'}
               </Typography>
             </Box>
@@ -774,7 +925,7 @@ export default function SubscriptionSection() {
             variant="contained"
             color="secondary"
             endIcon={<ArrowForwardRounded />}
-            onClick={() => setPlansDialogOpen(true)}
+            onClick={() => setPlansDialogMode('checkout')}
             sx={{ flexShrink: 0, px: 3, py: 1.25, fontWeight: 700 }}
           >
             {isPendingCheckout ? 'Tentar novamente' : hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
@@ -782,13 +933,39 @@ export default function SubscriptionSection() {
         </Paper>
       )}
 
+      {/* ══ Reembolso em análise — sem CTA: o checkout fica bloqueado até o estorno ser concluído ══ */}
+      {awaitingRefund && (
+        <Paper
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: 'warning.main',
+            bgcolor: 'warning.soft',
+            p: { xs: 3, sm: 4 },
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '-0.01em' }}>
+            Reembolso em análise
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5, color: 'warning.ink', maxWidth: 560 }}>
+            Sua assinatura foi encerrada e o estorno está sendo processado. Assim que ele for
+            concluído você poderá assinar um plano novamente. Enquanto isso, seus dados seguem
+            disponíveis para exportação.
+          </Typography>
+        </Paper>
+      )}
+
       <PlansDialog
-        open={plansDialogOpen}
+        open={plansDialogMode !== null}
+        mode={plansDialogMode ?? 'checkout'}
+        currentPlanId={subscription.planId}
         plans={plans}
-        onClose={() => setPlansDialogOpen(false)}
+        onClose={() => setPlansDialogMode(null)}
         onSelectPlan={(plan) => {
-          setPlansDialogOpen(false)
-          setCheckoutPlan(plan)
+          const mode = plansDialogMode
+          setPlansDialogMode(null)
+          if (mode === 'change') askToChangePlan(plan)
+          else setCheckoutPlan(plan)
         }}
       />
 
@@ -802,12 +979,24 @@ export default function SubscriptionSection() {
         open={confirmCancelOpen}
         title="Cancelar assinatura?"
         description={cancelDescription}
-        confirmLabel={isTrial ? 'Cancelar e sair' : 'Cancelar assinatura'}
+        confirmLabel="Cancelar assinatura"
         pendingLabel="Cancelando..."
         isPending={cancel.isPending}
         onClose={() => setConfirmCancelOpen(false)}
         onConfirm={handleCancel}
-        danger={isTrial}
+        danger={isTrial || inRefundWindow}
+      />
+
+      <ConfirmDialog
+        open={changeTarget !== null}
+        title={`Mudar para o ${changeTarget ? shortPlanName(changeTarget.name) : 'novo plano'}?`}
+        description={changeDescription}
+        confirmLabel={changeIsDowngrade ? 'Agendar troca' : 'Mudar de plano'}
+        pendingLabel="Alterando..."
+        isPending={changePlan.isPending}
+        onClose={() => setChangeTarget(null)}
+        onConfirm={handleConfirmChange}
+        danger={changeIsDowngrade}
       />
     </Box>
   )

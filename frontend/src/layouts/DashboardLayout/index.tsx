@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import AnnouncementCenter from '../../components/AnnouncementCenter'
 import SubscriptionExpiredModal from '../../components/SubscriptionExpiredModal'
+import PaymentFailedModal from '../../components/PaymentFailedModal'
+import DataDeletionBanner from '../../components/DataDeletionBanner'
 import { useSyncSubscriptionToStore } from '../../hooks/useSubscription'
 
 export default function DashboardLayout() {
@@ -44,6 +46,8 @@ export default function DashboardLayout() {
         }}
       >
         <TopBar isMobile={isMobile} onMenuClick={() => setMobileOpen(true)} />
+        {/* Persistente: enquanto a exclusão estiver agendada, o prazo acompanha o usuário em toda rota. */}
+        <DataDeletionBanner />
         <Box
           component="main"
           sx={{
@@ -58,6 +62,7 @@ export default function DashboardLayout() {
       </Box>
       <AnnouncementCenter />
       <SubscriptionExpiredModal />
+      <PaymentFailedModal />
     </Box>
   )
 }

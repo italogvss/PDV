@@ -8,7 +8,7 @@ namespace PDV.Infrastructure.Services;
 
 // Varre diariamente os tenants com exclusão agendada vencida e apaga permanentemente todos
 // os seus dados, exceto ContactMessages (preservados para suporte).
-// IgnoreQueryFilters é obrigatório em todas as queries: o tenant está com IsActive = false
+// IgnoreQueryFilters é obrigatório em todas as queries: o tenant pode estar com IsActive = false
 // e os registros de entidades com soft-delete ficam ocultos pelos filtros globais.
 public class TenantDeletionBackgroundService(
     IServiceScopeFactory scopeFactory,
@@ -33,10 +33,14 @@ public class TenantDeletionBackgroundService(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // IgnoreQueryFilters: tenants inativos são ocultos pelos query filters globais
+            // ScheduledDeletionAt é o único sinal: a loja continua ATIVA durante a retenção pós-perda
+            // de acesso (o dono ainda entra para exportar os dados ou reassinar), então filtrar por
+            // IsActive deixaria de excluir justamente esses casos. DataRetentionRepository limpa o
+            // agendamento assim que o plano volta a valer.
+            // IgnoreQueryFilters: tenants inativos são ocultos pelos query filters globais.
             var due = await db.Tenants
                 .IgnoreQueryFilters()
-                .Where(t => !t.IsActive && t.ScheduledDeletionAt != null && t.ScheduledDeletionAt <= DateTime.UtcNow)
+                .Where(t => t.ScheduledDeletionAt != null && t.ScheduledDeletionAt <= DateTime.UtcNow)
                 .Select(t => t.Id)
                 .ToListAsync(ct);
 
