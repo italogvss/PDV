@@ -124,7 +124,7 @@ pago, **o acesso às funcionalidades é bloqueado**, permanecendo disponível ao
 de seus dados** conforme a Seção 7.
 
 5.3. **Cobrança recorrente.** Ao contratar um plano pago, o Usuário **autoriza expressamente a cobrança
-recorrente e automática** por meio do provedor de pagamentos **AbacatePay**, pelo período contratado, até
+recorrente e automática** por meio do provedor de pagamentos **Stripe**, pelo período contratado, até
 que solicite o cancelamento.
 
 5.4. **Reembolso.** O Usuário com assinatura ativa tem direito a **reembolso integral em até 7 (sete) dias**

@@ -52,14 +52,17 @@ export interface Subscription {
   hasUsedTrial: boolean
 }
 
-// Resultado da troca de plano. Nunca há cobrança no ato — o valor novo entra na próxima renovação.
-// `scheduled` = downgrade: o plano novo só passa a valer em `effectiveAt` (a virada do ciclo).
-// Num upgrade `effectiveAt` é agora; no trial é null (e `nextChargeAt` também, ainda não há cobrança).
+// Resultado (ou simulação) da troca de plano — o frontend deriva a mensagem daqui, sem reimplementar
+// a regra. `scheduled` = a troca retira recursos ou encurta o ciclo, então só vale em `effectiveAt`
+// (a virada do ciclo). Num upgrade `effectiveAt` é agora e o gateway cobra a diferença proporcional
+// (`amountDueNowCents`) na hora. No trial ambos são null. `amountDueNowCents` = 0 quando não há
+// cobrança; null quando o gateway não soube simular (só no preview).
 export interface ChangePlanResult {
   planName: string
   scheduled: boolean
   effectiveAt: string | null
   nextChargeAt: string | null
+  amountDueNowCents: number | null
 }
 
 // Resultado do cancelamento — o toast e a navegação pós-cancelamento derivam daqui.

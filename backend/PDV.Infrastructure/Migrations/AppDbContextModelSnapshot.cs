@@ -725,6 +725,10 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("GatewayInvoiceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -1220,9 +1224,16 @@ namespace PDV.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("GatewayScheduleId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("GatewaySubscriptionId")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("GatewaySyncedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");

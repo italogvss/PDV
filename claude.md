@@ -36,7 +36,11 @@ O `AppDbContext` aplica `HasQueryFilter` global em todas as entidades:
 ---
 ## Gateway de pagamentos
 
-Utiliza o abacatePay. As skills estão em .claude/skills `skills/`
+Utiliza o **Stripe** (Billing + Checkout hospedado). Referência de implementação em
+[docs/subscriptions.md](docs/subscriptions.md); especificação agnóstica de gateway em
+[docs/subscriptions-requirements.md](docs/subscriptions-requirements.md). Skill do Stripe em
+`.claude/skills/stripe-llm.md`. Bootstrap de produtos/preços e fixtures de webhook em
+`.claude/stripe-bootstrap/` e `.claude/webhook-tests/`.
 
 
 ## Storage (MinIO)

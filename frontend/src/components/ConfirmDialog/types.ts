@@ -12,6 +12,8 @@ export interface ConfirmDialogProps {
   /** Rótulo durante o loading. Default: `${confirmLabel}...` */
   pendingLabel?: string
   isPending?: boolean
+  /** Desabilita o botão de confirmação sem trocar o rótulo (ex.: aguardando uma simulação carregar). */
+  confirmDisabled?: boolean
   onClose: () => void
   onConfirm: () => void
   /** Envolve a descrição em caixa error.soft com ícone de aviso. Indicado para exclusões definitivas. */

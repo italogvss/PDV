@@ -1,7 +1,8 @@
 namespace PDV.Domain.Entities;
 
 // Log de idempotência de webhooks. Entidade GLOBAL (webhook é anônimo, sem tenant/user).
-// `EventId` é o hash do corpo raw — índice único em (Provider, EventId) evita reprocessamento.
+// `EventId` é o id do evento no gateway (`evt_...`) — índice único em (Provider, EventId) evita
+// reprocessamento de uma reentrega.
 public class WebhookEvent : BaseEntity
 {
     public string Provider { get; set; } = string.Empty;

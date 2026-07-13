@@ -1,0 +1,53 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "invoice.paid",
+  "data": {
+    "object": {
+      "id": "{{INVOICE_ID}}",
+      "object": "invoice",
+      "customer": "{{CUS_ID}}",
+      "amount_paid": {{AMOUNT}},
+      "amount_due": {{AMOUNT}},
+      "hosted_invoice_url": "https://invoice.stripe.com/i/test",
+      "attempt_count": 1,
+      "status": "paid",
+      "status_transitions": { "paid_at": {{CREATED}} },
+      "parent": {
+        "type": "subscription_details",
+        "subscription_details": {
+          "subscription": "{{SUB_ID}}",
+          "metadata": {
+            "subscriptionId": "{{SUB_LOCAL}}",
+            "userId": "{{USER_ID}}",
+            "planId": "{{PLAN_ID}}"
+          }
+        }
+      },
+      "payments": {
+        "object": "list",
+        "data": [
+          {
+            "id": "inpay_test",
+            "object": "invoice_payment",
+            "status": "paid",
+            "payment": { "type": "payment_intent", "payment_intent": "{{PI_ID}}" }
+          }
+        ]
+      },
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_test",
+            "object": "line_item",
+            "amount": {{AMOUNT}},
+            "period": { "start": {{NOW}}, "end": {{NOW_PLUS_1M}} }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "charge.dispute.created",
+  "data": {
+    "object": {
+      "id": "dp_test",
+      "object": "dispute",
+      "charge": "ch_test",
+      "payment_intent": "{{PI_ID}}",
+      "amount": {{AMOUNT}},
+      "reason": "fraudulent",
+      "status": "warning_needs_response"
+    }
+  }
+}

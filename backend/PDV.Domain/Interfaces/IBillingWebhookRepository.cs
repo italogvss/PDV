@@ -18,8 +18,10 @@ public interface IBillingWebhookRepository
     Task<Payment?> GetPaymentByGatewayChargeIdAsync(string chargeId);
     Task AddPaymentAsync(Payment payment);
 
-    // Downgrade agendado (Subscription.PendingPlanId) — promovido na renovação.
     Task<Plan?> GetPlanByIdAsync(Guid id);
+    // Reconciliação do plano a partir do preço vigente na assinatura do gateway — é o que mantém
+    // `Subscription.PlanId` correto mesmo quando a troca acontece fora do app.
+    Task<Plan?> GetPlanByExternalProductIdAsync(string externalProductId);
 
     Task SaveChangesAsync();
 }

@@ -11,12 +11,14 @@ using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 using PDV.Infrastructure.Repositories;
 using PDV.Infrastructure.Services;
-using PDV.Infrastructure.Services.Payments.AbacatePay;
+using PDV.Infrastructure.Services.Payments.Stripe;
 using PDV.Infrastructure.Storage;
 using PDV.Application.Interfaces.Payments;
-using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
-using System.Net.Http.Headers;
+// Import estreito: `using Stripe;` colidiria com ProductService/CustomerService/SubscriptionService
+// próprios do PDV.
+using IStripeClient = Stripe.IStripeClient;
+using StripeClient = Stripe.StripeClient;
 using System.Security.Claims;
 using System.Text;
 
@@ -133,17 +135,18 @@ builder.Services.AddHostedService<RecurringExpenseRenewalService>();
 builder.Services.AddHostedService<AuditLogCleanupService>();
 builder.Services.AddHostedService<TenantDeletionBackgroundService>();
 
-// Gateway de pagamentos (AbacatePay)
-builder.Services.Configure<AbacatePayOptions>(builder.Configuration.GetSection(AbacatePayOptions.SectionName));
-builder.Services.AddScoped<IPaymentGateway, AbacatePayGateway>();
-builder.Services.AddScoped<IPaymentWebhookProcessor, AbacatePayWebhookProcessor>();
-builder.Services.AddHttpClient<IAbacatePayApiClient, AbacatePayApiClient>((sp, http) =>
+// Gateway de pagamentos (Stripe)
+builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
+// IStripeClient é thread-safe e sem estado por request — singleton. A chave é fixada aqui em vez de
+// StripeConfiguration.ApiKey (global estático) para não vazar entre testes/hosts.
+builder.Services.AddSingleton<IStripeClient>(sp =>
 {
-    var options = sp.GetRequiredService<IOptions<AbacatePayOptions>>().Value;
-    var baseUrl = options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/";
-    http.BaseAddress = new Uri(baseUrl);
-    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiKey);
+    var apiKey = sp.GetRequiredService<IConfiguration>().GetSection(StripeOptions.SectionName)["ApiKey"]
+        ?? throw new InvalidOperationException("Stripe:ApiKey não configurado.");
+    return new StripeClient(apiKey);
 });
+builder.Services.AddScoped<IPaymentGateway, StripeGateway>();
+builder.Services.AddScoped<IPaymentWebhookProcessor, StripeWebhookProcessor>();
 
 // Storage (MinIO em dev, S3 em prod) — AmazonS3Client é thread-safe, registrado como singleton.
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));

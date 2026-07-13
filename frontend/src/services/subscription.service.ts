@@ -73,6 +73,16 @@ function mapSubscription(s: BackendSubscription): Subscription {
   }
 }
 
+function mapChangePlan(data: ChangePlanResult): ChangePlanResult {
+  return {
+    planName: data.planName,
+    scheduled: data.scheduled ?? false,
+    effectiveAt: data.effectiveAt ?? null,
+    nextChargeAt: data.nextChargeAt ?? null,
+    amountDueNowCents: data.amountDueNowCents ?? null,
+  }
+}
+
 function mapPlan(p: BackendPlan): Plan {
   return {
     id: p.id,
@@ -108,7 +118,7 @@ export const subscriptionService = {
     return data.map(mapPlan)
   },
 
-  // Inicia o checkout do plano pago. O backend devolve a URL do AbacatePay (cartão).
+  // Inicia o checkout do plano pago. O backend devolve a URL hospedada do Stripe (cartão).
   startCheckout: async (payload: StartCheckoutPayload): Promise<CheckoutResult> => {
     const { data } = await api.post<BackendCheckout>('/subscriptions/checkout', {
       planId: payload.planId,
@@ -119,16 +129,18 @@ export const subscriptionService = {
     return { checkoutUrl: data.checkoutUrl ?? null }
   },
 
-  // Troca de plano de uma assinatura ativa. Nada é cobrado agora: o valor novo entra na próxima
-  // renovação. Upgrade vale na hora; downgrade fica agendado para a virada do ciclo (`scheduled`).
+  // Simula a troca sem executá-la — o diálogo de confirmação mostra quanto será cobrado agora e
+  // quando o plano novo passa a valer.
+  previewChangePlan: async (planId: string): Promise<ChangePlanResult> => {
+    const { data } = await api.post<ChangePlanResult>('/subscriptions/change-plan/preview', { planId })
+    return mapChangePlan(data)
+  },
+
+  // Troca de plano de uma assinatura ativa. Um upgrade vale na hora e cobra a diferença proporcional;
+  // uma troca que retira recursos ou encurta o ciclo fica agendada para a virada (`scheduled`).
   changePlan: async (planId: string): Promise<ChangePlanResult> => {
     const { data } = await api.post<ChangePlanResult>('/subscriptions/change-plan', { planId })
-    return {
-      planName: data.planName,
-      scheduled: data.scheduled ?? false,
-      effectiveAt: data.effectiveAt ?? null,
-      nextChargeAt: data.nextChargeAt ?? null,
-    }
+    return mapChangePlan(data)
   },
 
   cancel: async (): Promise<CancelSubscriptionResult> => {

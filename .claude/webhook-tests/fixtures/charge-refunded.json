@@ -1,0 +1,18 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "charge.refunded",
+  "data": {
+    "object": {
+      "id": "ch_test",
+      "object": "charge",
+      "customer": "{{CUS_ID}}",
+      "payment_intent": "{{PI_ID}}",
+      "amount": {{AMOUNT}},
+      "amount_refunded": {{AMOUNT}},
+      "refunded": true
+    }
+  }
+}

@@ -58,19 +58,26 @@ public record StartCheckoutResponse(
 
 public record ChangePlanRequest(Guid PlanId);
 
-// Resultado da troca de plano. Nunca há cobrança no ato — o gateway não calcula diferença.
-//   Scheduled    — true num downgrade: o plano novo só passa a valer na virada do ciclo (§7.4).
-//   EffectiveAt  — quando o plano novo passa a valer. null = agora (upgrade ou trial).
-//   NextChargeAt — quando o valor do plano novo é cobrado. null no trial, que ainda não cobra nada.
+// Resultado (ou simulação) da troca de plano. O frontend deriva a mensagem daqui, sem reimplementar
+// a regra (RF-36).
+//
+//   Scheduled         — a troca só vale na virada do ciclo. Acontece quando o plano-alvo retira
+//                       recursos OU encurta o ciclo de cobrança: nos dois casos, aplicá-la agora
+//                       jogaria fora algo que o usuário já pagou.
+//   EffectiveAt       — quando o plano novo passa a valer. null = agora (trial ou desistência).
+//   NextChargeAt      — quando o valor do plano novo é cobrado. null no trial, que não cobra nada.
+//   AmountDueNowCents — cobrado imediatamente pelo proporcional do upgrade. 0 quando não há
+//                       cobrança; null quando o gateway não soube simular (só no preview).
 public record ChangePlanResult(
     string PlanName,
     bool Scheduled,
     DateTime? EffectiveAt,
-    DateTime? NextChargeAt);
+    DateTime? NextChargeAt,
+    int? AmountDueNowCents);
 
 // Resultado do cancelamento — o frontend deriva daqui a mensagem de confirmação.
 //   Status              — estado resultante: "Expired" (trial), "RefundRequested" ou "Canceled".
-//   RefundRequested     — estorno solicitado; a aprovação é manual e chega por webhook.
+//   RefundRequested     — estorno emitido; o dinheiro volta de forma assíncrona.
 //   AccessUntil         — até quando o plano continua valendo; null = o acesso caiu agora.
 //   DataAvailableUntil  — prazo para exportar os dados ou reassinar antes da exclusão definitiva.
 public record CancelSubscriptionResult(

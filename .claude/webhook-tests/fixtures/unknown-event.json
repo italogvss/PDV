@@ -1,0 +1,13 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "customer.updated",
+  "data": {
+    "object": {
+      "id": "{{CUS_ID}}",
+      "object": "customer"
+    }
+  }
+}

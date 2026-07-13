@@ -115,7 +115,7 @@ da violação destes Termos, inclusive na esfera judicial.
  
 **5.2. Período de teste (trial).** A Kashing oferece **30 (trinta) dias de teste gratuito**, sem cobrança e **sem exigência de dados de cartão**. Ao término do período de teste, caso o Usuário não contrate um plano pago, **o acesso às funcionalidades é bloqueado**, permanecendo disponível ao Usuário a **exportação/download de seus dados** conforme a Seção 7.
  
-**5.3. Cobrança recorrente.** Ao contratar um plano pago, o Usuário **autoriza expressamente a cobrança recorrente e automática** por meio do provedor de pagamentos **AbacatePay**, pelo período contratado, até que solicite o cancelamento.
+**5.3. Cobrança recorrente.** Ao contratar um plano pago, o Usuário **autoriza expressamente a cobrança recorrente e automática** por meio do provedor de pagamentos **Stripe**, pelo período contratado, até que solicite o cancelamento.
  
 **5.4. Reembolso**
  

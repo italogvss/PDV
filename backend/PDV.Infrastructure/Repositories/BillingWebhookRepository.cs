@@ -54,5 +54,10 @@ public class BillingWebhookRepository(AppDbContext context) : IBillingWebhookRep
     public async Task<Plan?> GetPlanByIdAsync(Guid id) =>
         await context.Plans.FirstOrDefaultAsync(p => p.Id == id);
 
+    // Sem filtro de IsActive: um plano retirado do catálogo continua sendo o que o gateway cobra,
+    // e a assinatura de quem já o tem precisa continuar resolvendo para ele.
+    public async Task<Plan?> GetPlanByExternalProductIdAsync(string externalProductId) =>
+        await context.Plans.FirstOrDefaultAsync(p => p.ExternalProductId == externalProductId);
+
     public Task SaveChangesAsync() => context.SaveChangesAsync();
 }

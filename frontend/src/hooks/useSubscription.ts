@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { formatCents } from '../utils/currency'
 import { subscriptionService } from '../services/subscription.service'
 import { UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 import { useAppDispatch, useAppSelector } from '../store'
@@ -81,6 +82,22 @@ export function useSyncSubscriptionToStore() {
   }, [dispatch, isAuthenticated, planId, planName, status, currentPeriodEnd, trialEndsAt, lastPaymentFailedAt, entitlementsKey, limitsKey])
 }
 
+const CHANGE_PREVIEW_QUERY_KEY = ['change-plan-preview'] as const
+
+// Simula a troca de plano para o diálogo de confirmação — quanto será cobrado agora, quando o plano
+// novo passa a valer. Só busca quando há um plano-alvo (o diálogo está aberto).
+export function useChangePlanPreview(planId: string | null) {
+  return useQuery({
+    queryKey: [...CHANGE_PREVIEW_QUERY_KEY, planId],
+    queryFn: () => subscriptionService.previewChangePlan(planId as string),
+    enabled: planId !== null,
+    // A simulação é do momento — não reusar entre aberturas do diálogo.
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  })
+}
+
 export interface StartCheckoutInput {
   planId: string
   couponCode?: string
@@ -90,7 +107,7 @@ export interface StartCheckoutInput {
   returnUrl?: string
 }
 
-// Inicia o checkout da assinatura recorrente no cartão → redireciona para o AbacatePay.
+// Inicia o checkout da assinatura recorrente no cartão → redireciona para o checkout do Stripe.
 export function useStartCheckout() {
   const handleError = useApiError()
   return useMutation({
@@ -139,6 +156,10 @@ export function useChangePlan() {
 function changePlanMessage(result: ChangePlanResult): string {
   if (result.scheduled && result.effectiveAt)
     return `Troca agendada. O plano ${result.planName} passa a valer em ${formatDate(result.effectiveAt)}.`
+
+  // Upgrade: o proporcional é cobrado agora; o valor cheio, só na próxima renovação.
+  if (result.amountDueNowCents && result.amountDueNowCents > 0)
+    return `Plano alterado para ${result.planName}. Foi cobrada a diferença proporcional de ${formatCents(result.amountDueNowCents)}.`
 
   if (result.nextChargeAt)
     return `Plano alterado para ${result.planName}. O novo valor entra na renovação de ${formatDate(result.nextChargeAt)}.`

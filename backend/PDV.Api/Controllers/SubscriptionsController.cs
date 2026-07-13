@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PDV.Application.DTOs.Subscriptions;
 using PDV.Application.Interfaces;
@@ -22,6 +22,13 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
     [Authorize(Roles = "Owner,Admin")]
     public async Task<IActionResult> Checkout([FromBody] StartCheckoutRequest request) =>
         Ok(await service.StartCheckoutAsync(request));
+
+    // Simula a troca (quanto será cobrado agora, quando o plano novo vale) sem executá-la — alimenta
+    // o diálogo de confirmação.
+    [HttpPost("change-plan/preview")]
+    [Authorize(Roles = "Owner,Admin")]
+    public async Task<IActionResult> PreviewChangePlan([FromBody] ChangePlanRequest request) =>
+        Ok(await service.PreviewChangePlanAsync(request));
 
     [HttpPost("change-plan")]
     [Authorize(Roles = "Owner,Admin")]

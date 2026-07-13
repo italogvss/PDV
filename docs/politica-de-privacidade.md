@@ -57,7 +57,7 @@ irregular.
 - **Telefone:** opcional, informado pelo Usuário.
 - **CNPJ/CPF e dados do estabelecimento:** opcionais, informados pelo Usuário.
 - **Dados de assinatura/pagamento:** informações mínimas de faturas, como os **4 últimos dígitos do cartão**.
-  Os dados completos de pagamento são processados pelo provedor AbacatePay, **não sendo armazenados pela
+  Os dados completos de pagamento são processados pelo provedor Stripe, **não sendo armazenados pela
   Kashing**.
 
 > **A Kashing ainda não coleta logs de acesso (IP, data/hora).** Caso passe a coletá-los — inclusive para
@@ -100,7 +100,7 @@ cadastrada pelo comerciante.
 
 A Kashing compartilha dados apenas com os terceiros necessários à prestação do serviço:
 
-- **AbacatePay** (gateway de pagamento): recebe o **e-mail do Usuário** e o **plano contratado** para
+- **Stripe** (gateway de pagamento): recebe o **e-mail do Usuário** e o **plano contratado** para
   processar a assinatura.
 - **Google** (login e Google Analytics): autenticação do Owner e análise de uso da plataforma.
 - **Amazon S3** (armazenamento de arquivos): armazenamento das fotos (funcionários e produtos).

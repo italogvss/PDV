@@ -12,9 +12,10 @@ public class Subscription : BaseEntity
     public Guid PlanId { get; set; }
     public Plan Plan { get; set; } = null!;
 
-    // DOWNGRADE agendado. O gateway já trocou o produto (e cobrará o valor menor na renovação), mas
-    // o usuário pagou o plano maior por este ciclo: até a virada valem os entitlements de `PlanId`.
-    // Promovido a `PlanId` em ApplyRenewed. Upgrades não passam por aqui — valem na hora.
+    // Troca AGENDADA para a virada do ciclo (downgrade, ou encurtamento do ciclo de cobrança).
+    // Até a virada valem os entitlements de `PlanId` — o usuário já pagou por eles. No gateway o
+    // agendamento vive num subscription schedule (`GatewayScheduleId`); quem promove
+    // `PendingPlanId` → `PlanId` é o reconciliador, quando o preço vigente muda.
     public Guid? PendingPlanId { get; set; }
 
     public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Pending;
@@ -24,11 +25,20 @@ public class Subscription : BaseEntity
     public bool IsRenewable { get; set; }
 
     public string Provider { get; set; } = string.Empty;
-    public string? GatewaySubscriptionId { get; set; } // subs_...
-    public string? GatewayCustomerId { get; set; }     // cust_...
+    public string? GatewaySubscriptionId { get; set; } // sub_...
+    public string? GatewayCustomerId { get; set; }     // cus_...
 
-    // Momento em que a assinatura PAGA passou a valer (subscription.completed). Âncora da janela de
-    // reembolso — renovações não a movem, uma reativação sim (nova assinatura, nova janela).
+    // Agendamento anexado à assinatura no gateway (sub_sched_...). Enquanto existe, o gateway não
+    // aceita alterar os itens da assinatura direto — libere-o antes de qualquer upgrade.
+    public string? GatewayScheduleId { get; set; }
+
+    // Data do último evento de assinatura APLICADO (event.created do gateway). Descarta reentregas
+    // e webhooks fora de ordem: um evento mais velho que este não pode reescrever o estado.
+    // Zerado numa reativação — a assinatura no gateway passa a ser outra, com linha do tempo nova.
+    public DateTime? GatewaySyncedAt { get; set; }
+
+    // Momento em que a assinatura PAGA passou a valer. Âncora da janela de reembolso — renovações
+    // não a movem, uma reativação sim (nova assinatura, nova janela). Nulo = nunca foi paga.
     public DateTime? StartedAt { get; set; }
 
     public DateTime? TrialEndsAt { get; set; }

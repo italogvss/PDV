@@ -20,7 +20,9 @@ import {
   usePlans,
   useCancelSubscription,
   useChangePlan,
+  useChangePlanPreview,
 } from '../../../../hooks/useSubscription'
+import { formatCents } from '../../../../utils/currency'
 import { FEATURE_LABELS, UNLIMITED, type PlanLimitKey } from '../../../../constants/entitlements'
 import type { Plan } from '../../../../types/subscription.types'
 import {
@@ -220,13 +222,24 @@ export default function SubscriptionSection() {
     changePlan.mutate(changeTarget.id, { onSuccess: () => setChangeTarget(null) })
   }
 
-  // Um downgrade retira recursos ou encolhe limites, e o usuário já pagou o plano maior por este
-  // ciclo — a troca só vale na virada. Qualquer outra troca vale na hora. Em nenhum caso há cobrança.
-  const changeIsDowngrade = !!currentPlan && !!changeTarget && !isTrial && isDowngrade(currentPlan, changeTarget)
+  // Simulação da troca (só para assinatura paga; no trial não há gateway nem cobrança). O diálogo
+  // deriva a mensagem daqui — quando a troca é agendada, quanto é cobrado agora, quando o plano novo
+  // vale — sem reimplementar a regra do backend (RF-36/RF-37).
+  const previewPlanId = changeTarget && isLiveCard && !isTrial ? changeTarget.id : null
+  const { data: changePreview, isLoading: previewLoading, isError: previewError } =
+    useChangePlanPreview(previewPlanId)
+
+  // Fallback local enquanto a simulação carrega (ou falha): retira recursos/encolhe limites. Não
+  // cobre o caso "encurta o ciclo" — por isso a simulação do backend é a fonte da verdade.
+  const changeLosesCapabilities = !!currentPlan && !!changeTarget && !isTrial && isDowngrade(currentPlan, changeTarget)
+  // Agendada = a simulação diz que sim; enquanto ela não chega, usa o palpite local.
+  const changeIsScheduled = changePreview?.scheduled ?? changeLosesCapabilities
+
   const changeTargetSet = changeTarget ? entitlementSet(changeTarget.entitlements) : null
   const lostFeatures = changeTargetSet
     ? FEATURE_KEYS.filter((k) => has(k) && !changeTargetSet.has(k.toLowerCase())).map((k) => FEATURE_LABELS[k])
     : []
+  const chargeNow = changePreview?.amountDueNowCents ?? null
 
   const changeDescription = changeTarget && (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -238,25 +251,38 @@ export default function SubscriptionSection() {
         </Typography>
       )}
 
-      {!isTrial && !changeIsDowngrade && (
+      {!isTrial && previewLoading && (
+        <Typography variant="body2" color="text.secondary">
+          Calculando os valores da troca...
+        </Typography>
+      )}
+
+      {!isTrial && !previewLoading && !changeIsScheduled && (
         <>
           <Typography variant="body2">
             O plano <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer{' '}
             <strong>imediatamente</strong> — os novos recursos já ficam disponíveis.
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Nenhuma cobrança é feita agora: o valor de R$ {formatPrice(changeTarget.price)} entra{' '}
-            {statusLine?.date ? `na renovação de ${statusLine.date}` : 'na próxima renovação'}.
+            {chargeNow && chargeNow > 0
+              ? `Será cobrada agora a diferença proporcional de ${formatCents(chargeNow)}. A partir da próxima renovação${changePreview?.nextChargeAt ? ` (${formatDate(changePreview.nextChargeAt)})` : ''} o valor passa a ser R$ ${formatPrice(changeTarget.price)}.`
+              : previewError
+                ? `Será cobrada agora a diferença proporcional ao tempo restante do ciclo. Depois, o valor passa a ser R$ ${formatPrice(changeTarget.price)} por período.`
+                : `O valor de R$ ${formatPrice(changeTarget.price)} passa a valer na próxima renovação${changePreview?.nextChargeAt ? ` (${formatDate(changePreview.nextChargeAt)})` : ''}.`}
           </Typography>
         </>
       )}
 
-      {!isTrial && changeIsDowngrade && (
+      {!isTrial && !previewLoading && changeIsScheduled && (
         <>
           <Typography variant="body2">
             Você continua no plano <strong>{planTitle}</strong>{' '}
-            {statusLine?.date ? `até ${statusLine.date}` : 'até o fim do período já pago'} — o período
-            que já pagou é honrado por inteiro. A partir daí o plano{' '}
+            {changePreview?.effectiveAt
+              ? `até ${formatDate(changePreview.effectiveAt)}`
+              : statusLine?.date
+                ? `até ${statusLine.date}`
+                : 'até o fim do período já pago'}{' '}
+            — o período que já pagou é honrado por inteiro. A partir daí o plano{' '}
             <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer, por R${' '}
             {formatPrice(changeTarget.price)}.
           </Typography>
@@ -991,12 +1017,14 @@ export default function SubscriptionSection() {
         open={changeTarget !== null}
         title={`Mudar para o ${changeTarget ? shortPlanName(changeTarget.name) : 'novo plano'}?`}
         description={changeDescription}
-        confirmLabel={changeIsDowngrade ? 'Agendar troca' : 'Mudar de plano'}
+        confirmLabel={changeIsScheduled ? 'Agendar troca' : 'Mudar de plano'}
         pendingLabel="Alterando..."
         isPending={changePlan.isPending}
+        // Espera a simulação chegar antes de deixar confirmar — o usuário precisa ver o valor primeiro.
+        confirmDisabled={previewLoading}
         onClose={() => setChangeTarget(null)}
         onConfirm={handleConfirmChange}
-        danger={changeIsDowngrade}
+        danger={changeIsScheduled && lostFeatures.length > 0}
       />
     </Box>
   )

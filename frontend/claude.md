@@ -6,7 +6,7 @@ React + TypeScript + MUI. Interface de gestão para pequenos comércios.
 
 React 19, TypeScript, **MUI v9** (`@mui/material` + `@mui/system` + `@mui/icons-material`), **MUI X** (DataGrid, Charts, DatePickers, Scheduler[beta]), **React Router v7**, Axios, **TanStack React Query v5**, Redux Toolkit, React Hook Form + **Zod v4**, dayjs, Vite.
 
-Auxiliares: `react-markdown` (conteúdo de Ajuda/anúncios), `mui-color-input` (cor de cargo/categoria), `@abacatepay/sdk` (pagamentos).
+Auxiliares: `react-markdown` (conteúdo de Ajuda/anúncios), `mui-color-input` (cor de cargo/categoria). Pagamentos são pelo **Stripe Checkout hospedado** — o frontend só redireciona para a URL que o backend devolve; não há SDK de pagamento no bundle.
 
 ## Composição do app (`App.tsx`)
 

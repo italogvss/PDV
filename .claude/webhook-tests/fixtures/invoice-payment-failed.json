@@ -1,0 +1,29 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "invoice.payment_failed",
+  "data": {
+    "object": {
+      "id": "{{INVOICE_ID}}",
+      "object": "invoice",
+      "customer": "{{CUS_ID}}",
+      "amount_paid": 0,
+      "amount_due": {{AMOUNT}},
+      "attempt_count": {{ATTEMPT}},
+      "status": "open",
+      "parent": {
+        "type": "subscription_details",
+        "subscription_details": {
+          "subscription": "{{SUB_ID}}",
+          "metadata": {
+            "subscriptionId": "{{SUB_LOCAL}}",
+            "userId": "{{USER_ID}}",
+            "planId": "{{PLAN_ID}}"
+          }
+        }
+      }
+    }
+  }
+}

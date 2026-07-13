@@ -14,6 +14,7 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.Provider).IsRequired().HasMaxLength(50);
         builder.Property(s => s.GatewaySubscriptionId).HasMaxLength(100);
         builder.Property(s => s.GatewayCustomerId).HasMaxLength(100);
+        builder.Property(s => s.GatewayScheduleId).HasMaxLength(100);
 
         // Invariante: uma única assinatura por usuário (reaproveitada em reativação).
         builder.HasIndex(s => s.UserId).IsUnique();

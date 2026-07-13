@@ -26,6 +26,16 @@ public class PaymentRepository(AppDbContext context) : IPaymentRepository
             .OrderByDescending(p => p.CreatedAt)
             .FirstOrDefaultAsync();
 
+    // `PaidAt >= since` e não `CreatedAt`: o que importa é quando o dinheiro entrou.
+    public async Task<IReadOnlyList<Payment>> GetPaidBySubscriptionSinceAsync(Guid subscriptionId, DateTime since) =>
+        await context.Payments
+            .Where(p => p.SubscriptionId == subscriptionId
+                && p.Status == PaymentStatus.Paid
+                && p.PaidAt != null
+                && p.PaidAt >= since)
+            .OrderBy(p => p.PaidAt)
+            .ToListAsync();
+
     public async Task<(IEnumerable<Payment> Data, int TotalCount)> GetByUserIdAsync(Guid userId, int page, int pageSize)
     {
         var query = context.Payments.Where(p => p.UserId == userId).OrderByDescending(p => p.CreatedAt);

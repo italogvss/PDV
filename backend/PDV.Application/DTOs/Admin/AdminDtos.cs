@@ -46,8 +46,10 @@ public record AdminPaymentDto(
 public record AdminConfigDto(
     string ApiKey,
     string WebhookSecret,
-    string BaseUrl,
-    string? BackUrl);
+    string Provider,
+    // Quantos dos planos do catálogo têm um preço configurado no gateway — um alarme rápido para
+    // configuração pela metade.
+    int ConfiguredPriceCount);
 
 public record AdminPlanDto(
     Guid Id,

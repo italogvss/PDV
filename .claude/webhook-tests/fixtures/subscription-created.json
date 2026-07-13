@@ -1,0 +1,34 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "customer.subscription.created",
+  "data": {
+    "object": {
+      "id": "{{SUB_ID}}",
+      "object": "subscription",
+      "customer": "{{CUS_ID}}",
+      "status": "active",
+      "schedule": null,
+      "canceled_at": null,
+      "cancellation_details": { "reason": null },
+      "metadata": {
+        "subscriptionId": "{{SUB_LOCAL}}",
+        "userId": "{{USER_ID}}",
+        "planId": "{{PLAN_ID}}"
+      },
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_test",
+            "object": "subscription_item",
+            "current_period_end": {{NOW_PLUS_1M}},
+            "price": { "id": "{{PRICE_ID}}", "object": "price" }
+          }
+        ]
+      }
+    }
+  }
+}

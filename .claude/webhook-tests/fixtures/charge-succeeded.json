@@ -1,0 +1,23 @@
+{
+  "id": "{{EVENT_ID}}",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": {{CREATED}},
+  "type": "charge.succeeded",
+  "data": {
+    "object": {
+      "id": "ch_test",
+      "object": "charge",
+      "customer": "{{CUS_ID}}",
+      "payment_intent": "{{PI_ID}}",
+      "amount": {{AMOUNT}},
+      "amount_refunded": 0,
+      "refunded": false,
+      "receipt_url": "https://pay.stripe.com/receipts/test",
+      "payment_method_details": {
+        "type": "card",
+        "card": { "brand": "visa", "last4": "4242" }
+      }
+    }
+  }
+}

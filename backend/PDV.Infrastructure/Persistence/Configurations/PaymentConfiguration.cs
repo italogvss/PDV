@@ -11,6 +11,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.UserId).IsRequired();
         builder.Property(p => p.Provider).IsRequired().HasMaxLength(50);
         builder.Property(p => p.GatewayChargeId).IsRequired().HasMaxLength(100);
+        builder.Property(p => p.GatewayInvoiceId).HasMaxLength(100);
         builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(30);
         builder.Property(p => p.Method).HasConversion<string>().HasMaxLength(10);
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);

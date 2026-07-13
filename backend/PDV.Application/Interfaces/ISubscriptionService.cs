@@ -13,12 +13,16 @@ public interface ISubscriptionService
     // Owner-only — opera sobre a assinatura do usuário autenticado.
     Task<StartCheckoutResponse> StartCheckoutAsync(StartCheckoutRequest request);
 
-    // Agenda a troca de plano no gateway (vale a partir do próximo ciclo, sem cobrança agora).
-    // No trial PDV-side a troca é imediata. Ver ChangePlanResult.
+    // Simula a troca sem executá-la: valida as mesmas regras e devolve quanto será cobrado agora.
+    // É o que o diálogo de confirmação mostra antes de o usuário decidir (RF-37).
+    Task<ChangePlanResult> PreviewChangePlanAsync(ChangePlanRequest request);
+
+    // Executa a troca. Um upgrade vale na hora e cobra a diferença proporcional; uma troca que
+    // retira recursos ou encurta o ciclo fica agendada para a virada. Ver ChangePlanResult.
     Task<ChangePlanResult> ChangePlanAsync(ChangePlanRequest request);
 
     // Cancela a assinatura do usuário: em trial o acesso ao plano cai na hora; dentro da janela de
-    // arrependimento abre-se uma solicitação de reembolso; fora dela o acesso segue até o fim do
+    // arrependimento o estorno é emitido e o acesso cai; fora dela o acesso segue até o fim do
     // período pago. Em nenhum caso a loja é desativada. Ver CancelSubscriptionResult.
     Task<CancelSubscriptionResult> CancelAsync();
 }

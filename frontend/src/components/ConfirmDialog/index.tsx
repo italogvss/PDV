@@ -11,6 +11,7 @@ export default function ConfirmDialog({
   confirmLabel,
   pendingLabel,
   isPending = false,
+  confirmDisabled = false,
   onClose,
   onConfirm,
   danger = false,
@@ -49,7 +50,7 @@ export default function ConfirmDialog({
         <Button
           variant="contained"
           color="error"
-          disabled={isPending}
+          disabled={isPending || confirmDisabled}
           startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : undefined}
           onClick={onConfirm}
         >

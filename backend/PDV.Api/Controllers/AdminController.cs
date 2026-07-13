@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using PDV.Application.DTOs.Admin;
 using PDV.Application.Interfaces;
-using PDV.Infrastructure.Services.Payments.AbacatePay;
+using PDV.Infrastructure.Services.Payments.Stripe;
 
 namespace PDV.Api.Controllers;
 
@@ -12,7 +12,7 @@ namespace PDV.Api.Controllers;
 [Authorize(Roles = "Admin")]
 public class AdminController(
     IAdminService adminService,
-    IOptions<AbacatePayOptions> abacateOptions) : ControllerBase
+    IOptions<StripeOptions> stripeOptions) : ControllerBase
 {
     [HttpGet("webhook-events")]
     public async Task<IActionResult> GetWebhookEvents(
@@ -33,12 +33,12 @@ public class AdminController(
     [HttpGet("config")]
     public IActionResult GetConfig()
     {
-        var opts = abacateOptions.Value;
+        var opts = stripeOptions.Value;
         return Ok(new AdminConfigDto(
             MaskSecret(opts.ApiKey),
             MaskSecret(opts.WebhookSecret),
-            opts.BaseUrl,
-            opts.BackUrl));
+            Provider: StripeGateway.ProviderName,
+            ConfiguredPriceCount: opts.Prices.Count(p => !string.IsNullOrWhiteSpace(p.Value))));
     }
 
     [HttpGet("plans")]

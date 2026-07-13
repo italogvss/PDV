@@ -14,6 +14,9 @@ public class PlanRepository(AppDbContext context) : IPlanRepository
             .OrderBy(p => p.PriceCents)
             .ToListAsync();
 
+    public async Task<IReadOnlyList<Plan>> GetAllAsync() =>
+        await context.Plans.OrderBy(p => p.PriceCents).ToListAsync();
+
     public async Task<Plan?> GetByIdAsync(Guid id) =>
         await context.Plans.FirstOrDefaultAsync(p => p.Id == id);
 
