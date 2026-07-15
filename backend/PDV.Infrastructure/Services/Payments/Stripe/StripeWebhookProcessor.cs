@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PDV.Application.DTOs.Payments;
 using PDV.Application.Interfaces.Payments;
@@ -7,25 +8,30 @@ using Stripe;
 namespace PDV.Infrastructure.Services.Payments.Stripe;
 
 // Verifica a autenticidade (HMAC do corpo raw, header Stripe-Signature, com tolerância de
-// timestamp) e traduz o payload para o modelo de domínio. Não toca no banco — é puro:
-// entra rawBody, sai PaymentWebhookEvent.
+// timestamp) e traduz o payload para o modelo de domínio. Não toca no banco — entra rawBody, sai
+// PaymentWebhookEvent. Não é 100% puro: `invoice.paid` pode chamar de volta a API do Stripe (ver
+// FetchPaymentIntentIdAsync) porque o payload do evento não traz o dado necessário.
 //
 // `checkout.session.completed` NÃO é tratado de propósito: ele não carrega o período da assinatura
 // e tudo o que ele correlaciona (client_reference_id) já viaja em `subscription_data.metadata`,
 // que o Stripe copia para a assinatura e, dela, para toda fatura futura.
-public class StripeWebhookProcessor(IOptions<StripeOptions> options) : IPaymentWebhookProcessor
+public class StripeWebhookProcessor(
+    IOptions<StripeOptions> options,
+    IStripeClient client,
+    ILogger<StripeWebhookProcessor> logger) : IPaymentWebhookProcessor
 {
     private readonly StripeOptions _options = options.Value;
+    private readonly InvoiceService _invoices = new(client);
 
     public string Provider => StripeGateway.ProviderName;
 
-    public PaymentWebhookEvent Parse(string rawBody, string? signatureHeader)
+    public async Task<PaymentWebhookEvent> ParseAsync(string rawBody, string? signatureHeader)
     {
         var stripeEvent = Verify(rawBody, signatureHeader);
 
         return stripeEvent.Type switch
         {
-            "invoice.paid" => FromInvoicePaid(stripeEvent),
+            "invoice.paid" => await FromInvoicePaid(stripeEvent),
             "invoice.payment_failed" => FromInvoiceFailed(stripeEvent),
             "charge.succeeded" => FromChargeSucceeded(stripeEvent),
             "charge.refunded" => FromChargeRefunded(stripeEvent),
@@ -63,10 +69,18 @@ public class StripeWebhookProcessor(IOptions<StripeOptions> options) : IPaymentW
     // -----------------------------------------------------------------------
 
     // invoice.paid — entrou dinheiro. É o único evento que registra uma cobrança paga.
-    private static PaymentWebhookEvent FromInvoicePaid(Event e)
+    //
+    // O payload do webhook NÃO traz `invoice.payments` (é expandable e não vem por padrão —
+    // conferido com eventos reais da conta, não só com uma chamada de API avulsa). Sem o
+    // PaymentIntent, `PaymentIntentIdOf` cairia no fallback `invoice.Id`, que contraria o
+    // invariante de `Payment.GatewayChargeId` (`pi_` = paga, `in_` = recusada) e faz o
+    // `charge.refunded` (que só carrega `pi_`) achar a linha errada depois (docs/subscriptions.md
+    // §15). Por isso busca a fatura de novo com `expand` quando o campo não veio no evento.
+    private async Task<PaymentWebhookEvent> FromInvoicePaid(Event e)
     {
         var invoice = Cast<Invoice>(e);
         var (periodStart, periodEnd) = PeriodOf(invoice);
+        var paymentIntentId = PaymentIntentIdOf(invoice) ?? await FetchPaymentIntentIdAsync(invoice.Id);
 
         return Base(e, PaymentWebhookType.CheckoutCompleted) with
         {
@@ -75,7 +89,7 @@ public class StripeWebhookProcessor(IOptions<StripeOptions> options) : IPaymentW
             Metadata = SubscriptionMetadataOf(invoice),
             // Chaveia pelo PaymentIntent: é o único id que o evento de estorno também carrega.
             // Uma fatura quitada sem cobrança (cupom de 100%) cai na própria fatura.
-            ChargeId = PaymentIntentIdOf(invoice) ?? invoice.Id,
+            ChargeId = paymentIntentId ?? invoice.Id,
             InvoiceId = invoice.Id,
             AmountCents = (int)invoice.AmountPaid,
             PaidAt = invoice.StatusTransitions?.PaidAt ?? e.Created,
@@ -83,6 +97,27 @@ public class StripeWebhookProcessor(IOptions<StripeOptions> options) : IPaymentW
             PeriodStart = periodStart,
             PeriodEnd = periodEnd,
         };
+    }
+
+    // Só chamado quando o evento não trouxe `payments` — o caso comum em produção. Uma falha aqui
+    // (fatura de teste sintética nos fixtures de `.claude/webhook-tests`, instabilidade pontual da
+    // API) não pode derrubar o webhook inteiro: cai no mesmo fallback `invoice.Id` do caso
+    // legítimo de fatura sem PaymentIntent (cupom de 100%).
+    private async Task<string?> FetchPaymentIntentIdAsync(string invoiceId)
+    {
+        try
+        {
+            var expanded = await _invoices.GetAsync(invoiceId, new InvoiceGetOptions
+            {
+                Expand = ["payments.data.payment.payment_intent"],
+            });
+            return PaymentIntentIdOf(expanded);
+        }
+        catch (StripeException ex)
+        {
+            logger.LogWarning(ex, "Não foi possível buscar o PaymentIntent da fatura {InvoiceId} no Stripe.", invoiceId);
+            return null;
+        }
     }
 
     // invoice.payment_failed — o cartão recusou. A fatura é a mesma entre as retentativas, e

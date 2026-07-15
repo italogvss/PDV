@@ -11,4 +11,13 @@ namespace PDV.Domain.Constants;
 public static class RefundDefaults
 {
     public const int WindowDays = 7;
+
+    // `customer.subscription.created` (que grava StartedAt) e `invoice.paid` (que grava o PaidAt da
+    // cobrança fundadora) são dois eventos independentes do Stripe para o mesmo instante de negócio —
+    // na prática o segundo chega com um `created` alguns segundos ANTES do primeiro. Sem essa
+    // tolerância, `PaidAt >= StartedAt` descarta sistematicamente a cobrança fundadora e o estorno de
+    // toda assinatura nova cancelada dentro da janela nunca é emitido. O intervalo real entre uma
+    // reativação e o pagamento do ciclo anterior é medido em dias, não segundos — a folga não risca
+    // incluir uma cobrança de um ciclo já encerrado.
+    public const int ClockSkewToleranceSeconds = 60;
 }

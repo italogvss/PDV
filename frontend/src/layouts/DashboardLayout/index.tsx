@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Box, useMediaQuery, useTheme } from '@mui/material'
+import { Box, FormControlLabel, Paper, Switch, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -17,6 +17,18 @@ export default function DashboardLayout() {
 
   // Mantém o resumo da assinatura no auth slice sincronizado com o backend.
   useSyncSubscriptionToStore()
+
+  // ═══ DEV TEMPORÁRIO — REMOVER ═══════════════════════════════════════════════════════════
+  // Switches para forçar os avisos/modais globais de assinatura (renderizados abaixo, fora do
+  // fluxo normal de páginas) sem precisar agendar exclusão, expirar ou recusar uma cobrança de
+  // verdade. Para remover: apague estes 3 estados, o painel <Paper> logo abaixo e as props
+  // `devForceShow`/`devForceOpen` passadas para DataDeletionBanner/SubscriptionExpiredModal/
+  // PaymentFailedModal (as props também precisam ser removidas dos 3 componentes — busque por
+  // "DEV TEMPORÁRIO" em cada um).
+  const [devShowDeletion, setDevShowDeletion] = useState(false)
+  const [devShowExpired, setDevShowExpired] = useState(false)
+  const [devShowPaymentFailed, setDevShowPaymentFailed] = useState(false)
+  // ═════════════════════════════════════════════════════════════════════════════════════════
 
   useEffect(() => {
     setMobileOpen(false)
@@ -47,7 +59,7 @@ export default function DashboardLayout() {
       >
         <TopBar isMobile={isMobile} onMenuClick={() => setMobileOpen(true)} />
         {/* Persistente: enquanto a exclusão estiver agendada, o prazo acompanha o usuário em toda rota. */}
-        <DataDeletionBanner />
+        <DataDeletionBanner devForceShow={devShowDeletion} />
         <Box
           component="main"
           sx={{
@@ -61,8 +73,54 @@ export default function DashboardLayout() {
         </Box>
       </Box>
       <AnnouncementCenter />
-      <SubscriptionExpiredModal />
-      <PaymentFailedModal />
+      <SubscriptionExpiredModal devForceOpen={devShowExpired} />
+      <PaymentFailedModal devForceOpen={devShowPaymentFailed} />
+
+      {/* ══ DEV TEMPORÁRIO — painel para forçar os avisos/modais globais de assinatura. Ver
+          instrução de remoção no bloco de estados `devShow*` acima. ══ */}
+      <Paper
+        variant="outlined"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: theme.zIndex.tooltip + 1,
+          borderRadius: 2,
+          borderStyle: 'dashed',
+          borderColor: 'warning.main',
+          bgcolor: 'warning.soft',
+          p: 1.5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.25,
+        }}
+      >
+        <Typography variant="overline" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '0.06em' }}>
+          Dev — assinatura (remover)
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch size="small" checked={devShowDeletion} onChange={(e) => setDevShowDeletion(e.target.checked)} />
+          }
+          label="Banner: exclusão agendada"
+        />
+        <FormControlLabel
+          control={
+            <Switch size="small" checked={devShowExpired} onChange={(e) => setDevShowExpired(e.target.checked)} />
+          }
+          label="Modal: assinatura expirada"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={devShowPaymentFailed}
+              onChange={(e) => setDevShowPaymentFailed(e.target.checked)}
+            />
+          }
+          label="Modal: cobrança recusada"
+        />
+      </Paper>
     </Box>
   )
 }

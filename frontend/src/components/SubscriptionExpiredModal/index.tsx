@@ -12,7 +12,10 @@ import { useAppSelector } from '../../store'
 // estão barrados por 402), só reforça a ação. Só para Owner/Admin — só eles podem assinar
 // (aba "Assinatura" de Configurações é `ownerOnly`). Dispensável por sessão: some ao clicar em
 // "Agora não" e só reaparece em um novo mount do layout (login/reload).
-export default function SubscriptionExpiredModal() {
+//
+// `devForceOpen` — DEV TEMPORÁRIO: força a abertura para revisão visual sem expirar a assinatura
+// real. Ver instrução de remoção em DashboardLayout/index.tsx (busque por "DEV TEMPORÁRIO").
+export default function SubscriptionExpiredModal({ devForceOpen }: { devForceOpen?: boolean } = {}) {
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const role = useAppSelector((s) => s.auth.role)
@@ -23,7 +26,7 @@ export default function SubscriptionExpiredModal() {
   // Quando o acesso caiu por cobrança recusada, o PaymentFailedModal explica melhor o motivo —
   // ele tem precedência para os dois não abrirem ao mesmo tempo.
   const paymentFailed = Boolean(subscription?.lastPaymentFailedAt)
-  const open = isOwner && !dismissed && !paymentFailed && subscription?.status === 'Expired'
+  const open = Boolean(devForceOpen) || (isOwner && !dismissed && !paymentFailed && subscription?.status === 'Expired')
 
   const handleClose = () => setDismissed(true)
 
@@ -44,7 +47,7 @@ export default function SubscriptionExpiredModal() {
           Sua assinatura expirou
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-          O acesso ao sistema foi bloqueado. Ative um plano para continuar usando o Kashing.
+          O acesso ao sistema foi bloqueado, mas você ainda pode acessar seus dados. Ative um plano para continuar usando o Kashing.
         </Typography>
 
         <UpsellButton label="Ativar plano" fullWidth size="large" onBeforeNavigate={handleClose} />

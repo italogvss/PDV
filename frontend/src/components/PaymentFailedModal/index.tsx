@@ -9,7 +9,10 @@ import { useAppSelector } from '../../store'
 // precisa saber o que aconteceu antes de esbarrar nos 402. Aparece uma vez por sessão (dispensado
 // some até um novo mount do layout, ou seja, próximo login/reload) — o detalhe permanente fica na
 // SubscriptionSection. Só para Owner/Admin, os únicos que podem assinar.
-export default function PaymentFailedModal() {
+//
+// `devForceOpen` — DEV TEMPORÁRIO: força a abertura para revisão visual sem recusar uma cobrança
+// real. Ver instrução de remoção em DashboardLayout/index.tsx (busque por "DEV TEMPORÁRIO").
+export default function PaymentFailedModal({ devForceOpen }: { devForceOpen?: boolean } = {}) {
   const theme = useTheme()
   const navigate = useNavigate()
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
@@ -18,7 +21,7 @@ export default function PaymentFailedModal() {
   const [dismissed, setDismissed] = useState(false)
 
   const isOwner = role === 'Owner' || role === 'Admin'
-  const open = isOwner && !dismissed && Boolean(subscription?.lastPaymentFailedAt)
+  const open = Boolean(devForceOpen) || (isOwner && !dismissed && Boolean(subscription?.lastPaymentFailedAt))
 
   const handleClose = () => setDismissed(true)
 

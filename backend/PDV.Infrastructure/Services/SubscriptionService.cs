@@ -412,7 +412,9 @@ public class SubscriptionService(
     {
         if (sub.StartedAt is not DateTime startedAt) return;
 
-        var charges = await paymentRepository.GetPaidBySubscriptionSinceAsync(sub.Id, startedAt);
+        // Tolerância de relógio entre eventos do Stripe — ver RefundDefaults.ClockSkewToleranceSeconds.
+        var since = startedAt.AddSeconds(-RefundDefaults.ClockSkewToleranceSeconds);
+        var charges = await paymentRepository.GetPaidBySubscriptionSinceAsync(sub.Id, since);
         var refundable = charges.Where(c => c.AmountCents > 0).ToList();
 
         if (refundable.Count == 0)

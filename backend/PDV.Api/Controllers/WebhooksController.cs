@@ -34,7 +34,7 @@ public class WebhooksController(
         try
         {
             // Verifica a assinatura E normaliza o payload. Assinatura inválida → UnauthorizedException.
-            evt = processor.Parse(rawBody, signature);
+            evt = await processor.ParseAsync(rawBody, signature);
         }
         catch (UnauthorizedException ex)
         {

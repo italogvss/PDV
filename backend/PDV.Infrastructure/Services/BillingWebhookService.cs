@@ -21,7 +21,10 @@ namespace PDV.Infrastructure.Services;
 //      que mudou. Com isso a ordem de entrega deixa de importar (CG-14), a reentrega vira no-op, a
 //      renovação e a promoção de um downgrade agendado passam pelo mesmo caminho — e uma troca de
 //      plano feita fora do app é reconciliada de graça.
-public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<BillingWebhookService> logger) : IBillingWebhookService
+public class BillingWebhookService(
+    IBillingWebhookRepository repo,
+    IDataRetentionRepository retentionRepo,
+    ILogger<BillingWebhookService> logger) : IBillingWebhookService
 {
     public async Task ProcessAsync(PaymentWebhookEvent evt)
     {
@@ -151,6 +154,9 @@ public class BillingWebhookService(IBillingWebhookRepository repo, ILogger<Billi
             case GatewaySubscriptionStatuses.Active:
             case GatewaySubscriptionStatuses.Trialing:
                 Activate(sub, evt);
+                // A assinatura voltou a ter acesso (reativação, ex.: D3) — cancela a exclusão agendada
+                // da(s) loja(s) do Owner na hora, sem esperar a varredura horária de retenção.
+                await retentionRepo.ClearScheduledDeletionForOwnerAsync(sub.UserId);
                 break;
 
             // RF-27: a falha de cobrança não muda o estado da assinatura. O acesso já caiu sozinho,

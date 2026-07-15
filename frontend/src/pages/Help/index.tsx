@@ -13,6 +13,7 @@ import BusinessRounded from '@mui/icons-material/BusinessRounded'
 import ManageAccountsRounded from '@mui/icons-material/ManageAccountsRounded'
 import HelpRounded from '@mui/icons-material/HelpRounded'
 import HistoryRounded from '@mui/icons-material/HistoryRounded'
+import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import type { SvgIconComponent } from '@mui/icons-material'
@@ -43,6 +44,7 @@ const ICON_MAP: Record<string, SvgIconComponent> = {
   ManageAccounts: ManageAccountsRounded,
   Help: HelpRounded,
   History: HistoryRounded,
+  WorkspacePremium: WorkspacePremiumRounded,
 }
 
 export default function HelpPage() {

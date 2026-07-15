@@ -61,6 +61,32 @@ public class DataRetentionRepository(AppDbContext context) : IDataRetentionRepos
         return (scheduled, cleared);
     }
 
+    public async Task ClearScheduledDeletionForOwnerAsync(Guid userId)
+    {
+        var tenantIds = await context.UserTenants
+            .Where(ut => ut.UserId == userId && ut.Role == UserRole.Owner)
+            .Select(ut => ut.TenantId)
+            .ToListAsync();
+
+        if (tenantIds.Count == 0) return;
+
+        // IgnoreQueryFilters: mesma razão do Sync acima — precisa enxergar tenants inativos para não
+        // ignorá-los, embora eles sejam pulados logo abaixo (prazo próprio, não mexer).
+        var tenants = await context.Tenants
+            .IgnoreQueryFilters()
+            .Where(t => tenantIds.Contains(t.Id) && t.ScheduledDeletionAt != null)
+            .ToListAsync();
+
+        foreach (var tenant in tenants)
+        {
+            // Loja encerrada pelo próprio dono já tem prazo definido em TenantService — não mexer.
+            if (!tenant.IsActive) continue;
+
+            tenant.ScheduledDeletionAt = null;
+            tenant.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
     // null = o Owner tem plano válido, nada a excluir. Sem assinatura alguma (nunca assinou nem fez
     // trial), o prazo conta da criação da loja.
     private static DateTime? DeletionDeadline(Subscription? subscription, Tenant tenant, DateTime now, int retentionDays)

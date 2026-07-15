@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, AlertTitle, Box, Button, CircularProgress, Divider, Link, Paper, Typography } from '@mui/material'
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Button,
+  CircularProgress,
+  Divider,
+  FormControlLabel,
+  Link,
+  Paper,
+  Switch,
+  Typography,
+} from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
 import WorkspacePremiumRounded from '@mui/icons-material/WorkspacePremiumRounded'
 import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
@@ -48,6 +60,7 @@ import PlanCheckoutDialog from './PlanCheckoutDialog'
 import PlansDialog from './PlansDialog'
 import type { PlansDialogMode } from './PlansDialog/types'
 import ConfirmDialog from '../../../../components/ConfirmDialog'
+import PlansGrid from '../../../../components/PlansGrid'
 
 const LIMIT_ICONS: Record<PlanLimitKey, SvgIconComponent> = {
   employees: GroupsOutlined,
@@ -76,6 +89,36 @@ export default function SubscriptionSection() {
   // Plano-alvo de uma troca aguardando confirmação — a mensagem muda conforme upgrade × downgrade.
   const [changeTarget, setChangeTarget] = useState<Plan | null>(null)
 
+  // ═══ DEV TEMPORÁRIO — REMOVER ═══════════════════════════════════════════════════════════
+  // Switches para forçar a exibição dos alertas/paper condicionais desta tela sem precisar
+  // alterar a assinatura real (só para revisão visual). Para remover: apague estes 7 estados,
+  // o painel de switches renderizado logo no início do JSX abaixo (procure por
+  // "DEV TEMPORÁRIO" no arquivo) e os `|| devShowX` adicionados às condições dos blocos.
+  const [devShowPaymentFailed, setDevShowPaymentFailed] = useState(false)
+  const [devShowPendingPlan, setDevShowPendingPlan] = useState(false)
+  const [devShowUpgrade, setDevShowUpgrade] = useState(false)
+  const [devShowResubscribe, setDevShowResubscribe] = useState(false)
+  const [devShowAwaitingRefund, setDevShowAwaitingRefund] = useState(false)
+  const [devShowExpiredGrid, setDevShowExpiredGrid] = useState(false)
+  // Força o modal "trocar de plano" a exibir a variante agendada (downgrade) — por padrão ele
+  // mostra o que a troca real calcular (normalmente upgrade, via proMonthly no botão de dev).
+  const [devForceChangeDowngrade, setDevForceChangeDowngrade] = useState(false)
+  // ═════════════════════════════════════════════════════════════════════════════════════════
+
+  // Estado derivado com optional chaining (subscription pode ainda não ter carregado) — precisa vir
+  // antes do guard de loading abaixo pra respeitar Rules of Hooks: `useChangePlanPreview` tem que ser
+  // chamado sempre na mesma posição, senão o React acusa "mais hooks que no render anterior" assim
+  // que os dados chegam.
+  const isTrial = subscription?.status === 'Trialing'
+  const isLive = subscription?.status === 'Active' || subscription?.status === 'Trialing'
+  const isLiveCard = isLive && subscription?.method === 'Card'
+
+  // Simulação da troca (só para assinatura paga; no trial não há gateway nem cobrança). O diálogo
+  // deriva a mensagem daqui — quando a troca é agendada, quanto é cobrado agora, quando o plano novo
+  // vale — sem reimplementar a regra do backend (RF-36/RF-37).
+  const previewPlanId = changeTarget && isLiveCard && !isTrial ? changeTarget.id : null
+  const { data: changePreview, isLoading: previewLoading } = useChangePlanPreview(previewPlanId)
+
   if (loadingSub || loadingPlans || !subscription || !plans) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -95,12 +138,9 @@ export default function SubscriptionSection() {
   const has = (key: string) => ownedSet.has(key.toLowerCase())
   const currentPlan = plans.find((p) => p.id === subscription.planId) ?? null
   const isPaid = subscription.planId !== null
-  const isTrial = subscription.status === 'Trialing'
   // Expirada: o plano guardado em `subscription.planId` não vale mais (entitlements já vêm vazios
   // do backend) — preço e o card de recursos não devem ser exibidos como se ainda valessem (#4/RF-07.5).
   const isExpired = subscription.status === 'Expired'
-  const isLive = subscription.status === 'Active' || subscription.status === 'Trialing'
-  const isLiveCard = isLive && subscription.method === 'Card'
   const canCancel = isPaid && isLive
   const statusLine = getStatusLine(subscription)
 
@@ -161,9 +201,10 @@ export default function SubscriptionSection() {
   // Reembolso pendente não oferece reativação: o backend bloqueia o checkout até o estorno ser
   // aprovado, senão o `checkout.refunded` derrubaria a assinatura nova.
   const awaitingRefund = subscription.status === 'RefundRequested'
+  // Expirada tem tratamento à parte (grade de planos cheia no lugar do banner, ver mais abaixo) —
+  // por isso sai da lista genérica de "reassinar com 1 CTA".
   const showResubscribe =
     subscription.status === 'Canceled' ||
-    subscription.status === 'Expired' ||
     subscription.status === 'None' ||
     isPendingCheckout
   const resubscribeTarget = currentPlan ?? proMonthly ?? plans[0] ?? null
@@ -222,18 +263,12 @@ export default function SubscriptionSection() {
     changePlan.mutate(changeTarget.id, { onSuccess: () => setChangeTarget(null) })
   }
 
-  // Simulação da troca (só para assinatura paga; no trial não há gateway nem cobrança). O diálogo
-  // deriva a mensagem daqui — quando a troca é agendada, quanto é cobrado agora, quando o plano novo
-  // vale — sem reimplementar a regra do backend (RF-36/RF-37).
-  const previewPlanId = changeTarget && isLiveCard && !isTrial ? changeTarget.id : null
-  const { data: changePreview, isLoading: previewLoading, isError: previewError } =
-    useChangePlanPreview(previewPlanId)
-
   // Fallback local enquanto a simulação carrega (ou falha): retira recursos/encolhe limites. Não
   // cobre o caso "encurta o ciclo" — por isso a simulação do backend é a fonte da verdade.
   const changeLosesCapabilities = !!currentPlan && !!changeTarget && !isTrial && isDowngrade(currentPlan, changeTarget)
   // Agendada = a simulação diz que sim; enquanto ela não chega, usa o palpite local.
-  const changeIsScheduled = changePreview?.scheduled ?? changeLosesCapabilities
+  // devForceChangeDowngrade força a variante agendada por cima do que a simulação calculou (dev).
+  const changeIsScheduled = devForceChangeDowngrade || (changePreview?.scheduled ?? changeLosesCapabilities)
 
   const changeTargetSet = changeTarget ? entitlementSet(changeTarget.entitlements) : null
   const lostFeatures = changeTargetSet
@@ -263,12 +298,17 @@ export default function SubscriptionSection() {
             O plano <strong>{shortPlanName(changeTarget.name)}</strong> passa a valer{' '}
             <strong>imediatamente</strong> — os novos recursos já ficam disponíveis.
           </Typography>
+          <Typography variant="body2">
+            <strong>
+              A cobrança é feita agora, no cartão cadastrado
+              {chargeNow !== null ? `: ${formatCents(chargeNow)}` : ''}.
+            </strong>{' '}
+            Esse valor é a diferença proporcional aos dias que faltam no seu ciclo atual: pegamos o
+            preço do plano {shortPlanName(changeTarget.name)} para o tempo restante e descontamos o
+            crédito do que você já pagou e ainda não usou no plano atual.
+          </Typography>
           <Typography variant="body2" color="text.secondary">
-            {chargeNow && chargeNow > 0
-              ? `Será cobrada agora a diferença proporcional de ${formatCents(chargeNow)}. A partir da próxima renovação${changePreview?.nextChargeAt ? ` (${formatDate(changePreview.nextChargeAt)})` : ''} o valor passa a ser R$ ${formatPrice(changeTarget.price)}.`
-              : previewError
-                ? `Será cobrada agora a diferença proporcional ao tempo restante do ciclo. Depois, o valor passa a ser R$ ${formatPrice(changeTarget.price)} por período.`
-                : `O valor de R$ ${formatPrice(changeTarget.price)} passa a valer na próxima renovação${changePreview?.nextChargeAt ? ` (${formatDate(changePreview.nextChargeAt)})` : ''}.`}
+            {`A partir da próxima renovação${changePreview?.nextChargeAt ? ` (${formatDate(changePreview.nextChargeAt)})` : ''}, o valor passa a ser R$ ${formatPrice(changeTarget.price)} por período.`}
           </Typography>
         </>
       )}
@@ -347,46 +387,182 @@ export default function SubscriptionSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* ══ DEV TEMPORÁRIO — painel para forçar a exibição dos alertas/modais desta tela sem
+          alterar a assinatura real. Ver instrução de remoção no bloco de estados `devShow*`
+          no topo do componente. ══ */}
+      <Paper
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          borderStyle: 'dashed',
+          borderColor: 'warning.main',
+          bgcolor: alpha(theme.palette.warning.main, 0.08),
+          p: 2.5,
+        }}
+      >
+        <Typography variant="overline" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '0.06em' }}>
+          Dev — forçar visualização (remover antes de subir)
+        </Typography>
+        <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowPaymentFailed}
+                onChange={(e) => setDevShowPaymentFailed(e.target.checked)}
+              />
+            }
+            label="Cobrança recusada"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowPendingPlan}
+                onChange={(e) => setDevShowPendingPlan(e.target.checked)}
+              />
+            }
+            label="Downgrade agendado"
+          />
+          <FormControlLabel
+            control={
+              <Switch size="small" checked={devShowUpgrade} onChange={(e) => setDevShowUpgrade(e.target.checked)} />
+            }
+            label="Upsell Profissional"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowResubscribe}
+                onChange={(e) => setDevShowResubscribe(e.target.checked)}
+              />
+            }
+            label="Reassinar/reativar"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowAwaitingRefund}
+                onChange={(e) => setDevShowAwaitingRefund(e.target.checked)}
+              />
+            }
+            label="Reembolso em análise"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowExpiredGrid}
+                onChange={(e) => setDevShowExpiredGrid(e.target.checked)}
+              />
+            }
+            label="Expirado: grade de planos"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devForceChangeDowngrade}
+                onChange={(e) => setDevForceChangeDowngrade(e.target.checked)}
+              />
+            }
+            label="Trocar de plano: forçar downgrade"
+          />
+        </Box>
+        <Divider sx={{ my: 1.5 }} />
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Button size="small" variant="outlined" onClick={() => setConfirmCancelOpen(true)}>
+            Modal: cancelar assinatura
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={!proMonthly && plans.length === 0}
+            onClick={() => setChangeTarget(proMonthly ?? plans[0] ?? null)}
+          >
+            Modal: trocar de plano
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={plans.length === 0}
+            onClick={() => setCheckoutPlan(plans[0] ?? null)}
+          >
+            Modal: checkout
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => setPlansDialogMode('checkout')}>
+            Modal: grade de planos (checkout)
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => setPlansDialogMode('change')}>
+            Modal: grade de planos (troca)
+          </Button>
+        </Box>
+      </Paper>
+
       {/* ══ Cobrança recusada — o gateway ainda retenta, mas o cartão precisa ser atualizado ══ */}
-      {subscription.lastPaymentFailedAt && (
+      {(subscription.lastPaymentFailedAt || devShowPaymentFailed) && (
         <Alert
           severity="error"
           variant="outlined"
-          sx={{ borderRadius: 3, alignItems: 'center' }}
+          sx={{ borderRadius: 3, alignItems: 'center', backgroundColor: "error.soft",}}
           action={
-            <Button color="error" variant="contained" size="small" onClick={() => setPlansDialogMode('checkout')}>
+            <Button sx={{mr: 3}} color="error" variant="contained" size="small" onClick={() => setPlansDialogMode('checkout')}>
               Assinar novamente
             </Button>
           }
         >
           <AlertTitle sx={{ fontWeight: 700 }}>Não conseguimos cobrar seu cartão</AlertTitle>
-          A cobrança da renovação de {formatDate(subscription.lastPaymentFailedAt)} foi recusada
+          A cobrança da renovação de {formatDate(subscription.lastPaymentFailedAt ?? new Date().toISOString())} foi
+          recusada
           {subscription.paymentRetryNumber ? ` (tentativa ${subscription.paymentRetryNumber})` : ''}. Seu
           acesso ficará bloqueado até que um pagamento seja concluído.
         </Alert>
       )}
 
+      {/* ══ Reembolso em análise — sem CTA: o checkout fica bloqueado até o estorno ser concluído ══ */}
+      {(awaitingRefund || devShowAwaitingRefund) && (
+        <Paper
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: 'warning.main',
+            bgcolor: 'warning.soft',
+            p: { xs: 3, sm: 4 },
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '-0.01em' }}>
+            Reembolso em análise
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5, color: 'warning.ink', maxWidth: 560 }}>
+            Sua assinatura foi encerrada e o estorno está sendo processado. Assim que ele for
+            concluído você poderá assinar um plano novamente. Enquanto isso, seus dados seguem
+            disponíveis para exportação na seção de Backup & Dados.
+          </Typography>
+        </Paper>
+      )}
+
       {/* ══ Downgrade agendado — o plano menor só vale na virada do ciclo já pago ══ */}
-      {subscription.pendingPlanName && (
+      {(subscription.pendingPlanName || devShowPendingPlan) && (
         <Alert
           severity="info"
           variant="outlined"
-          sx={{ borderRadius: 3, alignItems: 'center' }}
+          sx={{ borderRadius: 3, alignItems: 'center', backgroundColor: "info.soft"}}
           action={
             // Sem isto, quem agenda um downgrade fica preso a ele até a renovação — que pode ser
             // daqui a um ano no plano anual.
             <Button
-              color="info"
-              size="small"
               disabled={changePlan.isPending}
-              onClick={() => subscription.planId && changePlan.mutate(subscription.planId)}
+              sx={{mr: 3}}
+              onClick={() => subscription.pendingPlanName && subscription.planId && changePlan.mutate(subscription.planId)}
             >
               Cancelar troca
             </Button>
           }
         >
-          <AlertTitle sx={{ fontWeight: 700 }}>Mudança de plano na próxima renovação</AlertTitle>
-          Você passa para o {shortPlanName(subscription.pendingPlanName)}{' '}
+          <AlertTitle sx={{ fontWeight: 700 }}>Mudança de plano agendada para a próxima renovação</AlertTitle>
+          Você passa para o {shortPlanName(subscription.pendingPlanName ?? proMonthly?.name ?? 'Essencial')}{' '}
           {subscription.pendingPlanStartsAt
             ? `em ${formatDate(subscription.pendingPlanStartsAt)}`
             : 'na próxima renovação'}
@@ -394,7 +570,27 @@ export default function SubscriptionSection() {
         </Alert>
       )}
 
-      {/* ══ Banner do plano atual ══ */}
+      {/* ══ Assinatura expirada — troca o banner do plano atual (não vale mais nada) pela grade
+          cheia de planos direto na página, sem esconder atrás do PlansDialog ══ */}
+      {(isExpired || devShowExpiredGrid) && (
+        <Paper
+          variant="outlined"
+          sx={{ borderRadius: 3, p: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 3 }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>
+              Sua assinatura expirou
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Escolha um plano para reativar o acesso ao sistema.
+            </Typography>
+          </Box>
+          <PlansGrid plans={plans} onSelectPlan={(plan) => setCheckoutPlan(plan)} />
+        </Paper>
+      )}
+
+      {/* ══ Banner do plano atual — some quando expirado (ver bloco acima) ══ */}
+      {!(isExpired || devShowExpiredGrid) && (
       <Box
         sx={{
           position: 'relative',
@@ -536,6 +732,7 @@ export default function SubscriptionSection() {
           </Box>
         </Box>
       </Box>
+      )}
 
       {/* ══ Recursos e limites do plano — omitido sem entitlements (Expired/Pending/None não têm
           direito a nada ainda; mostrar o card vazio insinuaria um plano que não vale, ver #4/RF-07.5) ══ */}
@@ -655,7 +852,7 @@ export default function SubscriptionSection() {
       )}
 
       {/* ══ Upsell do Profissional — só para quem ainda não é Pro ══ */}
-      {showUpgrade && upgradeTarget && (
+      {(showUpgrade || devShowUpgrade) && upgradeTarget && (
         <Paper
           elevation={0}
           sx={{
@@ -914,7 +1111,7 @@ export default function SubscriptionSection() {
       )}
 
       {/* ══ Reassinar / reativar — quando não há assinatura viva ══ */}
-      {showResubscribe && resubscribeTarget && (
+      {(showResubscribe || devShowResubscribe) && resubscribeTarget && (
         <Paper
           variant="outlined"
           sx={{
@@ -957,29 +1154,7 @@ export default function SubscriptionSection() {
             {isPendingCheckout ? 'Tentar novamente' : hasRemainingAccess ? 'Reativar assinatura' : 'Assinar agora'}
           </Button>
         </Paper>
-      )}
-
-      {/* ══ Reembolso em análise — sem CTA: o checkout fica bloqueado até o estorno ser concluído ══ */}
-      {awaitingRefund && (
-        <Paper
-          variant="outlined"
-          sx={{
-            borderRadius: 3,
-            borderColor: 'warning.main',
-            bgcolor: 'warning.soft',
-            p: { xs: 3, sm: 4 },
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '-0.01em' }}>
-            Reembolso em análise
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, color: 'warning.ink', maxWidth: 560 }}>
-            Sua assinatura foi encerrada e o estorno está sendo processado. Assim que ele for
-            concluído você poderá assinar um plano novamente. Enquanto isso, seus dados seguem
-            disponíveis para exportação.
-          </Typography>
-        </Paper>
-      )}
+      )}      
 
       <PlansDialog
         open={plansDialogMode !== null}
@@ -1005,12 +1180,14 @@ export default function SubscriptionSection() {
         open={confirmCancelOpen}
         title="Cancelar assinatura?"
         description={cancelDescription}
+        acknowledgmentLabel={"Confirmo que li a mensagem e desejo prosseguir para o cancelamento"}
         confirmLabel="Cancelar assinatura"
         pendingLabel="Cancelando..."
         isPending={cancel.isPending}
         onClose={() => setConfirmCancelOpen(false)}
         onConfirm={handleCancel}
         danger={isTrial || inRefundWindow}
+        requireAcknowledgment
       />
 
       <ConfirmDialog
@@ -1025,6 +1202,8 @@ export default function SubscriptionSection() {
         onClose={() => setChangeTarget(null)}
         onConfirm={handleConfirmChange}
         danger={changeIsScheduled && lostFeatures.length > 0}
+        requireAcknowledgment={!isTrial && !changeIsScheduled}
+        acknowledgmentLabel="Entendo que a cobrança acima é feita agora e desejo continuar."
       />
     </Box>
   )

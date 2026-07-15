@@ -121,31 +121,51 @@ anual**, conforme o plano contratado.
 5.2. **Período de teste (trial).** A Kashing oferece **30 (trinta) dias de teste gratuito**, sem cobrança e
 **sem exigência de dados de cartão**. Ao término do período de teste, caso o Usuário não contrate um plano
 pago, **o acesso às funcionalidades é bloqueado**, permanecendo disponível ao Usuário a **exportação/download
-de seus dados** conforme a Seção 7.
+de seus dados** conforme a Seção 6.
 
 5.3. **Cobrança recorrente.** Ao contratar um plano pago, o Usuário **autoriza expressamente a cobrança
 recorrente e automática** por meio do provedor de pagamentos **Stripe**, pelo período contratado, até
 que solicite o cancelamento.
 
-5.4. **Reembolso.** O Usuário com assinatura ativa tem direito a **reembolso integral em até 7 (sete) dias**
-contados da contratação/renovação, em observância ao direito de arrependimento do art. 49 do Código de
-Defesa do Consumidor. Após esse prazo, os valores pagos referentes ao período já iniciado **não são
-reembolsáveis**.
+5.4. **Reembolso.**
 
-> **Revisar:** confirme se o prazo de 7 dias de reembolso aplica-se a **toda contratação** ou **apenas à
-> primeira assinatura**. Confirme também o comportamento em renovações automáticas (recomendado: permitir
-> cancelamento antes da renovação para evitar cobrança indevida).
+5.4.1. O Usuário tem direito ao **reembolso integral em até 7 (sete) dias**, contados da data em que o
+pagamento da assinatura passou a valer — seja na **primeira contratação**, seja em uma **reativação**
+realizada após cancelamento ou expiração —, em observância ao direito de arrependimento do art. 49 do
+Código de Defesa do Consumidor.
 
-5.5. **Inadimplência.** Em caso de falha ou ausência de pagamento, a Kashing poderá **suspender o acesso às
-funcionalidades** até a regularização, sem prejuízo da retenção e posterior eliminação de dados conforme a
-Seção 7.
+5.4.2. Cancelar dentro desse prazo encerra o acesso **imediatamente** e o valor pago é devolvido
+integralmente.
 
-> **Revisar / definir:** (a) prazo de tolerância após falha de pagamento antes da suspensão; (b) política de
-> **reajuste de preços** e antecedência de aviso ao cliente (recomendado: no mínimo 30 dias); (c) regras de
-> **upgrade/downgrade** de plano e seu efeito sobre cobrança e limites. Esses pontos não foram definidos no
-> questionário.
+5.4.3. **Renovações automáticas não reabrem o prazo de 7 dias:** ele conta apenas da contratação inicial ou
+de uma reativação, nunca de cada cobrança periódica subsequente.
 
-5.6. **Limites por plano.** Os limites de uso de cada plano (por exemplo, quantidade de produtos ou de
+5.4.4. Fora do prazo de 7 dias, o cancelamento não gera devolução dos valores já pagos, mas o Usuário
+**mantém acesso à plataforma até o fim do período já pago**, quando o acesso é então encerrado
+automaticamente.
+
+5.5. **Inadimplência.** Em caso de falha no pagamento de uma renovação, o acesso às funcionalidades é
+encerrado **automaticamente** ao término do período já pago, sem prazo de tolerância adicional, sem
+prejuízo da retenção e posterior eliminação de dados conforme a Seção 6. O provedor de pagamentos pode
+tentar novas cobranças da mesma fatura nos dias seguintes; caso uma delas seja aprovada, o acesso é
+restabelecido normalmente.
+
+> **Revisar:** definir a política de **reajuste de preços** dos planos e a antecedência mínima de aviso ao
+> Usuário (recomendado: no mínimo 30 dias). Esse ponto não foi definido no questionário.
+
+5.6. **Mudança de plano.**
+
+5.6.1. O Usuário pode trocar de plano a qualquer momento, diretamente pela plataforma.
+
+5.6.2. **Upgrade** — plano com mais recursos, ou troca do ciclo mensal para o anual dentro do mesmo plano —
+tem **efeito imediato**: os novos recursos ficam disponíveis na hora, e a **diferença proporcional** ao
+tempo restante do ciclo atual é **cobrada imediatamente** no cartão cadastrado.
+
+5.6.3. **Downgrade** — plano com menos recursos, ou troca do ciclo anual para o mensal dentro do mesmo
+plano — é **agendado**: os recursos e limites do plano atual permanecem disponíveis até o fim do período já
+pago, e a troca só passa a valer na renovação seguinte, sem cobrança ou crédito adicional.
+
+5.7. **Limites por plano.** Os limites de uso de cada plano (por exemplo, quantidade de produtos ou de
 usuários) são apresentados na página de contratação e podem ser consultados a qualquer tempo.
 
 ---

@@ -32,13 +32,11 @@ export interface NavItem {
 }
 
 export interface NavSection {
-  title: string
   items: NavItem[]
 }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Operação',
     items: [
       { label: 'Inicio', path: '/', icon: SpaceDashboardOutlined },
       {
@@ -97,11 +95,6 @@ export const NAV_SECTIONS: NavSection[] = [
         requiredPermission: 'ViewReports',
         module: 'reports',
       },
-    ],
-  },
-  {
-    title: 'Conta',
-    items: [
       {
         label: 'Auditoria',
         path: '/logs',

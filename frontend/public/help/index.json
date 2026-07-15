@@ -105,5 +105,15 @@
       { "slug": "visualizar-historico", "title": "Visualizar histórico de auditoria" },
       { "slug": "acoes-registradas", "title": "O que é registrado na auditoria" }
     ]
+  },
+  {
+    "slug": "assinatura",
+    "category": "Assinatura",
+    "icon": "WorkspacePremium",
+    "articles": [
+      { "slug": "como-funciona", "title": "Como funciona a assinatura" },
+      { "slug": "trocar-de-plano", "title": "Trocar de plano" },
+      { "slug": "cancelamento-e-reembolso", "title": "Cancelamento e reembolso" }
+    ]
   }
 ]

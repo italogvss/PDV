@@ -1,7 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
+﻿import { useQuery } from '@tanstack/react-query'
 import { reportService } from '../services/report.service'
+import { FEATURES } from '../constants/entitlements'
 import type { ExpenseBasis, GroupBy } from '../types/report.types'
+import { useEntitlements } from './useSubscription'
 import { useUserPermissions } from './useUserPermissions'
+
+// Todo endpoint deste service vive atrás de [RequireEntitlement(AdvancedReports)] no backend —
+// o gate por entitlement fica aqui (e não em cada página) para que nenhum hook dispare a
+// requisição sem a feature, não importa de onde seja chamado.
+function useReportsEnabled(): boolean {
+  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const { has } = useEntitlements()
+  return isModuleEnabled('reports') && hasPermission('ViewReports') && has(FEATURES.advancedReports)
+}
 
 const METRICS_KEY = (start: string, end: string) =>
   ['reports', 'sales', start, end] as const
@@ -33,11 +44,11 @@ const PEAK_HOURS_KEY = (start: string, end: string) =>
   ['reports', 'appointment-peak-hours', start, end] as const
 
 export function useSalesMetrics(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: METRICS_KEY(startDate, endDate),
     queryFn: () => reportService.getSalesMetrics(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
@@ -47,127 +58,127 @@ export function useFinancialSummary(
   groupBy: GroupBy,
   expenseBasis: ExpenseBasis = 'accrual',
 ) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: FINANCIAL_KEY(startDate, endDate, groupBy, expenseBasis),
     queryFn: () => reportService.getFinancialSummary(startDate, endDate, groupBy, expenseBasis),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useReportEmployees() {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: EMPLOYEES_LIST_KEY,
     queryFn: () => reportService.getEmployeesList(),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useReportCustomers() {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: CUSTOMERS_LIST_KEY,
     queryFn: () => reportService.getCustomersList(),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useSalesByOperator(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: BY_OPERATOR_KEY(startDate, endDate),
     queryFn: () => reportService.getSalesByOperator(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useSalesByPaymentMethod(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: BY_PAYMENT_KEY(startDate, endDate),
     queryFn: () => reportService.getSalesByPaymentMethod(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useTopProducts(startDate: string, endDate: string, limit = 10) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: TOP_PRODUCTS_KEY(startDate, endDate, limit),
     queryFn: () => reportService.getTopProducts(startDate, endDate, limit),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useTopCustomers(startDate: string, endDate: string, limit = 10) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: TOP_CUSTOMERS_KEY(startDate, endDate, limit),
     queryFn: () => reportService.getTopCustomers(startDate, endDate, limit),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useExpensesByCategory(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: BY_CATEGORY_KEY(startDate, endDate),
     queryFn: () => reportService.getExpensesByCategory(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useRevenueByType(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: REVENUE_BY_TYPE_KEY(startDate, endDate),
     queryFn: () => reportService.getRevenueByType(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useAppointmentSummary(startDate: string, endDate: string, groupBy: GroupBy) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: APPOINTMENT_SUMMARY_KEY(startDate, endDate, groupBy),
     queryFn: () => reportService.getAppointmentSummary(startDate, endDate, groupBy),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useTopServices(startDate: string, endDate: string, limit = 10) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: TOP_SERVICES_KEY(startDate, endDate, limit),
     queryFn: () => reportService.getTopServices(startDate, endDate, limit),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useAppointmentsByEmployee(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: BY_EMPLOYEE_KEY(startDate, endDate),
     queryFn: () => reportService.getAppointmentsByEmployee(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useServiceCategoryRevenue(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: SERVICE_CATEGORY_REVENUE_KEY(startDate, endDate),
     queryFn: () => reportService.getServiceCategoryRevenue(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }
 
 export function useAppointmentPeakHours(startDate: string, endDate: string) {
-  const { hasPermission, isModuleEnabled } = useUserPermissions()
+  const enabled = useReportsEnabled()
   return useQuery({
     queryKey: PEAK_HOURS_KEY(startDate, endDate),
     queryFn: () => reportService.getAppointmentPeakHours(startDate, endDate),
-    enabled: isModuleEnabled('reports') && hasPermission('ViewReports'),
+    enabled,
   })
 }

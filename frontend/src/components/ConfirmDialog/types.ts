@@ -18,4 +18,8 @@ export interface ConfirmDialogProps {
   onConfirm: () => void
   /** Envolve a descrição em caixa error.soft com ícone de aviso. Indicado para exclusões definitivas. */
   danger?: boolean
+  /** Exibe um checkbox abaixo da descrição; o botão de confirmação fica desabilitado até ele ser marcado. Default: false. */
+  requireAcknowledgment?: boolean
+  /** Rótulo do checkbox de confirmação. Só é usado quando `requireAcknowledgment` é true. */
+  acknowledgmentLabel?: string
 }

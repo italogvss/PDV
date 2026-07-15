@@ -9,7 +9,10 @@ import { useAppSelector } from '../../store'
 // depois que o plano cai (cancelamento, trial vencido, reembolso) ou quando nunca houve assinatura.
 // Diferente do SubscriptionExpiredModal, NÃO é dispensável: o prazo corre e os dados somem no fim
 // dele. Os dois caminhos de saída são exportar os dados ou voltar a assinar.
-export default function DataDeletionBanner() {
+//
+// `devForceShow` — DEV TEMPORÁRIO: força a exibição para revisão visual sem agendar uma exclusão
+// real. Ver instrução de remoção em DashboardLayout/index.tsx (busque por "DEV TEMPORÁRIO").
+export default function DataDeletionBanner({ devForceShow }: { devForceShow?: boolean } = {}) {
   const theme = useTheme()
   const navigate = useNavigate()
   const tenantId = useAppSelector((s) => s.auth.tenantId)
@@ -17,7 +20,7 @@ export default function DataDeletionBanner() {
   const role = useAppSelector((s) => s.auth.role)
 
   const current = tenants.find((t) => t.tenantId === tenantId)
-  const deletionAt = current?.scheduledDeletionAt
+  const deletionAt = current?.scheduledDeletionAt ?? (devForceShow ? new Date(Date.now() + 5 * 86_400_000).toISOString() : null)
   if (!deletionAt) return null
 
   const daysLeft = Math.max(0, Math.ceil((new Date(deletionAt).getTime() - Date.now()) / 86_400_000))
