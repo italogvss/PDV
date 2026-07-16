@@ -14,4 +14,10 @@ public interface IStorageService
 
     /// <summary>Deleta o arquivo do storage.</summary>
     Task DeleteAsync(string bucket, string relativePath, CancellationToken ct = default);
+
+    /// <summary>
+    /// Checagem de saúde: faz uma chamada de rede real ao storage. Não usar presign para isso —
+    /// assinar URL é puramente computacional e passaria mesmo com o storage fora do ar.
+    /// </summary>
+    Task PingAsync(CancellationToken ct = default);
 }

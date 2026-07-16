@@ -18,4 +18,8 @@ public static class RetentionDefaults
     public const int AccessLogDays = 180;   // Marco Civil art. 15 — registros de acesso, mín. 6 meses
     public const int LegalHoldYears = 5;    // CTN 173/195, CC 206§5º, CDC 27 — fiscal/transacional
     public const int WebhookEventDays = 90; // housekeeping — independente de exclusão de conta
+
+    // Housekeeping do log de sistema (Serilog → SystemLog). É diagnóstico operacional, não tem base
+    // legal de guarda — prazo curto só para o admin investigar incidentes recentes.
+    public const int SystemLogDays = 30;
 }

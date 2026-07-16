@@ -77,6 +77,15 @@ public class DataPurgeBackgroundService(
                 .ExecuteDeleteAsync(ct);
             if (accessLogs > 0)
                 logger.LogInformation("AccessLogs antigos removidos (>6 meses): {Count}", accessLogs);
+
+            // 5. Housekeeping: logs de sistema (Serilog) além do prazo de diagnóstico.
+            var systemLogCutoff = now.AddDays(-RetentionDefaults.SystemLogDays);
+            var systemLogs = await db.SystemLogs
+                .Where(l => l.CreatedAt < systemLogCutoff)
+                .ExecuteDeleteAsync(ct);
+            if (systemLogs > 0)
+                logger.LogInformation("SystemLogs antigos removidos (>{Days} dias): {Count}",
+                    RetentionDefaults.SystemLogDays, systemLogs);
         }
         catch (Exception ex)
         {

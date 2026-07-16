@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using PDV.Application.DTOs.Admin;
 using PDV.Application.Interfaces;
@@ -14,6 +15,10 @@ public class AdminController(
     IAdminService adminService,
     IOptions<StripeOptions> stripeOptions) : ControllerBase
 {
+    [HttpGet("overview")]
+    public async Task<IActionResult> GetOverview() =>
+        Ok(await adminService.GetOverviewAsync());
+
     [HttpGet("webhook-events")]
     public async Task<IActionResult> GetWebhookEvents(
         [FromQuery] int page = 1,
@@ -58,6 +63,84 @@ public class AdminController(
     {
         await adminService.DeactivatePlanAsync(id);
         return NoContent();
+    }
+
+    // ── Fase 3: Suporte & Conteúdo ──────────────────────────────────────────────────────────
+
+    [HttpGet("contact-messages")]
+    public async Task<IActionResult> GetContactMessages() =>
+        Ok(await adminService.GetContactMessagesAsync());
+
+    [HttpPatch("contact-messages/{id:guid}/status")]
+    public async Task<IActionResult> UpdateContactStatus(Guid id, [FromBody] UpdateContactStatusRequest request) =>
+        Ok(await adminService.UpdateContactStatusAsync(id, request));
+
+    [HttpGet("announcements")]
+    public async Task<IActionResult> GetAnnouncements() =>
+        Ok(await adminService.GetAnnouncementsAsync());
+
+    [HttpPost("announcements")]
+    public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequest request) =>
+        Ok(await adminService.CreateAnnouncementAsync(request));
+
+    [HttpPut("announcements/{id:guid}")]
+    public async Task<IActionResult> UpdateAnnouncement(Guid id, [FromBody] AnnouncementRequest request) =>
+        Ok(await adminService.UpdateAnnouncementAsync(id, request));
+
+    [HttpDelete("announcements/{id:guid}")]
+    public async Task<IActionResult> DeactivateAnnouncement(Guid id)
+    {
+        await adminService.DeactivateAnnouncementAsync(id);
+        return NoContent();
+    }
+
+    // ── Fase 4: Observabilidade ─────────────────────────────────────────────────────────────
+
+    [HttpGet("system-logs")]
+    public async Task<IActionResult> GetSystemLogs(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? level = null) =>
+        Ok(await adminService.GetSystemLogsAsync(page, pageSize, level));
+
+    [HttpGet("platform-events")]
+    public async Task<IActionResult> GetPlatformEvents(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? source = null) =>
+        Ok(await adminService.GetPlatformEventsAsync(page, pageSize, source));
+
+    // ── Conformidade / LGPD ─────────────────────────────────────────────────────────────────
+
+    [HttpGet("account-deletions")]
+    public async Task<IActionResult> GetAccountDeletions() =>
+        Ok(await adminService.GetAccountDeletionsAsync());
+
+    [HttpGet("retention-tenants")]
+    public async Task<IActionResult> GetRetentionTenants() =>
+        Ok(await adminService.GetRetentionTenantsAsync());
+
+    [HttpGet("access-logs")]
+    public async Task<IActionResult> GetAccessLogs(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50) =>
+        Ok(await adminService.GetAccessLogsAsync(page, pageSize));
+
+    // Saúde da API para o painel. Roda os mesmos checks do /health, mas detalhado e só para o admin.
+    [HttpGet("health")]
+    public async Task<IActionResult> GetHealth([FromServices] HealthCheckService healthCheckService)
+    {
+        var report = await healthCheckService.CheckHealthAsync();
+        return Ok(new AdminHealthDto(
+            report.Status.ToString(),
+            report.TotalDuration.TotalMilliseconds,
+            report.Entries
+                .Select(e => new AdminHealthEntryDto(
+                    e.Key,
+                    e.Value.Status.ToString(),
+                    e.Value.Description,
+                    e.Value.Duration.TotalMilliseconds))
+                .ToList()));
     }
 
     private static string MaskSecret(string value)

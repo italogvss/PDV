@@ -53,6 +53,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     // Registros de acesso (Marco Civil art. 15). GLOBAL, scoped por UserId — sem query filter.
     public DbSet<AccessLog> AccessLogs => Set<AccessLog>();
 
+    // Logs de sistema do Serilog (nível >= Warning). GLOBAL — sem query filter: nascem fora de
+    // qualquer contexto de tenant (inclusive nos hosted services).
+    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

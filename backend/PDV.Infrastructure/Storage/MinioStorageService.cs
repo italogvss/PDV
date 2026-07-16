@@ -88,6 +88,9 @@ public class MinioStorageService : IStorageService
     public Task DeleteAsync(string bucket, string relativePath, CancellationToken ct = default) =>
         _opsClient.DeleteObjectAsync(bucket, relativePath, ct);
 
+    // Chamada real e barata no endpoint interno — é o opsClient que faz rede (o presignClient não).
+    public Task PingAsync(CancellationToken ct = default) => _opsClient.ListBucketsAsync(ct);
+
     /// <summary>
     /// Em dev (UseSSL=false) o AWS SDK ainda assina as presigned URLs com https mesmo com
     /// ServiceURL/UseHttp em http. O scheme não entra na assinatura (SigV2/SigV4 assinam

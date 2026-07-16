@@ -291,15 +291,21 @@ public class AuthService(
     private static (Guid? TenantId, string Role) ResolveActiveTenant(User user)
     {
         var tenants = user.UserTenants.ToList();
-        if (tenants.Count == 0)
+
+        var active = tenants.Count == 0
+            ? null
+            : user.LastTenantId.HasValue
+                ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
+                : tenants[0];
+
+        // Admin de plataforma: o papel vem do User (não do vínculo de loja) e ele normalmente NÃO tem
+        // vínculo nenhum. Precisa ser resolvido ANTES do caso "sem tenant" abaixo — senão o claim de
+        // role sairia vazio e o [Authorize(Roles = "Admin")] barraria o próprio admin (403).
+        if (user.Role == UserRole.Admin)
+            return (active?.TenantId, user.Role.ToString());
+
+        if (active is null)
             return (null, string.Empty);
-
-        var active = user.LastTenantId.HasValue
-            ? tenants.FirstOrDefault(ut => ut.TenantId == user.LastTenantId) ?? tenants[0]
-            : tenants[0];
-
-            if (user.Role == UserRole.Admin)
-                return (active.TenantId, user.Role.ToString());
 
         return (active.TenantId, active.Role.ToString());
     }

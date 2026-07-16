@@ -7,14 +7,19 @@ using Microsoft.IdentityModel.Tokens;
 using PDV.Api.Middleware;
 using PDV.Application.Interfaces;
 using PDV.Application.Validators.Users;
+using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
 using PDV.Infrastructure.Persistence;
 using PDV.Infrastructure.Repositories;
 using PDV.Infrastructure.Services;
+using PDV.Infrastructure.HealthChecks;
+using PDV.Infrastructure.Logging;
 using PDV.Infrastructure.Services.Payments.Stripe;
 using PDV.Infrastructure.Storage;
 using PDV.Application.Interfaces.Payments;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Events;
 // Import estreito: `using Stripe;` colidiria com ProductService/CustomerService/SubscriptionService
 // próprios do PDV.
 using IStripeClient = Stripe.IStripeClient;
@@ -23,6 +28,22 @@ using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging estruturado (Serilog). Console para o operador; o SystemLogSink persiste os eventos
+// >= Warning na tabela SystemLog, que o admin lê em /admin/observabilidade. O sink só enfileira —
+// quem grava é o SystemLogWriterService (evita reentrância: o EF loga, o log gravaria no EF...).
+builder.Services.AddSingleton<SystemLogQueue>();
+builder.Services.AddSerilog((sp, lc) => lc
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.Sink(new SystemLogSink(sp.GetRequiredService<SystemLogQueue>())));
+builder.Services.AddHostedService<SystemLogWriterService>();
+
+// Health checks — consumidos pelo /health (anônimo) e pelo /api/admin/health (detalhado).
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("mysql")
+    .AddCheck<StorageHealthCheck>("storage");
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -206,6 +227,27 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
     app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 }
+
+// Log de request (método, rota, status, latência). Nasce em Information → não polui o SystemLog
+// (o sink só persiste >= Warning).
+//
+// O GetLevel é customizado por causa da ordem do pipeline: o ExceptionMiddleware é o mais externo,
+// então as exceções de domínio sobem POR AQUI antes de serem tratadas. Sem isso, todo 404/400 de
+// negócio viraria um Error no SystemLog — ruído que esconderia falha de verdade. AppException é
+// resultado esperado (e o ExceptionMiddleware já registra como Warning); só o que não é AppException
+// (ou um 5xx) conta como Error.
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (httpContext, _, ex) => ex switch
+    {
+        null => httpContext.Response.StatusCode > 499 ? LogEventLevel.Error : LogEventLevel.Information,
+        AppException => LogEventLevel.Information,
+        _ => LogEventLevel.Error,
+    };
+});
+
+// Liveness/readiness — anônimo por design (orquestrador precisa bater sem credencial).
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.UseCors("Frontend");
 app.UseAuthentication();

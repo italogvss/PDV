@@ -27,6 +27,17 @@ import ChangePasswordPage from '../pages/ChangePassword'
 import LogsPage from '../pages/Logs'
 import ContactPage from '../pages/Contact'
 
+import AdminLayout from '../admin/AdminLayout'
+import AdminOverviewPage from '../admin/pages/Overview'
+import AdminSubscriptionsPage from '../admin/pages/Subscriptions'
+import AdminPaymentsPage from '../admin/pages/Payments'
+import AdminPlansPage from '../admin/pages/Plans'
+import AdminWebhooksPage from '../admin/pages/Webhooks'
+import AdminSupportPage from '../admin/pages/Support'
+import AdminAnnouncementsPage from '../admin/pages/Announcements'
+import AdminObservabilityPage from '../admin/pages/Observability'
+import AdminCompliancePage from '../admin/pages/Compliance'
+
 export const router = createBrowserRouter([
   {
     element: <RouterGuard type="public" />,
@@ -185,6 +196,26 @@ export const router = createBrowserRouter([
           { path: 'configuracoes', element: <SettingsPage /> },
           { path: 'ajuda', element: <HelpPage /> },
           { path: 'contato', element: <ContactPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    element: <RouterGuard type="admin" />,
+    children: [
+      {
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminOverviewPage /> },
+          { path: 'assinaturas', element: <AdminSubscriptionsPage /> },
+          { path: 'pagamentos', element: <AdminPaymentsPage /> },
+          { path: 'planos', element: <AdminPlansPage /> },
+          { path: 'webhooks', element: <AdminWebhooksPage /> },
+          { path: 'suporte', element: <AdminSupportPage /> },
+          { path: 'anuncios', element: <AdminAnnouncementsPage /> },
+          { path: 'conformidade', element: <AdminCompliancePage /> },
+          { path: 'observabilidade', element: <AdminObservabilityPage /> },
         ],
       },
     ],

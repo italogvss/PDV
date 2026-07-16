@@ -5,7 +5,8 @@ import { resolvePostLoginPath } from '../../utils/planSelection'
 
 // `dashboard` = `protected` + exige tenant (o shell autenticado quebra sem `X-Tenant-Id`).
 // `protected` continua sem exigir tenant para `/assinatura/retorno`, acessível antes do onboarding.
-type GuardType = 'public' | 'protected' | 'dashboard' | 'onboarding' | 'change-password'
+// `admin` = área de administração da plataforma (role Admin), isolada do app de loja e sem exigir tenant.
+type GuardType = 'public' | 'protected' | 'dashboard' | 'onboarding' | 'change-password' | 'admin'
 
 function Loading() {
   return (
@@ -25,6 +26,14 @@ export default function RouterGuard({ type }: { type: GuardType }) {
   if (isLoading) {
     return type === 'change-password' ? null : <Loading />
   }
+
+  // Isolamento: o Admin de plataforma vive só no /admin (não tem tenant → o app de loja quebraria).
+  // Encaminha-o de qualquer rota que não seja a de admin. Exceção: quando precisa trocar a senha,
+  // deixa o fluxo de change-password seguir.
+  if (isAuthenticated && !mustChangePassword && role === 'Admin' && type !== 'admin') {
+    return <Navigate to="/admin" replace />
+  }
+
   switch (type) {
     case 'public':
       if (isAuthenticated) {
@@ -51,6 +60,12 @@ export default function RouterGuard({ type }: { type: GuardType }) {
     case 'change-password':
       if (!isAuthenticated) return loginRedirect
       if (!mustChangePassword) return <Navigate to="/" replace />
+      break
+    case 'admin':
+      if (!isAuthenticated) return loginRedirect
+      if (mustChangePassword) return <Navigate to="/trocar-senha" replace />
+      // Só o operador de plataforma entra. Qualquer outro papel volta pro app de loja.
+      if (role !== 'Admin') return <Navigate to="/" replace />
       break
   }
 
