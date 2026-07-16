@@ -41,11 +41,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
+    // Ledger de encerramento de conta/loja (LGPD). Scoped por UserId — sem query filter de tenant.
+    public DbSet<AccountDeletion> AccountDeletions => Set<AccountDeletion>();
+
     // Avisos editoriais (Announcement) e marcadores de "visto" por usuário (UserSeenMarker).
     // Ambos GLOBAIS — sem query filter de tenant (Announcement é compartilhado; UserSeenMarker
     // é scoped por UserId e filtrado explicitamente nos repositórios).
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<UserSeenMarker> UserSeenMarkers => Set<UserSeenMarker>();
+
+    // Registros de acesso (Marco Civil art. 15). GLOBAL, scoped por UserId — sem query filter.
+    public DbSet<AccessLog> AccessLogs => Set<AccessLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

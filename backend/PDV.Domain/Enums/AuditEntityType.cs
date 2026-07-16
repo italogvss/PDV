@@ -9,4 +9,5 @@ public enum AuditEntityType
     Employee,
     Appointment,
     TenantRole,
+    Authentication,
 }

@@ -152,6 +152,29 @@ quando necessário ao cumprimento de obrigações legais ou ao exercício regula
 
 8.4. **Portabilidade/exportação.** Antes da eliminação, o Usuário pode **exportar os dados de sua loja**.
 
+8.5. **Encerramento de conta (exclusão a pedido do titular).** O proprietário(a) pode solicitar o
+encerramento da conta em **Configurações > Perfil**. A partir da solicitação inicia-se uma **carência de 30
+(trinta) dias**, durante a qual a conta fica bloqueada, sendo possível **exportar os dados** ou **reativar a
+conta** — a solicitação é **reversível** até o fim do prazo. Vencida a carência, executam-se a eliminação e a
+anonimização conforme a cláusula 8.6.
+
+8.6. **Prazos de retenção por categoria** (contados a partir da exclusão efetiva):
+
+- **Sem base de retenção** (credenciais, preferências, produtos, serviços, agendamentos, fornecedores,
+  imagens): **eliminação imediata**.
+- **Cadastro mínimo vinculado a transações** (nome e documento do titular e de clientes referenciados por
+  registros fiscais): retido por **5 anos**, com os demais campos **anonimizados** de imediato.
+- **Fiscais/transacionais** (vendas, pagamentos, despesas): retidos sob guarda legal por **5 anos** e então
+  eliminados.
+- **Registros de acesso** (data/hora, IP e referência de login): retidos, sem uso ativo, por **6 meses** e
+  então eliminados.
+
+8.7. **Bases legais da retenção.** LGPD, arts. 15 e 16 (fim do tratamento com eliminação, salvo obrigação
+legal de guarda); Marco Civil da Internet, art. 15 (guarda de registros de acesso por, no mínimo, 6 meses);
+CTN, arts. 173 e 195, CDC, art. 27, e Código Civil, art. 206, §5º (obrigações fiscais e prazos prescricionais
+— 5 anos). Dados **anonimizados de forma irreversível** deixam de ser dados pessoais e podem ser mantidos para
+fins estatísticos.
+
 ---
 
 ## 9. Direitos do titular (art. 18 da LGPD)
@@ -169,6 +192,10 @@ legal).
 9.3. **Requisições de clientes do comerciante.** Se um **cliente ou funcionário cadastrado por um
 comerciante** exercer direitos sobre seus dados, a solicitação será **encaminhada ao comerciante
 (Controlador)**, a quem cabe atendê-la, uma vez que a Kashing atua apenas como Operadora desses dados.
+
+9.4. **Eliminação autosserviço.** O titular proprietário(a) da conta pode exercer o direito de eliminação
+diretamente em **Configurações > Perfil > Encerrar minha conta**, sujeitando-se à carência e aos prazos de
+retenção legal descritos na cláusula 8.
 
 ---
 

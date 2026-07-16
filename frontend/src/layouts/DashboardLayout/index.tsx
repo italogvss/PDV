@@ -7,7 +7,10 @@ import AnnouncementCenter from '../../components/AnnouncementCenter'
 import SubscriptionExpiredModal from '../../components/SubscriptionExpiredModal'
 import PaymentFailedModal from '../../components/PaymentFailedModal'
 import DataDeletionBanner from '../../components/DataDeletionBanner'
+import AccountDeletionBanner from '../../components/AccountDeletionBanner'
+import AccountDeletionOverlay from '../../components/AccountDeletionOverlay'
 import { useSyncSubscriptionToStore } from '../../hooks/useSubscription'
+import { useAccountDeletionStatus } from '../../hooks/useAccountDeletion'
 
 export default function DashboardLayout() {
   const theme = useTheme()
@@ -17,6 +20,11 @@ export default function DashboardLayout() {
 
   // Mantém o resumo da assinatura no auth slice sincronizado com o backend.
   useSyncSubscriptionToStore()
+
+  // Estado do encerramento de conta — dirige a faixa (pré-carência) e a tela cheia (bloqueado).
+  const { data: accountDeletion } = useAccountDeletionStatus()
+  const deletionPending = accountDeletion?.pending ?? false
+  const deletionBlocked = accountDeletion?.blocked ?? false
 
   // ═══ DEV TEMPORÁRIO — REMOVER ═══════════════════════════════════════════════════════════
   // Switches para forçar os avisos/modais globais de assinatura (renderizados abaixo, fora do
@@ -58,8 +66,11 @@ export default function DashboardLayout() {
         }}
       >
         <TopBar isMobile={isMobile} onMenuClick={() => setMobileOpen(true)} />
-        {/* Persistente: enquanto a exclusão estiver agendada, o prazo acompanha o usuário em toda rota. */}
-        <DataDeletionBanner devForceShow={devShowDeletion} />
+        {/* Persistente: enquanto a exclusão estiver agendada, o prazo acompanha o usuário em toda rota.
+            O encerramento de conta tem precedência sobre a retenção passiva (evita faixa dupla). */}
+        {deletionPending
+          ? !deletionBlocked && <AccountDeletionBanner scheduledDeletionAt={accountDeletion?.scheduledDeletionAt ?? null} />
+          : <DataDeletionBanner devForceShow={devShowDeletion} />}
         <Box
           component="main"
           sx={{
@@ -75,6 +86,10 @@ export default function DashboardLayout() {
       <AnnouncementCenter />
       <SubscriptionExpiredModal devForceOpen={devShowExpired} />
       <PaymentFailedModal devForceOpen={devShowPaymentFailed} />
+      {/* Carência ativa: tela cheia bloqueando o uso, com exportar/reativar/sair. */}
+      {deletionBlocked && (
+        <AccountDeletionOverlay scheduledDeletionAt={accountDeletion?.scheduledDeletionAt ?? null} />
+      )}
 
       {/* ══ DEV TEMPORÁRIO — painel para forçar os avisos/modais globais de assinatura. Ver
           instrução de remoção no bloco de estados `devShow*` acima. ══ */}

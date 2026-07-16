@@ -113,29 +113,32 @@ da violação destes Termos, inclusive na esfera judicial.
  
 **5.1. Modelo de cobrança.** A Kashing é um serviço **pago**, mediante **assinatura recorrente mensal ou anual**, conforme o plano contratado.
  
-**5.2. Período de teste (trial).** A Kashing oferece **30 (trinta) dias de teste gratuito**, sem cobrança e **sem exigência de dados de cartão**. Ao término do período de teste, caso o Usuário não contrate um plano pago, **o acesso às funcionalidades é bloqueado**, permanecendo disponível ao Usuário a **exportação/download de seus dados** conforme a Seção 7.
+**5.2. Período de teste (trial).** A Kashing oferece **30 (trinta) dias de teste gratuito**, sem cobrança e **sem exigência de dados de cartão**. Ao término do período de teste, caso o Usuário não contrate um plano pago, **o acesso às funcionalidades é bloqueado**, permanecendo disponível ao Usuário a **exportação/download de seus dados** conforme a Seção 6.
  
 **5.3. Cobrança recorrente.** Ao contratar um plano pago, o Usuário **autoriza expressamente a cobrança recorrente e automática** por meio do provedor de pagamentos **Stripe**, pelo período contratado, até que solicite o cancelamento.
  
 **5.4. Reembolso**
  
-**5.4.1.** O direito de reembolso integral aplica-se **somente à primeira contratação** da assinatura (início do plano), podendo ser exercido em até 7 (sete) dias contados da data de contratação, em observância ao direito de arrependimento previsto no art. 49 do Código de Defesa do Consumidor.
+**5.4.1.** O Usuário tem direito ao reembolso integral em até 7 (sete) dias, contados da data em que o pagamento da assinatura passou a valer — seja na **primeira contratação**, seja em uma **reativação** realizada após cancelamento ou expiração —, em observância ao direito de arrependimento previsto no art. 49 do Código de Defesa do Consumidor.
  
-**5.4.2.** Ao exercer o reembolso, o acesso à plataforma é **encerrado imediatamente**. Previamente ao encerramento, o Usuário poderá realizar, de forma autônoma através da própria plataforma (**exportação self-service**), o **download dos seus dados** (produtos, clientes, vendas e demais informações cadastradas), não sendo mantido nenhum outro período de utilização residual.
+**5.4.2.** Ao exercer o reembolso, o acesso à plataforma é **encerrado imediatamente** e o valor pago é devolvido integralmente. Previamente ao encerramento, o Usuário poderá realizar, de forma autônoma através da própria plataforma (**exportação self-service**), o **download dos seus dados** (produtos, clientes, vendas e demais informações cadastradas), não sendo mantido nenhum outro período de utilização residual.
  
-**5.4.3.** O direito de reembolso **não se aplica às renovações** da assinatura. Uma vez ultrapassado o período inicial de 7 dias, os valores pagos não são reembolsáveis, independentemente de a assinatura estar na primeira contratação ou em ciclos subsequentes.
+**5.4.3.** O direito de reembolso **não é reaberto por renovações**: o prazo de 7 dias conta apenas da contratação inicial ou de uma reativação, nunca de cada cobrança periódica subsequente.
  
-**5.4.4.** Fora do prazo de reembolso, o cancelamento da assinatura não gera devolução de valores já pagos, mas o Usuário **mantém acesso à plataforma até a data da próxima renovação**, quando o acesso é então automaticamente encerrado.
+**5.4.4.** Fora do prazo de reembolso, o cancelamento da assinatura não gera devolução de valores já pagos, mas o Usuário **mantém acesso à plataforma até o fim do período já pago**, quando o acesso é então automaticamente encerrado.
  
 **5.5. Inadimplência.**
  
-**5.5.1.** Em caso de falha ou ausência de pagamento, a Kashing concederá um **prazo de tolerância de 7 (sete) dias** contado da data prevista para a cobrança, para que o Usuário regularize o pagamento.
+**5.5.1.** Em caso de falha no pagamento de uma renovação, o acesso às funcionalidades é **encerrado automaticamente** ao término do período já pago, sem prazo de tolerância adicional, sem prejuízo da retenção e posterior eliminação de dados conforme a Seção 6.
  
-**5.5.2.** Encerrado o prazo de tolerância sem regularização, a Kashing poderá **suspender o acesso às funcionalidades** até que o pagamento seja regularizado, sem prejuízo da retenção e posterior eliminação de dados conforme a Seção 7.
+**5.5.2.** O provedor de pagamentos pode tentar novas cobranças da mesma fatura nos dias seguintes; caso uma delas seja aprovada, o acesso é restabelecido normalmente.
  
 **5.5.3. Reajuste de preços.** Eventuais reajustes de preço dos planos serão comunicados ao Usuário com **antecedência mínima de 30 (trinta) dias**, contados antes da data em que o novo valor passará a ser cobrado.
  
-**5.5.4. Mudança de plano.** Alterações de plano (upgrade ou downgrade) realizadas pelo Usuário têm **efeito imediato** sobre os limites e funcionalidades disponíveis, passando a valer instantaneamente após a confirmação da mudança. **Não há cobrança proporcional (pro rata)** pela diferença de valor entre planos: o novo valor da assinatura passa a ser cobrado **somente a partir da próxima renovação**, mantendo-se até lá o valor referente ao plano vigente no início do ciclo atual.
+**5.5.4. Mudança de plano.**
+ 
+- **Upgrade** — plano com mais recursos, ou troca do ciclo mensal para o anual dentro do mesmo plano — tem **efeito imediato**: os novos recursos ficam disponíveis na hora, e a **diferença proporcional** ao tempo restante do ciclo atual é **cobrada imediatamente** no cartão cadastrado.
+- **Downgrade** — plano com menos recursos, ou troca do ciclo anual para o mensal dentro do mesmo plano — é **agendado**: os recursos e limites do plano atual permanecem disponíveis até o fim do período já pago, e a troca só passa a valer na renovação seguinte, sem cobrança ou crédito adicional.
  
 **5.6. Limites por plano.** Os limites de uso de cada plano (por exemplo, quantidade de produtos ou de usuários) são apresentados na página de contratação e podem ser consultados a qualquer tempo.
 
@@ -158,6 +161,23 @@ deva reter por obrigação legal (ver Política de Privacidade).
 6.4. **Suspensão e exclusão por violação.** A Kashing poderá **suspender ou excluir** contas que
 descumpram estes Termos, pratiquem atos ilícitos ou fraudulentos, ou usem a plataforma de forma indevida,
 **sem que isso gere direito a indenização**.
+
+6.5. **Encerramento de conta pelo Usuário.** O proprietário da conta pode solicitar o encerramento em
+**Configurações > Perfil**. Diferente do cancelamento (cláusula 6.1), o encerramento abrange **a conta
+inteira** — o usuário e todos os seus estabelecimentos vinculados.
+
+- (a) **Carência de 30 (trinta) dias.** A partir da solicitação inicia-se uma carência de 30 dias, durante a
+  qual a conta fica **bloqueada para uso**, sendo permitido apenas **exportar os dados** ou **reativar a
+  conta**. A solicitação é **reversível** enquanto a carência não vence; decorrido o prazo, a
+  exclusão/anonimização é executada e **não pode ser desfeita**.
+- (b) **Assinatura.** Havendo assinatura vigente, ela é **cancelada imediatamente**. Não há reembolso do
+  período restante, ressalvado o direito de arrependimento da cláusula 5.4 (7 dias). O Usuário pode optar por
+  **iniciar a carência de imediato** ou **apenas ao fim do período já pago**. A reativação da conta **não
+  restabelece a assinatura** — é necessária nova contratação.
+- (c) **Retenção legal.** Os dados **sem base legal de guarda** são eliminados ao fim da carência; os dados
+  sujeitos a **obrigação legal** (fiscais/contábeis e registros de acesso) são retidos, sem uso ativo, pelos
+  prazos previstos na [Política de Privacidade](/politica-de-privacidade), e então eliminados ou anonimizados
+  definitivamente.
 
 ---
 

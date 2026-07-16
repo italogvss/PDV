@@ -12,4 +12,8 @@ public enum AuditAction
     CustomerDeactivated,
     EmployeeDeactivated,
     RolePermissionsChanged,
+
+    // Registros de acesso (Marco Civil art. 15). Retenção de 6 meses (ver RetentionPolicy).
+    UserLoggedIn,
+    UserLoggedOut,
 }

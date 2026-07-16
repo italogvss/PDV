@@ -115,5 +115,13 @@
       { "slug": "trocar-de-plano", "title": "Trocar de plano" },
       { "slug": "cancelamento-e-reembolso", "title": "Cancelamento e reembolso" }
     ]
+  },
+  {
+    "slug": "conta",
+    "category": "Conta",
+    "icon": "ManageAccounts",
+    "articles": [
+      { "slug": "excluir-conta", "title": "Encerrar minha conta" }
+    ]
   }
 ]

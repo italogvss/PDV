@@ -716,10 +716,15 @@ recorrências vivas), D5 (apaga tenant ativo), RF-10 (`Active` vencido perde ace
   `invoice.parent.subscription_details`. Ao subir o SDK, confira essas formas por reflexão antes de
   mexer no `StripeWebhookProcessor` — elas já mudaram uma vez.
 - **`invoice.paid` precisa trazer o `pi_`.** A idempotência do `Payment` pago e o casamento com o
-  estorno dependem dele. Se um dia o payload não trouxer `invoice.payments`, o `Payment` cai no
-  fallback `in_` e o `charge.refunded` (que só tem `pi_`) não vai encontrá-lo. Monitorar.
+  estorno dependem dele. **Confirmado com eventos reais: o payload do webhook nunca traz
+  `invoice.payments`** (é expandable, não vem por padrão). Por isso `StripeWebhookProcessor`
+  busca a fatura de novo com `expand` quando `PaymentIntentIdOf` vem vazio
+  (`FetchPaymentIntentIdAsync`) — sem isso, cai no fallback `in_` e o `charge.refunded` (que só
+  tem `pi_`) não acha a linha.
 - **O `IStripeClient` é singleton** e resolvido de forma preguiçosa: sem `Stripe:ApiKey` o **primeiro**
-  request de checkout/troca/cancel dá 500 (config faltando). Webhooks não precisam da ApiKey.
+  request de checkout/troca/cancel dá 500 (config faltando). Desde o fix do `FetchPaymentIntentIdAsync`,
+  o webhook de `invoice.paid` **também** precisa da ApiKey (chama a API de volta) — não é mais
+  verdade que "webhooks não precisam".
 - **`Subscription` nunca é soft-deleted.** Nenhum repositório filtra por `IsActive` — reintroduzir isso
   esconde a assinatura de quem cancelou (junto com o histórico). Foi armadilha antes; não repetir.
 - **Reassinar cancela a assinatura antiga no gateway primeiro** (`DiscardGatewaySubscriptionAsync`) —

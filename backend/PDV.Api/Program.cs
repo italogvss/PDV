@@ -117,6 +117,7 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<IContactMessageService, ContactMessageService>();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
+builder.Services.AddScoped<IAuthEventLogger, AuthEventLogger>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
@@ -126,14 +127,18 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 
 // Assinaturas / cobrança
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<IPaymentHistoryService, PaymentHistoryService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 builder.Services.AddScoped<IBillingWebhookService, BillingWebhookService>();
 builder.Services.AddScoped<PlanSeeder>();
+// Pipeline de exclusão LGPD (strip/purge), usado pelos jobs de background.
+builder.Services.AddScoped<DataDeletionService>();
 builder.Services.AddHostedService<SubscriptionExpiryBackgroundService>();
 builder.Services.AddHostedService<RecurringExpenseRenewalService>();
 builder.Services.AddHostedService<AuditLogCleanupService>();
 builder.Services.AddHostedService<TenantDeletionBackgroundService>();
+builder.Services.AddHostedService<DataPurgeBackgroundService>();
 
 // Gateway de pagamentos (Stripe)
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
@@ -174,6 +179,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IUserTenantRepository, UserTenantRepository>();
 builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>();
 builder.Services.AddScoped<IDataRetentionRepository, DataRetentionRepository>();
+builder.Services.AddScoped<IAccountDeletionRepository, AccountDeletionRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IContactMessageRepository, ContactMessageRepository>();
@@ -205,6 +211,8 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 // Barra tudo (exceto allowlist) enquanto o usuário tiver senha temporária — precisa do User já populado.
 app.UseMiddleware<MustChangePasswordMiddleware>();
+// Barra tudo (exceto exportação/reativação/auth) enquanto a conta estiver em carência de exclusão.
+app.UseMiddleware<AccountDeletionBlockMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

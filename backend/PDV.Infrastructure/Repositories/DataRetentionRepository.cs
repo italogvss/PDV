@@ -22,6 +22,16 @@ public class DataRetentionRepository(AppDbContext context) : IDataRetentionRepos
         var ownerIds = links.Select(l => l.UserId).Distinct().ToList();
         var tenantIds = links.Select(l => l.TenantId).Distinct().ToList();
 
+        // Owners com encerramento de conta EXPLÍCITO em curso: o prazo das lojas deles é gerido pelo
+        // fluxo de exclusão (ScheduleAccountDeletionForOwnerAsync), não pela assinatura. Pular aqui
+        // evita que este job sobrescreva/limpe o ScheduledDeletionAt explícito — crítico no Path B, em
+        // que a assinatura Canceled ainda dá acesso (AccessLostAt null limparia o agendamento).
+        var deletionOwners = (await context.Users
+            .Where(u => ownerIds.Contains(u.Id) && u.AccountDeletionRequestedAt != null)
+            .Select(u => u.Id)
+            .ToListAsync())
+            .ToHashSet();
+
         // Uma assinatura por usuário (índice único em UserId) — o dicionário não colide.
         var subscriptions = await context.Subscriptions
             .Where(s => ownerIds.Contains(s.UserId))
@@ -41,6 +51,9 @@ public class DataRetentionRepository(AppDbContext context) : IDataRetentionRepos
         {
             var tenant = tenants.FirstOrDefault(t => t.Id == link.TenantId);
             if (tenant is null) continue;
+
+            // Encerramento de conta explícito gerencia o prazo — não sobrescrever (ver acima).
+            if (deletionOwners.Contains(link.UserId)) continue;
 
             // Loja encerrada pelo próprio dono já tem prazo definido em TenantService — não mexer.
             if (!tenant.IsActive) continue;
@@ -85,6 +98,55 @@ public class DataRetentionRepository(AppDbContext context) : IDataRetentionRepos
             tenant.ScheduledDeletionAt = null;
             tenant.UpdatedAt = DateTime.UtcNow;
         }
+    }
+
+    public async Task<int> ScheduleAccountDeletionForOwnerAsync(Guid userId, DateTime deleteAt)
+    {
+        var tenants = await OwnerActiveTenantsAsync(userId);
+        var now = DateTime.UtcNow;
+        foreach (var tenant in tenants)
+        {
+            tenant.ScheduledDeletionAt = deleteAt;
+            tenant.UpdatedAt = now;
+        }
+
+        if (tenants.Count > 0) await context.SaveChangesAsync();
+        return tenants.Count;
+    }
+
+    public async Task<int> ClearAccountDeletionForOwnerAsync(Guid userId)
+    {
+        var tenants = await OwnerActiveTenantsAsync(userId);
+        var now = DateTime.UtcNow;
+        var cleared = 0;
+        foreach (var tenant in tenants)
+        {
+            if (tenant.ScheduledDeletionAt is null) continue;
+            tenant.ScheduledDeletionAt = null;
+            tenant.UpdatedAt = now;
+            cleared++;
+        }
+
+        if (cleared > 0) await context.SaveChangesAsync();
+        return cleared;
+    }
+
+    // Lojas ATIVAS de um Owner. Lojas inativas (encerradas manualmente) têm prazo próprio e ficam de
+    // fora tanto do agendamento quanto da reversão de encerramento de conta.
+    private async Task<List<Tenant>> OwnerActiveTenantsAsync(Guid userId)
+    {
+        var tenantIds = await context.UserTenants
+            .Where(ut => ut.UserId == userId && ut.Role == UserRole.Owner)
+            .Select(ut => ut.TenantId)
+            .ToListAsync();
+
+        if (tenantIds.Count == 0) return [];
+
+        // IgnoreQueryFilters: sem tenant context aqui, o filtro global esconderia as lojas.
+        return await context.Tenants
+            .IgnoreQueryFilters()
+            .Where(t => tenantIds.Contains(t.Id) && t.IsActive)
+            .ToListAsync();
     }
 
     // null = o Owner tem plano válido, nada a excluir. Sem assinatura alguma (nunca assinou nem fez

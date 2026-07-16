@@ -24,6 +24,7 @@ public class AuthService(
     ITenantRoleRepository roleRepository,
     IStorageService storage,
     IOAuthProvider oauthProvider,
+    IAuthEventLogger authEventLogger,
     IValidator<ChangePasswordRequest> changePasswordValidator) : IAuthService
 {
     public async Task<(string AccessToken, string RefreshToken)> LoginWithGoogleAsync(
@@ -96,6 +97,8 @@ public class AuthService(
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
 
+        await authEventLogger.LogAsync(user.Id, user.Name, tenantId, AccessEvent.LoggedIn);
+
         return (GenerateToken(user.Id, tenantId, user.Name, role), rawRefreshToken);
     }
 
@@ -132,6 +135,8 @@ public class AuthService(
         user.RefreshTokenExpiry = null;
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user);
+
+        await authEventLogger.LogAsync(user.Id, user.Name, user.LastTenantId, AccessEvent.LoggedOut);
     }
 
     public async Task<MeResponse> GetMeAsync(Guid userId, string role, Guid? tenantId)
@@ -248,6 +253,8 @@ public class AuthService(
         var accessToken = localAuth.MustChangePassword
             ? GenerateToken(user.Id, tenantId, user.Name, role, mustChangePassword: true)
             : GenerateToken(user.Id, tenantId, user.Name, role);
+
+        await authEventLogger.LogAsync(user.Id, user.Name, tenantId, AccessEvent.LoggedIn);
 
         return (accessToken, rawRefreshToken);
     }

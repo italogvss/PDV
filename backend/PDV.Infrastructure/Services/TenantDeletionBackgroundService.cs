@@ -2,14 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PDV.Domain.Enums;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
-// Varre diariamente os tenants com exclusão agendada vencida e apaga permanentemente todos
-// os seus dados, exceto ContactMessages (preservados para suporte).
-// IgnoreQueryFilters é obrigatório em todas as queries: o tenant pode estar com IsActive = false
-// e os registros de entidades com soft-delete ficam ocultos pelos filtros globais.
+// Etapa "strip" do pipeline de exclusão (fim da carência). Varre diariamente:
+//   1. Contas com exclusão vencida (AccountDeletion.Requested, ScheduledDeletionAt <= now) → anonimiza
+//      o User e faz o strip de todas as lojas do Owner.
+//   2. Lojas restantes com ScheduledDeletionAt vencido (retenção passiva / encerramento de loja
+//      avulsa) → strip da loja.
+// O strip NÃO apaga o Tenant nem os dados fiscais: eles ficam em legal-hold (Tenant.LegalHoldUntil)
+// por 5 anos, e o DataPurgeBackgroundService faz o hard-delete definitivo depois.
 public class TenantDeletionBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<TenantDeletionBackgroundService> logger) : BackgroundService
@@ -32,161 +36,47 @@ public class TenantDeletionBackgroundService(
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var pipeline = scope.ServiceProvider.GetRequiredService<DataDeletionService>();
+            var now = DateTime.UtcNow;
 
-            // ScheduledDeletionAt é o único sinal: a loja continua ATIVA durante a retenção pós-perda
-            // de acesso (o dono ainda entra para exportar os dados ou reassinar), então filtrar por
-            // IsActive deixaria de excluir justamente esses casos. DataRetentionRepository limpa o
-            // agendamento assim que o plano volta a valer.
-            // IgnoreQueryFilters: tenants inativos são ocultos pelos query filters globais.
-            var due = await db.Tenants
+            // 1. Encerramento de conta: anonimiza o User + strip de todas as lojas do Owner.
+            var dueAccounts = await db.AccountDeletions
+                .Where(a => a.Status == AccountDeletionStatus.Requested && a.ScheduledDeletionAt <= now)
+                .ToListAsync(ct);
+
+            foreach (var ledger in dueAccounts)
+            {
+                // Captura as lojas ANTES do strip (que apaga os vínculos UserTenant).
+                var tenantIds = await db.UserTenants
+                    .Where(ut => ut.UserId == ledger.UserId && ut.Role == UserRole.Owner)
+                    .Select(ut => ut.TenantId)
+                    .ToListAsync(ct);
+
+                foreach (var tenantId in tenantIds)
+                    await pipeline.StripTenantAsync(tenantId, now, ct);
+
+                await pipeline.StripAccountAsync(ledger, tenantIds, now, ct);
+                logger.LogInformation(
+                    "Encerramento de conta efetivado: user {UserId} anonimizado; {Count} loja(s) em legal-hold.",
+                    ledger.UserId, tenantIds.Count);
+            }
+
+            // 2. Lojas restantes (o strip acima já zerou o ScheduledDeletionAt das lojas de conta).
+            var dueTenants = await db.Tenants
                 .IgnoreQueryFilters()
-                .Where(t => t.ScheduledDeletionAt != null && t.ScheduledDeletionAt <= DateTime.UtcNow)
+                .Where(t => t.ScheduledDeletionAt != null && t.ScheduledDeletionAt <= now)
                 .Select(t => t.Id)
                 .ToListAsync(ct);
 
-            foreach (var tenantId in due)
+            foreach (var tenantId in dueTenants)
             {
-                await DeleteTenantDataAsync(db, tenantId, ct);
-                logger.LogInformation("Tenant {TenantId} excluído permanentemente.", tenantId);
+                await pipeline.StripTenantAsync(tenantId, now, ct);
+                logger.LogInformation("Loja {TenantId} em legal-hold (dados fiscais retidos por 5 anos).", tenantId);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Falha ao executar exclusão de tenants agendados.");
+            logger.LogError(ex, "Falha ao executar o strip de exclusão agendada.");
         }
-    }
-
-    private static async Task DeleteTenantDataAsync(AppDbContext db, Guid tenantId, CancellationToken ct)
-    {
-        // Deleção em ordem reversa de dependência FK.
-        // IgnoreQueryFilters necessário em cada query — registros inativos são invisíveis pelos filtros globais.
-
-        // AppointmentServiceItem não tem TenantId direto — filtra via AppointmentId
-        var appointmentIds = await db.Appointments
-            .IgnoreQueryFilters()
-            .Where(a => a.TenantId == tenantId)
-            .Select(a => a.Id)
-            .ToListAsync(ct);
-
-        if (appointmentIds.Count > 0)
-        {
-            await db.AppointmentServiceItems
-                .Where(x => appointmentIds.Contains(x.AppointmentId))
-                .ExecuteDeleteAsync(ct);
-        }
-
-        await db.Appointments
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        // SaleItem não tem TenantId direto — filtra via SaleId
-        var saleIds = await db.Sales
-            .IgnoreQueryFilters()
-            .Where(s => s.TenantId == tenantId)
-            .Select(s => s.Id)
-            .ToListAsync(ct);
-
-        if (saleIds.Count > 0)
-        {
-            await db.SaleItems
-                .Where(x => saleIds.Contains(x.SaleId))
-                .ExecuteDeleteAsync(ct);
-        }
-
-        await db.Sales
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Expenses
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.EmployeeSalaryLinks
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.MediaFiles
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.AuditLogs
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Products
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.ProductCategories
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Services
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.ServiceCategories
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Customers
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Suppliers
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        // TenantRolePermission não tem TenantId direto — filtra via TenantRoleId
-        var roleIds = await db.TenantRoles
-            .IgnoreQueryFilters()
-            .Where(r => r.TenantId == tenantId)
-            .Select(r => r.Id)
-            .ToListAsync(ct);
-
-        if (roleIds.Count > 0)
-        {
-            await db.TenantRolePermissions
-                .Where(x => roleIds.Contains(x.TenantRoleId))
-                .ExecuteDeleteAsync(ct);
-        }
-
-        await db.TenantRoles
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.Employees
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.UserTenants
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        await db.TenantSettings
-            .IgnoreQueryFilters()
-            .Where(x => x.TenantId == tenantId)
-            .ExecuteDeleteAsync(ct);
-
-        // ContactMessages NÃO são deletados — preservados para suporte interno.
-
-        await db.Tenants
-            .IgnoreQueryFilters()
-            .Where(x => x.Id == tenantId)
-            .ExecuteDeleteAsync(ct);
     }
 }

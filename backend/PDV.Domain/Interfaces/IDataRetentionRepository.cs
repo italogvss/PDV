@@ -15,4 +15,14 @@ public interface IDataRetentionRepository
     // de exclusão sumir imediatamente em vez de só na próxima passada do job. NÃO chama SaveChanges —
     // participa da mesma transação atômica de quem chamou (CG-12).
     Task ClearScheduledDeletionForOwnerAsync(Guid userId);
+
+    // Encerramento de conta EXPLÍCITO: agenda a exclusão de TODAS as lojas ativas do Owner para
+    // `deleteAt` (= início da carência + 30 dias), independente do estado da assinatura. O reconciliador
+    // (SyncScheduledDeletionAsync) não sobrescreve isso porque pula owners com AccountDeletionRequestedAt.
+    // Chama SaveChanges. Retorna quantas lojas foram agendadas.
+    Task<int> ScheduleAccountDeletionForOwnerAsync(Guid userId, DateTime deleteAt);
+
+    // Reversão do encerramento de conta: limpa o ScheduledDeletionAt das lojas ativas do Owner. Chama
+    // SaveChanges. Retorna quantas foram limpas.
+    Task<int> ClearAccountDeletionForOwnerAsync(Guid userId);
 }

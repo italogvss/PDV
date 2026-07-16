@@ -20,6 +20,14 @@ public class User : BaseEntity
 
     public bool HasUsedTrial { get; set; }
 
+    // Encerramento de conta (LGPD). RequestedAt é o discriminador que o reconciliador de retenção
+    // respeita (DataRetentionRepository) — enquanto preenchido, o prazo de exclusão é gerido
+    // explicitamente e não pode ser sobrescrito pelo job de assinatura. EffectiveAt é o início da
+    // carência bloqueada (now no "excluir agora"; CurrentPeriodEnd no "agendar p/ fim do plano"): o
+    // AccountDeletionBlockMiddleware bloqueia o uso quando now >= EffectiveAt.
+    public DateTime? AccountDeletionRequestedAt { get; set; }
+    public DateTime? AccountDeletionEffectiveAt { get; set; }
+
     public LocalAuth? LocalAuth { get; set; }
     public ICollection<ExternalAuth> ExternalLogins { get; set; } = [];
     public ICollection<UserTenant> UserTenants { get; set; } = [];

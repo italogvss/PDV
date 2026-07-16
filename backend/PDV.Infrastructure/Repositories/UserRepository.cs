@@ -33,6 +33,13 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public Task<User?> GetByRefreshTokenAsync(string hashedRefreshToken) =>
         WithIncludes().FirstOrDefaultAsync(u => u.RefreshToken == hashedRefreshToken);
 
+    // Projeção por PK, sem includes — leve o bastante para rodar em todo request autenticado.
+    public Task<DateTime?> GetAccountDeletionEffectiveAtAsync(Guid userId) =>
+        context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.AccountDeletionEffectiveAt)
+            .FirstOrDefaultAsync();
+
     public async Task AddAsync(User user)
     {
         context.Users.Add(user);

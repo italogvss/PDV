@@ -23,9 +23,13 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasIndex(p => p.UserId);
         builder.HasIndex(p => p.GatewayChargeId);
 
+        // Restrict (não Cascade): o histórico de Payment é retido por 5 anos (obrigação fiscal), então
+        // apagar o User NÃO pode levar as cobranças junto. No encerramento de conta o User é anonimizado
+        // in-place; o expurgo de 5 anos apaga os Payments ANTES do User. UserId é obrigatório, logo
+        // SetNull não serve — Restrict é o comportamento correto.
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(p => p.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

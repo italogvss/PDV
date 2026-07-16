@@ -187,6 +187,23 @@ deva reter por obrigação legal (ver Política de Privacidade).
 descumpram estes Termos, pratiquem atos ilícitos ou fraudulentos, ou usem a plataforma de forma indevida,
 **sem que isso gere direito a indenização**.
 
+6.5. **Encerramento de conta pelo Usuário.** O proprietário da conta pode solicitar o encerramento em
+**Configurações > Perfil**. Diferente do cancelamento (cláusula 6.1), o encerramento abrange **a conta
+inteira** — o usuário e todos os seus estabelecimentos vinculados.
+
+- (a) **Carência de 30 (trinta) dias.** A partir da solicitação inicia-se uma carência de 30 dias, durante a
+  qual a conta fica **bloqueada para uso**, sendo permitido apenas **exportar os dados** ou **reativar a
+  conta**. A solicitação é **reversível** enquanto a carência não vence; decorrido o prazo, a
+  exclusão/anonimização é executada e **não pode ser desfeita**.
+- (b) **Assinatura.** Havendo assinatura vigente, ela é **cancelada imediatamente**. Não há reembolso do
+  período restante, ressalvado o direito de arrependimento da cláusula 5.4 (7 dias). O Usuário pode optar por
+  **iniciar a carência de imediato** ou **apenas ao fim do período já pago**. A reativação da conta **não
+  restabelece a assinatura** — é necessária nova contratação.
+- (c) **Retenção legal.** Os dados **sem base legal de guarda** são eliminados ao fim da carência; os dados
+  sujeitos a **obrigação legal** (fiscais/contábeis e registros de acesso) são retidos, sem uso ativo, pelos
+  prazos previstos na [Política de Privacidade](/politica-de-privacidade), e então eliminados ou anonimizados
+  definitivamente.
+
 > **Revisar:** definir se a suspensão/exclusão por violação ocorre **com** ou **sem aviso prévio**. O padrão
 > mais protetivo para o prestador é permitir a ação imediata em casos graves (fraude, ilícito), com aviso
 > nos demais casos. Recomendo alinhar com um advogado por causa do CDC.
