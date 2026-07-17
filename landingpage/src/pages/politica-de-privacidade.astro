@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
-import { Content } from '../../../docs/politica-de-privacidade.md';
 ---
 
 <Layout
@@ -14,7 +13,9 @@ import { Content } from '../../../docs/politica-de-privacidade.md';
   <main>
     <section class="legal">
       <div class="container legal-prose">
-        <Content />
+        <div id="legal-content" data-slug="politica-de-privacidade">
+          <p class="legal-loading">Carregando…</p>
+        </div>
       </div>
     </section>
   </main>
@@ -22,11 +23,37 @@ import { Content } from '../../../docs/politica-de-privacidade.md';
   <Footer />
 </Layout>
 
+<script>
+  import { marked } from 'marked';
+
+  const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:5000/api';
+  const container = document.getElementById('legal-content');
+  const slug = container?.dataset.slug;
+
+  if (container && slug) {
+    fetch(`${apiUrl}/legal/${slug}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((doc: { content: string }) => {
+        container.innerHTML = marked.parse(doc.content) as string;
+      })
+      .catch(() => {
+        container.innerHTML = '<p class="legal-error">Não foi possível carregar o conteúdo agora. Tente novamente em instantes.</p>';
+      });
+  }
+</script>
+
 <style>
   .legal { padding-block: var(--space-10) var(--space-14); }
   .legal-prose {
     max-width: 46rem;
     margin-inline: auto;
+  }
+  .legal-loading,
+  .legal-error {
+    color: var(--color-text-muted);
   }
   .legal-prose :global(h1) {
     font-size: clamp(var(--text-3xl), 5vw, var(--text-4xl));

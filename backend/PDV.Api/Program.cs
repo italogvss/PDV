@@ -103,6 +103,10 @@ builder.Services.AddAuthorization();
 var frontendUrl = builder.Configuration["FRONTEND_URL"]
     ?? throw new InvalidOperationException("FRONTEND_URL não configurado.");
 
+// Landing page (site estático separado) — só consome o endpoint público de documentos legais,
+// sem cookies. Origem opcional: sem ela, o endpoint segue funcionando para chamadas same-origin/sem CORS.
+var landingUrl = builder.Configuration["LANDING_URL"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -110,6 +114,12 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
+
+    options.AddPolicy("PublicLegal", policy =>
+    {
+        if (!string.IsNullOrWhiteSpace(landingUrl))
+            policy.WithOrigins(landingUrl).AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
 // Validators
@@ -141,6 +151,7 @@ builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<IAuthEventLogger, AuthEventLogger>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<ILegalDocumentService, LegalDocumentService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IOAuthProvider, GoogleOAuthProvider>();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
@@ -153,6 +164,7 @@ builder.Services.AddScoped<IPaymentHistoryService, PaymentHistoryService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 builder.Services.AddScoped<IBillingWebhookService, BillingWebhookService>();
 builder.Services.AddScoped<PlanSeeder>();
+builder.Services.AddScoped<LegalDocumentSeeder>();
 // Pipeline de exclusão LGPD (strip/purge), usado pelos jobs de background.
 builder.Services.AddScoped<DataDeletionService>();
 builder.Services.AddHostedService<SubscriptionExpiryBackgroundService>();
@@ -202,6 +214,7 @@ builder.Services.AddScoped<IBillingWebhookRepository, BillingWebhookRepository>(
 builder.Services.AddScoped<IDataRetentionRepository, DataRetentionRepository>();
 builder.Services.AddScoped<IAccountDeletionRepository, AccountDeletionRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+builder.Services.AddScoped<ILegalDocumentRepository, LegalDocumentRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IContactMessageRepository, ContactMessageRepository>();
 
@@ -219,6 +232,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     await scope.ServiceProvider.GetRequiredService<PlanSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<LegalDocumentSeeder>().SeedAsync();
 }
 
 if (app.Environment.IsDevelopment())

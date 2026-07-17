@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminService } from '../services/admin.service'
-import type { AnnouncementPayload, UpdatePlanPayload } from '../types/admin.types'
+import type { AnnouncementPayload, CreateCouponPayload, UpdatePlanPayload } from '../types/admin.types'
 import { useAppSelector } from '../../store'
 import { useToast } from '../../hooks/useToast'
 import { useApiError } from '../../hooks/useApiError'
@@ -10,10 +10,12 @@ const KEYS = {
   subscriptions: ['admin', 'subscriptions'] as const,
   payments: ['admin', 'payments'] as const,
   plans: ['admin', 'plans'] as const,
+  coupons: ['admin', 'coupons'] as const,
   webhooks: ['admin', 'webhook-events'] as const,
   config: ['admin', 'config'] as const,
   contactMessages: ['admin', 'contact-messages'] as const,
   announcements: ['admin', 'announcements'] as const,
+  legalDocuments: ['admin', 'legal-documents'] as const,
   health: ['admin', 'health'] as const,
   systemLogs: ['admin', 'system-logs'] as const,
   platformEvents: ['admin', 'platform-events'] as const,
@@ -89,6 +91,39 @@ export function useDeactivatePlan() {
   })
 }
 
+export function useAdminCoupons() {
+  const enabled = useIsAdmin()
+  return useQuery({ queryKey: KEYS.coupons, queryFn: () => adminService.getCoupons(), enabled })
+}
+
+export function useCreateCoupon() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (payload: CreateCouponPayload) => adminService.createCoupon(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.coupons })
+      showToast('Cupom criado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao criar o cupom.'),
+  })
+}
+
+export function useDeactivateCoupon() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: (promotionCodeId: string) => adminService.deactivateCoupon(promotionCodeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.coupons })
+      showToast('Cupom desativado.', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao desativar o cupom.'),
+  })
+}
+
 // ── Fase 3: Suporte & Conteúdo ────────────────────────────────────────────────────────────────
 
 export function useAdminContactMessages() {
@@ -155,6 +190,26 @@ export function useDeactivateAnnouncement() {
       showToast('Anúncio removido.', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao remover o anúncio.'),
+  })
+}
+
+export function useAdminLegalDocuments() {
+  const enabled = useIsAdmin()
+  return useQuery({ queryKey: KEYS.legalDocuments, queryFn: () => adminService.getLegalDocuments(), enabled })
+}
+
+export function useUpdateLegalDocument() {
+  const queryClient = useQueryClient()
+  const showToast = useToast()
+  const handleError = useApiError()
+  return useMutation({
+    mutationFn: ({ type, content }: { type: string; content: string }) =>
+      adminService.updateLegalDocument(type, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.legalDocuments })
+      showToast('Documento atualizado com sucesso!', 'success')
+    },
+    onError: (error) => handleError(error, 'Erro ao atualizar o documento.'),
   })
 }
 

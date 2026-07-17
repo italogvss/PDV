@@ -5,7 +5,9 @@ import type {
   AdminAnnouncement,
   AdminConfig,
   AdminContactMessage,
+  AdminCoupon,
   AdminHealth,
+  AdminLegalDocument,
   AdminOverview,
   AdminPaginated,
   AdminPayment,
@@ -16,6 +18,7 @@ import type {
   AdminSystemLog,
   AdminWebhookEvent,
   AnnouncementPayload,
+  CreateCouponPayload,
   UpdatePlanPayload,
 } from '../types/admin.types'
 
@@ -49,6 +52,20 @@ export const adminService = {
 
   deactivatePlan: async (id: string): Promise<void> => {
     await api.delete(`/admin/plans/${id}`)
+  },
+
+  getCoupons: async (): Promise<AdminCoupon[]> => {
+    const { data } = await api.get<AdminCoupon[]>('/admin/coupons')
+    return data
+  },
+
+  createCoupon: async (payload: CreateCouponPayload): Promise<AdminCoupon> => {
+    const { data } = await api.post<AdminCoupon>('/admin/coupons', payload)
+    return data
+  },
+
+  deactivateCoupon: async (promotionCodeId: string): Promise<void> => {
+    await api.delete(`/admin/coupons/${promotionCodeId}`)
   },
 
   getWebhookEvents: async (
@@ -97,6 +114,16 @@ export const adminService = {
 
   deactivateAnnouncement: async (id: string): Promise<void> => {
     await api.delete(`/admin/announcements/${id}`)
+  },
+
+  getLegalDocuments: async (): Promise<AdminLegalDocument[]> => {
+    const { data } = await api.get<AdminLegalDocument[]>('/admin/legal-documents')
+    return data
+  },
+
+  updateLegalDocument: async (type: string, content: string): Promise<AdminLegalDocument> => {
+    const { data } = await api.put<AdminLegalDocument>(`/admin/legal-documents/${type}`, { content })
+    return data
   },
 
   // ── Fase 4: Observabilidade ─────────────────────────────────────────────────────────────────

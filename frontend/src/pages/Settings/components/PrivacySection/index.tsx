@@ -1,16 +1,10 @@
-import { useEffect, useState } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import SettingCard from '../../../../components/SettingCard'
 import MarkdownRenderer from '../../../../components/MarkdownRenderer'
+import { useLegalDocument } from '../../../../hooks/useLegalDocument'
 
 export default function PrivacySection() {
-  const [content, setContent] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/legal/politica-de-privacidade.md')
-      .then((r) => r.text())
-      .then(setContent)
-  }, [])
+  const { data: content } = useLegalDocument('politica-de-privacidade')
 
   return (
     <SettingCard

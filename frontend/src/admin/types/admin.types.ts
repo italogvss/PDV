@@ -112,6 +112,36 @@ export interface UpdatePlanPayload {
   priceCents: number
 }
 
+// ── Cupons ────────────────────────────────────────────────────────────────────────────────────
+// Sem entidade local: o Stripe é a fonte da verdade (Coupon + Promotion Code).
+
+export interface AdminCoupon {
+  promotionCodeId: string
+  couponId: string
+  code: string
+  name: string | null
+  percentOff: number | null
+  amountOffCents: number | null
+  duration: string // 'once' | 'repeating' | 'forever'
+  durationInMonths: number | null
+  maxRedemptions: number | null
+  timesRedeemed: number
+  expiresAt: string | null
+  active: boolean
+  createdAt: string
+}
+
+export interface CreateCouponPayload {
+  code: string
+  name: string | null
+  percentOff: number | null
+  amountOffCents: number | null
+  duration: string
+  durationInMonths: number | null
+  maxRedemptions: number | null
+  expiresAt: string | null
+}
+
 // ── Fase 3: Suporte & Conteúdo ────────────────────────────────────────────────────────────────
 
 export interface AdminContactMessage {
@@ -164,6 +194,15 @@ export interface AnnouncementPayload {
   targetPlanCode: string | null
   targetRole: string | null
   priority: number
+}
+
+// ── Conteúdo Legal ────────────────────────────────────────────────────────────────────────────
+
+export interface AdminLegalDocument {
+  id: string
+  type: string // "TermsOfUse" | "PrivacyPolicy"
+  content: string
+  updatedAt: string
 }
 
 // ── Fase 4: Observabilidade ───────────────────────────────────────────────────────────────────

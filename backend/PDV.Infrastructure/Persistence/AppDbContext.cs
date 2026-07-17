@@ -57,6 +57,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     // qualquer contexto de tenant (inclusive nos hosted services).
     public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
 
+    // Documentos legais (Termos de Uso, Política de Privacidade). GLOBAL — sem query filter:
+    // compartilhados entre todos os tenants, igual a Announcement.
+    public DbSet<LegalDocument> LegalDocuments => Set<LegalDocument>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

@@ -3,11 +3,13 @@ import {
   WorkspacePremiumOutlined,
   PaidOutlined,
   LayersOutlined,
+  LocalOfferOutlined,
   WebhookOutlined,
   SupportAgentOutlined,
   CampaignOutlined,
   MonitorHeartOutlined,
   GavelOutlined,
+  DescriptionOutlined,
 } from '@mui/icons-material'
 import type { NavSection } from '../../layouts/DashboardLayout/constants'
 
@@ -24,9 +26,11 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { label: 'Assinaturas', path: '/admin/assinaturas', icon: WorkspacePremiumOutlined },
       { label: 'Pagamentos', path: '/admin/pagamentos', icon: PaidOutlined },
       { label: 'Planos', path: '/admin/planos', icon: LayersOutlined },
+      { label: 'Cupons', path: '/admin/cupons', icon: LocalOfferOutlined },
       { label: 'Webhooks', path: '/admin/webhooks', icon: WebhookOutlined },
       { label: 'Suporte', path: '/admin/suporte', icon: SupportAgentOutlined },
       { label: 'Anúncios', path: '/admin/anuncios', icon: CampaignOutlined },
+      { label: 'Documentos Legais', path: '/admin/documentos-legais', icon: DescriptionOutlined },
       { label: 'Conformidade', path: '/admin/conformidade', icon: GavelOutlined },
       { label: 'Observabilidade', path: '/admin/observabilidade', icon: MonitorHeartOutlined },
     ],

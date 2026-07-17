@@ -34,6 +34,7 @@ public class StripeGateway(IStripeClient client, ILogger<StripeGateway> logger) 
     private readonly RefundService _refunds = new(client);
     private readonly PriceService _prices = new(client);
     private readonly PromotionCodeService _promotionCodes = new(client);
+    private readonly CouponService _coupons = new(client);
 
     // -----------------------------------------------------------------------
     // Cliente
@@ -300,6 +301,67 @@ public class StripeGateway(IStripeClient client, ILogger<StripeGateway> logger) 
             throw Wrap(ex, nameof(PriceExistsAsync));
         }
     }
+
+    // -----------------------------------------------------------------------
+    // Cupons
+    // -----------------------------------------------------------------------
+
+    // Cria os dois objetos que o Stripe usa pra modelar desconto: o Coupon (a regra, imutável) e o
+    // Promotion Code (o texto que o cliente digita no checkout, aponta pro Coupon). Se o Promotion
+    // Code falhar, o Coupon fica órfão no Stripe — inofensivo, não sustenta nenhum desconto sozinho.
+    public async Task<CouponResult> CreateCouponAsync(CreateCouponRequest request, CancellationToken ct = default)
+    {
+        var coupon = await Guard(() => _coupons.CreateAsync(new CouponCreateOptions
+        {
+            Name = request.Name,
+            PercentOff = request.PercentOff,
+            AmountOff = request.AmountOffCents,
+            Currency = request.AmountOffCents is null ? null : "brl",
+            Duration = request.Duration,
+            DurationInMonths = request.DurationInMonths,
+        }, cancellationToken: ct));
+
+        // Na API atual do Stripe, o Promotion Code não referencia o Coupon direto — ele aponta pra
+        // uma "Promotion" (Type = "coupon") que embrulha o Coupon.
+        var promotionCode = await Guard(() => _promotionCodes.CreateAsync(new PromotionCodeCreateOptions
+        {
+            Promotion = new PromotionCodePromotionOptions { Type = "coupon", Coupon = coupon.Id },
+            Code = request.Code,
+            MaxRedemptions = request.MaxRedemptions,
+            ExpiresAt = request.ExpiresAt,
+        }, cancellationToken: ct));
+
+        return MapCoupon(promotionCode, coupon);
+    }
+
+    public async Task<List<CouponResult>> ListCouponsAsync(CancellationToken ct = default)
+    {
+        var promotionCodes = await Guard(() => _promotionCodes.ListAsync(new PromotionCodeListOptions
+        {
+            Limit = 100,
+            Expand = ["data.promotion.coupon"],
+        }, cancellationToken: ct));
+
+        return promotionCodes.Data.Select(pc => MapCoupon(pc, pc.Promotion.Coupon)).ToList();
+    }
+
+    public Task DeactivateCouponAsync(string promotionCodeId, CancellationToken ct = default) =>
+        Guard(() => _promotionCodes.UpdateAsync(promotionCodeId, new PromotionCodeUpdateOptions { Active = false }, cancellationToken: ct));
+
+    private static CouponResult MapCoupon(PromotionCode promotionCode, global::Stripe.Coupon coupon) => new(
+        promotionCode.Id,
+        coupon.Id,
+        promotionCode.Code,
+        coupon.Name,
+        coupon.PercentOff,
+        (int?)coupon.AmountOff,
+        coupon.Duration,
+        (int?)coupon.DurationInMonths,
+        (int?)promotionCode.MaxRedemptions,
+        (int)promotionCode.TimesRedeemed,
+        promotionCode.ExpiresAt,
+        promotionCode.Active,
+        promotionCode.Created);
 
     // -----------------------------------------------------------------------
     // Auxiliares

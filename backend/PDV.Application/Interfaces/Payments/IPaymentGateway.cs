@@ -39,4 +39,16 @@ public interface IPaymentGateway
 
     // O preço existe, está ativo e é recorrente? Guarda o checkout contra um catálogo dessincronizado.
     Task<bool> PriceExistsAsync(string priceExternalId, CancellationToken ct = default);
+
+    // -----------------------------------------------------------------------
+    // Cupons — gerenciados só pelo admin (AdminController). O Stripe é a única fonte da
+    // verdade: nada é espelhado em banco local.
+    // -----------------------------------------------------------------------
+
+    Task<CouponResult> CreateCouponAsync(CreateCouponRequest request, CancellationToken ct = default);
+
+    Task<List<CouponResult>> ListCouponsAsync(CancellationToken ct = default);
+
+    // Promotion Code não pode ser deletado no Stripe — desativar é o "remover" (RF: nunca delete físico).
+    Task DeactivateCouponAsync(string promotionCodeId, CancellationToken ct = default);
 }

@@ -55,6 +55,41 @@ public record RefundResult(
     string Status,
     int AmountCents);
 
+// -----------------------------------------------------------------------
+// Cupons — Coupon (regra de desconto, imutável) + Promotion Code (o código
+// que o cliente digita, aponta pra um Coupon). O código é sempre o Promotion
+// Code; o Coupon nunca é exposto fora do gateway.
+// -----------------------------------------------------------------------
+
+public record CreateCouponRequest(
+    string Code,
+    string? Name,
+    // Exatamente um dos dois — validado antes de chegar aqui.
+    decimal? PercentOff,
+    int? AmountOffCents,
+    // "once" | "repeating" | "forever".
+    string Duration,
+    // Obrigatório quando Duration = "repeating".
+    int? DurationInMonths,
+    int? MaxRedemptions,
+    DateTime? ExpiresAt);
+
+public record CouponResult(
+    // promo_... — é este id que ResolvePromotionCodeAsync encontra pelo `Code`.
+    string PromotionCodeId,
+    string CouponId,
+    string Code,
+    string? Name,
+    decimal? PercentOff,
+    int? AmountOffCents,
+    string Duration,
+    int? DurationInMonths,
+    int? MaxRedemptions,
+    int TimesRedeemed,
+    DateTime? ExpiresAt,
+    bool Active,
+    DateTime CreatedAt);
+
 // Tipo normalizado de evento de webhook.
 //
 // Não há `SubscriptionTrialStarted`: o trial é PDV-side e o gateway nunca o conhece.

@@ -32,9 +32,11 @@ import AdminOverviewPage from '../admin/pages/Overview'
 import AdminSubscriptionsPage from '../admin/pages/Subscriptions'
 import AdminPaymentsPage from '../admin/pages/Payments'
 import AdminPlansPage from '../admin/pages/Plans'
+import AdminCouponsPage from '../admin/pages/Coupons'
 import AdminWebhooksPage from '../admin/pages/Webhooks'
 import AdminSupportPage from '../admin/pages/Support'
 import AdminAnnouncementsPage from '../admin/pages/Announcements'
+import AdminLegalDocumentsPage from '../admin/pages/LegalDocuments'
 import AdminObservabilityPage from '../admin/pages/Observability'
 import AdminCompliancePage from '../admin/pages/Compliance'
 
@@ -211,9 +213,11 @@ export const router = createBrowserRouter([
           { path: 'assinaturas', element: <AdminSubscriptionsPage /> },
           { path: 'pagamentos', element: <AdminPaymentsPage /> },
           { path: 'planos', element: <AdminPlansPage /> },
+          { path: 'cupons', element: <AdminCouponsPage /> },
           { path: 'webhooks', element: <AdminWebhooksPage /> },
           { path: 'suporte', element: <AdminSupportPage /> },
           { path: 'anuncios', element: <AdminAnnouncementsPage /> },
+          { path: 'documentos-legais', element: <AdminLegalDocumentsPage /> },
           { path: 'conformidade', element: <AdminCompliancePage /> },
           { path: 'observabilidade', element: <AdminObservabilityPage /> },
         ],

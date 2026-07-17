@@ -69,6 +69,35 @@ public record UpdatePlanRequest(
     string? Description,
     int PriceCents);
 
+// ── Cupons ────────────────────────────────────────────────────────────────────────────────────
+// Espelham 1:1 os campos neutros de CouponResult/CreateCouponRequest (PDV.Application/DTOs/Payments)
+// — o Stripe é a única fonte da verdade, não há entidade local nem persistência.
+
+public record AdminCouponDto(
+    string PromotionCodeId,
+    string CouponId,
+    string Code,
+    string? Name,
+    decimal? PercentOff,
+    int? AmountOffCents,
+    string Duration,
+    int? DurationInMonths,
+    int? MaxRedemptions,
+    int TimesRedeemed,
+    DateTime? ExpiresAt,
+    bool Active,
+    DateTime CreatedAt);
+
+public record AdminCreateCouponRequest(
+    string Code,
+    string? Name,
+    decimal? PercentOff,
+    int? AmountOffCents,
+    string Duration,
+    int? DurationInMonths,
+    int? MaxRedemptions,
+    DateTime? ExpiresAt);
+
 // Métricas agregadas da plataforma para a Visão geral do admin. Valores monetários em centavos.
 public record AdminOverviewDto(
     int MrrCents,                    // receita recorrente mensal (assinaturas Active, anual normalizado /12)
@@ -148,6 +177,16 @@ public record AnnouncementRequest(
     string? TargetPlanCode,
     string? TargetRole,
     int Priority);
+
+// ── Conteúdo Legal ────────────────────────────────────────────────────────────────────────────
+
+public record AdminLegalDocumentDto(
+    Guid Id,
+    string Type,
+    string Content,
+    DateTime UpdatedAt);
+
+public record UpdateLegalDocumentRequest(string Content);
 
 // ── Fase 4: Observabilidade ───────────────────────────────────────────────────────────────────
 

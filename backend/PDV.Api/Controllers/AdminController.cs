@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using PDV.Application.DTOs.Admin;
 using PDV.Application.Interfaces;
+using PDV.Domain.Enums;
 using PDV.Infrastructure.Services.Payments.Stripe;
 
 namespace PDV.Api.Controllers;
@@ -65,6 +66,24 @@ public class AdminController(
         return NoContent();
     }
 
+    // ── Cupons ───────────────────────────────────────────────────────────────────────────────
+
+    [HttpGet("coupons")]
+    public async Task<IActionResult> GetCoupons() =>
+        Ok(await adminService.GetCouponsAsync());
+
+    [HttpPost("coupons")]
+    public async Task<IActionResult> CreateCoupon([FromBody] AdminCreateCouponRequest request) =>
+        Ok(await adminService.CreateCouponAsync(request));
+
+    // O id é o Promotion Code do Stripe (`promo_...`), não um Guid.
+    [HttpDelete("coupons/{id}")]
+    public async Task<IActionResult> DeactivateCoupon(string id)
+    {
+        await adminService.DeactivateCouponAsync(id);
+        return NoContent();
+    }
+
     // ── Fase 3: Suporte & Conteúdo ──────────────────────────────────────────────────────────
 
     [HttpGet("contact-messages")]
@@ -93,6 +112,16 @@ public class AdminController(
         await adminService.DeactivateAnnouncementAsync(id);
         return NoContent();
     }
+
+    // ── Conteúdo Legal ──────────────────────────────────────────────────────────────────────
+
+    [HttpGet("legal-documents")]
+    public async Task<IActionResult> GetLegalDocuments() =>
+        Ok(await adminService.GetLegalDocumentsAsync());
+
+    [HttpPut("legal-documents/{type}")]
+    public async Task<IActionResult> UpdateLegalDocument(LegalDocumentType type, [FromBody] UpdateLegalDocumentRequest request) =>
+        Ok(await adminService.UpdateLegalDocumentAsync(type, request));
 
     // ── Fase 4: Observabilidade ─────────────────────────────────────────────────────────────
 

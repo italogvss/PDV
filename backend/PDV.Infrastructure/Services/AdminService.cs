@@ -6,13 +6,15 @@ using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
+using PDV.Application.DTOs.Payments;
+using PDV.Application.Interfaces.Payments;
 using PDV.Infrastructure.Persistence;
 
 namespace PDV.Infrastructure.Services;
 
 // Serviço admin — SEM tenant context. Acessa entidades globais (cobrança, webhooks, usuários)
 // sem filtro de tenant. Usado exclusivamente pelo AdminController (role Admin).
-public class AdminService(AppDbContext context) : IAdminService
+public class AdminService(AppDbContext context, IPaymentGateway gateway) : IAdminService
 {
     private const int RevenueMonths = 6;
 
@@ -213,6 +215,52 @@ public class AdminService(AppDbContext context) : IAdminService
         await context.SaveChangesAsync();
     }
 
+    // ── Cupons ────────────────────────────────────────────────────────────────────────────────
+    // Sem banco: o Stripe é a fonte da verdade, o service só traduz DTO admin ↔ DTO neutro do gateway.
+
+    public async Task<List<AdminCouponDto>> GetCouponsAsync() =>
+        (await gateway.ListCouponsAsync()).Select(MapCoupon).ToList();
+
+    public async Task<AdminCouponDto> CreateCouponAsync(AdminCreateCouponRequest request)
+    {
+        ValidateCoupon(request);
+
+        var result = await gateway.CreateCouponAsync(new CreateCouponRequest(
+            request.Code,
+            request.Name,
+            request.PercentOff,
+            request.AmountOffCents,
+            request.Duration,
+            request.DurationInMonths,
+            request.MaxRedemptions,
+            request.ExpiresAt));
+
+        return MapCoupon(result);
+    }
+
+    public Task DeactivateCouponAsync(string promotionCodeId) => gateway.DeactivateCouponAsync(promotionCodeId);
+
+    private static void ValidateCoupon(AdminCreateCouponRequest r)
+    {
+        if (string.IsNullOrWhiteSpace(r.Code))
+            throw new BusinessException("Informe o código do cupom.");
+
+        var hasPercent = r.PercentOff is > 0;
+        var hasAmount = r.AmountOffCents is > 0;
+        if (hasPercent == hasAmount)
+            throw new BusinessException("Informe um desconto percentual OU um valor fixo, não os dois.");
+
+        if (r.Duration is not ("once" or "repeating" or "forever"))
+            throw new BusinessException("Duração do cupom inválida.");
+
+        if (r.Duration == "repeating" && r.DurationInMonths is not > 0)
+            throw new BusinessException("Informe por quantos meses o cupom se repete.");
+    }
+
+    private static AdminCouponDto MapCoupon(CouponResult c) => new(
+        c.PromotionCodeId, c.CouponId, c.Code, c.Name, c.PercentOff, c.AmountOffCents,
+        c.Duration, c.DurationInMonths, c.MaxRedemptions, c.TimesRedeemed, c.ExpiresAt, c.Active, c.CreatedAt);
+
     // ── Fase 3: Suporte & Conteúdo ────────────────────────────────────────────────────────────
 
     public async Task<List<AdminContactMessageDto>> GetContactMessagesAsync()
@@ -304,6 +352,27 @@ public class AdminService(AppDbContext context) : IAdminService
         a.IsActive = false;
         a.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
+    }
+
+    // ── Conteúdo Legal ────────────────────────────────────────────────────────────────────────
+
+    public async Task<List<AdminLegalDocumentDto>> GetLegalDocumentsAsync()
+    {
+        var list = await context.LegalDocuments.OrderBy(d => d.Type).ToListAsync();
+        return list.Select(MapLegalDocument).ToList();
+    }
+
+    public async Task<AdminLegalDocumentDto> UpdateLegalDocumentAsync(LegalDocumentType type, UpdateLegalDocumentRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Content)) throw new BusinessException("Informe o conteúdo.");
+
+        var doc = await context.LegalDocuments.FirstOrDefaultAsync(d => d.Type == type)
+            ?? throw new NotFoundException("Documento legal não encontrado.");
+
+        doc.Content = request.Content;
+        doc.UpdatedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+        return MapLegalDocument(doc);
     }
 
     // ── Fase 4: Observabilidade ───────────────────────────────────────────────────────────────
@@ -520,6 +589,9 @@ public class AdminService(AppDbContext context) : IAdminService
             a.IsActive,
             a.CreatedAt,
             a.UpdatedAt);
+
+    private static AdminLegalDocumentDto MapLegalDocument(LegalDocument d) =>
+        new(d.Id, d.Type.ToString(), d.Content, d.UpdatedAt);
 
     private static void ValidateAnnouncement(AnnouncementRequest r)
     {
