@@ -49,7 +49,7 @@ const _baseServiceSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100, 'Não pode ter mais de 100 caracteres'),
   description: z.string().max(300, 'Não pode ter mais de 300 caracteres').optional().or(z.literal('')),
   durationMinutes: z.coerce
-    .number({ invalid_type_error: 'Informe um número' })
+    .number({ error: 'Informe um número' })
     .int()
     .min(1)
     .optional()
@@ -60,6 +60,7 @@ const _baseServiceSchema = z.object({
   costPrice: z.number().min(0).optional().nullable(),
 })
 
+type ServiceFormInput = z.input<typeof _baseServiceSchema>
 type ServiceForm = z.infer<typeof _baseServiceSchema>
 
 function buildServiceSchema(requireCostPrice: boolean) {
@@ -135,7 +136,7 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
     setValue,
     watch,
     formState: { errors },
-  } = useForm<ServiceForm>({
+  } = useForm<ServiceFormInput, unknown, ServiceForm>({
     resolver: zodResolver(schema),
     defaultValues: buildDefaults(),
   })

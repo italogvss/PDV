@@ -18,7 +18,6 @@ export function useUserSettings() {
 export function useUpdateAppearanceSettings() {
   const queryClient = useQueryClient()
   const dispatch = useAppDispatch()
-  const showToast = useToast()
   const handleError = useApiError()
 
   return useMutation({

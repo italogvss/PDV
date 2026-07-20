@@ -42,19 +42,19 @@ const _baseProductSchema = z.object({
   costPrice: z.number().min(0),
   price: z.number().positive('Deve ser maior que zero'),
   stock: z.coerce
-    .number({ invalid_type_error: 'Informe um número' })
+    .number({ error: 'Informe um número' })
     .int()
     .max(9999)
     .min(0, 'Não pode ser negativo'),
   minStock: z.coerce
-    .number({ invalid_type_error: 'Informe um número' })
+    .number({ error: 'Informe um número' })
     .int()
     .min(0)
     .max(9999)
     .optional()
     .or(z.literal('')),
   criticalStock: z.coerce
-    .number({ invalid_type_error: 'Informe um número' })
+    .number({ error: 'Informe um número' })
     .int()
     .min(0)
     .max(9999)
@@ -64,6 +64,7 @@ const _baseProductSchema = z.object({
   categoryId: z.string().optional().nullable(),
 })
 
+type ProductFormInput = z.input<typeof _baseProductSchema>
 type ProductForm = z.infer<typeof _baseProductSchema>
 
 function buildProductSchema(requireCostPrice: boolean) {
@@ -133,7 +134,7 @@ export default function ProductModal({ open, onClose, product }: ProductModalPro
     setValue,
     watch,
     formState: { errors },
-  } = useForm<ProductForm>({
+  } = useForm<ProductFormInput, unknown, ProductForm>({
     resolver: zodResolver(schema),
     defaultValues: buildDefaults(),
   })

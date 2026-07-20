@@ -5,8 +5,11 @@
 
 import type { Components, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
+// Registra os slots dos componentes MUI X (Date/Time Pickers, DataGrid, ...) no tipo
+// `Components<Theme>` — sem isso o TS não reconhece essas chaves de override abaixo.
+import '@mui/x-date-pickers/themeAugmentation';
+import '@mui/x-data-grid/themeAugmentation';
 import { radius } from './shape';
-import { fontSize } from '@mui/system';
 
 export const components = (theme: Theme, scale = 1): Components<Theme> => {
   // Escala os poucos fontSize fixos (em px) de controles que leem/exibem conteúdo,
@@ -388,11 +391,6 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
   MuiSelect: {
     styleOverrides: { select: { padding: '8px 12px' } },
   },
-  MuiDatePicker: {
-    defaultProps: {
-      slotProps: { textField: { size: 'small' } },
-    },
-  },
   MuiPickersTextField: {
     defaultProps: { variant: 'outlined', size: 'small' },
   },
@@ -409,15 +407,6 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
           borderWidth: 1,
         },
         '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.accent[100]}` },
-      },
-    },
-  },
-  MuiPickersInputLabel: {
-    styleOverrides: {
-      root: {
-        fontSize: fs(15),
-        color: theme.palette.text.secondary,
-        '&.Mui-focused': { color: theme.palette.accent[700] },
       },
     },
   },
@@ -752,19 +741,19 @@ export const components = (theme: Theme, scale = 1): Components<Theme> => {
   MuiAlert: {
     styleOverrides: {
       root: { borderRadius: radius.md, fontSize: 13, padding: '10px 14px' },
-      standardSuccess: {
+      colorSuccess: {
         backgroundColor: theme.palette.success.soft,
         color: theme.palette.success.ink,
       },
-      standardWarning: {
+      colorWarning: {
         backgroundColor: theme.palette.warning.soft,
         color: theme.palette.warning.ink,
       },
-      standardError: {
+      colorError: {
         backgroundColor: theme.palette.error.soft,
         color: theme.palette.error.ink,
       },
-      standardInfo: {
+      colorInfo: {
         backgroundColor: theme.palette.info.soft,
         color: theme.palette.info.ink,
       },

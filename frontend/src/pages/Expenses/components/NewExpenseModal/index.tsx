@@ -38,7 +38,7 @@ const schema = z.object({
   amount: z.coerce.number().positive('Deve ser maior que zero'),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   category: z.enum(EXPENSE_CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]], {
-    errorMap: () => ({ message: 'Selecione uma categoria' }),
+    error: 'Selecione uma categoria',
   }),
   isPaid: z.boolean(),
   isRecurring: z.boolean(),
@@ -50,6 +50,7 @@ const schema = z.object({
     .optional(),
 })
 
+type ExpenseFormInput = z.input<typeof schema>
 type ExpenseForm = z.infer<typeof schema>
 
 const emptyDefaults: ExpenseForm = {
@@ -80,7 +81,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
     setValue,
     getValues,
     formState: { errors },
-  } = useForm<ExpenseForm>({
+  } = useForm<ExpenseFormInput, unknown, ExpenseForm>({
     resolver: zodResolver(schema),
     defaultValues: emptyDefaults,
   })
@@ -323,7 +324,7 @@ export default function NewExpenseModal({ open, onClose, expense }: NewExpenseMo
                     type="number"
                     fullWidth
                     placeholder="Ex.: 12"
-                    inputProps={{ min: 1 }}
+                    slotProps={{ htmlInput: { min: 1 } }}
                     error={!!errors.repeatCount}
                     helperText={errors.repeatCount?.message ?? 'Deixe em branco para repetir indefinidamente'}
                   />

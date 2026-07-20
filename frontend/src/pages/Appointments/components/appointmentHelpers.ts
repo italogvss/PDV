@@ -2,7 +2,6 @@ import type { SchedulerEvent, SchedulerEventColor, SchedulerResource } from '@mu
 import dayjs, { type Dayjs } from 'dayjs'
 import type {
   Appointment,
-  AppointmentServiceRef,
   AppointmentStatus,
   Professional,
 } from '../../../types/appointment.types'

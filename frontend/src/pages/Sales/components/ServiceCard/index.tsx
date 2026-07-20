@@ -3,8 +3,6 @@ import { formatBRL } from '../../../../utils/currency'
 import { ServiceCardProps } from './types'
 
 export default function ServiceCard({ service, onAdd }: ServiceCardProps) {
-  const color = service.category?.color ?? '#9e9e9e'
-
   return (
     <Box
       onClick={() => onAdd(service.id)}

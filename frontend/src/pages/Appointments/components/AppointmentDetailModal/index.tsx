@@ -22,7 +22,6 @@ import ModalHeader from '../../../../components/ModalHeader'
 import { formatBRL } from '../../../../utils/currency'
 import {
   formatRange,
-  STATUS_COLOR,
   STATUS_META,
   type StatusTone,
 } from '../appointmentHelpers'
@@ -61,7 +60,6 @@ export default function AppointmentDetailModal({
   if (!data) return null
 
   const meta = STATUS_META[data.status]
-  const color = theme.palette[STATUS_COLOR[data.status]].main
   const start = dayjs(data.start)
   const isClosed = data.status === 'concluido' || data.status === 'cancelado'
   const waDigits = data.customerPhone?.replace(/\D/g, '')
