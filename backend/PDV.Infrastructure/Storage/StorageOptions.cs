@@ -23,4 +23,7 @@ public class StorageOptions
     public bool UseSSL { get; set; }
     public int ReadUrlExpireMinutes { get; set; } = 60;
     public int UploadUrlExpireMinutes { get; set; } = 5;
+
+    /// <summary>Região usada na assinatura SigV4. MinIO aceita qualquer valor fixo; R2 exige "auto".</summary>
+    public string Region { get; set; } = "us-east-1";
 }

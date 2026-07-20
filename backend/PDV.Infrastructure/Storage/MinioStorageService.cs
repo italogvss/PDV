@@ -4,6 +4,7 @@ using Amazon.S3.Util;
 using Amazon.Runtime;
 using Microsoft.Extensions.Options;
 using PDV.Application.Interfaces;
+using System.Net;
 
 namespace PDV.Infrastructure.Storage;
 
@@ -27,17 +28,17 @@ public class MinioStorageService : IStorageService
         _options = options.Value;
         var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
 
-        _opsClient = BuildClient(credentials, _options.Endpoint, _options.UseSSL);
+        _opsClient = BuildClient(credentials, _options.Endpoint, _options.UseSSL, _options.Region);
 
         var publicEndpoint = string.IsNullOrWhiteSpace(_options.PublicEndpoint)
             ? _options.Endpoint
             : _options.PublicEndpoint;
         _presignClient = publicEndpoint == _options.Endpoint
             ? _opsClient
-            : BuildClient(credentials, publicEndpoint, _options.UseSSL);
+            : BuildClient(credentials, publicEndpoint, _options.UseSSL, _options.Region);
     }
 
-    private static IAmazonS3 BuildClient(AWSCredentials credentials, string endpoint, bool useSsl)
+    private static IAmazonS3 BuildClient(AWSCredentials credentials, string endpoint, bool useSsl, string region)
     {
         var config = new AmazonS3Config
         {
@@ -46,7 +47,7 @@ public class MinioStorageService : IStorageService
             // Sem UseHttp explícito o SDK assina as presigned URLs em https mesmo com
             // ServiceURL http — o navegador falharia no handshake TLS contra o MinIO (http).
             UseHttp = !useSsl,
-            AuthenticationRegion = "us-east-1",
+            AuthenticationRegion = region,
         };
         return new AmazonS3Client(credentials, config);
     }
@@ -87,6 +88,34 @@ public class MinioStorageService : IStorageService
 
     public Task DeleteAsync(string bucket, string relativePath, CancellationToken ct = default) =>
         _opsClient.DeleteObjectAsync(bucket, relativePath, ct);
+
+    public async Task<long?> GetObjectSizeAsync(string bucket, string relativePath, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await _opsClient.GetObjectMetadataAsync(bucket, relativePath, ct);
+            return response.ContentLength;
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public async Task<byte[]> GetObjectHeadBytesAsync(string bucket, string relativePath, int byteCount, CancellationToken ct = default)
+    {
+        var request = new GetObjectRequest
+        {
+            BucketName = bucket,
+            Key = relativePath,
+            ByteRange = new ByteRange(0, byteCount - 1),
+        };
+
+        using var response = await _opsClient.GetObjectAsync(request, ct);
+        using var buffer = new MemoryStream();
+        await response.ResponseStream.CopyToAsync(buffer, ct);
+        return buffer.ToArray();
+    }
 
     // Chamada real e barata no endpoint interno — é o opsClient que faz rede (o presignClient não).
     public Task PingAsync(CancellationToken ct = default) => _opsClient.ListBucketsAsync(ct);
