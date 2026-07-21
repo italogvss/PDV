@@ -9,26 +9,19 @@
 
 ## 1. Dados obrigatórios ainda em branco (bloqueiam a publicação)
 
-Esses campos precisam de dado real; hoje estão como placeholder ou meio preenchidos.
-
-- [ ] **Razão social** — Termos §1 e Privacidade §1 ainda mostram `[RAZÃO SOCIAL]`. Nos v2 você
-      adicionou a linha "Razão Social 00.000.000/0001-00", mas o **nome da empresa e o CNPJ real
-      continuam sem preencher**.
-- [ ] **CNPJ** — ainda `[00.000.000/0001-00]` nos dois documentos.
-- [ ] **Endereço completo** — campo "Endereço Completo" está **vazio** nos dois documentos.
-- [ ] **Comarca do foro** — Termos §11.5 ainda tem `[COMARCA DA SEDE]`. Recomendação: a comarca da
-      sede. (Atenção: perante consumidor pessoa física, o art. 101 do CDC pode assegurar o foro do
-      domicílio do consumidor.)
-- [ ] **Data de "Última atualização"** — os dois docs dizem **3 de julho de 2026**. Atualizar para a
-      data real de publicação.
+- [x] **Identificação do prestador** — decisão de escopo (2026-07-20): a Kashing **não abrirá CNPJ**
+      para a fase de testes; a plataforma passa a ser operada por **pessoa física**. Termos §1 e
+      Privacidade §1 foram atualizados de "razão social/CNPJ" para **Ítalo Gavassi dos Santos, CPF
+      109.605.269-51, domicílio em Avenida Brasil, 3200, Maringá — Paraná**. Reavaliar se/quando a
+      operação migrar para pessoa jurídica (CNPJ).
+- [x] **Comarca do foro** — Termos §11.5 preenchida com **Maringá, Estado do Paraná** (domicílio do
+      prestador pessoa física). Atenção: perante consumidor pessoa física, o art. 101 do CDC pode ainda
+      assegurar o foro do domicílio do consumidor.
+- [x] **Data de "Última atualização"** — atualizada para **20 de julho de 2026** nos dois v2.
 
 ---
 
 ## 2. Notas de revisão que permaneceram nos v2 (decisão/verificação pendente)
-
-### Termos de Uso
-- [ ] **§1 — Nota "substitua os campos entre colchetes"** — remover assim que os dados do item 1
-      acima forem preenchidos.
 
 ### Política de Privacidade
 - [ ] **§5 e §7 — Região do bucket Amazon S3.** Confirmar onde ficam as fotos. Se estiver no Brasil
@@ -37,9 +30,9 @@ Esses campos precisam de dado real; hoje estão como placeholder ou meio preench
 - [ ] **§3.1 — Logs de acesso (IP, data/hora).** Hoje o texto declara que você **não coleta** logs.
       Confirmar se isso segue verdade. Se passar a coletar (inclusive para o Marco Civil da Internet —
       guarda de registros por 6 meses), atualizar a seção.
-- [ ] **§6 — Banner de consentimento de cookies.** Ainda marcado como pendente. Como há cookie de
-      Google Analytics (não essencial), o recomendável é implementar banner com opção de recusa antes
-      de carregar o Analytics. Decidir se entra antes do go-live.
+- [x] **§6 — Banner de consentimento de cookies.** Resolvido: banner implementado na landing page
+      (`CookieConsent.astro`), com aceitar/recusar, e o Google Analytics só é ativado (Consent Mode)
+      após aceite. Nota de "Pendente" removida do §6.2.
 
 ---
 
@@ -54,9 +47,8 @@ Esses campos precisam de dado real; hoje estão como placeholder ou meio preench
       biométrico foi removida, mas o texto ainda a lista como "exceção" aos dados sensíveis — o que dá
       a entender que ela é sensível. Confirmar que **não há reconhecimento facial** e considerar
       reescrever a frase para não classificar a foto como sensível.
-- [ ] **Formatação da §1 (os dois docs).** O bloco de placeholder (citação `>`) e os campos manuais
-      "Razão Social / Endereço" ficaram colados/quebrados. Revisar o layout ao preencher os dados
-      reais.
+- [x] **Formatação da §1 (os dois docs).** Bloco de placeholder e campos manuais duplicados removidos
+      ao preencher os dados reais (pessoa física).
 
 ---
 

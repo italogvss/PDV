@@ -1,6 +1,6 @@
 # Termos de Uso — Kashing
 
-**Última atualização:** 3 de julho de 2026
+**Última atualização:** 20 de julho de 2026
 
 Bem-vindo à **Kashing**. Estes Termos de Uso ("Termos") regulam o acesso e a utilização da plataforma
 Kashing, disponível em [kashing.com.br](https://kashing.com.br) e seus subdomínios. Ao criar uma conta ou
@@ -14,12 +14,9 @@ inseparável deste documento, bem como declara possuir plena capacidade civil pa
 
 A Kashing é operada por:
 
-> **[RAZÃO SOCIAL]**, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº **[00.000.000/0001-00]**,
-> com sede em **[ENDEREÇO COMPLETO]**.
->
-> **Nota:** substitua os campos entre colchetes pela razão social, CNPJ e endereço reais antes de publicar.
-- **Razão Social** 00.000.000/0001-00
-- **Endereço Completo** 
+> **Ítalo Gavassi dos Santos**, pessoa física, inscrito no CPF sob o nº **109.605.269-51**, com domicílio
+> em **Avenida Brasil, 3200, Maringá — Paraná**.
+
 - **Marca comercial:** Kashing
 - **Domínio oficial:** [kashing.com.br](https://kashing.com.br) e subdomínios
 - **Contato oficial (suporte e notificações jurídicas):** italo.gavassi@gmail.com
@@ -266,7 +263,7 @@ direito de exigi-la posteriormente.
 controlada ou coligada, mediante comunicação ao Usuário.
 
 11.5. **Lei aplicável e foro.** Estes Termos são regidos pela legislação brasileira, interpretados em
-português e com base no horário oficial de Brasília. Fica eleito o foro da comarca de **[COMARCA DA SEDE]**
+português e com base no horário oficial de Brasília. Fica eleito o foro da comarca de **Maringá, Estado do Paraná**
 para dirimir controvérsias.
 
 ---

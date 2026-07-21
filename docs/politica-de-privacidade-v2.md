@@ -1,6 +1,6 @@
 # Política de Privacidade — Kashing
 
-**Última atualização:** 3 de julho de 2026
+**Última atualização:** 20 de julho de 2026
 
 
 Esta Política de Privacidade descreve como a **Kashing** coleta, utiliza, armazena e protege dados
@@ -15,11 +15,9 @@ Esta Política está disponível **dentro do aplicativo** e na **landing page** 
 
 O Controlador dos dados tratados pela Kashing é:
 
-> **[RAZÃO SOCIAL]**, inscrita no CNPJ sob o nº **[00.000.000/0001-00]**, com sede em **[ENDEREÇO COMPLETO]**.
->
+> **Ítalo Gavassi dos Santos**, pessoa física, inscrito no CPF sob o nº **109.605.269-51**, com domicílio
+> em **Avenida Brasil, 3200, Maringá — Paraná**.
 
-- **Razão Social** 00.000.000/0001-00
-- **Endereço Completo** 
 **Encarregado pelo Tratamento de Dados (DPO):** as funções de Encarregado são exercidas diretamente pelo
 responsável da Kashing. Contato para assuntos de privacidade: **italo.gavassi@gmail.com** (canais oficiais
 também disponíveis no site e dentro do sistema).
@@ -112,11 +110,10 @@ A Kashing compartilha dados apenas com os terceiros necessários à prestação 
 - **preferências** do Usuário;
 - **análise de uso** via Google Analytics.
 
-6.2. O único cookie de terceiros é o do **Google Analytics**.
-
-> **Pendente:** você ainda não avaliou a necessidade de **banner de consentimento de cookies**. Como há
-> cookie de analytics (não essencial), o recomendável é **implementar um banner de consentimento** com
-> opção de recusa antes do carregamento do Google Analytics. Providência a definir.
+6.2. O único cookie de terceiros é o do **Google Analytics**, carregado apenas mediante
+consentimento do Usuário através do banner de cookies exibido no primeiro acesso ao site. O
+Usuário pode aceitar ou recusar o cookie de análise a qualquer momento; a recusa não impede o uso
+da plataforma, apenas desativa a coleta de dados de navegação para fins estatísticos.
 
 ---
 

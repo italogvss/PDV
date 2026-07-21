@@ -22,12 +22,8 @@ export const mediaService = {
     if (!response.ok) throw new Error('Falha ao enviar a imagem para o storage.')
   },
 
-  confirm: async (
-    category: MediaCategory,
-    entityId: string,
-    relativePath: string,
-  ): Promise<void> => {
-    await api.patch('/media/confirm', { category, entityId, relativePath })
+  confirm: async (category: MediaCategory, entityId: string): Promise<void> => {
+    await api.patch('/media/confirm', { category, entityId })
   },
 
   remove: async (category: MediaCategory, entityId: string): Promise<void> => {

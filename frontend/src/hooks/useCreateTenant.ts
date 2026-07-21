@@ -34,9 +34,9 @@ export function useCreateTenant() {
         if (!validationError) {
           try {
             const webpBlob = await convertToWebp(variables.logoFile)
-            const { uploadUrl, relativePath } = await mediaService.getPresignedUrl('Tenant', response.tenantId)
+            const { uploadUrl } = await mediaService.getPresignedUrl('Tenant', response.tenantId)
             await mediaService.uploadToMinio(uploadUrl, webpBlob)
-            await mediaService.confirm('Tenant', response.tenantId, relativePath)
+            await mediaService.confirm('Tenant', response.tenantId)
             queryClient.invalidateQueries({ queryKey: ['tenant-settings'] })
           } catch {
             // falha no upload do logo não impede o onboarding

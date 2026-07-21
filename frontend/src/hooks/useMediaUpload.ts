@@ -20,9 +20,9 @@ export function useUploadImage(category: MediaCategory, queryKeyToInvalidate: re
       if (validationError) throw new Error(validationError)
 
       const webpBlob = await convertToWebp(file)
-      const { uploadUrl, relativePath } = await mediaService.getPresignedUrl(category, entityId)
+      const { uploadUrl } = await mediaService.getPresignedUrl(category, entityId)
       await mediaService.uploadToMinio(uploadUrl, webpBlob)
-      await mediaService.confirm(category, entityId, relativePath)
+      await mediaService.confirm(category, entityId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate })

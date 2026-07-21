@@ -141,6 +141,12 @@ public interface IStorageService
 
     // Deleta o arquivo do storage
     Task DeleteAsync(string bucket, string relativePath, CancellationToken ct = default);
+
+    // HEAD — tamanho do objeto em bytes (sem baixar o conteúdo), ou null se não existir
+    Task<long?> GetObjectSizeAsync(string bucket, string relativePath, CancellationToken ct = default);
+
+    // Lê só os primeiros byteCount bytes do objeto (checagem de assinatura/magic bytes)
+    Task<byte[]> GetObjectHeadBytesAsync(string bucket, string relativePath, int byteCount, CancellationToken ct = default);
 }
 ```
 
@@ -189,14 +195,19 @@ Secrets (`AccessKey`, `SecretKey`) **nunca commitados** — usar `dotnet user-se
    }
 7. Frontend → PUT {uploadUrl} com o blob .webp (direto no MinIO, sem passar pelo backend)
 8. Frontend → PATCH /api/media/confirm
-   Body: { "category": "Product", "entityId": "123", "relativePath": "{tenantId}/product/123.webp" }
-9. Backend busca MediaFile existente para (tenantId, category, entityId) se houver:
-   - Chama IStorageService.DeleteAsync(bucket, oldRelativePath) para remover do MinIO
-   - Remove o MediaFile antigo do banco
-10. Backend cria novo MediaFile no banco
-11. Backend atualiza o campo imageUrl/avatarUrl/logoUrl na entidade correspondente e UpdatedAt
-12. Backend retorna 204 No Content
-13. Frontend invalida a query da entidade (TanStack Query) — rebusca com imageUrl atualizada
+   Body: { "category": "Product", "entityId": "123" }
+9. Backend **recalcula** o relativePath a partir de category+tenantId+entityId (nunca aceita o path
+   do cliente — impediria vazamento cross-tenant/injeção de URL externa) e valida o objeto já
+   gravado no MinIO antes de aceitar:
+   - GetObjectSizeAsync — rejeita (e apaga o objeto) se > 5MB ou se não existir
+   - GetObjectHeadBytesAsync(12) — rejeita (e apaga o objeto) se a assinatura não for WebP (RIFF....WEBP)
+10. Backend busca MediaFile existente para (tenantId, category, entityId) se houver:
+    - Chama IStorageService.DeleteAsync(bucket, oldRelativePath) para remover do MinIO
+    - Remove o MediaFile antigo do banco
+11. Backend cria novo MediaFile no banco
+12. Backend atualiza o campo imageUrl/avatarUrl/logoUrl na entidade correspondente e UpdatedAt
+13. Backend retorna 204 No Content
+14. Frontend invalida a query da entidade (TanStack Query) — rebusca com imageUrl atualizada
 ```
 
 ### Fluxo de leitura
@@ -251,7 +262,7 @@ DELETE /api/media                   → remove imagem da entidade
 public record PresignedUrlResponse(string UploadUrl, string RelativePath);
 
 // PATCH /api/media/confirm
-public record ConfirmUploadRequest(MediaCategory Category, Guid EntityId, string RelativePath);
+public record ConfirmUploadRequest(MediaCategory Category, Guid EntityId);
 
 // DELETE /api/media?category=Product&entityId=123
 // Response: 204 No Content
@@ -263,7 +274,10 @@ public record ConfirmUploadRequest(MediaCategory Category, Guid EntityId, string
 - `entityId` obrigatório em todos os endpoints
 - A entidade referenciada deve pertencer ao tenant do JWT (filtro automático via `HasQueryFilter`)
 - Se entidade não encontrada: `NotFoundException`
-- Não validar o arquivo no backend — validação é responsabilidade do frontend (arquivo não passa pelo backend)
+- **O `relativePath` nunca vem do cliente** — o `confirm` sempre recalcula via `MediaPathHelper.GetRelativePath(category, tenantId, entityId)`, nunca confia em valor externo. Isso evita que uma entidade do próprio tenant seja apontada para o path de outro tenant (bucket é compartilhado entre tenants por categoria) ou para uma URL externa arbitrária.
+- Ainda que o arquivo não passe pelo backend durante o upload, o `confirm` faz uma leitura pequena e adicional no objeto já gravado no MinIO antes de aceitar (não é o backend virando intermediário do upload — é uma checagem pós-upload):
+  - Tamanho real via HEAD (`GetObjectSizeAsync`) — rejeita e apaga o objeto se > 5MB ou se o objeto não existir
+  - Assinatura binária via GET parcial dos primeiros 12 bytes (`GetObjectHeadBytesAsync`) — rejeita e apaga o objeto se não for um WebP válido (`RIFF....WEBP`)
 
 ---
 
@@ -337,8 +351,8 @@ export const mediaService = {
     })
   },
 
-  confirm: async (category: MediaCategory, entityId: string, relativePath: string): Promise<void> => {
-    await api.patch('/media/confirm', { category, entityId, relativePath })
+  confirm: async (category: MediaCategory, entityId: string): Promise<void> => {
+    await api.patch('/media/confirm', { category, entityId })
   },
 
   remove: async (category: MediaCategory, entityId: string): Promise<void> => {
@@ -362,9 +376,9 @@ export function useUploadImage(category: MediaCategory, queryKeyToInvalidate: re
       if (validationError) throw new Error(validationError)
 
       const webpBlob = await convertToWebp(file)
-      const { uploadUrl, relativePath } = await mediaService.getPresignedUrl(category, entityId)
+      const { uploadUrl } = await mediaService.getPresignedUrl(category, entityId)
       await mediaService.uploadToMinio(uploadUrl, webpBlob)
-      await mediaService.confirm(category, entityId, relativePath)
+      await mediaService.confirm(category, entityId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate })

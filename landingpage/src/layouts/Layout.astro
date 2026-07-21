@@ -10,6 +10,7 @@ const { title, description, canonicalURL, ogImage } = Astro.props;
 const gaId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
 
 import ThemeToggle from '../components/ThemeToggle.astro';
+import CookieConsent from '../components/CookieConsent.astro';
 import '../styles/global.css';
 ---
 
@@ -53,13 +54,25 @@ import '../styles/global.css';
     {canonicalURL && <meta property="og:url" content={canonicalURL} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
 
-    <!-- GA4 — só carrega se PUBLIC_GA_MEASUREMENT_ID estiver definido -->
+    <!--
+      GA4 — só carrega se PUBLIC_GA_MEASUREMENT_ID estiver definido.
+      Consent Mode: o default de analytics_storage é 'denied' até o usuário
+      aceitar no banner de cookies (CookieConsent.astro), que chama
+      gtag('consent', 'update', ...). Precisa vir ANTES do gtag.js carregar.
+    -->
     {gaId && (
       <>
-        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
-        <script define:vars={{ gaId }}>
+        <script is:inline define:vars={{ gaId }}>
           window.dataLayer = window.dataLayer || [];
           function gtag() { dataLayer.push(arguments); }
+          window.gtag = gtag;
+          const consent = localStorage.getItem('cookie-consent');
+          gtag('consent', 'default', {
+            analytics_storage: consent === 'accepted' ? 'granted' : 'denied',
+          });
+        </script>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+        <script is:inline define:vars={{ gaId }}>
           gtag('js', new Date());
           gtag('config', gaId);
         </script>
@@ -71,6 +84,9 @@ import '../styles/global.css';
 
     <!-- Alternador de tema flutuante — presente em todas as páginas -->
     <ThemeToggle />
+
+    <!-- Banner de consentimento de cookies (LGPD) — presente em todas as páginas -->
+    <CookieConsent />
 
     <!-- Reveal no scroll: adiciona .in-view quando o elemento entra na viewport -->
     <script>

@@ -89,11 +89,13 @@ export default function SubscriptionSection() {
   // Plano-alvo de uma troca aguardando confirmação — a mensagem muda conforme upgrade × downgrade.
   const [changeTarget, setChangeTarget] = useState<Plan | null>(null)
 
-  // ═══ DEV TEMPORÁRIO — REMOVER ═══════════════════════════════════════════════════════════
+  // ═══ DEV — SÓ EM DESENVOLVIMENTO ══════════════════════════════════════════════════════════
   // Switches para forçar a exibição dos alertas/paper condicionais desta tela sem precisar
-  // alterar a assinatura real (só para revisão visual). Para remover: apague estes 7 estados,
-  // o painel de switches renderizado logo no início do JSX abaixo (procure por
-  // "DEV TEMPORÁRIO" no arquivo) e os `|| devShowX` adicionados às condições dos blocos.
+  // alterar a assinatura real (só para revisão visual). O painel que os controla é renderizado
+  // apenas quando `import.meta.env.DEV` — no build de produção o Vite elimina o bloco, então
+  // nenhum destes switches tem como ser ligado e todos os `|| devShowX` viram no-op.
+  // Se algum dia quiser remover de vez: apague estes 7 estados, o painel gateado por
+  // `import.meta.env.DEV` no início do JSX abaixo e os `|| devShowX` adicionados às condições.
   const [devShowPaymentFailed, setDevShowPaymentFailed] = useState(false)
   const [devShowPendingPlan, setDevShowPendingPlan] = useState(false)
   const [devShowUpgrade, setDevShowUpgrade] = useState(false)
@@ -387,9 +389,10 @@ export default function SubscriptionSection() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* ══ DEV TEMPORÁRIO — painel para forçar a exibição dos alertas/modais desta tela sem
-          alterar a assinatura real. Ver instrução de remoção no bloco de estados `devShow*`
-          no topo do componente. ══ */}
+      {/* ══ DEV — painel para forçar a exibição dos alertas/modais desta tela sem alterar a
+          assinatura real. Gateado por `import.meta.env.DEV`: o Vite remove este bloco do build
+          de produção. Ver detalhes no bloco de estados `devShow*` no topo do componente. ══ */}
+      {import.meta.env.DEV && (
       <Paper
         variant="outlined"
         sx={{
@@ -500,6 +503,7 @@ export default function SubscriptionSection() {
           </Button>
         </Box>
       </Paper>
+      )}
 
       {/* ══ Cobrança recusada — o gateway ainda retenta, mas o cartão precisa ser atualizado ══ */}
       {(subscription.lastPaymentFailedAt || devShowPaymentFailed) && (
