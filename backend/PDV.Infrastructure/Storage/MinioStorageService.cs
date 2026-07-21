@@ -71,6 +71,10 @@ public class MinioStorageService : IStorageService
         return ToPublicScheme(_presignClient.GetPreSignedURL(request));
     }
 
+    // `updatedAt` não entra mais na URL: um parâmetro extra anexado depois de assinar quebra a
+    // verificação de assinatura no R2 (SigV4 valida a query string inteira, diferente do MinIO,
+    // que ignora parâmetros não assinados). Sem risco de cache "preso" mesmo assim — a presigned
+    // URL já muda sozinha a cada chamada (Date/Signature novos), forçando o navegador a rebuscar.
     public Task<string> GenerateReadUrlAsync(string bucket, string relativePath, DateTime updatedAt, CancellationToken ct = default)
     {
         var request = new GetPreSignedUrlRequest
@@ -82,8 +86,7 @@ public class MinioStorageService : IStorageService
         };
 
         var url = ToPublicScheme(_presignClient.GetPreSignedURL(request));
-        // Cache busting: muda quando a entidade é atualizada → navegador rebusca a imagem.
-        return Task.FromResult($"{url}&v={updatedAt.Ticks}");
+        return Task.FromResult(url);
     }
 
     public Task DeleteAsync(string bucket, string relativePath, CancellationToken ct = default) =>
