@@ -12,7 +12,8 @@
 ## Índice
 
 0. [Regras de ouro](#0-regras-de-ouro-leia-primeiro) · 1. [Mapa da produção](#1-mapa-da-produção) ·
-2. [Acesso à VPS](#2-acesso-à-vps) · 3. [Deploy de nova versão](#3-deploy-de-uma-nova-versão) ·
+2. [Acesso à VPS](#2-acesso-à-vps) · 3. [Deploy de nova versão](#3-deploy-de-uma-nova-versão)
+   ([3.4 Alterar `.env`](#34-alterar-variáveis-de-ambiente-envprod)) ·
 4. [Rollback](#4-rollback) · 5. [Migrations de banco](#5-migrations-de-banco--o-ponto-mais-perigoso) ·
 6. [Ver logs](#6-ver-logs) · 7. [Identificar erros](#7-identificar-erros) ·
 8. [Backup e restore](#8-backup-e-restore) · 9. [Certificado HTTPS](#9-certificado-https) ·
@@ -136,6 +137,46 @@ Troque `api` por `frontend`, `landingpage` conforme o caso.
 
 > **Downtime:** o `up --build` recria os containers — alguns segundos de indisponibilidade. Aceitável
 > na fase de testes. Não é zero-downtime.
+
+### 3.4 Alterar variáveis de ambiente (`.env.prod`)
+
+**A ação depende de qual variável você mudou** — e mudar a errada sem o passo certo não surte efeito
+nenhum. O `.env.prod` fica só na VPS (`/opt/kashing/.env.prod`); edite com `nano .env.prod`.
+
+Há duas categorias:
+
+- **Variáveis de backend** — lidas em **tempo de execução** pela API (injetadas via `env_file`). Basta
+  **recriar o container da API**, sem rebuild.
+- **Variáveis de frontend/landing** (`VITE_*`, `APP_URL`, `GA_MEASUREMENT_ID`, `PUBLIC_API_URL`) — são
+  **build args**, ficam **embutidas no bundle estático** no momento do build. Exigem **rebuildar** o
+  container correspondente. Só reiniciar não muda nada.
+
+| Variável que você mudou | Serviço | O que fazer |
+|---|---|---|
+| `Stripe__*`, `JWT_SECRET`, `JWT_EXPIRES_HOURS`, `Storage__*`, `Authentication__Google__ClientId`, `FRONTEND_URL`, `LANDING_URL`, `DB_CONNECTION_STRING` | `api` (runtime) | recriar a API (sem build) |
+| `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_LANDING_URL` | `frontend` (build arg) | **rebuildar** o frontend |
+| `APP_URL`, `GA_MEASUREMENT_ID`, `PUBLIC_API_URL` | `landingpage` (build arg) | **rebuildar** a landing |
+| `DB_ROOT_PASSWORD`, `DB_NAME` | `db` | ⚠️ **não mude com o banco já criado** (ver aviso abaixo) |
+
+**Recriar só a API** (para as variáveis de backend):
+
+```bash
+cd /opt/kashing
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate api
+```
+
+**Rebuildar frontend ou landing** (para os `VITE_*` / `PUBLIC_*`):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build frontend
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build landingpage
+```
+
+> ⚠️ **NUNCA mude `DB_ROOT_PASSWORD` ou `DB_NAME` com o banco já em uso.** A senha e o nome do banco só
+> são aplicados no MySQL na **primeira** criação do volume `kashing_mysql_data`. Mudar depois **não altera
+> a senha real** do MySQL — só quebra a conexão da API com o banco (a connection string passa a não bater
+> com a senha que está gravada no volume). Se um dia precisar trocar a senha do banco, é um procedimento à
+> parte (`ALTER USER` dentro do MySQL **e** atualizar a connection string juntos), não é só editar o `.env`.
 
 ---
 
@@ -354,10 +395,11 @@ Passos para virar live, **editando `/opt/kashing/.env.prod`** na VPS:
    `invoice.payment_failed`, `charge.succeeded`, `charge.refunded`, `charge.dispute.created`,
    `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
    Copie o `whsec_...` gerado para `Stripe__WebhookSecret`.
-4. Reinicie só a API: `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d api`
-   (não precisa `--build` — mudou só env var).
+4. Recrie só a API (ver [seção 3.4](#34-alterar-variáveis-de-ambiente-envprod) — são variáveis de
+   backend, sem `--build`):
+   `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate api`.
 
-> Editar o `.env.prod` e reiniciar o container basta — a chave/preços são lidos do ambiente, não estão
+> Editar o `.env.prod` e recriar o container basta — a chave/preços são lidos do ambiente, não estão
 > compilados no código.
 
 ---
