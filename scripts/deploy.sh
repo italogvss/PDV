@@ -34,6 +34,14 @@ fi
 echo "==> Build e restart dos containers"
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
+# O nginx resolve os IPs dos upstreams (frontend/landingpage/api) UMA vez, no start.
+# Quando o build acima recria esses containers, eles ganham IPs novos — e o Docker pode
+# ate trocar os IPs entre eles. Como o compose nao recria o nginx (config dele nao mudou),
+# ele fica com IPs velhos e passa a rotear para o container errado (app<->landing trocados).
+# Reiniciar o nginx forca a re-resolucao dos IPs atuais. NAO remover este passo.
+echo "==> Reiniciando o nginx (re-resolve IPs dos upstreams)"
+docker restart pdv-nginx
+
 echo "==> Limpando imagens orfas"
 docker image prune -f
 

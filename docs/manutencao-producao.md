@@ -494,7 +494,22 @@ Tudo se resolve no **Google Cloud Console**, no projeto **kashing** (não o `pdv
   100); ou publique o app.
 - **`play.google.com/log` no console:** é telemetria interna do Google, **não é erro seu** — ignore.
 
-### 12.5 Um container fica reiniciando (`Restarting`)
+### 12.5 `app.` mostra a landing (ou `www.` mostra o app) — rotas trocadas
+
+**Causa:** o nginx resolve o IP dos upstreams (`frontend`, `landingpage`, `api`) **uma vez, no start**.
+Quando um deploy recria esses containers, eles ganham IPs novos (e o Docker pode até trocar os IPs entre
+`frontend` e `landingpage`). Se o `pdv-nginx` não for reiniciado, ele fica com os IPs velhos e passa a
+rotear `app.` → landing e `www.` → app. O `/api/health` continua funcionando (o bloco `/api/` acerta),
+então o sintoma é só a UI trocada.
+
+**Solução:** reiniciar o nginx para re-resolver os IPs:
+```bash
+docker restart pdv-nginx
+```
+O `scripts/deploy.sh` já faz isso automaticamente no fim de todo deploy — só cai nesse problema se subir
+a stack na mão sem reiniciar o nginx depois.
+
+### 12.6 Um container fica reiniciando (`Restarting`)
 
 ```bash
 docker logs pdv-api --tail 50      # veja o motivo do crash no boot
