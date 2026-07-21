@@ -92,50 +92,54 @@ export default function DashboardLayout() {
       )}
 
       {/* ══ DEV TEMPORÁRIO — painel para forçar os avisos/modais globais de assinatura. Ver
-          instrução de remoção no bloco de estados `devShow*` acima. ══ */}
-      <Paper
-        variant="outlined"
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          zIndex: theme.zIndex.tooltip + 1,
-          borderRadius: 2,
-          borderStyle: 'dashed',
-          borderColor: 'warning.main',
-          bgcolor: 'warning.soft',
-          p: 1.5,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 0.25,
-        }}
-      >
-        <Typography variant="overline" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '0.06em' }}>
-          Dev — assinatura (remover)
-        </Typography>
-        <FormControlLabel
-          control={
-            <Switch size="small" checked={devShowDeletion} onChange={(e) => setDevShowDeletion(e.target.checked)} />
-          }
-          label="Banner: exclusão agendada"
-        />
-        <FormControlLabel
-          control={
-            <Switch size="small" checked={devShowExpired} onChange={(e) => setDevShowExpired(e.target.checked)} />
-          }
-          label="Modal: assinatura expirada"
-        />
-        <FormControlLabel
-          control={
-            <Switch
-              size="small"
-              checked={devShowPaymentFailed}
-              onChange={(e) => setDevShowPaymentFailed(e.target.checked)}
-            />
-          }
-          label="Modal: cobrança recusada"
-        />
-      </Paper>
+          instrução de remoção no bloco de estados `devShow*` acima. Gated por import.meta.env.DEV:
+          o Vite elimina este bloco no build de produção (dead-code elimination), então nunca aparece
+          para o usuário final. ══ */}
+      {import.meta.env.DEV && (
+        <Paper
+          variant="outlined"
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            zIndex: theme.zIndex.tooltip + 1,
+            borderRadius: 2,
+            borderStyle: 'dashed',
+            borderColor: 'warning.main',
+            bgcolor: 'warning.soft',
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.25,
+          }}
+        >
+          <Typography variant="overline" sx={{ fontWeight: 800, color: 'warning.ink', letterSpacing: '0.06em' }}>
+            Dev — assinatura (remover)
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch size="small" checked={devShowDeletion} onChange={(e) => setDevShowDeletion(e.target.checked)} />
+            }
+            label="Banner: exclusão agendada"
+          />
+          <FormControlLabel
+            control={
+              <Switch size="small" checked={devShowExpired} onChange={(e) => setDevShowExpired(e.target.checked)} />
+            }
+            label="Modal: assinatura expirada"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={devShowPaymentFailed}
+                onChange={(e) => setDevShowPaymentFailed(e.target.checked)}
+              />
+            }
+            label="Modal: cobrança recusada"
+          />
+        </Paper>
+      )}
     </Box>
   )
 }
