@@ -1,25 +1,40 @@
-import ConstructionOutlined from '@mui/icons-material/ConstructionOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
+import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined'
 import {
   Alert,
   AlertTitle,
   Box,
   Button,
   CircularProgress,
-  Typography
+  MenuItem,
+  Select
 } from '@mui/material'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import SettingCard from '../../../../components/SettingCard'
+import SettingRow from '../../../../components/SettingRow'
+import { useImportData } from '../../../../hooks/useImportData'
 import { useToast } from '../../../../hooks/useToast'
 import { reportService } from '../../../../services/report.service'
 import { useAppSelector } from '../../../../store'
-import { EXPORT_CATEGORIES } from '../../types'
+import { EXPORT_CATEGORIES, IMPORT_CATEGORIES } from '../../types'
+import { useNavigate } from 'react-router'
+import { Help } from '@mui/icons-material'
+
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024 // 2 MB — espelha ImportLimits do backend
+
+type ImportType = (typeof IMPORT_CATEGORIES)[number]['id']
 
 export default function BackupSection() {
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [importType, setImportType] = useState<ImportType>('products')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const showToast = useToast()
+  const importData = useImportData()
   const tenantId = useAppSelector((s) => s.auth.tenantId)
   const tenants = useAppSelector((s) => s.auth.tenants)
+  const navigate = useNavigate()
 
   // Esta é a página de saída de quem perdeu o plano: a exportação continua liberada mesmo sem
   // assinatura, e é aqui que o prazo de exclusão precisa ficar explícito.
@@ -37,6 +52,29 @@ export default function BackupSection() {
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite reselecionar o mesmo arquivo
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      showToast('Somente arquivos .csv são aceitos.', 'error')
+      return
+    }
+    if (file.size > MAX_IMPORT_BYTES) {
+      showToast('O arquivo excede o tamanho máximo de 2 MB.', 'error')
+      return
+    }
+    setImportFile(file)
+  }
+
+  const handleImport = () => {
+    if (!importFile || importData.isPending) return
+    importData.mutate(
+      { type: importType, file: importFile },
+      { onSuccess: () => setImportFile(null) },
+    )
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {deletionAt && (
@@ -48,14 +86,60 @@ export default function BackupSection() {
         </Alert>
       )}
 
-      <SettingCard title="Backup de dados" subtitle="Está pagina esta em construção e ficara disponível em breve.">
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 200 }}>
-          <ConstructionOutlined sx={{ fontSize: 48, color: 'text.disabled' }} />
-          <Typography variant="body2" color="text.disabled">
-            Esta seção estará disponível em breve
-          </Typography>
-        </Box>
+      <SettingCard
+        title="Importar dados"
+        subtitle="Envie um arquivo .csv para cadastrar em lote."
+        action={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button startIcon={<Help />} variant="outlined" onClick={() => navigate('/ajuda?cat=conta&art=importar-dados')}>Ajuda</Button>         
+          <Button
+            variant="contained"
+            startIcon={
+              importData.isPending ? <CircularProgress size={16} color="inherit" /> : <FileUploadOutlined />
+            }
+            disabled={!importFile || importData.isPending}
+            onClick={handleImport}
+          >
+            Importar
+          </Button>
+          </Box>
+        }
+      >
+        <SettingRow label="Tipo de dado" sublabel="O que este arquivo contém">
+          <Select
+            size="small"
+            value={importType}
+            onChange={(e) => setImportType(e.target.value as ImportType)}
+            disabled={importData.isPending}
+            sx={{ width: 220 }}
+          >
+            {IMPORT_CATEGORIES.map((cat) => (
+              <MenuItem key={cat.id} value={cat.id}>
+                {cat.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </SettingRow>
+
+        <SettingRow label="Arquivo CSV" sublabel={importFile ? importFile.name : 'Nenhum arquivo selecionado'}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileOutlined />}
+            disabled={importData.isPending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {importFile ? 'Trocar arquivo' : 'Selecionar arquivo'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            hidden
+            onChange={handleFileSelect}
+          />
+        </SettingRow>
       </SettingCard>
+
       <SettingCard title="Exportar dados" subtitle="Gera um arquivo com todos os registros em .csv">
         <Box
           sx={{

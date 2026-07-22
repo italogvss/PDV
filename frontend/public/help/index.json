@@ -121,6 +121,8 @@
     "category": "Conta",
     "icon": "ManageAccounts",
     "articles": [
+      { "slug": "exportar-dados", "title": "Exportar seus dados" },
+      { "slug": "importar-dados", "title": "Importar dados via CSV" },
       { "slug": "excluir-conta", "title": "Encerrar minha conta" }
     ]
   }

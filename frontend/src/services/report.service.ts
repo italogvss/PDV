@@ -26,6 +26,13 @@ interface BackendSalesMetrics {
   period: string
 }
 
+export interface ImportResult {
+  importedCount: number
+  createdCategories: number
+}
+
+export type ImportType = 'products' | 'customers' | 'services'
+
 export const reportService = {
   getSalesMetrics: async (startDate: string, endDate: string): Promise<SalesMetrics> => {
     const { data } = await api.get<BackendSalesMetrics>('/reports/sales', {
@@ -189,6 +196,17 @@ export const reportService = {
     link.download = target.filename
     link.click()
     URL.revokeObjectURL(url)
+  },
+
+  importCsv: async (
+    type: 'products' | 'customers' | 'services',
+    file: File,
+  ): Promise<ImportResult> => {
+    const form = new FormData()
+    form.append('file', file)
+    // O axios define o Content-Type multipart (com boundary) automaticamente ao receber FormData.
+    const { data } = await api.post<ImportResult>(`/reports/import/${type}`, form)
+    return data
   },
 
   exportCsvForTenant: async (tenantId: string, category: string): Promise<void> => {
