@@ -96,7 +96,7 @@ export default function Dropdown({ anchorEl, open, onClose }: DropdownProps) {
   // Notificações é gateada por plano: sem o entitlement, o item ganha badge Pro e vira CTA de upsell.
   const canUseNotifications = has(FEATURES.notifications)
   const securityItems: AccountItem[] = [
-    { label: 'Aparência', icon: TuneOutlined, tab: 'aparencia' },
+    { label: 'Aparência', icon: TuneOutlined, tab: 'perfil' },
     {
       label: 'Notificações',
       icon: NotificationsNoneOutlined,

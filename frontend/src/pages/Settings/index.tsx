@@ -1,12 +1,10 @@
-import { ArchiveOutlined, Article, BackupOutlined, CloseRounded, CreditCardOutlined, ExtensionOutlined, FiberManualRecordOutlined, HelpOutlined, MenuRounded, NotificationsNoneOutlined, PersonOutlineOutlined, ReceiptLongOutlined, SecurityOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
-import TuneOutlined from '@mui/icons-material/TuneOutlined'
+import { ArchiveOutlined, Article, BackupOutlined, CloseRounded, CreditCardOutlined, ExtensionOutlined, FiberManualRecordOutlined, HelpOutlined, MenuRounded, NotificationsNoneOutlined, PersonOutlineOutlined, Shield, ShoppingCartOutlined, StorefrontOutlined, WorkspacePremiumOutlined, type SvgIconComponent } from '@mui/icons-material'
 import { Box, Button, Divider, Drawer, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '../../store'
 import AdvancedSection from './components/AdvancedSection'
 import DisabledItemsSection from './components/DisabledItemsSection'
-import AppearanceSection from './components/AppearanceSection'
 import BackupSection from './components/BackupSection'
 import BusinessSection from './components/BusinessSection'
 import BusinessesSection from './components/BusinessesSection'
@@ -16,12 +14,10 @@ import NotificationsSection from './components/NotificationsSection'
 import OperationSection from './components/OperationSection'
 import PaymentsSection from './components/PaymentsSection'
 import ProfileSection from './components/ProfileSection'
-import SecuritySection from './components/SecuritySection'
 import SubscriptionSection from './components/SubscriptionSection'
 import { type SettingsTab } from './types'
 import PrivacySection from './components/PrivacySection'
 import UseTermsSection from './components/UseTermsSection'
-import BillingPaymentsSection from './components/BillingPaymentsSection'
 
 interface NavItem {
   id: SettingsTab
@@ -34,12 +30,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   // ── Pessoal ──
-  { id: 'perfil',       label: 'Meu perfil',     subtitle: 'Informações pessoais',        icon: PersonOutlineOutlined,     type: 'user' },
+  { id: 'perfil',       label: 'Meu perfil',     subtitle: 'Informações pessoais, senha e aparência', icon: PersonOutlineOutlined,     type: 'user' },
   { id: 'assinatura',   label: 'Assinatura',     subtitle: 'Planos e cobranças',          icon: WorkspacePremiumOutlined,  type: 'user', ownerOnly: true },
-  { id: 'faturas', label: 'Faturas',     subtitle: 'Histórico de cobranças',    icon: CreditCardOutlined,        type: 'user', ownerOnly: true },
   { id: 'negocios',     label: 'Meus negócios',  subtitle: 'Gerenciamento de empresas',   icon: StorefrontOutlined,        type: 'user', ownerOnly: true  },
-  { id: 'seguranca',    label: 'Segurança',      subtitle: 'Autenticação e privacidade',  icon: SecurityOutlined,          type: 'user' },
-  { id: 'aparencia',    label: 'Aparência',      subtitle: 'Estilo e temas',              icon: TuneOutlined,              type: 'user' },
   { id: 'notificacoes', label: 'Notificações',   subtitle: 'Preferências de comunicação', icon: NotificationsNoneOutlined, type: 'user' },
   { id: 'privacy', label: 'Privacidade',   subtitle: 'Preferências de privacidade', icon: Shield, type: 'user' },
   { id: 'useterms', label: 'Termos de Uso',   subtitle: 'Termos de uso e contrato da aplicação', icon: Article, type: 'user' },
@@ -62,15 +55,12 @@ function renderSection(tab: SettingsTab) {
     case 'modulos':      return <ModulosSection />
     case 'pagamentos':   return <PaymentsSection />
     case 'fiscal':       return <FiscalSection />
-    case 'aparencia':    return <AppearanceSection />
     case 'backup':       return <BackupSection />
     case 'desativados':  return <DisabledItemsSection />
     case 'avancado':     return <AdvancedSection />
     case 'perfil':       return <ProfileSection />
     case 'assinatura':   return <SubscriptionSection />
-    case 'faturas':      return <BillingPaymentsSection />
     case 'negocios':     return <BusinessesSection />
-    case 'seguranca':    return <SecuritySection />
     case 'notificacoes': return <NotificationsSection />
     case 'privacy':      return <PrivacySection/>
     case 'useterms':     return <UseTermsSection/>

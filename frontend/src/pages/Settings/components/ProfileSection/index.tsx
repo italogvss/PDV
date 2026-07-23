@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box,
   Avatar,
@@ -6,17 +6,25 @@ import {
   TextField,
   Chip,
   CircularProgress,
+  IconButton,
+  InputAdornment,
   Link,
   Radio,
   RadioGroup,
   FormControlLabel,
+  Slider,
   Typography,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined'
-import { DeleteOutlined } from '@mui/icons-material'
+import { DeleteOutlined, Google } from '@mui/icons-material'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
 import { useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import SettingCard from '../../../../components/SettingCard'
 import SettingRow from '../../../../components/SettingRow'
 import ConfirmDialog from '../../../../components/ConfirmDialog'
@@ -25,6 +33,106 @@ import { useUpdateUser } from '../../../../hooks/useUser'
 import { useAccountDeletionPreview, useRequestAccountDeletion } from '../../../../hooks/useAccountDeletion'
 import { formatPhone, maskDocument } from '../../../../utils/masks'
 import type { AccountDeletionPath } from '../../../../types/account.types'
+import { authService } from '../../../../services/auth.service'
+import { useToast } from '../../../../hooks/useToast'
+import { useApiError } from '../../../../hooks/useApiError'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
+import { useThemeMode } from '../../../../context/ThemeModeContext'
+import { useUpdateAppearanceSettings, useUserSettings } from '../../../../hooks/useUserSettings'
+import type { AccentColor, AppearancePrefs, AppTheme } from '../../../../types/usersettings.type'
+import { TEXT_SIZE_MAX, TEXT_SIZE_MIN } from '../../../../types/usersettings.type'
+import { ACCENT_COLORS } from '../../types'
+
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
+    newPassword: z
+      .string()
+      .min(8, 'A senha deve ter no mínimo 8 caracteres')
+      .regex(/\d/, 'A senha deve conter pelo menos um número')
+      .regex(/[^a-zA-Z0-9]/, 'A senha deve conter pelo menos um caractere especial'),
+    confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'As senhas não coincidem',
+    path: ['confirmPassword'],
+  })
+
+type ChangePasswordForm = z.infer<typeof passwordSchema>
+
+function ThemeCard({
+  label,
+  selected,
+  onClick,
+  preview,
+}: {
+  label: string
+  selected: boolean
+  onClick: () => void
+  preview: 'light' | 'dark'
+}) {
+  return (
+    <Box
+      onClick={onClick}
+      sx={{
+        flex: 1,
+        borderRadius: 2,
+        border: 2,
+        borderColor: selected ? 'secondary.main' : 'border.subtle',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'border-color 0.15s',
+        '&:hover': { borderColor: selected ? 'secondary.main' : 'border.strong' },
+      }}
+    >
+      <Box sx={{ height: 72, display: 'flex', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            flex: 1,
+            bgcolor: preview === 'dark' ? '#1a1a1a' : '#f4f3ef',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            p: 1.5,
+            gap: 0.75,
+          }}
+        >
+          <Box
+            sx={{
+              height: 6,
+              borderRadius: 1,
+              bgcolor: preview === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+              width: '60%',
+            }}
+          />
+          <Box
+            sx={{
+              height: 6,
+              borderRadius: 1,
+              bgcolor: preview === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
+              width: '40%',
+            }}
+          />
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+          {label}
+        </Typography>
+        {selected && <CheckIcon sx={{ fontSize: 16, color: 'secondary.main' }} />}
+      </Box>
+    </Box>
+  )
+}
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
 
@@ -39,6 +147,94 @@ export default function ProfileSection() {
   const { userId, name: authName, email, phone: authPhone, document: authDocument, birthDate: authBirthDate, role: roletype } = useAppSelector((s) => s.auth)
   const updateUser = useUpdateUser()
   const navigate = useNavigate()
+
+  // ── Segurança (alterar senha) ──
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const { isOwner: isOwnerPerm } = useUserPermissions()
+  const showToast = useToast()
+  const handleError = useApiError()
+  const {
+    register: registerPassword,
+    handleSubmit: handleSubmitPassword,
+    reset: resetPassword,
+    formState: { errors: passwordErrors, isSubmitting: isSubmittingPassword },
+  } = useForm<ChangePasswordForm>({ resolver: zodResolver(passwordSchema) })
+
+  const onSubmitPassword = async (data: ChangePasswordForm) => {
+    try {
+      await authService.changePassword(data.currentPassword, data.newPassword)
+      showToast('Senha alterada com sucesso!', 'success')
+      resetPassword()
+    } catch (error) {
+      handleError(error, 'Erro ao alterar senha.')
+    }
+  }
+
+  // ── Aparência ──
+  const { data: appearanceData, isLoading: appearanceLoading } = useUserSettings()
+  const updateAppearance = useUpdateAppearanceSettings()
+  const { setPreview, resetPreview } = useThemeMode()
+  const [appearanceForm, setAppearanceForm] = useState<AppearancePrefs | null>(null)
+  const appearanceInitialized = useRef(false)
+
+  useEffect(() => {
+    if (appearanceData && !appearanceInitialized.current) {
+      setAppearanceForm(appearanceData.appearance)
+      appearanceInitialized.current = true
+    }
+  }, [appearanceData])
+
+  // Ao sair da seção sem salvar, descarta o preview ao vivo.
+  useEffect(() => () => resetPreview(), [resetPreview])
+
+  const setTheme = (theme: AppTheme) => {
+    setAppearanceForm((f) => (f ? { ...f, theme } : f))
+    setPreview({ mode: theme })
+  }
+  const setAccent = (accentColor: AccentColor) => {
+    setAppearanceForm((f) => (f ? { ...f, accentColor } : f))
+    setPreview({ accent: accentColor })
+  }
+  const setTextSize = (textSize: number) => {
+    setAppearanceForm((f) => (f ? { ...f, textSize } : f))
+    setPreview({ textSize })
+  }
+
+  const appearanceHasChanges =
+    !!appearanceData &&
+    !!appearanceForm &&
+    (appearanceForm.theme !== appearanceData.appearance.theme ||
+      appearanceForm.accentColor !== appearanceData.appearance.accentColor ||
+      appearanceForm.textSize !== appearanceData.appearance.textSize)
+
+  const handleSaveAppearance = () => {
+    if (appearanceForm) updateAppearance.mutate(appearanceForm)
+  }
+
+  const handleCancelAppearance = () => {
+    if (appearanceData) setAppearanceForm(appearanceData.appearance)
+    resetPreview()
+  }
+
+  const appearanceSaveAction = appearanceHasChanges ? (
+    <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Button variant="outlined" size="small" onClick={handleCancelAppearance} disabled={updateAppearance.isPending}>
+        Cancelar
+      </Button>
+      <Button
+        variant="contained"
+        size="small"
+        color="secondary"
+        startIcon={updateAppearance.isPending ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+        onClick={handleSaveAppearance}
+        disabled={updateAppearance.isPending}
+      >
+        Salvar alterações
+      </Button>
+    </Box>
+  ) : undefined
 
   const isOwner = roletype === 'Owner'
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -276,6 +472,215 @@ export default function ProfileSection() {
           </FormControl>
         </SettingRow> */}
       </SettingCard>
+
+      <SettingCard title="Alterar senha" subtitle={isOwnerPerm ? '' : 'Recomendamos trocar a cada 6 meses'}>
+        {isOwnerPerm ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3, height: 300 }}>
+            <Google sx={{ fontSize: 48, color: 'text.disabled' }} />
+            <Typography variant="body2" color="text.disabled">
+              Você fez login com o Google, não é possível alterar a senha por enquanto.
+            </Typography>
+          </Box>
+        ) : (
+          <Box component="form" onSubmit={handleSubmitPassword(onSubmitPassword)}>
+            <SettingRow label="Senha atual">
+              <TextField
+                {...registerPassword('currentPassword')}
+                size="small"
+                type={showCurrent ? 'text' : 'password'}
+                sx={{ width: 340 }}
+                error={!!passwordErrors.currentPassword}
+                helperText={passwordErrors.currentPassword?.message}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowCurrent((v) => !v)} edge="end" tabIndex={-1}>
+                          {showCurrent
+                            ? <VisibilityOffOutlinedIcon fontSize="small" />
+                            : <VisibilityOutlinedIcon fontSize="small" />
+                          }
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </SettingRow>
+
+            <SettingRow label="Nova senha">
+              <TextField
+                {...registerPassword('newPassword')}
+                size="small"
+                type={showNew ? 'text' : 'password'}
+                sx={{ width: 340 }}
+                error={!!passwordErrors.newPassword}
+                helperText={
+                  passwordErrors.newPassword?.message ??
+                  'Mínimo 8 caracteres, com número e caractere especial.'
+                }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowNew((v) => !v)} edge="end" tabIndex={-1}>
+                          {showNew
+                            ? <VisibilityOffOutlinedIcon fontSize="small" />
+                            : <VisibilityOutlinedIcon fontSize="small" />
+                          }
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </SettingRow>
+
+            <SettingRow label="Confirmar nova senha">
+              <TextField
+                {...registerPassword('confirmPassword')}
+                size="small"
+                type={showConfirm ? 'text' : 'password'}
+                sx={{ width: 340 }}
+                error={!!passwordErrors.confirmPassword}
+                helperText={passwordErrors.confirmPassword?.message}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowConfirm((v) => !v)} edge="end" tabIndex={-1}>
+                          {showConfirm
+                            ? <VisibilityOffOutlinedIcon fontSize="small" />
+                            : <VisibilityOutlinedIcon fontSize="small" />
+                          }
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </SettingRow>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                disabled={isSubmittingPassword}
+                startIcon={isSubmittingPassword ? <CircularProgress size={14} color="inherit" /> : undefined}
+              >
+                {isSubmittingPassword ? 'Salvando...' : 'Alterar senha'}
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </SettingCard>
+
+      {appearanceLoading || !appearanceForm ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress size={28} />
+        </Box>
+      ) : (
+        <>
+          <SettingCard title="Tema" action={appearanceSaveAction}>
+            <Box sx={{ display: 'flex', gap: 2, p: 3 }}>
+              <ThemeCard
+                label="Claro"
+                selected={appearanceForm.theme === 'light'}
+                onClick={() => setTheme('light')}
+                preview="light"
+              />
+              <ThemeCard
+                label="Escuro"
+                selected={appearanceForm.theme === 'dark'}
+                onClick={() => setTheme('dark')}
+                preview="dark"
+              />
+            </Box>
+          </SettingCard>
+
+          <SettingCard title="Cor de destaque" subtitle="Aplicada em botões, gráficos e indicadores">
+            <Box sx={{ px: 4, py: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {ACCENT_COLORS.map((color) => {
+                const selected = appearanceForm.accentColor === color.id
+                return (
+                  <Box
+                    key={color.id}
+                    onClick={() => setAccent(color.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.5,
+                      py: 0.75,
+                      borderRadius: 5,
+                      border: 2,
+                      borderColor: selected ? color.hex : 'transparent',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s',
+                      '&:hover': { bgcolor: 'surface.raised' },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        bgcolor: color.hex,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {selected && <CheckIcon sx={{ fontSize: 12, color: '#fff' }} />}
+                    </Box>
+                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+                      {color.label}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Box>
+          </SettingCard>
+
+          <SettingCard title="Tamanho do texto" subtitle="Ajusta o tamanho base do texto em todo o sistema">
+            <Box sx={{ px: 4, py: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <Box
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: 1,
+                  borderColor: 'border.subtle',
+                  bgcolor: 'surface.sunken',
+                }}
+              >
+                <Typography sx={{ fontSize: appearanceForm.textSize, lineHeight: 1.5, color: 'text.primary' }}>
+                  <i>"Se você não consegue amar a si mesmo, como infernos vai amar outra pessoa?"</i> - RuPaul.
+                </Typography>
+                <Typography sx={{ fontSize: appearanceForm.textSize * 0.8, color: 'text.tertiary', mt: 0.5 }}>
+                  Exemplo de texto secundário · {appearanceForm.textSize}px
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 1 }}>
+                <Typography sx={{ fontSize: 13, color: 'text.tertiary' }}>A</Typography>
+                <Slider
+                  value={appearanceForm.textSize}
+                  min={TEXT_SIZE_MIN}
+                  max={TEXT_SIZE_MAX}
+                  step={1}
+                  marks
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(v) => `${v}px`}
+                  onChange={(_, value) => setTextSize(value as number)}
+                  sx={{ flex: 1 }}
+                />
+                <Typography sx={{ fontSize: 22, color: 'text.tertiary' }}>A</Typography>
+              </Box>
+            </Box>
+          </SettingCard>
+        </>
+      )}
 
       {isOwner && (
         <SettingCard title="Zona de risco" subtitle="Ações permanentes e irreversíveis" danger>
