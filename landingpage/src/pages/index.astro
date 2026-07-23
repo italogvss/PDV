@@ -19,7 +19,7 @@ const features = [
     nome: 'Vendas', tag: 'PDV',
     titulo: 'Um caixa que não trava na fila',
     desc: 'Bipou, vendeu. Busca por nome ou código, desconto na hora e recibo no WhatsApp do cliente.',
-    img: 'https://placehold.co/760x440/1a1916/5ee074.png?text=Tela+de+Vendas',
+    img: 'vendas',
     size: 'lead',
     icon: '<path d="M3 11.4 11.4 3H20a1 1 0 0 1 1 1v8.6l-8.4 8.4a1.5 1.5 0 0 1-2.1 0L3 13.5a1.5 1.5 0 0 1 0-2.1Z"/><circle cx="16.4" cy="7.6" r="1.4"/>',
   },
@@ -27,31 +27,31 @@ const features = [
     nome: 'Estoque', tag: 'Controle',
     titulo: 'Saiba o que tem, o que falta e o que vende',
     desc: 'Baixa automática a cada venda e alerta quando o produto está acabando.',
-    img: 'https://placehold.co/440x460/14a82e/eafff0.png?text=Estoque',
-    size: 'tall',
+    img: 'inventory',
+    size: 'small',
     icon: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
   },
   {
     nome: 'Relatórios', tag: 'Analytics',
     titulo: 'Os números do seu negócio, sem planilha',
     desc: 'Quanto entrou hoje, qual produto mais vende e qual horário é mais movimentado.',
-    img: 'https://placehold.co/440x240/1a1916/25cf3f.png?text=Relatorios',
-    size: 'small',
+    img: 'relatorios',
+    size: 'mid',
     icon: '<path d="M5 19V5"/><path d="M5 19h14"/><path d="M9 19v-4.5"/><path d="M14 19v-8"/><path d="M19 19V8.5"/>',
   },
   {
     nome: 'Agenda', tag: 'Agendamentos',
     titulo: 'Horários cheios, sem caderninho',
     desc: 'Clientes marcam sozinhos e ninguém esquece o compromisso.',
-    img: 'https://placehold.co/440x240/14a82e/eafff0.png?text=Agenda',
-    size: 'small',
+    img: 'agendamento',
+    size: 'mid',
     icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3.5v3M16 3.5v3"/>',
   },
   {
     nome: 'Despesas', tag: 'Financeiro',
     titulo: 'Veja se sobra no fim do mês',
     desc: 'Lança a conta, anexa o comprovante e acompanha o lucro de verdade.',
-    img: 'https://placehold.co/620x360/1a1916/5ee074.png?text=Financeiro',
+    img: 'despesas',
     size: 'banner',
     icon: '<path d="M6 3h12v18l-2.2-1.4L13.6 21 12 19.6 10.4 21l-1.6-1.4L6 21V3Z"/><path d="M9.5 8.5h5M9.5 12.5h5"/>',
   },
@@ -125,12 +125,10 @@ const planos = [
 
         <div class="hero-stage">
           <div class="hero-glow" aria-hidden="true"></div>
-          <img
-            class="hero-shot"
-            src="https://placehold.co/900x620/1a1916/5ee074.png?text=Tela+de+Vendas"
-            alt="Tela de vendas do Ka$hing"
-            width="900" height="620" loading="eager"
-          />
+          <picture class="hero-shot">
+            <img class="theme-img is-light" src="/images/vendas-white.png" alt="Tela de vendas do Ka$hing" width="1863" height="917" loading="eager" />
+            <img class="theme-img is-dark" src="/images/vendas-black.png" alt="Tela de vendas do Ka$hing" width="1863" height="917" loading="eager" />
+          </picture>
           <div class="sale-chip chip-1" aria-hidden="true">
             <span class="chip-amount shimmer">+ R$ 48,00</span>
             <span class="chip-label">Venda registrada</span>
@@ -218,7 +216,8 @@ const planos = [
                 <p class="feat-desc">{f.desc}</p>
               </div>
               <div class="feat-shot">
-                <img src={f.img} alt={`Tela de ${f.nome} do Ka$hing`} loading="lazy" />
+                <img class="theme-img is-light" src={`/images/${f.img}-white.png`} alt={`Tela de ${f.nome} do Ka$hing`} loading="lazy" />
+                <img class="theme-img is-dark" src={`/images/${f.img}-black.png`} alt={`Tela de ${f.nome} do Ka$hing`} loading="lazy" />
               </div>
             </article>
           ))}
@@ -318,13 +317,21 @@ const planos = [
 </Layout>
 
 <style>
+  /* ===== TROCA DE IMAGEM POR TEMA =====
+     Cada screenshot vem em par -white/-black; a variante certa aparece
+     conforme o data-theme pintado no <html> (mesmo mecanismo do ThemeToggle). */
+  .theme-img { display: block; width: 100%; height: auto; }
+  .theme-img.is-dark { display: none; }
+  :global(html[data-theme='dark']) .theme-img.is-light { display: none; }
+  :global(html[data-theme='dark']) .theme-img.is-dark { display: block; }
+
   /* ============ HERO ============ */
   .hero { padding-block: var(--space-10) var(--space-12); }
   .hero-grid {
     display: grid;
-    grid-template-columns: 1.05fr 1fr;
+    grid-template-columns: 1fr 1.38fr;
     align-items: center;
-    gap: var(--space-10);
+    gap: var(--space-8);
   }
   .hero-title {
     font-size: clamp(var(--text-5xl), 8vw, var(--text-7xl));
@@ -406,13 +413,15 @@ const planos = [
   .hero-shot {
     position: relative;
     z-index: 1;
+    display: block;
     width: 100%;
-    height: auto;
+    overflow: hidden;
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-line);
     box-shadow: var(--shadow-glow);
     transform: rotate(-1.2deg);
   }
+  .hero-shot .theme-img { border-radius: inherit; }
   .sale-chip {
     position: absolute;
     z-index: 2;
@@ -542,7 +551,7 @@ const planos = [
     flex-direction: column;
     justify-content: space-between;
     gap: var(--space-5);
-    padding: var(--space-6);
+    padding: var(--space-5);
     background: var(--color-card);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-lg);
@@ -554,14 +563,14 @@ const planos = [
 
   /* posicionamento explícito do bento (grid 6 col) */
   .feat-lead   { grid-column: span 4; }
-  .feat-tall   { grid-column: span 2; grid-row: span 2; }
+  .feat-mid    { grid-column: span 3; }
   .feat-small  { grid-column: span 2; }
   .feat-banner { grid-column: span 6; }
 
-  /* cards largos: texto e tela lado a lado */
-  .feat-lead, .feat-banner { flex-direction: row; align-items: center; gap: var(--space-7); }
+  /* cards largos: texto e tela lado a lado — a tela leva a maior fatia */
+  .feat-lead, .feat-banner { flex-direction: row; align-items: center; gap: var(--space-6); }
   .feat-lead .feat-text, .feat-banner .feat-text { flex: 1; }
-  .feat-lead .feat-shot, .feat-banner .feat-shot { flex: 1; align-self: stretch; }
+  .feat-lead .feat-shot, .feat-banner .feat-shot { flex: 1.35; align-self: center; }
 
   .feat-head {
     display: flex;
@@ -601,11 +610,8 @@ const planos = [
     border: 1px solid var(--color-line);
     background: var(--color-cloud);
   }
-  .feat-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  /* reserva de espaço estável mesmo antes da imagem carregar */
-  .feat-small .feat-shot, .feat-tall .feat-shot { aspect-ratio: 11 / 6; }
-  .feat-tall .feat-shot { aspect-ratio: auto; flex: 1; margin-top: var(--space-1); }
-  .feat-lead .feat-shot, .feat-banner .feat-shot { aspect-ratio: 16 / 10; }
+  /* imagem inteira, sem corte — a proporção real (~2:1) vem do próprio arquivo.
+     A exibição/troca por tema fica a cargo da regra base .theme-img. */
 
   /* ============ DEPOIMENTOS ============ */
   .depo-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-8); }
@@ -795,18 +801,16 @@ const planos = [
     .hero-grid { grid-template-columns: 1fr; gap: var(--space-12); }
     .hero-stage { max-width: 30rem; margin-inline: auto; }
     .ps-grid { grid-template-columns: 1fr; gap: var(--space-8); }
-    .bento { grid-template-columns: repeat(2, 1fr); }
-    .feat-lead, .feat-banner { grid-column: span 2; }
-    .feat-tall, .feat-small { grid-column: span 1; grid-row: span 1; }
-    .feat-tall .feat-shot { aspect-ratio: 11 / 6; flex: none; }
+    .bento { grid-template-columns: 1fr; }
+    .feat-lead, .feat-mid, .feat-small, .feat-banner { grid-column: 1 / -1; }
+    .feat-lead, .feat-banner { flex-direction: column; align-items: stretch; }
+    .feat-lead .feat-shot, .feat-banner .feat-shot { flex: none; }
     .depo-grid, .planos-grid { grid-template-columns: 1fr; }
     .depo-grid { max-width: 34rem; margin-inline: auto; }
     .planos-grid { max-width: 26rem; margin-inline: auto; }
   }
   @media (max-width: 560px) {
     .ps-compare { grid-template-columns: 1fr; }
-    .bento { grid-template-columns: 1fr; }
-    .feat-lead, .feat-banner { grid-column: span 1; flex-direction: column; align-items: stretch; gap: var(--space-5); }
     .sale-chip { padding: var(--space-2) var(--space-3); }
     .chip-1 { right: 0; }
     .chip-2 { left: 0; }
