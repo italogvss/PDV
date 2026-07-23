@@ -51,12 +51,16 @@ export default function RouterGuard({ type }: { type: GuardType }) {
       // Sem tenant o dashboard não funciona — encaminha pro onboarding/planos.
       if (!tenantId) return <Navigate to={resolvePostLoginPath(tenantId)} replace />
       break
-    case 'onboarding':
+    case 'onboarding': {
       if (!isAuthenticated) return loginRedirect
       if (mustChangePassword) return <Navigate to="/trocar-senha" replace />
       if (role === 'Employee') return <Navigate to="/" replace />
-      if (tenantId) return <Navigate to="/" replace />
+      // Owner criando um negócio ADICIONAL: ainda tem tenantId (o da loja atual) — o navigate()
+      // marca a intenção via state para não cair no bloqueio "já tem tenant, volta pro dashboard".
+      const creatingAdditionalStore = (location.state as { creatingNewStore?: boolean } | null)?.creatingNewStore
+      if (tenantId && !creatingAdditionalStore) return <Navigate to="/" replace />
       break
+    }
     case 'change-password':
       if (!isAuthenticated) return loginRedirect
       if (!mustChangePassword) return <Navigate to="/" replace />

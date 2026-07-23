@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Box, Avatar, Typography, IconButton, Popover, CircularProgress, Button, Divider, Tooltip } from '@mui/material'
 import { UnfoldMore, Check, AddBusiness, Settings } from '@mui/icons-material'
-import { useAppSelector, useAppDispatch } from '../../../../store'
-import { setTenant } from '../../../../store/slices/auth.slice'
+import { useAppSelector } from '../../../../store'
 import { useSwitchTenant } from '../../../../hooks/useSwitchTenant'
 import { useTenantSettings } from '../../../../hooks/useTenantSettings'
-import { useEntitlements } from '../../../../hooks/useSubscription'
+import { useEntitlements, usePlans } from '../../../../hooks/useSubscription'
 import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 import { PLAN_LIMITS, UNLIMITED } from '../../../../constants/entitlements'
 import UpsellModal from '../../../../components/UpsellModal'
+import PlanLimitReachedDialog from '../../../../components/PlanLimitReachedDialog'
+import { hasHigherLimitPlan } from '../../../../utils/plans'
 import type { TenantListItem } from '../../../../types/tenant.types'
 
 function getInitials(name: string): string {
@@ -94,13 +95,15 @@ export default function StoreSelector() {
   const [upsellOpen, setUpsellOpen] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
   const queryClient = useQueryClient()
 
   const { limit } = useEntitlements()
+  const { data: plans } = usePlans()
   const storesLimit = limit(PLAN_LIMITS.stores)
   const ownedActiveCount = tenants.filter((t) => t.isActive && t.role === 'Owner').length
   const storesLimitReached = storesLimit !== UNLIMITED && ownedActiveCount >= storesLimit
+  // Já no plano mais alto: nenhum upgrade aumenta o limite — trocar o upsell por um aviso simples.
+  const canUpgradeForMoreStores = hasHigherLimitPlan(storesLimit, plans ?? [], PLAN_LIMITS.stores)
 
   const switchableTenants = tenants.filter((t) => t.isActive)
   const activeTenant = tenants.find((t) => t.tenantId === tenantId)
@@ -130,9 +133,11 @@ export default function StoreSelector() {
       return
     }
     handleClose()
-    dispatch(setTenant({ tenantId: null }))
     queryClient.clear()
-    navigate('/criar-negocio')
+    // `state.creatingNewStore` avisa o RouterGuard que o tenantId atual (a loja de origem) não deve
+    // barrar o onboarding — trocar o tenantId no Redux antes de navegar dispara o guard de
+    // /dashboard (ainda montado) direto pra resolvePostLoginPath, sequestrando a navegação.
+    navigate('/criar-negocio', { state: { creatingNewStore: true } })
   }
 
   return (
@@ -244,12 +249,21 @@ export default function StoreSelector() {
         </>
       </Popover>
 
-      <UpsellModal
-        open={upsellOpen}
-        onClose={() => setUpsellOpen(false)}
-        title="Abra mais lojas com o Pro"
-        description={`Seu plano permite até ${storesLimit} ${storesLimit === 1 ? 'loja' : 'lojas'}. Faça upgrade para o Pro e gerencie mais estabelecimentos.`}
-      />
+      {canUpgradeForMoreStores ? (
+        <UpsellModal
+          open={upsellOpen}
+          onClose={() => setUpsellOpen(false)}
+          title="Abra mais lojas com o Pro"
+          description={`Seu plano permite até ${storesLimit} ${storesLimit === 1 ? 'loja' : 'lojas'}. Faça upgrade para o Pro e gerencie mais estabelecimentos.`}
+        />
+      ) : (
+        <PlanLimitReachedDialog
+          open={upsellOpen}
+          onClose={() => setUpsellOpen(false)}
+          title="Limite de lojas atingido"
+          description={`Seu plano permite até ${storesLimit} ${storesLimit === 1 ? 'loja' : 'lojas'}. Encerre uma loja existente para abrir espaço para uma nova.`}
+        />
+      )}
     </Box>
   )
 }

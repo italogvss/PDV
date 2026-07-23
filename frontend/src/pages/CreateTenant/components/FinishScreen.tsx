@@ -81,8 +81,18 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
 
         {/* Title */}
         <Typography
-          variant="h4"
-          sx={{ fontWeight: 700, textAlign: 'center', mb: 1 }}
+          variant="h3"
+          sx={{
+            fontWeight: 800,
+            textAlign: 'center',
+            mb: 1,
+            fontSize: { xs: '1.9rem', sm: '2.4rem' },
+            background: (theme) =>
+              `linear-gradient(90deg, ${theme.palette.accent[600]}, ${theme.palette.accent[400]})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           Tudo pronto, {firstName}!
         </Typography>
@@ -180,7 +190,7 @@ export default function FinishScreen({ formData, firstName, onReset }: FinishScr
             endIcon={<ArrowForwardIcon />}
             onClick={() => navigate('/')}
           >
-            Entrar no PDV Ultra
+            Entrar no Kashing
           </Button>
         </Box>
       </Box>

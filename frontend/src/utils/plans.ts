@@ -1,6 +1,16 @@
 import type { Plan } from '../types/subscription.types'
 import { FEATURE_LABELS, UNLIMITED, type PlanFeature, type PlanLimitKey } from '../constants/entitlements'
 
+// Se nenhum plano do catálogo supera o limite atual (ou já é ilimitado), não existe upgrade que
+// resolva — quem já está no plano mais alto deve ver um aviso simples, não um upsell sem saída.
+export function hasHigherLimitPlan(current: number, allPlans: Plan[], key: PlanLimitKey): boolean {
+  if (current === UNLIMITED) return false
+  return allPlans.some((plan) => {
+    const value = plan.limits[key] ?? 0
+    return value === UNLIMITED || value > current
+  })
+}
+
 // Helpers sobre o *shape* de `Plan` (preço, ciclo, entitlements, limites) — usados tanto pela
 // grade de planos (`PlansGrid`, tela `/planos` e `PlansDialog`) quanto pelo resumo de assinatura
 // em Configurações (`SubscriptionSection/helpers.ts`, que reexporta o que ainda usa daqui).

@@ -35,11 +35,8 @@ interface StepNegocioProps {
 const SEGMENTS: { value: BusinessSegment; label: string; Icon: React.ElementType }[] = [
   { value: 'mercado',     label: 'Mercado / Mercearia',    Icon: ShoppingBasketIcon },
   { value: 'varejo',      label: 'Varejo / Loja',          Icon: StoreIcon },
-  { value: 'vestuario',   label: 'Vestuário',              Icon: CheckroomIcon },
-  { value: 'eletronicos', label: 'Eletrônicos',            Icon: DevicesIcon },
   { value: 'servicos',    label: 'Serviços',               Icon: HandymanIcon },
   { value: 'barbearia',   label: 'Barbearia',              Icon: ContentCutIcon },
-  { value: 'petshop',     label: 'Petshop',                Icon: PetsIcon },
   { value: 'mecanico',    label: 'Mecânico',               Icon: BuildIcon },
   { value: 'tatuagem',    label: 'Tatuagem',               Icon: BrushIcon },
   { value: 'esteticista', label: 'Esteticista',            Icon: SpaIcon },
@@ -72,7 +69,7 @@ export default function StepNegocio({ data, onChange, errors }: StepNegocioProps
         Como se chama o seu negócio?
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        É o nome que vai aparecer no PDV Ultra e nos recibos.
+        É o nome que vai aparecer no Kashing e nos recibos.
       </Typography>
 
       {/* Logo upload */}

@@ -53,6 +53,7 @@ export interface CreateTenantFormData {
   state: string
   hoursPreset: HoursPreset
   businessHours: BusinessHours
+  acceptedTerms: boolean
 }
 
 export const INITIAL_FORM_DATA: CreateTenantFormData = {
@@ -78,6 +79,7 @@ export const INITIAL_FORM_DATA: CreateTenantFormData = {
   state: '',
   hoursPreset: 'comercial',
   businessHours: DEFAULT_HOURS_PRESETS.comercial,
+  acceptedTerms: false,
 }
 
 export type FormErrors = Partial<Record<keyof CreateTenantFormData, string>>
@@ -85,4 +87,5 @@ export type FormErrors = Partial<Record<keyof CreateTenantFormData, string>>
 export const STEPS = [
   { label: 'Seu negócio', subtitle: 'Como ele se chama' },
   { label: 'Endereço', subtitle: 'Onde ele fica' },
+  { label: 'Teste grátis', subtitle: 'Como funciona' },
 ] as const
