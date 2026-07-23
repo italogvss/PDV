@@ -74,3 +74,10 @@ export const EXPORT_CATEGORIES = [
   { id: 'billing', label: 'Faturamento', icon: BarChartOutlined },
   { id: 'team', label: 'Equipe', icon: GroupsOutlined },
 ]
+
+// Tipos importáveis via CSV — subconjunto das categorias exportáveis (só entidades cadastrais).
+export const IMPORT_CATEGORIES: { id: 'products' | 'customers' | 'services'; label: string; icon: React.ElementType }[] = [
+  { id: 'products', label: 'Produtos', icon: Inventory2Outlined },
+  { id: 'customers', label: 'Clientes', icon: PeopleOutlined },
+  { id: 'services', label: 'Serviços', icon: MiscellaneousServicesOutlined },
+]

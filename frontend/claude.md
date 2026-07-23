@@ -1,12 +1,14 @@
 # PDV-Ultra — Frontend
 
-React + TypeScript + MUI. Interface de gestão para pequenos comércios.
+React + TypeScript + MUI. Interface de gestão para pequenos comércios. **Em produção** — toda mudança nasce em branch própria e passa por `npx tsc -b` + `npm run build` + validação funcional antes do merge (ver CLAUDE.md da raiz).
 
 ## Stack
 
 React 19, TypeScript, **MUI v9** (`@mui/material` + `@mui/system` + `@mui/icons-material`), **MUI X** (DataGrid, Charts, DatePickers, Scheduler[beta]), **React Router v7**, Axios, **TanStack React Query v5**, Redux Toolkit, React Hook Form + **Zod v4**, dayjs, Vite.
 
 Auxiliares: `react-markdown` (conteúdo de Ajuda/anúncios), `mui-color-input` (cor de cargo/categoria). Pagamentos são pelo **Stripe Checkout hospedado** — o frontend só redireciona para a URL que o backend devolve; não há SDK de pagamento no bundle.
+
+**Typecheck**: `npx tsc -b` (o root `tsconfig.json` é só de references — `tsc --noEmit` sozinho **não checa nada**). Build completo: `npm run build` (= `tsc -b && vite build`).
 
 ## Composição do app (`App.tsx`)
 
@@ -23,10 +25,11 @@ ReduxProvider → QueryClientProvider → ThemeModeProvider → LocalizationProv
 
 ```
 /src
+├── admin/             ← área do admin da plataforma (ver "Área /admin")
 ├── components/{ComponentName}/index.tsx + types.ts   ← primitivos reutilizáveis (ver "Biblioteca de primitivos")
-├── constants/         ← modules.ts, address.ts (STATES), payment.ts (labels)
+├── constants/         ← modules.ts, entitlements.ts, subscription.ts, address.ts, payment.ts (ver "Constantes")
 ├── context/           ← ToastContext, ThemeModeContext
-├── hooks/             ← um arquivo por feature (use{Feature}.ts) + utilitários (useToast, useApiError, useUserPermissions)
+├── hooks/             ← um arquivo por feature (use{Feature}.ts) + utilitários (useToast, useApiError, useUserPermissions, useEntitlements...)
 ├── layouts/DashboardLayout/   ← shell autenticado; constants.ts define NAV_SECTIONS
 ├── pages/{PageName}/index.tsx + components/ + types.ts
 ├── router/index.tsx
@@ -34,10 +37,8 @@ ReduxProvider → QueryClientProvider → ThemeModeProvider → LocalizationProv
 ├── store/index.ts + slices/auth.slice.ts
 ├── theme/             ← createAppTheme(mode, textSize, accent) — ver "Tema"
 ├── types/{feature}.types.ts
-└── utils/             ← masks.ts, currency.ts, image.utils.ts, apiError.ts
+└── utils/             ← masks.ts, currency.ts, image.utils.ts, apiError.ts, chart.ts, plans.ts, planSelection.ts, premium.ts
 ```
-
-`/frontend/design` (irmão de `/src`, **não** dentro dele) — referências visuais, somente leitura.
 
 ---
 
@@ -59,34 +60,59 @@ ReduxProvider → QueryClientProvider → ThemeModeProvider → LocalizationProv
 
 ---
 
-## Controle de acesso (dois eixos)
-
-> Não confundir com **billing**. O plano **nunca** esconde ou desabilita UI — o backend bloqueia com **402** e o erro vira toast amigável (ver "Tratamento de erro"). Renderize a UI; deixe o 402 barrar.
+## Controle de acesso (dois eixos) + billing
 
 **Eixo de acesso (tenant/role).** `useUserPermissions()` → `{ permissions, hasPermission(p), isOwner, modules, isModuleEnabled(m) }`.
 - `isOwner` = role `Owner` ou `Admin`. `hasPermission` = `isOwner || permissions.includes(p)`.
 - `isModuleEnabled` vale para **todos** (inclusive Owner) — módulos são do tenant, não do papel.
-- Permissões: `types/employee.types.ts` (`PERMISSIONS` mapa→rótulo, tipo `Permission`). Módulos: `constants/modules.ts` (`OperationModule`, `OPERATION_MODULES`, `ALL_MODULES`, `permissionToModule`). Um módulo agrupa permissões; permissões fora do mapa (ex.: `ManageEmployees`) são "core", sempre visíveis.
+- Permissões: `types/employee.types.ts` (`PERMISSIONS` mapa→rótulo, tipo `Permission`). Módulos: `constants/modules.ts` (`OperationModule`, `OPERATION_MODULES`, `ALL_MODULES`, `permissionToModule`). Metadados completos (módulos × permissões) vêm do backend via `useAccessMetadata` (`GET /api/access/metadata`, cache infinito).
 
 Enforcement nos 3 lugares:
 1. **Rota** — `<PermissionGuard permission="ViewStock">` envolve a página; redireciona para `/` se faltar.
 2. **Navegação** — `Sidebar` filtra `NAV_SECTIONS` por `ownerOnly` / `module` / `requiredPermission`.
 3. **Query** — gate no `enabled` do hook: `enabled: isModuleEnabled('inventory') && hasPermission('ViewStock')`.
 
+**Eixo de billing (plano).** `useEntitlements()` → `{ has(feature), limit(key), isLoaded }` — lê o espelho síncrono `auth.subscription` do Redux. Chaves em `constants/entitlements.ts` (`FEATURES`, `PLAN_LIMITS`, `UNLIMITED = -1`); comparação **case-insensitive** (backend manda lowercase, chaves canônicas são camelCase).
+
+> Regra: o plano **não esconde UI**. Feature **com endpoint** → renderize normal; o backend barra com 402 e vira toast de upgrade. Feature **sem endpoint** (ex.: painel analítico) → cadeado/CTA de upsell com `has(key)`. Componentes prontos: `PremiumLock`, `PremiumIconBadge`, `UpsellButton`, `UpsellCard`, `UpsellFeatureRow`, `UpsellModal`, `PlansGrid`; superfície tracejada dourada via `premiumDashedSurfaceSx` (`utils/premium.ts`). Todo CTA de upsell navega para `PLANS_ROUTE` (`constants/subscription.ts`) — nunca duplicar a string da rota.
+
 ---
 
 ## Rotas
 
-`createBrowserRouter` com **`RouterGuard`** unificado (substitui os antigos `PublicRoute`/`OnboardingRoute`/`ProtectedRoute`):
+`createBrowserRouter` com **`RouterGuard`** unificado:
 
 ```tsx
 <RouterGuard type="public" />        // só não autenticado (/login)
 <RouterGuard type="onboarding" />    // autenticado, sem tenant (/criar-negocio)
 <RouterGuard type="change-password" />  // mustChangePassword (/trocar-senha)
 <RouterGuard type="protected" />     // autenticado com tenant → DashboardLayout
+<RouterGuard type="admin" />         // role Admin → AdminLayout (/admin)
 ```
 
-`DashboardLayout` é o shell de `protected`; cada página sensível vem envolta em `<PermissionGuard>`. Rotas em português (`/vendas`, `/estoque`, `/despesas`, `/relatorios`...). Catch-all `*` → `Navigate to="/"`.
+`DashboardLayout` é o shell de `protected`; cada página sensível vem envolta em `<PermissionGuard>`. Rotas em português (`/vendas`, `/estoque`, `/despesas`, `/relatorios`, `/planos`...). Catch-all `*` → `Navigate to="/"`.
+
+---
+
+## Área /admin (`src/admin`)
+
+Mini-app isolado do admin da plataforma (role `Admin`), com **estrutura paralela própria**: `AdminLayout` + `pages/` (Overview, Subscriptions, Payments, Plans, Coupons, Webhooks, Support, Announcements, LegalDocuments, Observability, Compliance) + `components/`, `hooks/`, `services/`, `constants/`, `types/`, `utils/` próprios. Não importa nada das páginas do app do lojista (primitivos de `src/components` podem ser reusados). Os padrões deste documento (service → hook → página, tema, tipagem) valem lá também.
+
+---
+
+## Constantes (`src/constants`)
+
+Espelham as **chaves** dos catálogos do backend (`PDV.Domain/Constants`) — a fonte de verdade é o backend; os rótulos PT-BR ficam aqui (ver CLAUDE.md da raiz, "Constantes compartilhadas"):
+
+| Arquivo | Conteúdo |
+|---|---|
+| `modules.ts` | `OperationModule` (keys lowercase = enum do backend), `OPERATION_MODULES` (label+descrição+permissões), `permissionToModule` |
+| `entitlements.ts` | `FEATURES` + `FEATURE_LABELS`, `PLAN_LIMITS`, `UNLIMITED = -1` — espelho de `EntitlementCatalog`/`PlanLimits` |
+| `subscription.ts` | `PLANS_ROUTE` (rota única de todo CTA de upsell), `CHOOSE_PLAN_ROUTE` |
+| `payment.ts` | chave do enum backend → rótulo/cor (`PAYMENT_METHOD_LABELS`/`_COLORS` — mesma paleta em todos os gráficos) |
+| `address.ts` | `STATES` (UFs) |
+
+Nunca redefinir um valor fixo que o backend já define — espelhar a chave ou buscar via `useAccessMetadata`.
 
 ---
 
@@ -212,7 +238,11 @@ Reusar antes de recriar. Nunca duplicar header/footer/label de modal inline.
 |---|---|
 | Modal | `ModalHeader` (título+subtítulo+X), `FormModalActions` (rodapé Cancelar+primário com spinner), `FieldLabel`, `CurrencyField`, `ConfirmDialog`, `ConfirmPhraseDialog` (digitar frase p/ ação destrutiva) |
 | Página | `PageHeader`, `PageKpiCard`+`PageKpiGrid`, `DataGridNoRowsOverlay`, `FilterTabs`, `FiltersPopover` |
-| Entrada/seleção | `ChipSelect`, `CategoryStrip`, `CategoryFormModal`, `ImageUpload` |
+| Detalhe/dados | `DetailProfileHeader`, `DetailFieldCell`, `ChartCard`, `DonutChart`, `RankingList`, `InfoTooltip` |
+| Entrada/seleção | `ChipSelect`, `CategoryStrip`, `CategoryFormModal`, `ImageUpload`, `AddressEditFields` |
+| Premium/upsell | `PremiumLock`, `PremiumIconBadge`, `UpsellButton`, `UpsellCard`, `UpsellFeatureRow`, `UpsellModal`, `PlansGrid` |
+| Billing (estados) | `PaymentFailedModal`, `SubscriptionExpiredModal` |
+| Exclusão de conta | `AccountDeletionBanner`, `AccountDeletionOverlay`, `DataDeletionBanner` |
 | Configurações | `SettingCard`, `SettingRow` |
 | Acesso/infra | `RouterGuard`, `PermissionGuard`, `AuthProvider` |
 | Diversos | `MarkdownRenderer`, `GoogleSignInButton`, `AnnouncementCenter` |
@@ -235,13 +265,13 @@ Formulários com **React Hook Form + `zodResolver`** (schema Zod no topo do arqu
 
 ## Upload de mídia (implementado)
 
-Fluxo: valida → converte p/ WebP no navegador (Canvas) → presigned URL → PUT direto no MinIO → confirma no backend → invalida a query.
+Fluxo: valida → converte p/ WebP no navegador (Canvas) → presigned URL → PUT direto no storage (MinIO em dev, R2 em produção) → confirma no backend → invalida a query.
 
 ```
 useUploadImage(category, queryKey) / useRemoveImage(category, queryKey)   ← hooks/useMediaUpload.ts
   → GET  /media/presigned-url?category=&entityId=
-  → PUT  {uploadUrl}            (fetch direto, NÃO o `api` — URL absoluta do MinIO)
-  → PATCH /media/confirm        { category, entityId, relativePath }
+  → PUT  {uploadUrl}            (fetch direto, NÃO o `api` — URL absoluta do storage)
+  → PATCH /media/confirm        { category, entityId }
 ```
 
 - `utils/image.utils.ts`: `convertToWebp` (qualidade 0.85) + `validateImageFile` (JPEG/PNG/WebP, máx 5MB).
@@ -265,17 +295,11 @@ Tema **dinâmico** construído por `createAppTheme(mode, textSize, accent)` e pr
 - Nunca cor hardcoded — sempre token. Tokens custom (via `theme/augment.ts`): `neutral`, `accent`, `premium`, `surface` (`default/paper/sunken/raised`), `border` (`subtle/strong`), `data`, `text.tertiary`, semânticos com `.soft`/`.ink`, e `customShadows`.
 - Variantes de Button custom: `variant="ghost"` (transparente, vira filled no hover) e `variant="soft"`. `Chip` ganha `color="premium"` e `size="large"`.
 - `spacing` base 5px; breakpoints custom (`sm:540 md:760 lg:900 xl:1280`); locale `ptBR`; fonte Geist.
-- Tabelas → `DataGrid` (MUI X). Gráficos → MUI X Charts. Overrides globais em `theme/components.ts` — nunca CSS externo.
+- Tabelas → `DataGrid` (MUI X). Gráficos → MUI X Charts, com helpers de cor em `utils/chart.ts` e cores fixas por método de pagamento em `constants/payment.ts`. Overrides globais em `theme/components.ts` — nunca CSS externo.
 
 ---
 
-## /design (em `/frontend/design`)
-
-Somente leitura — referências visuais por feature, **fora** de `/src`. Ao implementar, criar em `/components` ou `/pages`; nunca copiar hex direto — mapear para tokens do tema.
-
----
-
-## Skills (`.claude/skills/`)
+## Skills (`frontend/.claude/skills/`)
 
 | Tarefa | Skill |
 |---|---|
@@ -294,8 +318,9 @@ Somente leitura — referências visuais por feature, **fora** de `/src`. Ao imp
 - Buscar dados da API fora de um hook React Query; `api` direto na página.
 - Axios direto — sempre `api` de `./services/api`.
 - Redux para cache de dados da API (só sessão).
-- Esconder/desabilitar UI por causa do **plano** — deixe o backend retornar 402.
+- Esconder/desabilitar UI por causa do **plano** quando a feature tem endpoint — deixe o 402 barrar (sem endpoint → cadeado/upsell via `has()`).
+- Duplicar a rota de planos em string — usar `PLANS_ROUTE` de `constants/subscription.ts`.
 - `TenantId` em query key ou header manual (já vem do interceptor).
 - `any` ou `as` para forçar tipo; duplicar tipagem que o Zod infere.
 - `process.env` — usar `import.meta.env`.
-- Editar arquivos em `/design`.
+- Redefinir constante/chave que a fonte é o backend (`PDV.Domain/Constants`) — espelhar em `constants/`.

@@ -1,6 +1,6 @@
 # PDV-Ultra — Backend
 
-API REST em ASP.NET Core (.NET 8+). Multi-tenant com `TenantId` via claim do JWT.
+API REST em ASP.NET Core (.NET 8+). Multi-tenant com `TenantId` via claim do JWT. **Em produção** — toda mudança nasce em branch própria e passa pelos testes antes do merge (ver CLAUDE.md da raiz).
 
 ## Estrutura de projetos
 
@@ -9,18 +9,31 @@ API REST em ASP.NET Core (.NET 8+). Multi-tenant com `TenantId` via claim do JWT
 ├── PDV.Api             ← Controllers, Attributes, Middleware, Program.cs (composition root)
 ├── PDV.Application     ← Interfaces, DTOs, Validators (FluentValidation), Helpers
 ├── PDV.Domain          ← Entidades, Enums, Exceptions, Constants, Interfaces (repositórios)
-└── PDV.Infrastructure  ← Services, Repositories, AppDbContext, Storage, Migrations
+├── PDV.Infrastructure  ← Services, Repositories, AppDbContext, Storage, Migrations
+├── PDV.UnitTests       ← NUnit 4 + Moq — fluxos críticos (ver PDV.UnitTests/README.md)
+├── PDV.slnx            ← solution principal (inclui os testes)
+└── backend.slnx        ← solution p/ Visual Studio com docker-compose.dcproj (sem testes)
 ```
 
-**Domain** — entidades, enums, exceções (`AppException` e filhos), constantes (catálogo de planos/módulos) e **interfaces de repositório**. Zero dependência externa.
+**Domain** — entidades, enums, exceções (`AppException` e filhos), constantes (catálogos de plano/módulo — ver "Constantes de domínio") e **interfaces de repositório**. Zero dependência externa.
 
 **Application** — interfaces de service, DTOs de entrada/saída, validators FluentValidation, helpers. Depende só do Domain.
 
 **Infrastructure** — implementa services e repositórios, `AppDbContext`, storage, gateway de pagamento. Depende de Application e Domain.
 
-**Api** — controllers finos (recebe → chama service → retorna), atributos de autorização, `ExceptionMiddleware`. Sem lógica de negócio. Tudo é registrado em `Program.cs`.
+**Api** — controllers finos (recebe → chama service → retorna), atributos de autorização, middlewares. Sem lógica de negócio. Tudo é registrado em `Program.cs`.
 
 > Nota: interfaces de **repositório** ficam em `PDV.Domain/Interfaces`; interfaces de **service** em `PDV.Application/Interfaces`.
+
+---
+
+## Testes (`PDV.UnitTests`)
+
+Testes por **fluxo do usuário** (não por classe), só do que é crítico: *se isto quebrar em silêncio, alguém perde dinheiro, dados ou vê dados de outra empresa?* Sem meta de cobertura total. Fluxos cobertos: `Authentication`, `AccessControl`, `AccountDeletion`, `Billing`, `Onboarding`. Nomes prefixados com o ID do cenário dos docs (`A3_`, `T4_`, `Scenario4_`).
+
+⚠️ **No host Windows a suíte não executa** (Smart App Control bloqueia DLLs locais — `dotnet build` passa, o load em runtime falha). Rodar **em container** — comando pronto e todo o racional em [PDV.UnitTests/README.md](PDV.UnitTests/README.md).
+
+Ao mexer em billing/auth/exclusão de conta, **rode a suíte antes do merge** e considere adicionar o cenário novo seguindo o padrão do README.
 
 ---
 
@@ -49,15 +62,15 @@ Regras:
 
 ## Autorização
 
-Três camadas, aplicadas via atributos no controller (de fora para dentro):
+Três camadas, aplicadas via atributos no controller (de fora para dentro). Detalhes em [docs/access-control-e-entitlements.md](../docs/access-control-e-entitlements.md).
 
 1. **`[Authorize]`** — exige JWT válido. `[Authorize(Roles = "Owner,Admin")]` restringe por role.
-2. **`[RequireModule(OperationModule.X)]`** — gating de plano. Resolve o plano efetivo do tenant e lança `PaymentRequiredException` (**402**) se o módulo não estiver incluído. Implementado por `IEntitlementService`.
+2. **`[RequireModule(OperationModule.X)]`** — gating de plano. Resolve o plano efetivo do tenant e lança `PaymentRequiredException` (**402**) se a capability não estiver incluída. Implementado por `IEntitlementService`.
 3. **`[RequirePermission(Permission.X)]`** — permissão granular por cargo. Implementado por `IPermissionService`.
 
 Roles (`UserRole`): **`Owner`** (acesso total ao tenant — `PermissionService` o libera sem checar permissões), **`Employee`** (acesso por permissão do cargo), **`Admin`** (admin de plataforma, `AdminController`).
 
-Permissões granulares: o `Employee` tem um `RoleId` (`TenantRole`); `roleRepository.HasPermissionAsync(roleId, permission)` decide. Enums em `PDV.Domain/Enums`: `Permission` (ex.: `ViewStock`, `ManageStock`) e `OperationModule` (`Sales`, `Inventory`, `Services`, `Appointments`, `Expenses`, `Reports`, `Customers`, `Suppliers`, `Logs`).
+Permissões granulares: o `Employee` tem um `RoleId` (`TenantRole`); `roleRepository.HasPermissionAsync(roleId, permission)` decide. Enums em `PDV.Domain/Enums`: `Permission` (ex.: `ViewStock`, `ManageStock`) e `OperationModule` (`Sales`, `Inventory`, `Services`, `Appointments`, `Expenses`, `Reports`, `Customers`, `Suppliers`, `Logs`, `Employees`).
 
 Exemplo típico de controller:
 ```csharp
@@ -69,35 +82,66 @@ public class ProductsController(...) {
 }
 ```
 
----
-
-## Assinaturas / cobrança
-
-Apenas planos pagos (`Plan`, semeados por `PlanSeeder` no startup). **Não existe plano Free permanente** — sem assinatura válida o acesso é bloqueado (todo módulo gateado → 402). Catálogo em `PDV.Domain/Constants` (`ModuleCatalog`, `PlanLimits`, `PlanSeedData`, `SegmentModuleDefaults`).
-
-**Trial de 30 dias (PDV-side).** Controlado inteiramente pela aplicação, **sem tocar o gateway**. Quando um plano é escolhido na landing (`?plano=<slug>` → `Plan.Slug`), o `TenantService` cria, na criação do tenant, uma `Subscription` `Trialing` (`TrialEndsAt = now + TrialDefaults.DurationDays`) e marca `User.HasUsedTrial`. Uma vez por usuário; sem `planSlug` → sem trial. Os preços no Stripe **não** usam trial nativo. `SubscriptionExpiryBackgroundService` marca trials vencidos como `Expired`.
-
-**Reembolso (7 dias) e retenção (90 dias).** Cancelar dentro de `RefundDefaults.WindowDays` a partir de `Subscription.StartedAt` encerra a assinatura na hora, revoga o acesso e **emite o estorno** de toda cobrança paga desde `StartedAt` (`refunds.create`). Como o estorno é assíncrono, a assinatura fica em `RefundRequested` (checkout bloqueado) até o webhook de estorno confirmar e virá-la `Expired`. Fora da janela, cancelar só interrompe as próximas faturas. Em nenhum caso a loja é desativada: ela sobrevive por `RetentionDefaults.DaysAfterAccessLoss` para o dono exportar os dados ou reassinar.
-
-**Troca de plano: upgrade imediato com proporcional, troca agendada sem cobrança.** `PlanChange.IsScheduled(atual, alvo)` decide: se o alvo retira uma capability, encolhe um limite **ou** encurta o ciclo (anual→mensal), a troca é agendada num **subscription schedule** do Stripe (grava `Subscription.PendingPlanId` + `GatewayScheduleId`), sem cobrar nem creditar. Senão é upgrade — o Stripe troca o preço com `proration_behavior = always_invoice` e **cobra a diferença proporcional na hora**. `change-plan/preview` (`Invoice.CreatePreview`) devolve o valor exato para o diálogo de confirmação. A promoção `PendingPlanId → PlanId` **não** é otimista: acontece no reconciliador de webhook, quando o preço vigente vira o do plano agendado.
-
-- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant** → sua `Subscription` viva. A regra de direito ao plano é `Subscription.IsEntitledAt(now)` (mora na **entidade**, não no service — o job de retenção precisa dela sem contexto de tenant): cobre `Trialing` (até `TrialEndsAt`) e `Active`/`Canceled` (até `CurrentPeriodEnd`); fora disso → módulos/limites vazios (bloqueado).
-- Gating de **módulo** e de **feature**: `RequireModuleAsync` / `RequireEntitlementAsync` → 402 `NOT_IN_PLAN` (o mesmo código para os dois).
-- Gating de **limite numérico**: o **service** chama `EnsureWithinLimitAsync(limitKey, currentCount)` antes de criar (ex.: `ProductService` checa `PlanLimits.MaxProducts`) → 402 `PLAN_LIMIT_EXCEEDED`.
-- Módulos/limites são armazenados como JSON no `Plan` (`EntitledModulesJson`, `LimitsJson`), lidos via `PlanJson` helper.
-- A **exportação de dados** (`DataExportController`) fica **fora** do gate de plano por design — é o que permite baixar os dados depois do cancelamento.
-
-**Gateway: Stripe** (`Services/Payments/Stripe`, SDK `Stripe.net`). `IPaymentGateway` fala com a API (checkout hospedado, upgrade com proporcional, schedule de downgrade, cancel, refund, preview); `IPaymentWebhookProcessor` verifica a assinatura e normaliza os eventos. Preços vêm da configuração (`Stripe:Prices:<slug>`), não do código. `WebhooksController` (`POST /api/webhooks/{provider}`, anônimo): lê o corpo raw → `processor.Parse` **verifica a assinatura antes do parse** (`Stripe-Signature`, `EventUtility.ConstructEvent`) → checa idempotência (`WebhookEvent` por `evt_...`) → `BillingWebhookService.ProcessAsync` aplica estado + registra evento num **único `SaveChanges` atômico**.
-
-> Regra de ouro nos handlers de webhook: **datas vêm do evento** (`event.created`, período das linhas da fatura), nunca de `DateTime.UtcNow` — um webhook atrasado ou reentregue estenderia o ciclo indevidamente. Eventos `customer.subscription.*` são **reconciliação** (aplica-se o objeto inteiro), com `Subscription.GatewaySyncedAt` descartando eventos fora de ordem. Ver `docs/subscriptions.md` §8.
+**Pipeline de middlewares** (`PDV.Api/Middleware`): `ExceptionMiddleware` (Problem Details), `MustChangePasswordMiddleware` (**403** enquanto a senha temporária não for trocada), `AccountDeletionBlockMiddleware` (**423** durante a carência de exclusão de conta).
 
 ---
 
-## Banco local & Docker
+## Constantes de domínio (`PDV.Domain/Constants`)
 
-Stack completa sobe via `docker compose up` (raiz): MySQL, MinIO, API (`dotnet watch`, hot reload) e frontend (Vite). Portas no host: **MySQL `3307`** (→3306), MinIO `9000`/console `9001`, API `5000` (→8080), frontend `5173`.
+Fonte única dos valores fixos do sistema — o frontend só espelha as chaves (ver CLAUDE.md da raiz, "Constantes compartilhadas"):
 
-Na inicialização (`Program.cs`), a API roda `db.Database.Migrate()` + `PlanSeeder.SeedAsync()` automaticamente.
+| Constante | Papel |
+|---|---|
+| `ModuleCatalog` | Eixo de **access control**: módulos × permissões (exposto em `GET /api/access/metadata`) |
+| `EntitlementCatalog` | Eixo de **billing**: capabilities booleanas de plano (módulos coarse + features fine, num só conjunto de chaves) |
+| `PlanLimits` | Limites numéricos por plano (`-1` = ilimitado, e ilimitado é o **maior** valor) |
+| `PlanTier`, `PlanSeedData`, `SegmentModuleDefaults` | Modelo/seed dos planos (Essencial × Pro — ambos têm todos os módulos; o diferencial são features + limites) |
+| `TrialDefaults`, `RefundDefaults`, `RetentionDefaults`, `RetentionPolicy`, `CheckoutDefaults` | Janelas e regras de billing/retenção |
+| `ImportLimits` | Limites da importação de dados |
+
+---
+
+## Assinaturas / cobrança (Stripe)
+
+**Referência completa em [docs/subscriptions.md](../docs/subscriptions.md)** (cenários numerados, regras R/P/X/C/T) e [docs/entitlements-e-limits.md](../docs/entitlements-e-limits.md). Aqui, só o mapa do código e as regras de ouro:
+
+- Gateway: `Services/Payments/Stripe` (SDK `Stripe.net`). `IPaymentGateway` fala com a API (checkout hospedado, upgrade proporcional, schedule de downgrade, cancel, refund, preview); `IPaymentWebhookProcessor` **verifica a assinatura antes do parse** (`Stripe-Signature`). Preços vêm da config (`Stripe:Prices:<slug>`), não do código.
+- `WebhooksController` (`POST /api/webhooks/{provider}`, anônimo): corpo raw → parse verificado → idempotência (`WebhookEvent` por `evt_...`) → `BillingWebhookService.ProcessAsync` aplica estado + registra evento num **único `SaveChanges` atômico**.
+- `IEntitlementService.ResolveForCurrentTenantAsync()` resolve o plano efetivo **via o Owner do tenant**. A regra de direito é `Subscription.IsEntitledAt(now)` (na **entidade**, não no service). Sem assinatura válida → módulos/limites vazios → 402.
+- Gating de módulo/feature: `RequireModuleAsync` / `RequireEntitlementAsync` → 402 `NOT_IN_PLAN`. Limite numérico: o service chama `EnsureWithinLimitAsync(limitKey, count)` antes de criar → 402 `PLAN_LIMIT_EXCEEDED`. Módulos/limites são JSON no `Plan` (`EntitledModulesJson`, `LimitsJson`), lidos via `PlanJson`.
+- Trial 30d é **PDV-side** (`TenantService` cria `Subscription` `Trialing` sem tocar o gateway; `User.HasUsedTrial` garante 1×). Upgrade cobra proporcional na hora; downgrade/ciclo↓ agenda via subscription schedule (`PendingPlanId` + `GatewayScheduleId`), promovido **só** pelo reconciliador de webhook.
+- `DataExportController` fica **fora** do gate de plano por design — permite exportar após cancelamento.
+
+> Regra de ouro nos handlers de webhook: **datas vêm do evento**, nunca de `DateTime.UtcNow`. Eventos `customer.subscription.*` são **reconciliação** (aplica-se o objeto inteiro), com `Subscription.GatewaySyncedAt` descartando eventos fora de ordem.
+
+---
+
+## Mapa de subsistemas
+
+Além do CRUD por feature (Products, Sales, Customers, Suppliers, Expenses, Services, Appointments, Employees, Reports...), a API tem subsistemas que não são óbvios pela árvore de pastas:
+
+| Subsistema | Código principal | Referência |
+|---|---|---|
+| Exclusão de conta (LGPD) — carência 30d, strip/purge | `AccountDeletionController/Service`, `DataDeletionService`, `DataPurgeBackgroundService`, `AccountDeletionBlockMiddleware` | [docs/account-deletion.md](../docs/account-deletion.md) |
+| Exportação de dados (fora do gate de plano) | `DataExportController` | idem |
+| Importação de dados | `DataImportController/Service`, `ImportLimits` | — |
+| Documentos legais versionados (servidos p/ app e landing) | `LegalController`, `LegalDocumentService`, `LegalDocumentSeeder` | [docs/pendencias-documentos-legais.md](../docs/pendencias-documentos-legais.md) |
+| Notificações in-app | `NotificationsController`, `NotificationService` (feature `notifications`) | — |
+| Anúncios da plataforma | `AnnouncementsController`, `AnnouncementService` | [docs/announcements-module.md](../docs/announcements-module.md) |
+| Contato/suporte | `ContactMessagesController`, `ContactMessageService` | — |
+| Histórico de pagamentos do assinante | `PaymentHistoryController/Service` | — |
+| Admin da plataforma (role `Admin`, frontend `/admin`) | `AdminController`, `AdminService` | — |
+| Metadados de access control p/ o frontend | `AccessController` (`GET /api/access/metadata` ← `ModuleCatalog`) | — |
+
+---
+
+## Banco, Docker e ambientes
+
+**Dev**: stack completa via `docker compose up` (raiz): MySQL, MinIO, API (`dotnet watch`, hot reload) e frontend (Vite). Portas no host: **MySQL `3307`** (→3306), MinIO `9000`/console `9001`, API `5000` (→8080), frontend `5173`.
+
+Na inicialização (`Program.cs`), a API roda `db.Database.Migrate()` + seeders (`PlanSeeder`, `LegalDocumentSeeder`) automaticamente — **em produção também**, portanto migrations são **só-pra-frente**: uma migration que dropa coluna/tabela apaga dados reais no próximo deploy (ver [docs/manutencao-producao.md](../docs/manutencao-producao.md) §5).
+
+**Produção** (`ASPNETCORE_ENVIRONMENT=Production`): cookies `Secure=true` + `SameSite=Strict`; CORS restrito às origens de `FRONTEND_URL`/`LANDING_URL` (env); secrets obrigatórios com `throw` no startup (`JWT_SECRET`, `Stripe:ApiKey`...); Dockerfile target `final` (sem `dotnet watch`). Config real vive no `.env.prod` da VPS (gitignored).
 
 Para criar/aplicar migrations **pelo host**, o `dotnet ef` precisa conectar ao banco (`ServerVersion.AutoDetect`) — apontar para a porta 3307:
 ```bash
@@ -113,11 +157,11 @@ Migrations design-time usam `AppDbContextFactory` com `DesignTimeTenantContext` 
 
 ## Autenticação
 
-JWT em **cookie HttpOnly** (`access_token`); refresh token em cookie separado, armazenado no banco como **hash SHA256** (nunca o valor raw). O JWT chega pelo cookie via `JwtBearerEvents.OnMessageReceived` (não pelo header `Authorization`). `OnChallenge`/`OnForbidden` retornam Problem Details 401/403.
+JWT em **cookie HttpOnly** (`access_token`); refresh token em cookie separado, armazenado no banco como **hash SHA256** (nunca o valor raw). O JWT chega pelo cookie via `JwtBearerEvents.OnMessageReceived` (não pelo header `Authorization`). `OnChallenge`/`OnForbidden` retornam Problem Details 401/403. Detalhes e cenários em [docs/auth.md](../docs/auth.md).
 
 Claims: `sub`→userId, `tenantId`→tenant ativo (pode ser vazio), `name`, `role` (mapeado para `ClaimTypes.Role` via `RoleClaimType`), `jti`.
 
-Login: **local** (`LocalAuth`, senha hasheada) ou **Google OAuth** (`ExternalAuth` + `IOAuthProvider`/`GoogleOAuthProvider`). Um usuário pode ter múltiplos tenants (`UserTenant`); o ativo é `User.LastTenantId`; `SwitchTenant` reemite o JWT com o `tenantId` trocado.
+Login: **local** (`LocalAuth`, senha hasheada) ou **Google OAuth** (`ExternalAuth` + `IOAuthProvider`/`GoogleOAuthProvider`). Um usuário pode ter múltiplos tenants (`UserTenant`); o ativo é `User.LastTenantId`; `SwitchTenant` reemite o JWT com o `tenantId` trocado. Eventos de login/logout são auditados via `AuthEventLogger`.
 
 ---
 
@@ -174,17 +218,17 @@ Validators em `PDV.Application/Validators/{Feature}/`. Paginação: `new Paginat
 
 ---
 
-## Storage (MinIO / S3)
+## Storage (S3: MinIO em dev, Cloudflare R2 em produção)
 
-`IStorageService` → `MinioStorageService` (S3 via AWS SDK, **singleton** thread-safe). Em dev usa dois clients: `opsClient` (endpoint interno `minio:9000`, chamadas reais) e `presignClient` (endpoint público `localhost:9000`, só assina URLs que o navegador acessa). Em prod ambos coincidem. Upload é direto frontend↔MinIO via presigned URL — **nunca passa pelo backend**. Banco guarda só o path relativo (`{tenantId}/...`). Helpers: `MediaPathHelper`, `StorageServiceExtensions`.
+`IStorageService` → `MinioStorageService` (S3 via AWS SDK, **singleton** thread-safe). Em dev usa dois clients: `opsClient` (endpoint interno `minio:9000`, chamadas reais) e `presignClient` (endpoint público `localhost:9000`, só assina URLs que o navegador acessa). Em produção ambos coincidem, apontando para o **Cloudflare R2** (`Storage__Region=auto` — região configurável via `StorageOptions.Region`). Upload é direto frontend↔storage via presigned URL — **nunca passa pelo backend**. Banco guarda só o path relativo (`{tenantId}/...`). Helpers: `MediaPathHelper`, `StorageServiceExtensions`.
 
 ---
 
 ## Auditoria & Background services
 
-`IAuditLogger` (`AuditLogger`, scoped) grava `AuditLog` por tenant (ações em enums `AuditAction`/`AuditEntityType`), resolvendo o autor uma vez por request. Detalhes serializados em JSON camelCase.
+`IAuditLogger` (`AuditLogger`, scoped) grava `AuditLog` por tenant (ações em enums `AuditAction`/`AuditEntityType`), resolvendo o autor uma vez por request. Detalhes serializados em JSON camelCase. `SystemLogWriterService` persiste logs de sistema (observabilidade do admin).
 
-`IHostedService` registrados em `Program.cs`: `SubscriptionExpiryBackgroundService`, `RecurringExpenseRenewalService`, `AuditLogCleanupService`, `TenantDeletionBackgroundService`.
+`IHostedService` registrados em `Program.cs`: `SystemLogWriterService`, `SubscriptionExpiryBackgroundService`, `RecurringExpenseRenewalService`, `AuditLogCleanupService`, `TenantDeletionBackgroundService`, `DataPurgeBackgroundService`.
 
 ---
 
@@ -201,6 +245,8 @@ Validators em `PDV.Application/Validators/{Feature}/`. Paginação: `new Paginat
 
 ## O que nunca fazer
 
+- Desenvolver direto na `master` — branch própria + testes antes do merge
+- Migration destrutiva (drop de coluna/tabela) sem plano — produção roda `Migrate()` no startup
 - Lógica de negócio no Controller (controllers são finos)
 - Acessar `AppDbContext` fora de Infrastructure
 - `IgnoreQueryFilters()` sem comentário justificando
@@ -208,5 +254,6 @@ Validators em `PDV.Application/Validators/{Feature}/`. Paginação: `new Paginat
 - Delete físico onde há soft delete (`IsActive = false`)
 - Retornar entidade do domínio direto na API — sempre DTO
 - `TenantId` hardcoded em query manual
+- Datas de `DateTime.UtcNow` em handler de webhook — sempre do evento
 - Upload de arquivo passando pelo backend como intermediário
 - Secrets ou connection strings commitados
