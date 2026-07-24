@@ -55,6 +55,15 @@ export const ANNOUNCEMENT_TYPE: Record<string, StatusMeta> = {
   Version: { label: 'Versão', color: 'default' },
 }
 
+// Plano-alvo de um anúncio — espelho das chaves de PDV.Domain/Constants/PlanTier (derivadas do
+// prefixo do slug do plano). Valor vazio = todos os planos (null no banco).
+export const ANNOUNCEMENT_PLAN_TARGETS = [
+  { value: '', label: 'Todos os planos' },
+  { value: 'essencial', label: 'Essencial' },
+  { value: 'profissional', label: 'Profissional' },
+  { value: 'sem-assinatura', label: 'Sem assinatura ativa' },
+] as const
+
 // Rótulos pt-BR da reprodutibilidade de bugs (enum Reproducibility).
 export const REPRODUCIBILITY_LABEL: Record<string, string> = {
   Always: 'Sempre',

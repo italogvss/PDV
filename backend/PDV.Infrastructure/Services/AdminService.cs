@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Admin;
 using PDV.Application.DTOs.Common;
 using PDV.Application.Interfaces;
+using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
@@ -314,9 +315,10 @@ public class AdminService(AppDbContext context, IPaymentGateway gateway) : IAdmi
             CtaUrl = request.CtaUrl,
             PublishAt = request.PublishAt,
             ExpiresAt = request.ExpiresAt,
-            TargetPlanCode = request.TargetPlanCode,
+            TargetPlanCode = NormalizePlanCode(request.TargetPlanCode),
             TargetRole = ParseTargetRole(request.TargetRole),
             Priority = request.Priority,
+            IsActive = request.IsActive,
         };
         context.Announcements.Add(a);
         await context.SaveChangesAsync();
@@ -337,9 +339,11 @@ public class AdminService(AppDbContext context, IPaymentGateway gateway) : IAdmi
         a.CtaUrl = request.CtaUrl;
         a.PublishAt = request.PublishAt;
         a.ExpiresAt = request.ExpiresAt;
-        a.TargetPlanCode = request.TargetPlanCode;
+        a.TargetPlanCode = NormalizePlanCode(request.TargetPlanCode);
         a.TargetRole = ParseTargetRole(request.TargetRole);
         a.Priority = request.Priority;
+        // Editar é também o caminho para reativar um anúncio removido por engano.
+        a.IsActive = request.IsActive;
         a.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
         return MapAnnouncement(a);
@@ -599,7 +603,15 @@ public class AdminService(AppDbContext context, IPaymentGateway gateway) : IAdmi
         if (string.IsNullOrWhiteSpace(r.Body)) throw new BusinessException("Informe o conteúdo.");
         if (r.PublishAt.HasValue && r.ExpiresAt.HasValue && r.ExpiresAt < r.PublishAt)
             throw new BusinessException("A expiração deve ser depois da publicação.");
+
+        // Sem esta validação um código desconhecido gera um anúncio que nunca aparece, em silêncio.
+        if (!string.IsNullOrWhiteSpace(r.TargetPlanCode) && !PlanTier.IsValid(r.TargetPlanCode.Trim()))
+            throw new BusinessException("Plano-alvo inválido.");
     }
+
+    // Vazio = "todos os planos" (null no banco). Guardado em lowercase para casar com PlanTier.
+    private static string? NormalizePlanCode(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
 
     private static AnnouncementType ParseType(string value) =>
         Enum.TryParse<AnnouncementType>(value, ignoreCase: true, out var t)

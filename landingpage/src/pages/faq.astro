@@ -10,19 +10,19 @@ const categorias = [
   {
     id: 'inicio', titulo: 'Primeiros passos',
     itens: [
-      { q: 'Preciso instalar alguma coisa?', a: 'Não. O Ka$hing roda no navegador do celular, tablet ou computador. É só criar a conta e começar a vender.' },
-      { q: 'Funciona sem internet?', a: 'O caixa continua registrando vendas mesmo se a internet cair, e sincroniza tudo automaticamente quando a conexão volta.' },
-      { q: 'Quanto tempo leva pra começar a usar?', a: 'Cerca de 2 minutos pra criar a conta. Você pode cadastrar produtos aos poucos ou importar de uma planilha.' },
-      { q: 'Preciso de um equipamento especial?', a: 'Não. Funciona com o que você já tem. Se quiser, dá pra conectar leitor de código de barras e impressora de recibo.' },
+      { q: 'Preciso instalar alguma coisa?', a: 'Não. O Kashing roda no navegador do celular, tablet ou computador. É só criar a conta e começar a vender.' },
+      { q: 'Funciona sem internet?', a: 'Não, o Kashing precisa de conexão com a internet para funcionar.' },
+      { q: 'Quanto tempo leva pra começar a usar?', a: 'Cerca de 2 minutos pra criar a conta e a loja com informações basicas.' },
+      { q: 'Preciso de um equipamento especial?', a: 'Não. Funciona com o que você já tem. Se quiser, dá pra conectar leitor de código de barras' },
     ],
   },
   {
     id: 'recursos', titulo: 'Funcionalidades',
     itens: [
       { q: 'Dá pra controlar o estoque?', a: 'Sim. Cada venda dá baixa automática e o sistema avisa quando um produto está acabando.' },
-      { q: 'Tem agendamento de horários?', a: 'Tem. Seus clientes marcam por um link e recebem lembrete no WhatsApp. Ideal pra barbearia, salão e petshop.' },
-      { q: 'Consigo ver quanto lucrei de verdade?', a: 'Sim. Você lança as despesas e o Ka$hing mostra o lucro real — vendas menos custos —, não só o que entrou no caixa.' },
-      { q: 'Posso colocar meus funcionários pra usar?', a: 'Pode. Cada um tem o próprio acesso, com permissão por módulo. Você decide quem vê relatório, custo e configuração.' },
+      { q: 'Tem agendamento de horários?', a: 'Sim. Você ou seus funcionarios podem gerenciar horários e marcar agendamentos.' },
+      { q: 'Consigo ver quanto lucrei de verdade?', a: 'Sim. o Kashing utiliza todas as informações disponiveis para calcular o lucro aproximado.' },
+      { q: 'Posso colocar meus funcionários pra usar?', a: 'Pode. Cada um tem o próprio acesso e papel, com permissão por módulo.' },
     ],
   },
   {
@@ -30,7 +30,8 @@ const categorias = [
     itens: [
       { q: 'O teste grátis pede cartão?', a: 'Não. São 30 dias sem cartão cadastrado. Quando acabam, você escolhe se quer continuar. Veja os <a href="/preco">planos e preços</a>.' },
       { q: 'Tem fidelidade ou multa de cancelamento?', a: 'Nenhuma. Cancela quando quiser, direto no painel, e usa até o fim do período já pago.' },
-      { q: 'Tem taxa por venda?', a: 'Não. Você paga só a mensalidade do plano. O Ka$hing não fica com nenhuma fatia das suas vendas.' },
+      { q: 'Posso pedir reembolso?', a: 'Após iniciar uma assinatura paga, você pode solicitar reembolso dentro do prazo de 7 dias, conforme nossa política de reembolso.' },
+      { q: 'Tem taxa por venda?', a: 'Não. Você paga só a mensalidade do plano. O Kashing não fica com nenhuma fatia das suas vendas.' },
       { q: 'Posso trocar de plano depois?', a: 'Sim, a qualquer momento. Subir ou descer de plano é imediato e o valor é ajustado de forma proporcional.' },
     ],
   },
@@ -49,8 +50,8 @@ let runningIndex = 0;
 ---
 
 <Layout
-  title="FAQ — Perguntas frequentes sobre o Ka$hing"
-  description="Respostas rápidas sobre funcionamento, planos, cobrança e segurança do Ka$hing. Busque a sua dúvida e volte a vender."
+  title="FAQ — Perguntas frequentes sobre o Kashing"
+  description="Respostas rápidas sobre funcionamento, planos, cobrança e segurança do Kashing. Busque a sua dúvida e volte a vender."
 >
   <Navbar />
 
@@ -106,7 +107,7 @@ let runningIndex = 0;
           <div class="faq-cta-col">
             <h3 class="faq-cta-h">Ainda com dúvida?</h3>
             <p class="faq-cta-p">A gente responde rápido, de gente pra gente. Sem robô, sem fila eterna.</p>
-            <a href="https://wa.me/" class="faq-cta-ghost">Falar com a gente →</a>
+            <a href="https://wa.me/45991377068&text=Olá!+Tenho+uma+dúvida+sobre+o+Kashing." class="faq-cta-ghost">Falar com a gente →</a>
           </div>
           <div class="faq-cta-divider" aria-hidden="true"></div>
           <div class="faq-cta-col">

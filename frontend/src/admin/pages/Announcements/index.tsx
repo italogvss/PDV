@@ -6,7 +6,7 @@ import DataGridNoRowsOverlay from '../../../components/DataGridNoRowsOverlay'
 import PageHeader from '../../../components/PageHeader'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import StatusChip from '../../components/StatusChip'
-import { ANNOUNCEMENT_TYPE } from '../../constants/statusMeta'
+import { ANNOUNCEMENT_PLAN_TARGETS, ANNOUNCEMENT_TYPE } from '../../constants/statusMeta'
 import { formatDate } from '../../utils/format'
 import { useAdminAnnouncements, useDeactivateAnnouncement } from '../../hooks/useAdmin'
 import type { AdminAnnouncement } from '../../types/admin.types'
@@ -14,7 +14,10 @@ import AnnouncementModal from './components/AnnouncementModal'
 
 function targetLabel(a: AdminAnnouncement): string {
   const parts: string[] = []
-  if (a.targetPlanCode) parts.push(a.targetPlanCode)
+  if (a.targetPlanCode) {
+    const plan = ANNOUNCEMENT_PLAN_TARGETS.find((p) => p.value === a.targetPlanCode)
+    parts.push(plan?.label ?? a.targetPlanCode)
+  }
   if (a.targetRole) parts.push(a.targetRole)
   return parts.length ? parts.join(' · ') : 'Todos'
 }
@@ -119,7 +122,7 @@ export default function AdminAnnouncementsPage() {
                 <EditOutlined sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title={row.isActive ? 'Remover' : 'Já inativo'}>
+            <Tooltip title={row.isActive ? 'Remover' : 'Já inativo — reative pela edição'}>
               <span>
                 <IconButton size="small" disabled={!row.isActive} onClick={() => setRemoving(row)}>
                   <DeleteOutlined sx={{ fontSize: 18 }} />

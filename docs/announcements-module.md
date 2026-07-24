@@ -66,12 +66,14 @@ VALUES
 | `CtaLabel` + `CtaUrl` | Opcional — botão extra que abre um link. Os dois juntos. |
 | `PublishAt` | A partir de quando aparece. `NULL` = imediatamente. |
 | `ExpiresAt` | Até quando aparece. `NULL` = nunca expira. |
-| `TargetPlanCode` | `free` \| `starter` \| `pro`. **`NULL` = todos os planos.** |
+| `TargetPlanCode` | `essencial` \| `profissional` \| `sem-assinatura`. **`NULL` = todos os planos.** |
 | `TargetRole` | `Owner` \| `Employee` \| `Admin`. **`NULL` = todos os cargos.** |
 | `Priority` | Ordem quando há vários pendentes (**maior = aparece primeiro**). |
 | `IsActive` | `1` ativo, `0` desligado (esconde sem apagar). |
 
-> **Segmentação:** qualquer campo `Target*` em `NULL` significa "vale para todos" naquela dimensão. Ex.: `TargetPlanCode='pro'` + `TargetRole=NULL` → todos os usuários de lojas no plano Pro.
+> **Segmentação:** qualquer campo `Target*` em `NULL` significa "vale para todos" naquela dimensão. Ex.: `TargetPlanCode='profissional'` + `TargetRole=NULL` → todos os usuários de lojas no plano Profissional.
+>
+> `sem-assinatura` é um alvo à parte (trial expirado, cancelado, inadimplente) — serve para campanha de reativação sem atingir quem está pagando.
 
 ### Desligar / corrigir um aviso
 
@@ -141,5 +143,6 @@ Regra de ouro: **cada novo modal precisa de uma `key` única** (sempre com prefi
 
 - **"Visto" é por usuário e no backend** → sobrevive a troca de dispositivo e limpeza de cache. (Diferente do `NotificationButton`, que usa localStorage.)
 - **Plano efetivo** para segmentar vem do `IEntitlementService` (resolve via o Owner da loja atual). Sem assinatura válida = `free`.
-- **`free`/`starter`/`pro`** são derivados do nome do plano em [PlanTier.cs](../backend/PDV.Domain/Constants/PlanTier.cs) — não há campo "código" no `Plan`.
+- **`essencial`/`profissional`** são derivados do **`Slug`** do plano em [PlanTier.cs](../backend/PDV.Domain/Constants/PlanTier.cs) (prefixo antes do primeiro hífen: `essencial-mensal` → `essencial`) — não há campo "código" no `Plan`. `sem-assinatura` é o caso de plano efetivo nulo. Derivar do `Slug` e não do `Name` é o que impede que renomear um plano quebre a segmentação em silêncio.
+- O `TargetPlanCode` é **validado** contra `PlanTier.All` na criação/edição pelo `/admin` (400 `Plano-alvo inválido.`) — um código desconhecido geraria um anúncio invisível.
 - O índice único `UserSeenMarkers (UserId, Key)` garante a marcação idempotente.

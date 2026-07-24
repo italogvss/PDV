@@ -164,7 +164,8 @@ public record AdminAnnouncementDto(
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
-// Corpo de criação/edição de anúncio. Type e TargetRole vêm como string (nomes dos enums).
+// Corpo de criação/edição de anúncio. Type e TargetRole vêm como string (nomes dos enums);
+// TargetPlanCode é validado contra PlanTier.All. IsActive permite reativar um anúncio removido.
 public record AnnouncementRequest(
     string Title,
     string Body,
@@ -176,7 +177,8 @@ public record AnnouncementRequest(
     DateTime? ExpiresAt,
     string? TargetPlanCode,
     string? TargetRole,
-    int Priority);
+    int Priority,
+    bool IsActive = true);
 
 // ── Conteúdo Legal ────────────────────────────────────────────────────────────────────────────
 

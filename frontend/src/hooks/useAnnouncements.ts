@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { announcementService } from '../services/announcement.service'
 import type { AnnouncementFeed } from '../types/announcement.types'
 import { useAppSelector } from '../store'
+import { useApiError } from './useApiError'
 
 const FEED_KEY = ['announcements', 'feed'] as const
 
@@ -20,8 +21,13 @@ export function useAnnouncementFeed() {
 
 export function useMarkSeen() {
   const queryClient = useQueryClient()
+  const handleError = useApiError()
   return useMutation({
     mutationFn: (key: string) => announcementService.markSeen(key),
+    // O modal já sumiu (estado local) quando isto roda: se falhar em silêncio, o aviso volta no
+    // próximo login sem explicação. Uma retentativa absorve blip de rede; o resto vira toast.
+    retry: 1,
+    onError: (error) => handleError(error, 'Não foi possível registrar a leitura do aviso.'),
     onSuccess: (_data, key) => {
       // Atualiza o cache: remove o aviso editorial visto e registra a key de ciclo de vida.
       queryClient.setQueryData<AnnouncementFeed>(FEED_KEY, (prev) =>

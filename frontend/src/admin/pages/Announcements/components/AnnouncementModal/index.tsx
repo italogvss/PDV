@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Box, Dialog, DialogContent, MenuItem, TextField, useMediaQuery, useTheme } from '@mui/material'
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  FormControlLabel,
+  MenuItem,
+  Switch,
+  TextField,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
+import { VisibilityOutlined } from '@mui/icons-material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +20,9 @@ import dayjs, { type Dayjs } from 'dayjs'
 import ModalHeader from '../../../../../components/ModalHeader'
 import FormModalActions from '../../../../../components/FormModalActions'
 import FieldLabel from '../../../../../components/FieldLabel'
-import { ANNOUNCEMENT_TYPE } from '../../../../constants/statusMeta'
+import AnnouncementContent from '../../../../../components/AnnouncementCenter/AnnouncementContent'
+import UserAnnouncementModal from '../../../../../components/AnnouncementCenter/AnnouncementModal'
+import { ANNOUNCEMENT_PLAN_TARGETS, ANNOUNCEMENT_TYPE } from '../../../../constants/statusMeta'
 import { useCreateAnnouncement, useUpdateAnnouncement } from '../../../../hooks/useAdmin'
 import type { AdminAnnouncement, AnnouncementPayload } from '../../../../types/admin.types'
 
@@ -22,6 +36,7 @@ const schema = z.object({
   imageUrl: z.string(),
   ctaLabel: z.string(),
   ctaUrl: z.string(),
+  isActive: z.boolean(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -36,14 +51,8 @@ const DEFAULTS: FormValues = {
   imageUrl: '',
   ctaLabel: '',
   ctaUrl: '',
+  isActive: true,
 }
-
-const PLAN_OPTIONS = [
-  { value: '', label: 'Todos os planos' },
-  { value: 'free', label: 'Free' },
-  { value: 'starter', label: 'Starter' },
-  { value: 'pro', label: 'Pro' },
-]
 
 const ROLE_OPTIONS = [
   { value: '', label: 'Todos os papéis' },
@@ -68,14 +77,19 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
 
   const [publishAt, setPublishAt] = useState<Dayjs | null>(null)
   const [expiresAt, setExpiresAt] = useState<Dayjs | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const {
     control,
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULTS })
+
+  // Preview lê os valores atuais do formulário — reflete o que está sendo digitado, antes de salvar.
+  const preview = watch()
 
   useEffect(() => {
     if (!open) return
@@ -90,6 +104,7 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
         imageUrl: announcement.imageUrl ?? '',
         ctaLabel: announcement.ctaLabel ?? '',
         ctaUrl: announcement.ctaUrl ?? '',
+        isActive: announcement.isActive,
       })
       setPublishAt(announcement.publishAt ? dayjs(announcement.publishAt) : null)
       setExpiresAt(announcement.expiresAt ? dayjs(announcement.expiresAt) : null)
@@ -98,6 +113,7 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
       setPublishAt(null)
       setExpiresAt(null)
     }
+    setPreviewOpen(false)
   }, [open, announcement, reset])
 
   const handleClose = () => {
@@ -118,6 +134,7 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
       expiresAt: expiresAt ? expiresAt.endOf('day').toISOString() : null,
       targetPlanCode: values.targetPlanCode || null,
       targetRole: values.targetRole || null,
+      isActive: values.isActive,
     }
     if (announcement) {
       updateAnnouncement.mutate({ id: announcement.id, payload }, { onSuccess: onClose })
@@ -215,7 +232,7 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
                 name="targetPlanCode"
                 render={({ field }) => (
                   <TextField {...field} select fullWidth size="small">
-                    {PLAN_OPTIONS.map((opt) => (
+                    {ANNOUNCEMENT_PLAN_TARGETS.map((opt) => (
                       <MenuItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </MenuItem>
@@ -257,6 +274,17 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
               <TextField {...register('ctaUrl')} fullWidth size="small" placeholder="https://..." />
             </Box>
           </Box>
+
+          <Controller
+            control={control}
+            name="isActive"
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                label={field.value ? 'Ativo — exibido para os usuários' : 'Inativo — não é exibido'}
+              />
+            )}
+          />
         </Box>
       </DialogContent>
       <FormModalActions
@@ -264,7 +292,30 @@ export default function AnnouncementModal({ open, announcement, onClose }: Props
         onCancel={handleClose}
         isPending={isPending}
         submitLabel={isEditing ? 'Salvar' : 'Criar anúncio'}
+        extraActions={
+          <Button
+            variant="soft"
+            startIcon={<VisibilityOutlined />}
+            onClick={() => setPreviewOpen(true)}
+            disabled={isPending}
+          >
+            Pré-visualizar
+          </Button>
+        }
       />
+
+      {/* Exatamente o modal que o lojista vê — mesmo componente, mesmo corpo. `dismissible` porque
+          aqui fechar é só fechar o preview (no app, fechar marca o aviso como visto). */}
+      <UserAnnouncementModal
+        open={previewOpen}
+        title={preview.title}
+        onClose={() => setPreviewOpen(false)}
+        ctaLabel={preview.ctaLabel.trim() || undefined}
+        ctaUrl={preview.ctaUrl.trim() || undefined}
+        dismissible
+      >
+        <AnnouncementContent imageUrl={preview.imageUrl.trim() || undefined} body={preview.body} />
+      </UserAnnouncementModal>
     </Dialog>
   )
 }

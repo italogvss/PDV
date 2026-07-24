@@ -13,25 +13,23 @@ const modulos = [
   {
     id: 'vendas', tag: 'PDV', nome: 'Vendas',
     titulo: 'Um caixa rápido que qualquer um aprende',
-    desc: 'O coração do Ka$hing. Registra a venda em segundos, do balcão ou do celular, com o produto saindo do estoque na hora.',
+    desc: 'O coração do Kashing. Registra a venda em segundos, do balcão ou do celular, com o produto saindo do estoque na hora.',
     capacidades: [
-      'Busca por nome, código ou leitor de código de barras',
-      'Desconto por item ou no total, com ou sem senha',
-      'Dinheiro, Pix, cartão ou fiado — tudo numa tela',
-      'Recibo enviado no WhatsApp do cliente',
+      'Registrar todas as vendas do seu negócio',
+      'Permite descontos e resumo de venda',
+      'Baixa automática no estoque',
     ],
-    segmentos: ['Mercadinho', 'Lanchonete', 'Adega'],
+    segmentos: ['Mercadinho', 'Lojas', 'Adega'],
     img: 'vendas',
     icon: '<path d="M3 11.4 11.4 3H20a1 1 0 0 1 1 1v8.6l-8.4 8.4a1.5 1.5 0 0 1-2.1 0L3 13.5a1.5 1.5 0 0 1 0-2.1Z"/><circle cx="16.4" cy="7.6" r="1.4"/>',
   },
   {
     id: 'estoque', tag: 'Controle', nome: 'Estoque',
     titulo: 'O estoque que se conta sozinho',
-    desc: 'Cada venda dá baixa automática. Você para de descobrir que acabou só quando o cliente pede.',
+    desc: 'Cada venda dá baixa automática. Você pode controlar custo, margem e alerta de produto acabando, sem precisar de planilha.',
     capacidades: [
       'Baixa automática a cada venda',
       'Alerta de produto acabando',
-      'Entrada de mercadoria em lote',
       'Custo e margem por produto',
     ],
     segmentos: ['Mercadinho', 'Petshop', 'Farmácia'],
@@ -43,21 +41,21 @@ const modulos = [
     titulo: 'Conheça quem compra na sua loja',
     desc: 'Cada cliente com contato, histórico e ticket médio. Você atende pelo nome, sabe o que ele leva e vende de novo.',
     capacidades: [
-      'Cadastro com telefone, WhatsApp e documento',
+      'Cadastro de clientes',
       'Histórico de compras e ticket médio por cliente',
       'Produtos e categorias que cada um mais leva',
       'Ranking dos melhores clientes da loja',
     ],
-    segmentos: ['Petshop', 'Salão de beleza', 'Mercadinho'],
+    segmentos: ['Petshop', 'Salão de beleza', 'Barbearia'],
     img: 'clientes-detail',
     icon: '<circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/>',
   },
   {
     id: 'relatorios', tag: 'Analytics', nome: 'Relatórios',
-    titulo: 'As respostas que a planilha nunca deu',
-    desc: 'Quanto entrou, o que mais vende e o horário de pico — em gráficos que você entende sem ser contador.',
+    titulo: 'Os números da sua loja, simples e diretos',
+    desc: 'Quanto entrou, o que mais vende, qual o lucro — em gráficos que você entende.',
     capacidades: [
-      'Faturamento por dia, semana e mês',
+      'Faturamento por período, funcionário, cliente',
       'Ranking de produtos e categorias',
       'Horários e dias mais movimentados',
       'Comparação com períodos anteriores',
@@ -68,13 +66,12 @@ const modulos = [
   },
   {
     id: 'agenda', tag: 'Agendamentos', nome: 'Agenda',
-    titulo: 'Agenda cheia, sem caderninho e sem ligação',
-    desc: 'Seus clientes marcam pelo link, recebem lembrete e você abre o dia já sabendo quem vem.',
+    titulo: 'Agenda cheia, sem caderninho',
+    desc: 'Visualize seus agendamentos por profissional e data.',
     capacidades: [
-      'Link de agendamento para o cliente marcar sozinho',
-      'Lembrete automático por WhatsApp',
+      'Controle de horários e serviços',
       'Agenda por profissional e por serviço',
-      'Bloqueio de horários e folgas',
+      'Calendário com horários e datas disponíveis',
     ],
     segmentos: ['Barbearia', 'Salão de beleza', 'Petshop'],
     img: 'agendamento',
@@ -82,13 +79,12 @@ const modulos = [
   },
   {
     id: 'despesas', tag: 'Financeiro', nome: 'Despesas',
-    titulo: 'Saiba se sobrou no fim do mês',
-    desc: 'Lança as contas, anexa o comprovante e o Ka$hing mostra o lucro de verdade — não só o que entrou.',
+    titulo: 'Gerencie suas despesas e veja o lucro real',
+    desc: 'Lançamento de despesas para controle de gastos',
     capacidades: [
       'Lançamento de despesas fixas e variáveis',
-      'Comprovante anexado em cada conta',
       'Lucro real = vendas menos despesas',
-      'Contas a pagar com data de vencimento',
+      'Contas a pagar com data de vencimento e notificações',
     ],
     segmentos: ['Todos os segmentos'],
     img: 'despesas',
@@ -113,8 +109,8 @@ const modulos = [
 ---
 
 <Layout
-  title="Soluções — O que o Ka$hing faz pela sua loja"
-  description="Conheça módulo a módulo: PDV, estoque, relatórios, agenda, financeiro e equipe. Veja com telas reais o que o Ka$hing resolve no seu comércio."
+  title="Soluções — O que o Kashing faz pela sua loja"
+  description="Conheça módulo a módulo: PDV, estoque, relatórios, agenda, financeiro e equipe. Veja com telas reais o que o Kashing resolve no seu comércio."
 >
   <Navbar />
 
@@ -126,8 +122,7 @@ const modulos = [
           <p class="eyebrow">O produto por dentro</p>
           <h1 class="sol-hero-title">Tudo que sua loja faz no dia, num app só</h1>
           <p class="sol-hero-sub">
-            Você chegou pra avaliar — então vamos direto ao ponto. Cada módulo abaixo
-            resolve uma parte real do seu comércio, com tela de verdade, não promessa.
+            Veja quais soluções podemos oferecer para o seu negócio, com telas reais de cada módulo do Kashing. Teste cada um deles na prática, sem cartão e sem compromisso.
           </p>
           <div class="sol-hero-actions">
             <a href={`${appUrl}/login?plano=profissional`} class="btn-brand">Criar conta grátis</a>
@@ -137,12 +132,12 @@ const modulos = [
         <div class="sol-hero-cluster" aria-hidden="true">
           <div class="cluster-glow"></div>
           <picture class="cluster-card c-back">
-            <img class="theme-img is-light" src="/images/relatorios-white.png" alt="" loading="eager" />
-            <img class="theme-img is-dark" src="/images/relatorios-black.png" alt="" loading="eager" />
+            <img class="theme-img is-light" src="/images/relatorios-white.png" width="1863" height="917" alt="" loading="eager" />
+            <img class="theme-img is-dark" src="/images/relatorios-black.png" width="1863" height="917" alt="" loading="eager" />
           </picture>
           <picture class="cluster-card c-front">
-            <img class="theme-img is-light" src="/images/dashboard-white.png" alt="" loading="eager" />
-            <img class="theme-img is-dark" src="/images/dashboard-black.png" alt="" loading="eager" />
+            <img class="theme-img is-light" src="/images/dashboard-white.png" width="1863" height="917" alt="" loading="eager" />
+            <img class="theme-img is-dark" src="/images/dashboard-black.png" width="1863" height="917" alt="" loading="eager" />
           </picture>
         </div>
       </div>
@@ -182,13 +177,13 @@ const modulos = [
           <div class:list={['modulo-shot', { 'has-detail': m.detail }]} data-reveal style="--reveal-delay: 90ms">
             <div class="modulo-shot-glow" aria-hidden="true"></div>
             <picture class="modulo-shot-main">
-              <img class="theme-img is-light" src={`/images/${m.img}-white.png`} alt={`Tela de ${m.nome} do Ka$hing`} loading="lazy" />
-              <img class="theme-img is-dark" src={`/images/${m.img}-black.png`} alt={`Tela de ${m.nome} do Ka$hing`} loading="lazy" />
+              <img class="theme-img is-light" src={`/images/${m.img}-white.png`}width="1863" height="917" alt={`Tela de ${m.nome} do Kashing`} loading="lazy" />
+              <img class="theme-img is-dark" src={`/images/${m.img}-black.png`} width="1863" height="917"alt={`Tela de ${m.nome} do Kashing`} loading="lazy" />
             </picture>
             {m.detail && (
               <picture class="modulo-shot-detail" aria-hidden="true">
-                <img class="theme-img is-light" src={`/images/${m.detail}-white.png`} alt="" loading="lazy" />
-                <img class="theme-img is-dark" src={`/images/${m.detail}-black.png`} alt="" loading="lazy" />
+                <img class="theme-img is-light" src={`/images/${m.detail}-white.png`}width="1863" height="917" alt="" loading="lazy" />
+                <img class="theme-img is-dark" src={`/images/${m.detail}-black.png`} width="1863" height="917"alt="" loading="lazy" />
               </picture>
             )}
           </div>

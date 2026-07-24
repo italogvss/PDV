@@ -194,6 +194,7 @@ export interface AnnouncementPayload {
   targetPlanCode: string | null
   targetRole: string | null
   priority: number
+  isActive: boolean
 }
 
 // ── Conteúdo Legal ────────────────────────────────────────────────────────────────────────────

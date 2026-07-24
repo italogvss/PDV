@@ -18,7 +18,7 @@ const features = [
   {
     nome: 'Vendas', tag: 'PDV',
     titulo: 'Um caixa que não trava na fila',
-    desc: 'Bipou, vendeu. Busca por nome ou código, desconto na hora e recibo no WhatsApp do cliente.',
+    desc: 'Agilize as vendas com uma interface intuitiva, que funciona em qualquer dispositivo e registra tudo na hora.',
     img: 'vendas',
     size: 'lead',
     icon: '<path d="M3 11.4 11.4 3H20a1 1 0 0 1 1 1v8.6l-8.4 8.4a1.5 1.5 0 0 1-2.1 0L3 13.5a1.5 1.5 0 0 1 0-2.1Z"/><circle cx="16.4" cy="7.6" r="1.4"/>',
@@ -42,15 +42,15 @@ const features = [
   {
     nome: 'Agenda', tag: 'Agendamentos',
     titulo: 'Horários cheios, sem caderninho',
-    desc: 'Clientes marcam sozinhos e ninguém esquece o compromisso.',
+    desc: 'Tenha o controle de seus agendamentos, horários e serviços',
     img: 'agendamento',
     size: 'mid',
     icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3.5v3M16 3.5v3"/>',
   },
   {
     nome: 'Despesas', tag: 'Financeiro',
-    titulo: 'Veja se sobra no fim do mês',
-    desc: 'Lança a conta, anexa o comprovante e acompanha o lucro de verdade.',
+    titulo: 'Gerencie suas despesas e veja o lucro real',
+    desc: 'Lançamento de despesas para controle de gastos',
     img: 'despesas',
     size: 'banner',
     icon: '<path d="M6 3h12v18l-2.2-1.4L13.6 21 12 19.6 10.4 21l-1.6-1.4L6 21V3Z"/><path d="M9.5 8.5h5M9.5 12.5h5"/>',
@@ -90,7 +90,7 @@ const planos = [
 ---
 
 <Layout
-  title="Ka$hing — O PDV que faz sua loja soar ka-shing"
+  title="Kashing — O PDV que faz sua loja soar ka-shing"
   description="Ponto de venda, estoque, agenda e relatórios num app só. Feito para o pequeno comércio brasileiro. 30 dias grátis, sem cartão."
 >
   <Navbar />
@@ -126,8 +126,8 @@ const planos = [
         <div class="hero-stage">
           <div class="hero-glow" aria-hidden="true"></div>
           <picture class="hero-shot">
-            <img class="theme-img is-light" src="/images/vendas-white.png" alt="Tela de vendas do Ka$hing" width="1863" height="917" loading="eager" />
-            <img class="theme-img is-dark" src="/images/vendas-black.png" alt="Tela de vendas do Ka$hing" width="1863" height="917" loading="eager" />
+            <img class="theme-img is-light" src="/images/relatorios-white.png" alt="Tela de vendas do Kashing" width="1863" height="917" loading="eager" />
+            <img class="theme-img is-dark" src="/images/relatorios-black.png" alt="Tela de vendas do Kashing" width="1863" height="917" loading="eager" />
           </picture>
           <div class="sale-chip chip-1" aria-hidden="true">
             <span class="chip-amount shimmer">+ R$ 48,00</span>
@@ -169,7 +169,7 @@ const planos = [
           <h2 class="ps-title">Tocar um comércio não devia ser tão no escuro</h2>
           <p class="ps-text">
             Você abre a loja todo dia, mas no fim do mês a conta nunca fecha do jeito
-            que devia. O Ka$hing troca o achismo por número.
+            que devia. O Kashing troca o achismo por número.
           </p>
         </div>
         <div class="ps-compare">
@@ -183,7 +183,7 @@ const planos = [
             </ul>
           </div>
           <div class="ps-col ps-after" data-reveal style="--reveal-delay: 90ms">
-            <span class="ps-tag ps-tag-after">Com o Ka$hing</span>
+            <span class="ps-tag ps-tag-after">Com o Kashing</span>
             <ul>
               <li>Toda venda registrada na hora</li>
               <li>Estoque baixa sozinho a cada venda</li>
@@ -216,8 +216,8 @@ const planos = [
                 <p class="feat-desc">{f.desc}</p>
               </div>
               <div class="feat-shot">
-                <img class="theme-img is-light" src={`/images/${f.img}-white.png`} alt={`Tela de ${f.nome} do Ka$hing`} loading="lazy" />
-                <img class="theme-img is-dark" src={`/images/${f.img}-black.png`} alt={`Tela de ${f.nome} do Ka$hing`} loading="lazy" />
+                <img class="theme-img is-light" src={`/images/${f.img}-white.png`} alt={`Tela de ${f.nome} do Kashing`} loading="lazy" />
+                <img class="theme-img is-dark" src={`/images/${f.img}-black.png`} alt={`Tela de ${f.nome} do Kashing`} loading="lazy" />
               </div>
             </article>
           ))}

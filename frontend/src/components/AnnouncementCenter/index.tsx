@@ -1,9 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Box } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import { useAnnouncementFeed, useMarkSeen } from '../../hooks/useAnnouncements'
 import { useAppSelector } from '../../store'
-import MarkdownRenderer from '../MarkdownRenderer'
+import AnnouncementContent from './AnnouncementContent'
 import AnnouncementModal from './AnnouncementModal'
 import { LIFECYCLE_MODALS } from './lifecycle'
 
@@ -38,19 +37,7 @@ export default function AnnouncementCenter() {
       title: a.title,
       ctaLabel: a.ctaLabel,
       ctaUrl: a.ctaUrl,
-      content: (
-        <>
-          {a.imageUrl && (
-            <Box
-              component="img"
-              src={a.imageUrl}
-              alt=""
-              sx={{ width: '100%', borderRadius: 2, mb: 2 }}
-            />
-          )}
-          <MarkdownRenderer content={a.body} />
-        </>
-      ),
+      content: <AnnouncementContent imageUrl={a.imageUrl} body={a.body} />,
     }))
 
     return [...lifecycle, ...editorial]

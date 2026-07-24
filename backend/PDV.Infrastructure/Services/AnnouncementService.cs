@@ -4,6 +4,7 @@ using PDV.Application.Interfaces;
 using PDV.Domain.Constants;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
+using PDV.Domain.Exceptions;
 using PDV.Domain.Interfaces;
 using System.Security.Claims;
 
@@ -17,6 +18,9 @@ public class AnnouncementService(
 {
     // Prefixo das Keys de modais fixos (apresentação, etc.) — o feed devolve só essas em SeenKeys.
     private const string LifecyclePrefix = "lifecycle:";
+
+    // Espelha o HasMaxLength(100) de UserSeenMarkerConfiguration.
+    private const int MaxKeyLength = 100;
 
     public async Task<AnnouncementFeedResponse> GetFeedAsync()
     {
@@ -42,8 +46,18 @@ public class AnnouncementService(
         return new AnnouncementFeedResponse(pending, lifecycleSeen);
     }
 
-    public Task MarkSeenAsync(string key) =>
-        repository.AddSeenMarkerAsync(userContext.UserId, key);
+    // A Key vem do cliente e é gravada direto na tabela: sem esta guarda, uma string arbitrária vira
+    // lixo em UserSeenMarkers e uma acima de 100 chars estoura o limite da coluna como 500.
+    public Task MarkSeenAsync(string key)
+    {
+        var isValid = !string.IsNullOrWhiteSpace(key)
+            && key.Length <= MaxKeyLength
+            && (key.StartsWith(LifecyclePrefix, StringComparison.Ordinal) || Guid.TryParse(key, out _));
+
+        if (!isValid) throw new BusinessException("Aviso inválido.");
+
+        return repository.AddSeenMarkerAsync(userContext.UserId, key);
+    }
 
     // null em qualquer dimensão = vale para todos.
     private static bool Targets(Announcement a, string tier, UserRole? role) =>

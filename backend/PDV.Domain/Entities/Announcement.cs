@@ -23,7 +23,8 @@ public class Announcement : BaseEntity
     public DateTime? ExpiresAt { get; set; }
 
     // Segmentação — null = vale para todos naquela dimensão.
-    // TargetPlanCode: "free" | "starter" | "pro" (ver PlanTier).
+    // TargetPlanCode: prefixo do slug do plano ("essencial" | "profissional") ou "sem-assinatura"
+    // para quem não tem assinatura válida. Valores aceitos em PlanTier.All.
     public string? TargetPlanCode { get; set; }
     public UserRole? TargetRole { get; set; }
 
