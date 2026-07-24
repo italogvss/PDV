@@ -1,26 +1,14 @@
-import { Box, Typography, useTheme } from '@mui/material'
-import type { AvatarColorKey } from '../../types'
+import { Box, Typography } from '@mui/material'
 import type { EmployeeAvatarProps } from './types'
 
-export default function EmployeeAvatar({ initials, colorKey, size = 36 }: EmployeeAvatarProps) {
-  const theme = useTheme()
-
-  const bgMap: Record<AvatarColorKey, string> = {
-    purple: theme.palette.data.purple.main,
-    accent: theme.palette.success.main,
-    orange: theme.palette.data.orange.main,
-    pink: theme.palette.data.pink.main,
-    blue: theme.palette.data.blue.main,
-    teal: theme.palette.data.teal.main,
-  }
-
+export default function EmployeeAvatar({ initials, color = 'primary.main', size = 36 }: EmployeeAvatarProps) {
   return (
     <Box
       sx={{
         width: size,
         height: size,
         borderRadius: '50%',
-        backgroundColor: bgMap[colorKey],
+        bgcolor: color,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -31,7 +19,7 @@ export default function EmployeeAvatar({ initials, colorKey, size = 36 }: Employ
         sx={{
           fontSize: size * 0.36,
           fontWeight: 700,
-          color: 'text.primary',
+          color: 'common.white',
           lineHeight: 1,
           fontFamily: 'inherit',
           letterSpacing: '0.02em',

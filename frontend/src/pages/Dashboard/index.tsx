@@ -30,7 +30,7 @@ const DATE_RANGE_DAYS = [7, 14, 30, 90] as const
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const [view, setView] = useState<DashboardView>('analytics')
+  const [view, setView] = useState<DashboardView>('modules')
   const [selectedDays, setSelectedDays] = useState(14)
   const name = useAppSelector((state) => state.auth.name) ?? 'Usuário'
 

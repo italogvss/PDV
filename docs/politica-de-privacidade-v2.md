@@ -1,6 +1,6 @@
 # Política de Privacidade — Kashing
 
-**Última atualização:** 20 de julho de 2026
+**Última atualização:** 23 de julho de 2026
 
 
 Esta Política de Privacidade descreve como a **Kashing** coleta, utiliza, armazena e protege dados
@@ -56,9 +56,11 @@ irregular.
   Os dados completos de pagamento são processados pelo provedor Stripe, **não sendo armazenados pela
   Kashing**.
 
-> **A Kashing ainda não coleta logs de acesso (IP, data/hora).** Caso passe a coletá-los — inclusive para
-> cumprir o Marco Civil da Internet (Lei 12.965/2014, guarda de registros por 6 meses) — esta seção deverá
-> ser atualizada.
+- **Logs de acesso:** endereço **IP**, **data e hora** de eventos de login/logout na plataforma. Esses
+  registros servem para (i) permitir que o **proprietário do estabelecimento** audite os acessos à sua
+  conta e (ii) a **segurança da própria Kashing** (prevenção a fraudes e investigação de incidentes),
+  cumprindo também a guarda de registros de acesso exigida pelo Marco Civil da Internet (Lei
+  12.965/2014, art. 15).
 
 ### 3.2. Dados inseridos pelo comerciante (Kashing como Operadora)
 
@@ -80,6 +82,7 @@ cadastrada pelo comerciante.
 | Cumprir obrigações legais e responder a autoridades | Obrigação legal / regulatória (art. 7º, II) |
 | Análise de uso da plataforma via Google Analytics | Consentimento (art. 7º, I) |
 | Comunicação de marketing (se e quando houver) | Consentimento, com opção de descadastro (opt-out) |
+| Auditoria de acesso pelo proprietário e segurança da plataforma (logs de IP, data/hora) | Obrigação legal (Marco Civil da Internet) e legítimo interesse (art. 7º, IX) |
 
 ---
 
@@ -90,15 +93,13 @@ A Kashing compartilha dados apenas com os terceiros necessários à prestação 
 - **Stripe** (gateway de pagamento): recebe o **e-mail do Usuário** e o **plano contratado** para
   processar a assinatura.
 - **Google** (login e Google Analytics): autenticação do Owner e análise de uso da plataforma.
-- **Amazon S3** (armazenamento de arquivos): armazenamento das fotos (funcionários e produtos).
+- **Cloudflare R2** (armazenamento de arquivos, compatível com S3): armazenamento das fotos (funcionários e
+  produtos), hospedado na região **Eastern North America (ENAM)**.
 - **Provedor de hospedagem (VPS)**: onde rodam o backend, o frontend e a landing page.
 
 5.1. A Kashing poderá compartilhar dados quando exigido por **obrigação legal ou ordem judicial**.
 
 5.2. A Kashing **não vende nem cede dados pessoais para fins comerciais**.
-
-> **Revisar:** confirme a **região do bucket Amazon S3**. Se estiver no Brasil (ex.: `sa-east-1`), não há
-> transferência internacional das fotos; se estiver no exterior, isso deve ser declarado na Seção 7.
 
 ---
 
@@ -121,12 +122,14 @@ da plataforma, apenas desativa a coleta de dados de navegação para fins estat�
 
 7.1. **Localização.** Os dados são hospedados **no Brasil** (backend, banco de dados e aplicação em VPS).
 
-7.2. **Transferência internacional.** Há tratamento de dados fora do Brasil apenas em razão dos serviços do
-**Google** (login e Analytics), que operam em infraestrutura global. Tais transferências observam as
-salvaguardas e os termos do próprio Google.
+7.2. **Transferência internacional.** Há tratamento de dados fora do Brasil em razão de:
 
-> **Revisar:** se as **fotos no Amazon S3** estiverem em região fora do Brasil, incluir o Amazon como
-> transferência internacional aqui.
+- serviços do **Google** (login e Analytics), que operam em infraestrutura global;
+- armazenamento das fotos (funcionários e produtos) na **Cloudflare R2**, região **Eastern North America
+  (ENAM)**.
+
+Tais transferências observam as salvaguardas contratuais e os termos dos respectivos provedores (art. 33 da
+LGPD).
 
 7.3. **Medidas de segurança.** A Kashing adota, entre outras: criptografia em trânsito (HTTPS), senhas
 armazenadas com hash, isolamento por estabelecimento, controle de acesso por papéis

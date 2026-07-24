@@ -48,15 +48,6 @@ import { useAccessMetadata } from '../../hooks/useAccessMetadata'
 import { useEntitlements } from '../../hooks/useSubscription'
 import { FEATURES, PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
 import UpsellModal from '../../components/UpsellModal'
-import type { AvatarColorKey } from './types'
-
-const COLOR_KEYS: AvatarColorKey[] = ['purple', 'accent', 'orange', 'pink', 'blue', 'teal']
-
-function getColorKey(name: string): AvatarColorKey {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
-  return COLOR_KEYS[hash % COLOR_KEYS.length]
-}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(' ')
@@ -208,6 +199,11 @@ export default function EmployeesPage() {
     [employees, search],
   )
 
+  const roleColorById = useMemo(
+    () => new Map(roles.map((r) => [r.id, r.color])),
+    [roles],
+  )
+
   const columns: GridColDef<Employee>[] = useMemo(
     () => [
       {
@@ -219,7 +215,7 @@ export default function EmployeesPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
             <EmployeeAvatar
               initials={getInitials(row.name)}
-              colorKey={getColorKey(row.name)}
+              color={roleColorById.get(row.roleId)}
               size={34}
             />
             <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
@@ -274,7 +270,7 @@ export default function EmployeesPage() {
         ),
       },
     ],
-    [],
+    [roleColorById, navigate],
   )
 
   return (

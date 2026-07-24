@@ -1,7 +1,5 @@
-import type { AvatarColorKey } from '../../types'
-
 export interface EmployeeAvatarProps {
   initials: string
-  colorKey: AvatarColorKey
+  color?: string
   size?: number
 }

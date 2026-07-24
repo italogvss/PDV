@@ -329,24 +329,6 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
 
           {/* Preço + Duração */}
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel label="Preço" required />
-              <Controller
-                name="price"
-                control={control}
-                render={({ field }) => (
-                  <CurrencyField
-                    value={Number(field.value) || 0}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    fullWidth
-                    size="small"
-                    error={!!errors.price}
-                    helperText={errors.price?.message}
-                  />
-                )}
-              />
-            </Box>
             {/* Preço de custo */}
           <Box>
             <FieldLabel label="Preço de custo" required={requireCostPrice} />
@@ -371,6 +353,25 @@ export default function ServiceModal({ open, onClose, service }: ServiceModalPro
               )}
             />
           </Box>
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel label="Preço do Serviço" required />
+              <Controller
+                name="price"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyField
+                    value={Number(field.value) || 0}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    fullWidth
+                    size="small"
+                    error={!!errors.price}
+                    helperText={errors.price?.message}
+                  />
+                )}
+              />
+            </Box>
+            
 
             <Box sx={{ flex: 1 }}>
               <FieldLabel label="Duração (minutos)" />

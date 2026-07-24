@@ -26,6 +26,7 @@ import { useAppointments, useChangeAppointmentStatus, useCreateAppointment, useD
 import { useCustomers } from '../../hooks/useCustomers'
 import { useEmployees } from '../../hooks/useEmployees'
 import { useServices } from '../../hooks/useServices'
+import { useTeamRoles } from '../../hooks/useTeamRoles'
 import { useTenantSettings } from '../../hooks/useTenantSettings'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAppSelector } from '../../store'
@@ -91,6 +92,15 @@ export default function AppointmentsPage() {
   const { data: services = [] } = useServices()
   const { data: customersPage } = useCustomers(1, 500)
   const customers = useMemo(() => customersPage?.data ?? [], [customersPage])
+
+  // Mesma cor do papel do funcionário (ver EmployeeDetail) — usada no dot da coluna Profissional.
+  const { data: rolesData } = useTeamRoles()
+  const employeeRoleColorById = useMemo(() => {
+    const roleColorById = new Map((rolesData ?? []).map((r) => [r.id, r.color]))
+    return new Map(
+      (employeesPage?.data ?? []).map((e) => [e.id, roleColorById.get(e.roleId)]),
+    )
+  }, [employeesPage, rolesData])
 
   // ─── Navegação ──────────────────────────────────────────────────────────────
 
@@ -186,7 +196,31 @@ export default function AppointmentsPage() {
         </Box>
       ),
     },
-    { field: 'employeeName', headerName: 'Profissional', width: 160 },
+    {
+      field: 'employeeName',
+      headerName: 'Profissional',
+      width: 160,
+      renderCell: ({ row }) => (
+        <Chip
+          size="small"
+          variant="outlined"
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  bgcolor: (row.employeeId && employeeRoleColorById.get(row.employeeId)) || 'text.disabled',
+                  flexShrink: 0,
+                }}
+              />
+              {row.employeeName}
+            </Box>
+          }
+        />
+      ),
+    },
     {
       field: 'services',
       headerName: 'Serviços',
@@ -205,7 +239,7 @@ export default function AppointmentsPage() {
         return <Chip label={APPOINTMENT_STATUS_LABELS[value]} color={STATUS_COLOR[value]} size="small" />
       },
     },
-  ], [view])
+  ], [view, employeeRoleColorById])
 
   const detailAppointment = detailId
     ? (appointments.find((a) => a.id === detailId) ?? null)
