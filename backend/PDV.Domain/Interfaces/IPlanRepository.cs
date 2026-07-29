@@ -13,8 +13,9 @@ public interface IPlanRepository
     Task<Plan?> GetByIdAsync(Guid id);
     Task<Plan?> GetByExternalProductIdAsync(string externalProductId);
 
-    // Resolve o plano pelo slug do handoff da landing (?plano=<slug>). Ignora slugs vazios.
-    Task<Plan?> GetBySlugAsync(string slug);
+    // Resolve o plano pelo slug do handoff da landing (?plano=<slug>). Devolve null para slug vazio
+    // ou desconhecido — quem chama decide o que fazer (o trial cai no TrialDefaults.FallbackPlanSlug).
+    Task<Plan?> GetBySlugAsync(string? slug);
     Task AddAsync(Plan plan);
     Task UpdateAsync(Plan plan);
 }

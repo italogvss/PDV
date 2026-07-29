@@ -91,7 +91,7 @@ inglês), comentário em português explicando **por que a regra existe** — o 
 | **Checkout** (`SubscriptionService`) | C5/T7 (ativo e vigente não contrata de novo); C6 (estorno em trânsito bloqueia); C3 (reativação cancela a recorrência antiga e reusa a MESMA linha); metadata de correlação; RF-18 (backfill de CPF/telefone) |
 | **Troca pelo app** | P1 (upgrade cobra proporcional agora); P2 (agendado não cobra e **não** promove o plano); P5 (upgrade libera o schedule **antes**); P6/P7/P8; P12 (trial troca sem gateway); preview não executa nada |
 | **Cancelamento** | X1 (≤7d emite estorno de **todas** as cobranças desde `StartedAt`); X3/X4 (>7d preserva o período); X5×X6 (a janela conta de `StartedAt`); RF-38 (gateway antes do estado local); estorno que falha **não** desfaz o cancelamento |
-| **Trial** (`TenantService`) | T1 (30d, gateway intocado, `Provider` vazio); T2 (uma vez por usuário; assinatura viva não ganha trial por cima); T3 (sem slug/slug inválido **não** quebra o onboarding); 1ª loja nunca barrada por limite |
+| **Trial** (`TenantService`) | T1 (30d, gateway intocado, `Provider` vazio); T2 (uma vez por usuário; assinatura viva não ganha trial por cima; slug ruim **não** ressuscita trial já usado); T3 (sem slug / slug desconhecido → trial no **plano padrão**, nunca sem assinatura); catálogo vazio não quebra o onboarding; 1ª loja nunca barrada por limite |
 | **Encerrar loja** | cenário 13/E1: 90 dias (não 30), troca o tenant ativo e reemite o token, User e outras lojas intactos, única loja ativa é recusada, só o Owner encerra |
 
 ## O que NÃO está coberto (e por quê)
@@ -161,6 +161,15 @@ de produção e os testes mataram todos:
 | `IsWithinRefundWindow` sempre `false` — ninguém recebe estorno | `X1` (×3), `X6`, `RefundWindow_JustInsideTheBoundary` |
 | Trial ignorando `HasUsedTrial` — trial infinito, um por loja | `T2_UserAlreadyUsedTrial` |
 | Encerrar a única loja ativa permitido | `DeactivateStore_WhenItIsTheOnlyActiveOne` (+2) |
+| Fallback do trial resolvendo um slug que não existe — loja nasceria sem assinatura | `T3_NoPlanSlug`, `T3_UnknownPlanSlug`, `BlankPlanSlug` (×2) |
+
+O último defeito da tabela **aconteceu de verdade em produção** (julho/2026): sete CTAs da landing
+mandavam `?plano=profissional` (sem ciclo), slug que não resolve plano. O trial era pulado em
+silêncio, a loja nascia sem assinatura e o cliente novo era empurrado pro checkout do Stripe. Os
+testes T3 de então **codificavam o bug como esperado** ("sem slug → sem assinatura"), então não
+pegaram nada — o alerta é esse: teste que descreve o comportamento atual não é o mesmo que teste que
+descreve a invariante. A invariante aqui é "quem é elegível sai `Trialing`", não "o slug decide se há
+trial".
 
 Ao mexer nesses pontos, repita o exercício: um teste que nunca falha não protege nada.
 

@@ -114,38 +114,51 @@ public class TrialTests
         });
     }
 
-    // ── T3: sem slug, sem trial — mas o onboarding não pode falhar ──────────────────────────
+    // ── T3: slug ruim ou ausente cai no plano padrão — nunca deixa o usuário sem trial ──────
+    //
+    // Regra invertida em julho/2026 depois de um bug em produção: sete CTAs da landing mandavam
+    // `?plano=profissional` (sem ciclo), slug que não resolve nenhum plano. O trial era pulado em
+    // silêncio, a loja nascia sem assinatura, todo módulo respondia 402 e a única saída visível era
+    // pagar no Stripe. A invariante que vale não é sobre o slug: quem termina o onboarding com
+    // HasUsedTrial == false e sem assinatura TEM de sair Trialing. O slug só decide qual plano.
 
     [Test]
-    public async Task T3_CreateStoreWithoutPlanSlug_CreatesNoSubscription()
+    public async Task T3_NoPlanSlug_GrantsTrialOnTheDefaultPlan()
     {
+        var fallback = PlanBuilder.Professional().Build();
         var user = UserBuilder.AnOwner().Build();
-        var harness = new TenantHarness().ForUser(user);
+        var harness = new TenantHarness().ForUser(user).WithFallbackPlan(fallback);
 
         var (response, _) = await harness.Build().CreateAsync(user.Id, CreateTenantRequests.Minimal(planSlug: null));
 
         Assert.Multiple(() =>
         {
-            Assert.That(harness.CreatedSubscription, Is.Null);
-            Assert.That(user.HasUsedTrial, Is.False);
-            Assert.That(response.TenantId, Is.Not.EqualTo(Guid.Empty), "A loja é criada mesmo assim.");
+            Assert.That(harness.CreatedSubscription, Is.Not.Null, "Sem slug ainda é trial — no plano padrão.");
+            Assert.That(harness.CreatedSubscription!.Status, Is.EqualTo(SubscriptionStatus.Trialing));
+            Assert.That(harness.CreatedSubscription.PlanId, Is.EqualTo(fallback.Id));
+            Assert.That(user.HasUsedTrial, Is.True);
+            Assert.That(response.TenantId, Is.Not.EqualTo(Guid.Empty));
         });
     }
 
-    // Um link antigo da landing (plano que saiu do catálogo) não pode quebrar a criação da loja —
-    // o usuário simplesmente segue sem trial e escolhe um plano depois.
+    // Link antigo da landing / plano que saiu do catálogo: cai no padrão em vez de sumir com o trial.
     [Test]
-    public async Task T3_UnknownPlanSlug_SkipsTrialWithoutFailingOnboarding()
+    public async Task T3_UnknownPlanSlug_FallsBackToTheDefaultPlan()
     {
+        var fallback = PlanBuilder.Professional().Build();
         var user = UserBuilder.AnOwner().Build();
-        var harness = new TenantHarness().ForUser(user).WithUnknownSlug("plano-que-nao-existe");
+        var harness = new TenantHarness().ForUser(user)
+            .WithUnknownSlug("profissional")            // o slug exato que quebrou em produção
+            .WithFallbackPlan(fallback);
 
         var (response, accessToken) = await harness.Build()
-            .CreateAsync(user.Id, CreateTenantRequests.Minimal("plano-que-nao-existe"));
+            .CreateAsync(user.Id, CreateTenantRequests.Minimal("profissional"));
 
         Assert.Multiple(() =>
         {
-            Assert.That(harness.CreatedSubscription, Is.Null);
+            Assert.That(harness.CreatedSubscription, Is.Not.Null);
+            Assert.That(harness.CreatedSubscription!.Status, Is.EqualTo(SubscriptionStatus.Trialing));
+            Assert.That(harness.CreatedSubscription.PlanId, Is.EqualTo(fallback.Id));
             Assert.That(response.TenantId, Is.Not.EqualTo(Guid.Empty));
             Assert.That(accessToken, Is.Not.Empty);
         });
@@ -153,15 +166,54 @@ public class TrialTests
 
     [TestCase("")]
     [TestCase("   ")]
-    public async Task BlankPlanSlug_SkipsTrial(string slug)
+    public async Task BlankPlanSlug_FallsBackToTheDefaultPlan(string slug)
     {
+        var fallback = PlanBuilder.Professional().Build();
         var user = UserBuilder.AnOwner().Build();
-        var harness = new TenantHarness().ForUser(user);
+        var harness = new TenantHarness().ForUser(user).WithFallbackPlan(fallback);
 
         await harness.Build().CreateAsync(user.Id, CreateTenantRequests.Minimal(slug));
 
-        Assert.That(harness.CreatedSubscription, Is.Null);
-        harness.Plans.Verify(r => r.GetBySlugAsync(It.IsAny<string>()), Times.Never);
+        Assert.That(harness.CreatedSubscription, Is.Not.Null);
+        Assert.That(harness.CreatedSubscription!.PlanId, Is.EqualTo(fallback.Id));
+    }
+
+    // O fallback não pode virar um jeito de ganhar trial duas vezes: os guards de elegibilidade
+    // (HasUsedTrial e "já existe assinatura") rodam ANTES de resolver o plano.
+    [Test]
+    public async Task T2_UnknownSlug_DoesNotResurrectTheTrialForAUserWhoUsedIt()
+    {
+        var user = UserBuilder.AnOwner().Build();
+        user.HasUsedTrial = true;
+        var harness = new TenantHarness().ForUser(user)
+            .WithUnknownSlug("profissional")
+            .WithFallbackPlan(PlanBuilder.Professional().Build());
+
+        await harness.Build().CreateAsync(user.Id, CreateTenantRequests.Minimal("profissional"));
+
+        Assert.That(harness.CreatedSubscription, Is.Null, "Trial é uma vez por usuário, fallback ou não.");
+        harness.Plans.Verify(r => r.GetBySlugAsync(It.IsAny<string?>()), Times.Never,
+            "Nem chega a resolver plano — sai antes.");
+    }
+
+    // Catálogo vazio (Stripe:Prices incompleto): o onboarding ainda não pode falhar. O usuário fica
+    // sem assinatura e o service loga LogError — é incidente de configuração, não de fluxo.
+    [Test]
+    public async Task NoPlanInCatalog_DoesNotFailOnboarding()
+    {
+        var user = UserBuilder.AnOwner().Build();
+        var harness = new TenantHarness().ForUser(user).WithNoPlans();
+
+        var (response, accessToken) = await harness.Build()
+            .CreateAsync(user.Id, CreateTenantRequests.Minimal(PlanSlug));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(harness.CreatedSubscription, Is.Null);
+            Assert.That(user.HasUsedTrial, Is.False, "Não gasta o flag sem ter concedido nada.");
+            Assert.That(response.TenantId, Is.Not.EqualTo(Guid.Empty), "A loja é criada mesmo assim.");
+            Assert.That(accessToken, Is.Not.Empty);
+        });
     }
 
     // ── Onboarding: o token reemitido já carrega a loja nova ────────────────────────────────

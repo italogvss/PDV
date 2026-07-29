@@ -294,12 +294,23 @@ numa mensagem genérica ("será cobrada a diferença proporcional") em vez de mo
 
 ### 8.1 — Trial (30 dias, sem cartão) · cenários T1–T7
 `TenantService.StartTrialIfEligibleAsync`, chamado na **criação do tenant**:
-- Condições: veio `?plano=<slug>` da landing **e** `!user.HasUsedTrial` **e** não há assinatura viva.
+- Condições de elegibilidade: **`!user.HasUsedTrial`** e **não há assinatura** do usuário (qualquer
+  status). Essas duas checagens rodam **antes** de resolver o plano — o fallback abaixo não é brecha
+  para um segundo trial.
 - Cria `Subscription` `Trialing`, `Provider = ""`, `IsRenewable = false`,
   `TrialEndsAt = CurrentPeriodEnd = now + 30d`. Marca `user.HasUsedTrial = true` (**irreversível** —
   cancelar, expirar ou assinar não o devolve).
 - **Não chama o gateway** → sem `cus_`, sem `sub_`, sem `Payment`.
-- Slug ausente → sem trial; após o login, `resolvePostLoginPath` leva o usuário a `/planos` (T3).
+- **Slug ausente ou desconhecido → trial no plano padrão** (`TrialDefaults.FallbackPlanSlug` =
+  `profissional-mensal`) + `LogWarning` (persistido pelo `SystemLogSink`, visível em `/admin` → logs).
+  Quem é elegível **sempre** sai `Trialing`; o slug só decide *qual* plano (T3).
+  > Essa regra foi invertida em julho/2026: antes, slug que não resolvia significava *nenhum* trial,
+  > em silêncio. Sete CTAs da landing mandavam `?plano=profissional` (sem ciclo), a loja nascia sem
+  > assinatura, todo módulo respondia 402 e o cliente novo era empurrado pro Stripe em vez de testar.
+- `PlanRepository.GetBySlugAsync` **não** filtra `IsActive` (só o trial o usa): plano desativado pelo
+  `PlanSeeder` por falta de `Stripe:Prices:<slug>` ainda serve para testar, já que o trial não toca o
+  gateway. Se **nem** o plano padrão existir (catálogo vazio), o onboarding **não falha**, mas fica
+  sem assinatura e o service emite `LogError` — é incidente de configuração.
 - Fim do trial: o job horário marca `Expired` (T4); a retenção de 90d começa.
 - Cancelar durante o trial (T5): acesso cai na hora, sem cobrança, sem estorno; loja e login preservados.
 - Trocar de plano no trial (T6): imediato, datas do trial intactas, sem cobrança (§8.6).
@@ -588,7 +599,7 @@ Uma implementação está completa quando **todos** passam. Referência cruzada 
 |---|---|---|
 | T1 | Cria loja com `?plano=`, nunca usou trial | `Trialing` 30d, gateway intocado |
 | T2 | Cria 2ª loja, já usou trial | Sem trial; acesso vem da assinatura existente (RF-1) |
-| T3 | Cria loja sem `?plano` | Sem assinatura → `/planos` |
+| T3 | Cria loja sem `?plano`, ou com slug desconhecido | `Trialing` 30d no plano padrão + `LogWarning` |
 | T4 | Trial vence | `Expired`, 402, retenção de 90d começa |
 | T5 | Cancela no trial | `Expired` na hora, sem cobrança/estorno; loja e login preservados |
 | T6 | Troca de plano no trial | Imediata, datas intactas, sem cobrança |
