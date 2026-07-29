@@ -8,6 +8,8 @@ const {
   subtitulo = 'Crie sua conta em 2 minutos. Sem cartão, sem instalação, sem fidelidade.',
 } = Astro.props;
 
+// CTA genérico não escolhe plano: manda pro `/login` puro e deixa a tela `/planos` do app perguntar.
+// Só a grade de preços manda `?plano=<slug>` (ver landingpage/README.md, "Handoff de plano para o app").
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 ---
 
@@ -20,7 +22,7 @@ const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
         <h2 class="cta-title">{titulo}</h2>
         <p class="cta-sub">{subtitulo}</p>
         <div class="cta-actions">
-          <a href={`${appUrl}/login?plano=profissional`} class="btn-brand cta-btn">Criar conta grátis</a>
+          <a href={`${appUrl}/login`} class="btn-brand cta-btn">Criar conta grátis</a>
           <a href="/preco" class="cta-ghost">Ver planos e preços →</a>
         </div>
         <ul class="cta-reassure">

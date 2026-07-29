@@ -73,8 +73,10 @@ const depoimentos = [
 ];
 
 // `slug` é a base; o CTA envia `?plano=<slug>-mensal` ou `-anual` conforme o toggle,
-// batendo com os slugs oficiais do PlanSeedData. `mensal` = valor/mês; `anual` = total
-// pago uma vez no ano (2 meses grátis); `economia` = quanto se poupa vs. 12× o mensal.
+// batendo com os slugs oficiais do PlanSeedData. **Só esta grade manda `?plano=`** — o slug
+// precisa incluir o ciclo, senão não resolve nenhum plano no backend (ver landingpage/README.md,
+// "Handoff de plano para o app"). `mensal` = valor/mês; `anual` = total pago uma vez no ano
+// (2 meses grátis); `economia` = quanto se poupa vs. 12× o mensal.
 const planos = [
   {
     nome: 'Essencial', slug: 'essencial', descricao: 'Pra quem está começando a organizar as vendas.',
@@ -113,7 +115,7 @@ const planos = [
             pro dia a dia — completo o bastante pra fazer o negócio crescer.
           </p>
           <div class="hero-actions">
-            <a href={`${appUrl}/login?plano=profissional`} class="btn-brand hero-btn">Criar conta grátis</a>
+            <a href={`${appUrl}/login`} class="btn-brand hero-btn">Criar conta grátis</a>
             <a href="/solucoes" class="hero-secondary">Ver o que faz →</a>
           </div>
           <ul class="hero-reassure">

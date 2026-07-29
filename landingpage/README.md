@@ -184,8 +184,28 @@ Acesso no código:
 ---
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 ---
-<a href={`${appUrl}/cadastro`}>Criar conta</a>
+<a href={`${appUrl}/login`}>Criar conta</a>
 ```
+
+> `PUBLIC_APP_URL` é lida em **tempo de build** (é ARG no `Dockerfile`). Mudar o valor exige rebuild da landing — não basta reiniciar o container.
+
+---
+
+## Handoff de plano para o app
+
+A landing pode pré-selecionar o plano do trial passando `?plano=<slug>` para o app. Duas regras, e as duas já causaram bug em produção:
+
+**1. Só a grade de preços manda `?plano=`.** Todo outro CTA ("Criar conta grátis" do menu, hero, footer, FAQ, soluções) aponta para `${appUrl}/login` puro. Esses botões não são escolha de plano — quem clica neles escolhe o plano na tela `/planos` do app.
+
+**2. O slug tem de incluir o ciclo e existir no backend.** Os únicos slugs válidos estão em `backend/PDV.Domain/Constants/PlanSeedData.cs`:
+
+```
+essencial-mensal   essencial-anual   profissional-mensal   profissional-anual
+```
+
+Um slug sem ciclo (`?plano=profissional`) **não resolve plano nenhum**. Antes de julho/2026 sete CTAs mandavam exatamente isso: o app pulava a tela `/planos`, criava a loja sem assinatura e o cliente caía num app 100% bloqueado por 402, cuja única saída era pagar no Stripe — em vez de receber o trial de 30 dias. Hoje o backend cai num plano padrão e registra `Warning` (visível em `/admin` → logs) quando um slug não resolve, mas a landing não deve depender disso.
+
+Ao adicionar um plano novo: criar em `PlanSeedData.cs` primeiro, depois usar o slug aqui — nunca o contrário.
 
 ---
 

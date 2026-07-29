@@ -1,4 +1,6 @@
 ---
+// CTA genérico não escolhe plano: manda pro `/login` puro e deixa a tela `/planos` do app perguntar.
+// Só a grade de preços manda `?plano=<slug>` (ver landingpage/README.md, "Handoff de plano para o app").
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 const ano = new Date().getFullYear();
 
@@ -37,7 +39,7 @@ const colunas = [
           O ponto de venda que faz a sua loja soar <span>ka-shing</span>.
           Gestão e vendas para o pequeno comércio brasileiro.
         </p>
-        <a href={`${appUrl}/login?plano=profissional`} class="btn-brand footer-cta">Criar conta grátis</a>
+        <a href={`${appUrl}/login`} class="btn-brand footer-cta">Criar conta grátis</a>
       </div>
 
       <nav class="footer-cols" aria-label="Rodapé">
