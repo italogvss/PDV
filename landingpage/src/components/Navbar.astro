@@ -1,4 +1,6 @@
 ---
+// CTA genérico não escolhe plano: manda pro `/login` puro e deixa a tela `/planos` do app perguntar.
+// Só a grade de preços manda `?plano=<slug>` (ver landingpage/README.md, "Handoff de plano para o app").
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 
 const links = [
@@ -31,7 +33,7 @@ const isActive = (href: string) =>
 
     <div class="nav-actions">
       <a href={`${appUrl}/login`} class="nav-login">Entrar</a>
-      <a href={`${appUrl}/login?plano=profissional`} class="btn-brand">Criar conta grátis</a>
+      <a href={`${appUrl}/login`} class="btn-brand">Criar conta grátis</a>
     </div>
 
     <button class="nav-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-mobile">
@@ -45,7 +47,7 @@ const isActive = (href: string) =>
         <li><a href={l.href} class:list={['nav-link', { active: isActive(l.href) }]}>{l.label}</a></li>
       ))}
     </ul>
-    <a href={`${appUrl}/login?plano=profissional`} class="btn-brand btn-block">Criar conta grátis</a>
+    <a href={`${appUrl}/login`} class="btn-brand btn-block">Criar conta grátis</a>
     <a href={`${appUrl}/login`} class="nav-login">Entrar</a>
   </div>
 </header>

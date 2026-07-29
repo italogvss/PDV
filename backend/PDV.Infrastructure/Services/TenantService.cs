@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using PDV.Application.DTOs.Tenants;
 using PDV.Application.Helpers;
@@ -28,7 +29,8 @@ public class TenantService(
     IValidator<BusinessSettingsDto> businessValidator,
     IValidator<OperationSettingsDto> operationValidator,
     IValidator<PaymentsSettingsDto> paymentsValidator,
-    IConfiguration configuration) : ITenantService
+    IConfiguration configuration,
+    ILogger<TenantService> logger) : ITenantService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -112,18 +114,38 @@ public class TenantService(
         return (response, accessToken);
     }
 
-    // Concede o trial PDV-side (30 dias, sem cartão, sem chamar o gateway) quando um plano foi
-    // escolhido na landing. Uma vez por usuário (HasUsedTrial) e só se ainda não houver assinatura
-    // viva. Slug ausente/desconhecido → segue sem trial, sem falhar o onboarding.
+    // Concede o trial PDV-side (30 dias, sem cartão, sem chamar o gateway). Uma vez por usuário
+    // (HasUsedTrial) e só se ainda não houver assinatura. Um slug ausente ou desconhecido NÃO pode
+    // deixar o usuário sem trial — cai no plano padrão e registra o desvio (visível em /admin → logs).
+    // Sem isso a loja nascia sem assinatura e o app inteiro respondia 402: o cliente novo era
+    // empurrado pro checkout em vez de receber o teste grátis.
     private async Task StartTrialIfEligibleAsync(User user, string? planSlug)
     {
-        if (string.IsNullOrWhiteSpace(planSlug) || user.HasUsedTrial) return;
+        if (user.HasUsedTrial) return;
 
         var existing = await subscriptionRepository.GetByUserIdAsync(user.Id);
         if (existing is not null) return;
 
         var plan = await planRepository.GetBySlugAsync(planSlug);
-        if (plan is null) return;
+        if (plan is null)
+        {
+            plan = await planRepository.GetBySlugAsync(TrialDefaults.FallbackPlanSlug);
+            // Sem aspas manuais em volta dos placeholders: o RenderMessage do Serilog (é o que o
+            // SystemLogSink grava) já aspeia strings, e o resultado sairia como '"profissional"'.
+            logger.LogWarning(
+                "Trial: slug {PlanSlug} não resolveu um plano — usando o padrão {FallbackSlug}. Usuário {UserId}.",
+                planSlug, TrialDefaults.FallbackPlanSlug, user.Id);
+        }
+
+        if (plan is null)
+        {
+            // Catálogo vazio (ex.: Stripe:Prices incompleto em produção). Não falha o onboarding, mas
+            // é incidente: o usuário fica sem assinatura e todo módulo responde 402.
+            logger.LogError(
+                "Trial NÃO concedido: nenhum plano no catálogo (nem {FallbackSlug}). Usuário {UserId} ficou sem assinatura — confira Stripe:Prices.",
+                TrialDefaults.FallbackPlanSlug, user.Id);
+            return;
+        }
 
         var trialEnd = DateTime.UtcNow.AddDays(TrialDefaults.DurationDays);
 

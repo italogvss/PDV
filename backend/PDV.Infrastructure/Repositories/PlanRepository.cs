@@ -23,11 +23,15 @@ public class PlanRepository(AppDbContext context) : IPlanRepository
     public async Task<Plan?> GetByExternalProductIdAsync(string externalProductId) =>
         await context.Plans.FirstOrDefaultAsync(p => p.ExternalProductId == externalProductId);
 
-    public async Task<Plan?> GetBySlugAsync(string slug)
+    // Único consumidor: o trial (TenantService.StartTrialIfEligibleAsync). Deliberadamente NÃO filtra
+    // IsActive: o trial não toca o gateway, então um plano desativado por falta de preço configurado
+    // (PlanSeeder) ainda é um plano válido para testar. O checkout resolve por Id e valida o preço no
+    // gateway, e a grade de planos usa GetActiveAsync — nenhum dos dois passa por aqui.
+    public async Task<Plan?> GetBySlugAsync(string? slug)
     {
         if (string.IsNullOrWhiteSpace(slug)) return null;
         return await context.Plans
-            .Where(p => p.IsActive && p.Slug == slug)
+            .Where(p => p.Slug == slug)
             .OrderBy(p => p.PriceCents)
             .FirstOrDefaultAsync();
     }

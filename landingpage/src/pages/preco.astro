@@ -8,7 +8,9 @@ import Accordion from '../components/Accordion.astro';
 
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
 
-// `slug` é o ponto de entrada do trial no app (?plano=<slug>) — mapeia para o plano do backend.
+// `slug` é o ponto de entrada do trial no app — o CTA envia `?plano=<slug>-mensal|-anual` conforme
+// o toggle. **Só esta grade manda `?plano=`** e o slug precisa incluir o ciclo, senão não resolve
+// nenhum plano no backend (ver landingpage/README.md, "Handoff de plano para o app").
 // Preços em pt-BR. `mensal` = valor por mês na cobrança mensal recorrente.
 // `anual` = valor TOTAL do plano anual, pago uma única vez (não é dividido por mês).
 // O anual já embute 2 meses grátis; `economia` = quanto se economiza vs. 12× o mensal.

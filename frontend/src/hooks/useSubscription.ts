@@ -176,8 +176,9 @@ export function useCancelSubscription() {
   return useMutation({
     mutationFn: () => subscriptionService.cancel(),
     onSuccess: (result) => {
-      // O slug sobrevive no sessionStorage e, num novo login, `resolvePostLoginPath` mandaria um
-      // usuário `hasUsedTrial` direto pro onboarding, pulando o checkout pago.
+      // Higiene: o slug de uma escolha antiga não tem mais razão de sobreviver no sessionStorage.
+      // Hoje quem decide o encaminhamento é o `/planos` (que checa `hasUsedTrial` antes de mandar
+      // pro onboarding), então isto já não é o que impede um `hasUsedTrial` de pular o checkout.
       clearStoredPlanSlug()
       queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY })
       showToast(cancelMessage(result), 'info')

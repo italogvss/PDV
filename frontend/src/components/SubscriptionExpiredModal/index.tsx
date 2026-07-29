@@ -26,7 +26,13 @@ export default function SubscriptionExpiredModal({ devForceOpen }: { devForceOpe
   // Quando o acesso caiu por cobrança recusada, o PaymentFailedModal explica melhor o motivo —
   // ele tem precedência para os dois não abrirem ao mesmo tempo.
   const paymentFailed = Boolean(subscription?.lastPaymentFailedAt)
-  const open = Boolean(devForceOpen) || (isOwner && !dismissed && !paymentFailed && subscription?.status === 'Expired')
+  // `None` = tenant cujo Owner não tem assinatura nenhuma. Não deveria acontecer (o trial é
+  // concedido no onboarding), mas quando acontecia o usuário só via toasts de 402 sem explicação —
+  // app inteiro bloqueado e nada dizendo o motivo. Aqui ele pelo menos entende e tem para onde ir.
+  const noPlan = subscription?.status === 'None'
+  const open =
+    Boolean(devForceOpen) ||
+    (isOwner && !dismissed && !paymentFailed && (subscription?.status === 'Expired' || noPlan))
 
   const handleClose = () => setDismissed(true)
 
@@ -44,10 +50,12 @@ export default function SubscriptionExpiredModal({ devForceOpen }: { devForceOpe
         <PremiumIconBadge size="xl" tone="soft" icon={WorkspacePremiumOutlined} sx={{ mx: 'auto', mb: 2 }} />
 
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Sua assinatura expirou
+          {noPlan ? 'Ative um plano para usar o Kashing' : 'Sua assinatura expirou'}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-          O acesso ao sistema foi bloqueado, mas você ainda pode acessar seus dados. Ative um plano para continuar usando o Kashing.
+          {noPlan
+            ? 'Sua loja está criada, mas ainda não há um plano ativo nela — por isso os recursos aparecem bloqueados. Escolha um plano para liberar o Kashing.'
+            : 'O acesso ao sistema foi bloqueado, mas você ainda pode acessar seus dados. Ative um plano para continuar usando o Kashing.'}
         </Typography>
 
         <UpsellButton label="Ativar plano" fullWidth size="large" onBeforeNavigate={handleClose} />

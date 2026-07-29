@@ -34,10 +34,14 @@ export function clearStoredPlanSlug(): void {
   sessionStorage.removeItem(STORAGE_KEY)
 }
 
-// Rota pós-login/pós-bootstrap de um usuário autenticado: já tem tenant → dashboard; sem tenant
-// mas com slug capturado (veio da landing) → direto pro onboarding; sem slug nenhum → tela de
-// planos, pra escolher antes de seguir (nunca visto ou já usou o trial).
+// Rota pós-login/pós-bootstrap de um usuário autenticado: já tem tenant → dashboard; sem tenant →
+// tela de planos. `/planos` é a única autoridade sobre o plano — é lá que o slug capturado da landing
+// é validado contra o catálogo do backend antes de seguir para o onboarding.
+//
+// Antes esta função decidia por "existe slug guardado?" e mandava direto pro onboarding. Como não
+// checava se o slug era *válido*, um `?plano=profissional` (sem ciclo) pulava a escolha de plano e a
+// loja nascia sem assinatura — app travado em 402 e checkout como única saída. Presença de slug não
+// é o mesmo que slug válido, e só quem tem o catálogo em mãos sabe a diferença.
 export function resolvePostLoginPath(tenantId: string | null): string {
-  if (tenantId) return '/'
-  return getStoredPlanSlug() ? '/criar-negocio' : '/planos'
+  return tenantId ? '/' : '/planos'
 }
