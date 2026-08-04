@@ -10,7 +10,9 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
@@ -69,6 +71,9 @@ const MONTHS = [
 ]
 
 export default function AppointmentsPage() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   // ─── Data da API ────────────────────────────────────────────────────────────
 
   const { userId: ownerUserId, name: ownerName, role, employeeId: selfEmployeeId } = useAppSelector((s) => s.auth)
@@ -466,23 +471,25 @@ export default function AppointmentsPage() {
               onEventClick={(id) => setDetailId(id)}
             />
           ) : (
-            <DataGrid
-              rows={listAppointments}
-              columns={listColumns}
-              onRowClick={({ id }) => setDetailId(String(id))}
-              hideFooter={listAppointments.length <= 100}
-              disableColumnFilter
-              disableColumnMenu
-              slots={{
-                noRowsOverlay: () => (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1, color: 'text.disabled' }}>
-                    <EventBusyOutlined sx={{ fontSize: 40 }} />
-                    <Typography variant="body2">Nenhum agendamento para esta data</Typography>
-                  </Box>
-                ),
-              }}
-              sx={{ cursor: 'pointer' }}
-            />
+            <Box sx={{ height: isMobile ? 480 : 660, minHeight: 0 }}>
+              <DataGrid
+                rows={listAppointments}
+                columns={listColumns}
+                onRowClick={({ id }) => setDetailId(String(id))}
+                hideFooter={listAppointments.length <= 100}
+                disableColumnFilter
+                disableColumnMenu
+                slots={{
+                  noRowsOverlay: () => (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1, color: 'text.disabled' }}>
+                      <EventBusyOutlined sx={{ fontSize: 40 }} />
+                      <Typography variant="body2">Nenhum agendamento para esta data</Typography>
+                    </Box>
+                  ),
+                }}
+                sx={{ cursor: 'pointer', height: '100%' }}
+              />
+            </Box>
           )}
         </Box>
 
