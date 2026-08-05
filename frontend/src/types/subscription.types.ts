@@ -50,6 +50,9 @@ export interface Subscription {
   limits: Record<string, number>
   // Controle de trial.
   hasUsedTrial: boolean
+  // Tem cliente no gateway? Só então existe cartão/fatura para gerenciar no portal hospedado. O
+  // status não substitui isso: um Expired vindo de trial nunca chegou a ter cliente lá.
+  canManageBilling: boolean
 }
 
 // Resultado (ou simulação) da troca de plano — o frontend deriva a mensagem daqui, sem reimplementar

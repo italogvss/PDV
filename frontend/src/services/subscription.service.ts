@@ -27,6 +27,7 @@ interface BackendSubscription {
   entitlements: string[]
   limits: Record<string, number>
   hasUsedTrial: boolean
+  canManageBilling: boolean
 }
 
 interface BackendPlan {
@@ -42,6 +43,10 @@ interface BackendPlan {
 
 interface BackendCheckout {
   checkoutUrl: string | null
+}
+
+interface BackendPortalSession {
+  url: string
 }
 
 interface BackendCancelResult {
@@ -70,6 +75,7 @@ function mapSubscription(s: BackendSubscription): Subscription {
     entitlements: s.entitlements ?? [],
     limits: s.limits ?? {},
     hasUsedTrial: s.hasUsedTrial ?? false,
+    canManageBilling: s.canManageBilling ?? false,
   }
 }
 
@@ -127,6 +133,13 @@ export const subscriptionService = {
       completionUrl: payload.completionUrl,
     })
     return { checkoutUrl: data.checkoutUrl ?? null }
+  },
+
+  // Portal hospedado do Stripe, restrito a trocar o cartão e ver as faturas. Devolve a URL para
+  // onde redirecionar; `returnUrl` é pra onde o portal volta quando o usuário sai de lá.
+  openPortal: async (returnUrl: string): Promise<string> => {
+    const { data } = await api.post<BackendPortalSession>('/subscriptions/portal-session', { returnUrl })
+    return data.url
   },
 
   // Simula a troca sem executá-la — o diálogo de confirmação mostra quanto será cobrado agora e

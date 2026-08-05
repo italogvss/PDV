@@ -17,6 +17,8 @@ export const FEATURES = {
   advancedInventory: 'advancedInventory',
   advancedEmployee: 'advancedEmployee',
   advancedExpenses: 'advancedExpenses',
+  creditDashboard: 'creditDashboard',
+  creditReminders: 'creditReminders',
 } as const
 
 export type PlanFeature = (typeof FEATURES)[keyof typeof FEATURES]
@@ -36,6 +38,8 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
   advancedInventory: 'Alertas de estoque mínimo e crítico',
   advancedEmployee: 'Gestão avançada de equipe',
   advancedExpenses: 'Despesas avançadas',
+  creditDashboard: 'Painel de crediário com aging e inadimplência',
+  creditReminders: 'Lembretes de cobrança do crediário',
 }
 
 export const PLAN_LIMITS = {

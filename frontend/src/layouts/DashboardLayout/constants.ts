@@ -14,6 +14,7 @@ import {
   CalendarMonthOutlined,
   HistoryOutlined,
   MailOutlined,
+  AccountBalanceWalletOutlined,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import type { Permission } from '../../types/employee.types'
@@ -73,6 +74,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: CalendarMonthOutlined,
         requiredPermission: 'ViewAppointments',
         module: 'appointments',
+      },
+      {
+        label: 'Crediário',
+        path: '/crediario',
+        icon: AccountBalanceWalletOutlined,
+        requiredPermission: 'ViewCredit',
+        module: 'credit',
       },
       {
         label: 'Despesas',

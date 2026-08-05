@@ -33,6 +33,13 @@ public interface IPaymentGateway
 
     Task CancelSubscriptionAsync(string gatewaySubscriptionId, CancellationToken ct = default);
 
+    // Portal hospedado do cliente — devolve a URL para onde o frontend redireciona. A configuração
+    // do portal no gateway restringe o que ele oferece: trocar o cartão e ver as faturas, nada mais.
+    // Cancelamento e troca de plano NÃO passam por aqui de propósito: o estorno da janela de
+    // arrependimento (CG-7) só existe no CancelAsync do app, e o webhook de cancelamento nunca
+    // estorna — cancelar pelo portal furaria a conformidade.
+    Task<string> CreatePortalSessionAsync(string customerId, string returnUrl, CancellationToken ct = default);
+
     // Emite o estorno de uma cobrança (CG-7). É assíncrono: o desfecho chega pelo webhook de
     // estorno, que é quem revoga o acesso (RF-41).
     Task<RefundResult> RefundAsync(string chargeReference, CancellationToken ct = default);

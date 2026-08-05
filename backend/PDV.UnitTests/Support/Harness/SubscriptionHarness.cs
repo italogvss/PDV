@@ -84,6 +84,15 @@ public sealed class SubscriptionHarness
         return this;
     }
 
+    // O que o /me enxerga. Repare que é resolvido pelo OWNER do tenant, não pelo usuário logado —
+    // por isso `sub` aqui pode ser de outra pessoa (caso do Employee).
+    public SubscriptionHarness WithResolvedEntitlement(Subscription? sub)
+    {
+        Entitlements.Setup(e => e.ResolveForCurrentTenantAsync())
+            .ReturnsAsync(new ResolvedEntitlement(sub, sub?.Plan, [], new Dictionary<string, int>()));
+        return this;
+    }
+
     public SubscriptionHarness WithPlan(Plan plan)
     {
         Plans.Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);

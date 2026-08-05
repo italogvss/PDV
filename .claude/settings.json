@@ -60,7 +60,8 @@
       "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_verify.mjs\")",
       "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/preco screenshot-15-preco-mobile.png 390)",
       "Bash(node \"C:/Users/Italo/Documents/Projetos/PDV-Ultra/landingpage/_shot.mjs\" http://localhost:4322/solucoes screenshot-16-solucoes-mobile.png 390)",
-      "Bash(node screenshot.mjs http://localhost:4322 hero-chaching-check)"
+      "Bash(node screenshot.mjs http://localhost:4322 hero-chaching-check)",
+      "Bash(ssh -i ./id_ed25519 -o ConnectTimeout=25 root@179.197.230.243 \"cd /opt/kashing && echo '=== commit ===' && git log -1 --oneline && echo '=== containers ===' && docker ps --format '{{.Names}}\\\\t{{.Status}}' && echo '=== health ===' && curl -s -o /dev/null -w 'api/health: %{http_code}\\\\n' https://app.kashing.com.br/api/health\")"
     ]
   },
   "enabledPlugins": {

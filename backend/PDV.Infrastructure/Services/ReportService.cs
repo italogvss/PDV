@@ -499,6 +499,47 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
+    // Uma linha por PARCELA — é o grão que o lojista precisa para conferir a carteira de fiado
+    // fora do sistema (e o que sobra utilizável depois de um cancelamento de plano).
+    public async Task<byte[]> ExportCreditCsvAsync()
+    {
+        var installments = await context.CreditInstallments
+            .Include(i => i.Account)
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.Number)
+            .ToListAsync();
+
+        var today = DateTime.UtcNow.Date;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Cliente,Venda,Parcela,Vencimento,Valor,Pago,Saldo,Status,Dias em Atraso");
+
+        foreach (var i in installments)
+        {
+            var isOverdue = i.Status == CreditInstallmentStatus.Open && i.DueDate.Date < today;
+            var daysOverdue = isOverdue ? (today - i.DueDate.Date).Days : 0;
+            var status = isOverdue ? "Vencida" : i.Status switch
+            {
+                CreditInstallmentStatus.Paid => "Paga",
+                CreditInstallmentStatus.Cancelled => "Cancelada",
+                _ => "Em aberto",
+            };
+
+            sb.AppendLine(
+                $"{CsvField(i.Account?.CustomerName ?? "")}," +
+                $"{i.Account?.SaleId}," +
+                $"{i.Number}/{i.Account?.InstallmentCount ?? 0}," +
+                $"{i.DueDate:dd/MM/yyyy}," +
+                $"{i.Amount:F2}," +
+                $"{i.PaidAmount:F2}," +
+                $"{i.Amount - i.PaidAmount:F2}," +
+                $"{status}," +
+                $"{daysOverdue}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
     public async Task<byte[]> ExportBillingCsvAsync()
     {
         // Serviços + produtos com custo entram no lucro; produtos sem custo ficam de fora e o desconto

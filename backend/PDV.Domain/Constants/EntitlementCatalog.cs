@@ -26,6 +26,7 @@ public static class EntitlementCatalog
     public const string Suppliers = "suppliers";
     public const string Logs = "logs";
     public const string Employees = "employees";
+    public const string Credit = "credit";
 
     // ── Features (fine) — diferencial do plano Pro (chaves canônicas do produto) ────────────
     public const string AdvancedDashboard = "advancedDashboard";
@@ -45,13 +46,18 @@ public static class EntitlementCatalog
 
     public const string AdvancedExpenses = "advancedExpenses";
 
+    // Crediário: o MÓDULO é livre nos dois planos; só o painel analítico e os lembretes são Pro.
+    public const string CreditDashboard = "creditDashboard";
+
+    public const string CreditReminders = "creditReminders";
+
     public record EntitlementInfo(string Key, string Label, string Group, bool IsModule);
 
     // Todas as chaves de MÓDULO (concedidas aos dois planos).
     public static readonly IReadOnlyList<string> Modules =
     [
         Sales, Inventory, Services, Appointments, Expenses,
-        Reports, Customers, Suppliers, Logs, Employees,
+        Reports, Customers, Suppliers, Logs, Employees, Credit,
     ];
 
     // Todas as FEATURES (concedidas só ao Pro).
@@ -59,7 +65,8 @@ public static class EntitlementCatalog
     [
         AdvancedDashboard, ProductWithPhoto, ProductLinkedToService, RecurringExpense,
         CustomRoles, AdvancedReports, InformativeCustomerData, CustomerSettings,
-        CustomDiscountPercentage, Notifications, AdvancedInventory, AdvancedEmployee, AdvancedExpenses
+        CustomDiscountPercentage, Notifications, AdvancedInventory, AdvancedEmployee, AdvancedExpenses,
+        CreditDashboard, CreditReminders
     ];
 
     // Catálogo declarativo — rótulos PT-BR para a UI de Assinatura. Ordem = ordem de exibição.
@@ -75,6 +82,7 @@ public static class EntitlementCatalog
         new(Suppliers, "Fornecedores", "Fornecedores", IsModule: true),
         new(Logs, "Logs / Auditoria", "Auditoria", IsModule: true),
         new(Employees, "Funcionários", "Equipe", IsModule: true),
+        new(Credit, "Crediário", "Crediário", IsModule: true),
 
         new(AdvancedDashboard, "Painel analítico", "Dashboard", IsModule: false),
         new(ProductWithPhoto, "Produto com foto", "Estoque", IsModule: false),
@@ -88,7 +96,9 @@ public static class EntitlementCatalog
         new(Notifications, "Notificações", "Notificações", IsModule: false),
         new(AdvancedInventory, "Estoque avançado", "Estoque", IsModule: false),
         new(AdvancedEmployee, "Gestão avançada de equipe", "Equipe", IsModule: false),
-        new(AdvancedExpenses, "Despesas avançadas", "Despesas", IsModule: false)
+        new(AdvancedExpenses, "Despesas avançadas", "Despesas", IsModule: false),
+        new(CreditDashboard, "Painel de crediário", "Crediário", IsModule: false),
+        new(CreditReminders, "Lembretes de cobrança", "Crediário", IsModule: false)
     ];
 
     private static readonly HashSet<string> KnownKeys =

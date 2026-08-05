@@ -32,7 +32,11 @@ public class NotificationService(
             ? new AppointmentNotifications(0)
             : await GetAppointmentNotificationsAsync(today);
 
-        return new NotificationResponse(stock, financial, appointments);
+        var credit = userSettings?.NotifyInvoices == false || !await IsModuleEnabledAsync(OperationModule.Credit)
+            ? new CreditNotifications(0, 0)
+            : await GetCreditNotificationsAsync(today);
+
+        return new NotificationResponse(stock, financial, appointments, credit);
     }
 
     private async Task<UserSettings?> GetUserSettingsAsync()
@@ -74,6 +78,18 @@ public class NotificationService(
             .CountAsync(e => !e.IsPaid && e.DueDate >= today && e.DueDate < today.AddDays(8));
 
         return new FinancialNotifications(overdueExpenses, upcomingExpenses);
+    }
+
+    private async Task<CreditNotifications> GetCreditNotificationsAsync(DateTime today)
+    {
+        var overdue = await context.CreditInstallments
+            .CountAsync(i => i.Status == CreditInstallmentStatus.Open && i.DueDate < today);
+
+        var upcoming = await context.CreditInstallments
+            .CountAsync(i => i.Status == CreditInstallmentStatus.Open
+                          && i.DueDate >= today && i.DueDate < today.AddDays(8));
+
+        return new CreditNotifications(overdue, upcoming);
     }
 
     private async Task<AppointmentNotifications> GetAppointmentNotificationsAsync(DateTime today)

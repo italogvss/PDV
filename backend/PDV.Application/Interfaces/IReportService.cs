@@ -41,6 +41,7 @@ public interface IReportService
     Task<byte[]> ExportServicesCsvAsync();
 
     Task<byte[]> ExportExpensesCsvAsync();
+    Task<byte[]> ExportCreditCsvAsync();
 
     Task<byte[]> ExportBillingCsvAsync();
 

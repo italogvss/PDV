@@ -127,6 +127,20 @@ export function useStartCheckout() {
   })
 }
 
+// Abre o portal hospedado do Stripe (trocar cartão / ver faturas) e redireciona para lá. Só faz
+// sentido quando `subscription.canManageBilling` é true — no trial não há cliente no gateway.
+export function useOpenBillingPortal() {
+  const handleError = useApiError()
+  return useMutation({
+    // Volta exatamente para a página de onde saiu.
+    mutationFn: () => subscriptionService.openPortal(window.location.href),
+    onSuccess: (url) => {
+      window.location.href = url
+    },
+    onError: (error) => handleError(error, 'Erro ao abrir o portal de pagamento.'),
+  })
+}
+
 // Troca de plano. Nada é cobrado agora — o valor novo entra na próxima renovação. Um upgrade vale
 // na hora; um downgrade fica agendado para a virada do ciclo, preservando o que já foi pago.
 export function useChangePlan() {

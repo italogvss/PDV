@@ -31,4 +31,15 @@ public interface IAuditLogger
 
     Task LogRolePermissionsChangedAsync(
         Guid roleId, string roleName, IEnumerable<Permission> before, IEnumerable<Permission> after);
+
+    Task LogCreditAccountCreatedAsync(
+        Guid accountId, string customerName, decimal totalAmount, int installmentCount, DateTime firstDueDate);
+
+    Task LogCreditPaymentReceivedAsync(
+        Guid accountId, string customerName, int installmentNumber, decimal amount, PaymentMethod method);
+
+    Task LogCreditPaymentReversedAsync(
+        Guid accountId, string customerName, int installmentNumber, decimal amount);
+
+    Task LogCreditAccountCancelledAsync(Guid accountId, string customerName, decimal balance);
 }

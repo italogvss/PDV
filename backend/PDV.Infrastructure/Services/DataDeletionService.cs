@@ -74,8 +74,9 @@ public class DataDeletionService(
                 .SetProperty(e => e.ImageUrl, (string?)null)
                 .SetProperty(e => e.UpdatedAt, now), ct);
 
-        // 4. Legal-hold: retém Sale/SaleItem/Expense/EmployeeSalaryLink/TenantSettings + a linha do
-        //    Tenant por 5 anos. Zera ScheduledDeletionAt (não reprocessar) e desativa a loja.
+        // 4. Legal-hold: retém Sale/SaleItem/Expense/EmployeeSalaryLink/TenantSettings + o crediário
+        //    (CreditAccount/Installment/Payment — transacional, ancorado no Customer anonimizado
+        //    acima) + a linha do Tenant por 5 anos. Zera ScheduledDeletionAt e desativa a loja.
         var legalHoldUntil = now.Add(RetentionPolicy.RetentionFor(RetentionCategory.Transactional));
         await db.Tenants.IgnoreQueryFilters().Where(t => t.Id == tenantId)
             .ExecuteUpdateAsync(s => s
@@ -132,6 +133,12 @@ public class DataDeletionService(
     // reversa de dependência FK. ContactMessages permanecem (anonimizados, suporte).
     public async Task PurgeTenantAsync(Guid tenantId, CancellationToken ct)
     {
+        // Crediário antes de Sales e Customers: CreditAccount tem FK para ambos.
+        // Ordem interna do filho para o pai (pagamento → parcela → conta).
+        await db.CreditPayments.IgnoreQueryFilters().Where(x => x.TenantId == tenantId).ExecuteDeleteAsync(ct);
+        await db.CreditInstallments.IgnoreQueryFilters().Where(x => x.TenantId == tenantId).ExecuteDeleteAsync(ct);
+        await db.CreditAccounts.IgnoreQueryFilters().Where(x => x.TenantId == tenantId).ExecuteDeleteAsync(ct);
+
         var saleIds = await db.Sales.IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantId).Select(s => s.Id).ToListAsync(ct);
         if (saleIds.Count > 0)

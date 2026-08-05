@@ -24,7 +24,9 @@ export function useNotifications() {
 
 export function buildNotificationItems(counts: NotificationCounts): NotificationItem[] {
   const items: NotificationItem[] = []
+  // `credit` só existe depois do módulo de crediário; o fallback evita quebrar num payload antigo.
   const { stock, financial, appointments } = counts
+  const credit = counts.credit ?? { overdueInstallments: 0, upcomingInstallments: 0 }
 
   if (stock.outOfStock > 0) {
     const n = stock.outOfStock
@@ -101,6 +103,32 @@ export function buildNotificationItems(counts: NotificationCounts): Notification
       title: 'Despesas a vencer',
       description: `${n} ${n === 1 ? 'despesa vence' : 'despesas vencem'} nos próximos 7 dias`,
       route: '/despesas',
+    })
+  }
+
+  if (credit.overdueInstallments > 0) {
+    const n = credit.overdueInstallments
+    items.push({
+      id: 'overdue-credit',
+      category: 'financeiro',
+      severity: 'error',
+      icon: AccountBalanceWalletOutlined,
+      title: 'Crediário vencido',
+      description: `${n} ${n === 1 ? 'parcela vencida' : 'parcelas vencidas'} de clientes`,
+      route: '/crediario',
+    })
+  }
+
+  if (credit.upcomingInstallments > 0) {
+    const n = credit.upcomingInstallments
+    items.push({
+      id: 'upcoming-credit',
+      category: 'financeiro',
+      severity: 'warning',
+      icon: ScheduleOutlined,
+      title: 'Crediário a vencer',
+      description: `${n} ${n === 1 ? 'parcela vence' : 'parcelas vencem'} nos próximos 7 dias`,
+      route: '/crediario',
     })
   }
 

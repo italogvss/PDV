@@ -63,6 +63,25 @@ public class AuditLogger(
                 after = after.Select(p => p.ToString()).ToArray(),
             });
 
+    public Task LogCreditAccountCreatedAsync(
+        Guid accountId, string customerName, decimal totalAmount, int installmentCount, DateTime firstDueDate) =>
+        AddAsync(AuditAction.CreditAccountCreated, AuditEntityType.CreditAccount, accountId, customerName,
+            new { totalAmount, installmentCount, firstDueDate });
+
+    public Task LogCreditPaymentReceivedAsync(
+        Guid accountId, string customerName, int installmentNumber, decimal amount, PaymentMethod method) =>
+        AddAsync(AuditAction.CreditPaymentReceived, AuditEntityType.CreditAccount, accountId, customerName,
+            new { installmentNumber, amount, method });
+
+    public Task LogCreditPaymentReversedAsync(
+        Guid accountId, string customerName, int installmentNumber, decimal amount) =>
+        AddAsync(AuditAction.CreditPaymentReversed, AuditEntityType.CreditAccount, accountId, customerName,
+            new { installmentNumber, amount });
+
+    public Task LogCreditAccountCancelledAsync(Guid accountId, string customerName, decimal balance) =>
+        AddAsync(AuditAction.CreditAccountCancelled, AuditEntityType.CreditAccount, accountId, customerName,
+            new { balance });
+
     private async Task AddAsync(
         AuditAction action, AuditEntityType entityType, Guid? entityId, string entityName, object? details)
     {

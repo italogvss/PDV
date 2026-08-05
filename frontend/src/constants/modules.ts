@@ -14,6 +14,7 @@ export type OperationModule =
   | 'suppliers'
   | 'logs'
   | 'employees'
+  | 'credit'
 
 interface ModuleDefinition {
   label: string
@@ -72,6 +73,11 @@ export const OPERATION_MODULES: Record<OperationModule, ModuleDefinition> = {
     description: 'Equipe, cargos e permissões.',
     permissions: ['ManageEmployees', 'ViewEmployees'],
   },
+  credit: {
+    label: 'Crediário',
+    description: 'Vendas fiado, parcelas e cobrança.',
+    permissions: ['ViewCredit', 'ManageCredit', 'CancelCredit'],
+  },
 }
 
 export const ALL_MODULES = Object.keys(OPERATION_MODULES) as OperationModule[]
@@ -93,6 +99,7 @@ export const MODULE_GROUPS: ModuleGroup[] = [
     description: 'Catálogo de serviços e agenda de horários.',
     modules: ['services', 'appointments'],
   },
+  { label: 'Crediário',    description: 'Vendas fiado, parcelas e cobrança.',           modules: ['credit'] },
   { label: 'Despesas',     description: 'Contas e despesas do negócio.',                modules: ['expenses'] },
   { label: 'Relatórios',   description: 'Lucros, indicadores e relatórios.',             modules: ['reports'] },
   { label: 'Clientes',     description: 'Cadastro e relacionamento com clientes.',       modules: ['customers'] },

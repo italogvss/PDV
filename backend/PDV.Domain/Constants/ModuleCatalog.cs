@@ -20,6 +20,7 @@ public static class ModuleCatalog
             [OperationModule.Suppliers] = [Permission.ManageSuppliers, Permission.ViewSuppliers],
             [OperationModule.Logs] = [Permission.ViewLogs],
             [OperationModule.Employees] = [Permission.ManageEmployees, Permission.ViewEmployees],
+            [OperationModule.Credit] = [Permission.ViewCredit, Permission.ManageCredit, Permission.CancelCredit],
         };
 
     // Permissões que não pertencem a nenhum módulo — sempre visíveis, independente dos módulos

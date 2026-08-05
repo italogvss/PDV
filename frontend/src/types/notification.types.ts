@@ -27,4 +27,8 @@ export interface NotificationCounts {
   appointments: {
     todayAppointments: number
   }
+  credit: {
+    overdueInstallments: number
+    upcomingInstallments: number
+  }
 }

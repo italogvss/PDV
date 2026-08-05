@@ -10,6 +10,7 @@ import SalesPage from '../pages/Sales'
 import SalesHistoryPage from '../pages/SalesHistory'
 import InventoryPage from '../pages/Inventory'
 import ExpensesPage from '../pages/Expenses'
+import CreditPage from '../pages/Credit'
 import EmployeesPage from '../pages/Employees'
 import EmployeeDetailPage from '../pages/Employees/EmployeeDetail'
 import ReportsPage from '../pages/Reports'
@@ -105,6 +106,14 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission="ViewAppointments">
                 <AppointmentsPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: 'crediario',
+            element: (
+              <PermissionGuard permission="ViewCredit">
+                <CreditPage />
               </PermissionGuard>
             ),
           },

@@ -10,4 +10,5 @@ public enum AuditEntityType
     Appointment,
     TenantRole,
     Authentication,
+    CreditAccount,
 }

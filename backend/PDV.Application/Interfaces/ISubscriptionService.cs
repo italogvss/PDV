@@ -13,6 +13,10 @@ public interface ISubscriptionService
     // Owner-only — opera sobre a assinatura do usuário autenticado.
     Task<StartCheckoutResponse> StartCheckoutAsync(StartCheckoutRequest request);
 
+    // Abre o portal hospedado do gateway para o usuário trocar o cartão e ver as faturas. Só existe
+    // para quem já passou pelo checkout: no trial não há cliente no gateway.
+    Task<PortalSessionResponse> CreatePortalSessionAsync(PortalSessionRequest request);
+
     // Simula a troca sem executá-la: valida as mesmas regras e devolve quanto será cobrado agora.
     // É o que o diálogo de confirmação mostra antes de o usuário decidir (RF-37).
     Task<ChangePlanResult> PreviewChangePlanAsync(ChangePlanRequest request);

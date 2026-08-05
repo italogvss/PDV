@@ -58,7 +58,12 @@ public class SubscriptionService(
             PaymentRetryNumber: failedCharge?.RetryNumber,
             Entitlements: resolved.Entitlements,
             Limits: resolved.Limits,
-            HasUsedTrial: user?.HasUsedTrial ?? false);
+            HasUsedTrial: user?.HasUsedTrial ?? false,
+            // A assinatura acima é a do OWNER do tenant, e /me é liberado a qualquer usuário — daí
+            // a checagem de titularidade: sem ela um Employee veria um botão que responde 403.
+            CanManageBilling: sub is not null
+                && sub.UserId == userContext.UserId
+                && !string.IsNullOrWhiteSpace(sub.GatewayCustomerId));
     }
 
     public async Task<IReadOnlyList<PlanResponse>> GetPlansAsync()
@@ -135,6 +140,32 @@ public class SubscriptionService(
         // que o pagamento acontece. O histórico nasce do webhook — e um checkout abandonado não
         // deixa lixo `Pending` para o job limpar.
         return new StartCheckoutResponse(checkout.Url);
+    }
+
+    // -----------------------------------------------------------------------
+    // Portal do cliente
+    // -----------------------------------------------------------------------
+
+    // Portal hospedado do gateway, restrito a trocar o cartão e ver as faturas (o que ele oferece é
+    // decidido pela configuração lá, não aqui). Cancelar e trocar de plano ficam de fora: as regras
+    // de estorno e de agendamento vivem neste service, e o webhook de cancelamento nunca estorna.
+    public async Task<PortalSessionResponse> CreatePortalSessionAsync(PortalSessionRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ReturnUrl))
+            throw new BusinessException("URL de retorno do portal não informada.");
+
+        // A assinatura do PRÓPRIO usuário autenticado — não a do Owner do tenant (endpoint Owner-only).
+        var sub = await subscriptionRepository.GetByUserIdAsync(userContext.UserId)
+            ?? throw new NotFoundException("Assinatura não encontrada.");
+
+        // O trial é PDV-side: não existe cliente no gateway, logo não há forma de pagamento nem
+        // fatura para gerenciar. Mesma coisa para quem expirou sem nunca ter pago.
+        if (string.IsNullOrWhiteSpace(sub.GatewayCustomerId))
+            throw new BusinessException("Não há forma de pagamento para gerenciar.");
+
+        var url = await gateway.CreatePortalSessionAsync(sub.GatewayCustomerId, request.ReturnUrl);
+
+        return new PortalSessionResponse(url);
     }
 
     // Encerra a recorrência anterior no gateway antes de abrir uma nova. Best-effort: se a assinatura
