@@ -1,19 +1,5 @@
-// Estado exibido de uma conta/parcela. "Vencida" não existe no backend como status —
-// é derivado (isOverdue) e tem precedência visual sobre "Em aberto".
-export type CreditDisplayStatus = 'Em aberto' | 'Vencida' | 'Quitada' | 'Cancelada'
-
-export const CREDIT_STATUS_COLORS: Record<CreditDisplayStatus, 'success' | 'warning' | 'error' | 'default'> = {
-  'Em aberto': 'warning',
-  Vencida: 'error',
-  Quitada: 'success',
-  Cancelada: 'default',
-}
-
-export function resolveDisplayStatus(status: string, isOverdue: boolean): CreditDisplayStatus {
-  if (status === 'Cancelled') return 'Cancelada'
-  if (status === 'Paid') return 'Quitada'
-  return isOverdue ? 'Vencida' : 'Em aberto'
-}
+// O status exibido ("Vencida" e cia.) vive em components/CreditStatusChip/types — o chip
+// agora é primitivo, porque o histórico de vendas também mostra a situação do crediário.
 
 // Abas da página: consolidado por venda × agenda de recebimentos.
 export type CreditView = 'accounts' | 'installments'

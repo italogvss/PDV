@@ -1,5 +1,6 @@
 import BlockRounded from '@mui/icons-material/BlockRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
+import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import UndoRounded from '@mui/icons-material/UndoRounded'
 import {
   Box,
@@ -22,11 +23,12 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import CreditStatusChip from '../../../../components/CreditStatusChip'
 import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 import { useCreditAccount } from '../../../../hooks/useCredit'
 import { formatBRL } from '../../../../utils/currency'
 import { formatDateTime, formatDueDate } from '../../types'
-import CreditStatusChip from '../CreditStatusChip'
 import type { Props } from './types'
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -67,6 +69,7 @@ export default function CreditDetailModal({
   canCancel,
 }: Props) {
   const { data, isLoading } = useCreditAccount(accountId)
+  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
@@ -137,7 +140,7 @@ export default function CreditDetailModal({
               )}
             </Box>
 
-            <Divider />
+            <Divider sx={{ mb: 2 }} />
             <SectionLabel>Parcelas</SectionLabel>
             <Paper
               sx={{ backgroundColor: 'surface.sunken', border: 1, borderColor: 'border.strong', m: 2 }}
@@ -182,7 +185,7 @@ export default function CreditDetailModal({
                         </TableCell>
                         <TableCell align="right" sx={{ pr: 0, border: 0 }}>
                           {canManage && i.status === 'Open' && (
-                            <Button size="small" variant="soft" onClick={() => onReceive(i)}>
+                            <Button size="small" variant="outlined" onClick={() => onReceive(i)}>
                               Receber
                             </Button>
                           )}
@@ -196,7 +199,7 @@ export default function CreditDetailModal({
 
             {data && data.payments.length > 0 && (
               <>
-                <Divider />
+                <Divider sx={{ mb: 2 }}/>
                 <SectionLabel>Recebimentos</SectionLabel>
                 <Paper
                   sx={{ backgroundColor: 'surface.sunken', border: 1, borderColor: 'border.strong', m: 2 }}
@@ -253,60 +256,41 @@ export default function CreditDetailModal({
               </>
             )}
 
+            {/* A venda em si é gerenciada no histórico de vendas — aqui só a referência
+                de origem e o link para lá. */}
             {sale && (
               <>
-                <Divider />
-                <SectionLabel>Itens da venda</SectionLabel>
-                <Paper
-                  sx={{ backgroundColor: 'surface.sunken', border: 1, borderColor: 'border.strong', m: 2 }}
+                <Divider sx={{ mb: 2 }} />
+                <SectionLabel>Venda de origem</SectionLabel>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                    px: 3,
+                    py: 2,
+                  }}
                 >
-                  <Box sx={{ p: 2 }}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ pl: 1, color: 'text.tertiary', fontSize: 11 }}>Produto</TableCell>
-                          <TableCell align="center" sx={{ color: 'text.tertiary', fontSize: 11 }}>Qtd</TableCell>
-                          <TableCell align="right" sx={{ color: 'text.tertiary', fontSize: 11 }}>Unit.</TableCell>
-                          <TableCell align="right" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Total</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {sale.items.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell sx={{ pl: 1, border: 0 }}>
-                              <Typography variant="body2">{item.productName}</Typography>
-                            </TableCell>
-                            <TableCell align="center" sx={{ border: 0 }}>
-                              <Typography variant="body2">{item.quantity}</Typography>
-                            </TableCell>
-                            <TableCell align="right" sx={{ border: 0 }}>
-                              <Typography variant="body2">{formatBRL(item.unitPrice)}</Typography>
-                            </TableCell>
-                            <TableCell align="right" sx={{ pr: 0, border: 0 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {formatBRL(item.subtotal)}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                </Paper>
-
-                <Box sx={{ px: 3, pb: 2 }}>
-                  {sale.discount > 0 && (
-                    <InfoRow label="Desconto">
-                      <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
-                        -{formatBRL(sale.discount)}
-                      </Typography>
-                    </InfoRow>
-                  )}
-                  <InfoRow label="Total da venda">
-                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                      {formatBRL(sale.total)}
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      #{sale.saleId.slice(0, 6).toUpperCase()} · {formatBRL(sale.total)}
                     </Typography>
-                  </InfoRow>
+                    <Typography variant="caption" color="text.tertiary">
+                      {formatDateTime(sale.saleDate)} ·{' '}
+                      {PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod} ·{' '}
+                      {sale.itemCount} {sale.itemCount === 1 ? 'item' : 'itens'}
+                      {sale.status === 'Cancelled' && ' · venda cancelada'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    endIcon={<OpenInNewRounded fontSize="small" />}
+                    onClick={() => navigate(`/historico?venda=${sale.saleId}`)}
+                  >
+                    Ver venda
+                  </Button>
                 </Box>
               </>
             )}
@@ -319,7 +303,6 @@ export default function CreditDetailModal({
           <Button
             variant="outlined"
             color="error"
-            size="small"
             startIcon={<BlockRounded />}
             onClick={() => onCancelAccount(account.id)}
           >
@@ -327,7 +310,7 @@ export default function CreditDetailModal({
           </Button>
         )}
         <Box sx={{ flex: 1 }} />
-        <Button variant="contained" size="small" onClick={onClose}>
+        <Button variant="contained" onClick={onClose}>
           Fechar
         </Button>
       </DialogActions>

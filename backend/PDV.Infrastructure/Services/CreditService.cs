@@ -1,7 +1,6 @@
 using FluentValidation;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Credit;
-using PDV.Application.DTOs.Sales;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Constants;
@@ -85,8 +84,8 @@ public class CreditService(
         // (ou não) dados ainda não commitados. Não há recebimento numa conta recém-aberta.
         return new CreditAccountDetailResponse(
             MapAccount(account),
-            MapSaleDetail(sale),
-            [.. account.Installments.OrderBy(i => i.Number).Select(i => MapInstallment(i, account))],
+            CreditMapper.MapSaleRef(sale),
+            CreditMapper.MapInstallments(account),
             []);
     }
 
@@ -109,8 +108,8 @@ public class CreditService(
 
         return new CreditAccountDetailResponse(
             MapAccount(account),
-            sale is null ? null : MapSaleDetail(sale),
-            [.. account.Installments.OrderBy(i => i.Number).Select(i => MapInstallment(i, account))],
+            sale is null ? null : CreditMapper.MapSaleRef(sale),
+            CreditMapper.MapInstallments(account),
             [.. payments.Select(MapPayment)]);
     }
 
@@ -345,58 +344,13 @@ public class CreditService(
     }
 
     // ── Mapeamento ──────────────────────────────────────────────────────────────────────
+    // Delegado a CreditMapper (PDV.Application/Helpers): o SaleService usa os mesmos mapas
+    // para expor o crediário dentro da venda, e a regra de "vencida" precisa ser única.
 
-    private static CreditAccountResponse MapAccount(CreditAccount a)
-    {
-        var today = DateTime.UtcNow.Date;
-        var installments = a.Installments ?? [];
-        var open = installments.Where(i => i.Status == CreditInstallmentStatus.Open).ToList();
-        var overdue = open.Where(i => i.DueDate < today).ToList();
+    private static CreditAccountResponse MapAccount(CreditAccount a) => CreditMapper.MapAccount(a);
 
-        return new CreditAccountResponse(
-            a.Id, a.SaleId, a.CustomerId, a.CustomerName,
-            a.TotalAmount, a.DownPayment, a.PaidAmount, a.TotalAmount - a.PaidAmount,
-            a.InstallmentCount,
-            installments.Count(i => i.Status == CreditInstallmentStatus.Paid),
-            a.FirstDueDate,
-            open.OrderBy(i => i.DueDate).Select(i => (DateTime?)i.DueDate).FirstOrDefault(),
-            overdue.Count > 0,
-            overdue.Count,
-            overdue.Sum(i => i.Amount - i.PaidAmount),
-            a.Status.ToString(),
-            a.SettledAt, a.Note, a.CreatedAt);
-    }
+    private static CreditInstallmentResponse MapInstallment(CreditInstallment i, CreditAccount? account) =>
+        CreditMapper.MapInstallment(i, account);
 
-    private static CreditInstallmentResponse MapInstallment(CreditInstallment i, CreditAccount? account)
-    {
-        var today = DateTime.UtcNow.Date;
-        var isOverdue = i.Status == CreditInstallmentStatus.Open && i.DueDate.Date < today;
-
-        return new CreditInstallmentResponse(
-            i.Id, i.CreditAccountId,
-            account?.CustomerId ?? Guid.Empty,
-            account?.CustomerName ?? string.Empty,
-            i.Number,
-            account?.InstallmentCount ?? 0,
-            i.DueDate, i.Amount, i.PaidAmount, i.Amount - i.PaidAmount,
-            i.PaidAt, i.Status.ToString(),
-            isOverdue,
-            isOverdue ? (today - i.DueDate.Date).Days : 0);
-    }
-
-    private static CreditPaymentResponse MapPayment(CreditPayment p) =>
-        new(p.Id, p.CreditAccountId, p.CreditInstallmentId,
-            p.Installment?.Number ?? 0,
-            p.Amount, p.Method.ToString(), p.ReceivedAt, p.OperatorName, p.Note);
-
-    // Espelha SaleService.MapToDetail — o modal de crediário mostra a venda que originou a conta.
-    private static SaleDetailResponse MapSaleDetail(Sale s) =>
-        new(s.Id, s.OperatorId, s.OperatorName,
-            s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
-            s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt,
-            [.. s.Items.Select(i => new SaleItemResponse(
-                i.Id, i.SaleId, i.ProductId, i.ServiceId,
-                i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal))],
-            s.AmountPaid, s.AmountPaid - s.Total, s.FeeRate, s.FeeAmount, s.NetAmount);
+    private static CreditPaymentResponse MapPayment(CreditPayment p) => CreditMapper.MapPayment(p);
 }

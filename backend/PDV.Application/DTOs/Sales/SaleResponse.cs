@@ -1,3 +1,5 @@
+using PDV.Application.DTOs.Credit;
+
 namespace PDV.Application.DTOs.Sales;
 
 public record SaleResponse(
@@ -16,4 +18,8 @@ public record SaleResponse(
     Guid? CancelledById,
     string? CancelledByName,
     DateTime? CancelledAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    // Crediário da venda, quando houver — o histórico é quem gerencia a venda e precisa
+    // mostrar que ela é fiado. Null = venda à vista. Reusa o DTO do módulo de crediário
+    // para não duplicar a regra de saldo/vencimento.
+    CreditAccountResponse? Credit);

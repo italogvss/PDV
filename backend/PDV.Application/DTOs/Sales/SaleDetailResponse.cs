@@ -1,3 +1,5 @@
+using PDV.Application.DTOs.Credit;
+
 namespace PDV.Application.DTOs.Sales;
 
 public record SaleDetailResponse(
@@ -22,4 +24,8 @@ public record SaleDetailResponse(
     decimal Change,
     decimal FeeRate,
     decimal FeeAmount,
-    decimal NetAmount);
+    decimal NetAmount,
+    // Situação do crediário + cronograma de parcelas, em LEITURA. Os recebimentos
+    // (CreditPayment) não entram aqui: baixa e estorno são gestão de crediário.
+    CreditAccountResponse? Credit,
+    List<CreditInstallmentResponse> CreditInstallments);

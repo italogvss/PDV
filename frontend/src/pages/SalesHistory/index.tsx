@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Box,
   Button,
@@ -21,6 +22,7 @@ import { PLAN_LIMITS, UNLIMITED } from '../../constants/entitlements'
 import { useUserPermissions } from '../../hooks/useUserPermissions'
 import PageHeader from '../../components/PageHeader'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import CreditStatusChip from '../../components/CreditStatusChip'
 import type { FilterState, SaleRecord, SalePaymentMethod } from './types'
 import { SALE_STATUS_MAP } from './types'
 import StatusChip from './components/StatusChip'
@@ -51,6 +53,7 @@ const SORT_OPTIONS = [
 const INITIAL_FILTERS: FilterState = {
   status: 'Todos',
   payment: 'Todos',
+  kind: 'Todos',
   operator: 'Todos',
 }
 
@@ -75,10 +78,9 @@ function mapToRecord(s: SaleListItem): SaleRecord {
     total: s.total,
     discount: s.discount,
     status: SALE_STATUS_MAP[s.status] ?? 'Ativo',
-    amountPaid: s.total,
-    change: 0,
     isInstallment: s.isInstallment,
     installmentCount: s.installmentCount,
+    credit: s.credit,
   }
 }
 
@@ -117,6 +119,17 @@ export default function SalesHistoryPage() {
 
   const sales: SaleRecord[] = useMemo(() => salesRaw.map(mapToRecord), [salesRaw])
 
+  // Deep-link vindo do crediário (/historico?venda=<id>): abre a venda e limpa o
+  // parâmetro para o botão "voltar" não reabrir o modal.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const saleId = searchParams.get('venda')
+    if (!saleId) return
+    setSelectedSaleId(saleId)
+    searchParams.delete('venda')
+    setSearchParams(searchParams, { replace: true })
+  }, [searchParams, setSearchParams])
+
   const operators = useMemo(
     () => [...new Set(sales.map((s) => s.operator))],
     [sales],
@@ -124,7 +137,7 @@ export default function SalesHistoryPage() {
 
   const activeFiltersCount = useMemo(
     () =>
-      [filters.status, filters.payment, filters.operator].filter(
+      [filters.status, filters.payment, filters.kind, filters.operator].filter(
         (v) => v !== 'Todos',
       ).length,
     [filters],
@@ -135,6 +148,8 @@ export default function SalesHistoryPage() {
       (row) =>
         (filters.status === 'Todos' || row.status === filters.status) &&
         (filters.payment === 'Todos' || row.payment === filters.payment) &&
+        (filters.kind === 'Todos' ||
+          (filters.kind === 'Crediário' ? row.credit !== null : row.credit === null)) &&
         (filters.operator === 'Todos' || row.operator === filters.operator),
     )
     return [...filtered].sort((a, b) => {
@@ -193,9 +208,22 @@ export default function SalesHistoryPage() {
       {
         field: 'payment',
         headerName: 'Pagamento',
-        width: 160,
+        width: 230,
         sortable: false,
-        renderCell: ({ row }) => <PaymentChip method={row.payment} />,
+        // Venda fiado carrega os dois chips: a forma registrada na venda e a situação do
+        // crediário. O prefixo evita ler "Vencida" como estado da venda.
+        renderCell: ({ row }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, height: '100%', flexWrap: 'wrap' }}>
+            <PaymentChip method={row.payment} />
+            {row.credit && (
+              <CreditStatusChip
+                status={row.credit.status}
+                isOverdue={row.credit.isOverdue}
+                prefix="Crediário"
+              />
+            )}
+          </Box>
+        ),
       },
       {
         field: 'total',

@@ -11,16 +11,17 @@ import {
   Button,
   Card,
   InputAdornment,
-  Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import ChipSelect from '../../components/ChipSelect'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import CreditStatusChip from '../../components/CreditStatusChip'
 import DataGridNoRowsOverlay from '../../components/DataGridNoRowsOverlay'
 import FiltersPopover from '../../components/FiltersPopover'
 import PageHeader from '../../components/PageHeader'
@@ -43,7 +44,6 @@ import { formatBRL } from '../../utils/currency'
 import SelectCustomerModal from '../Sales/components/SelectCustomerModal'
 import CreditAgingPanel from './components/CreditAgingPanel'
 import CreditDetailModal from './components/CreditDetailModal'
-import CreditStatusChip from './components/CreditStatusChip'
 import ReceivePaymentModal from './components/ReceivePaymentModal'
 import type { StatusFilterOption } from './types'
 import { CREDIT_SORT_OPTIONS, STATUS_FILTER_OPTIONS, formatDueDate } from './types'
@@ -93,6 +93,17 @@ export default function CreditPage() {
   const reminder = useCreditReminder()
 
   const hasAging = has(FEATURES.creditDashboard)
+
+  // Deep-link vindo do histórico de vendas (/crediario?conta=<id>): abre a conta e limpa
+  // o parâmetro para o botão "voltar" não reabrir o modal.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const accountId = searchParams.get('conta')
+    if (!accountId) return
+    setDetailAccountId(accountId)
+    searchParams.delete('conta')
+    setSearchParams(searchParams, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const accountRows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -261,7 +272,7 @@ export default function CreditPage() {
           row.status === 'Open' ? (
             <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
               {canManage && (
-                <Button size="small" variant="soft" onClick={() => setReceivingInstallment(row)}>
+                <Button size="small" variant="outlined" onClick={() => setReceivingInstallment(row)}>
                   Receber
                 </Button>
               )}
@@ -358,10 +369,19 @@ export default function CreditPage() {
             borderColor: 'divider',
           }}
         >
-          <Tabs value={view} onChange={(_, v) => setView(v)} sx={{ minHeight: 44 }}>
-            <Tab label="Contas" value="accounts" />
-            <Tab label="Parcelas" value="installments" />
-          </Tabs>
+          <Box sx={{ py: 1, mb: 2}}>
+            <ChipSelect
+              size="large"
+              options={[
+                { id: 'accounts', label: 'Contas' },
+                { id: 'installments', label: 'Parcelas' },
+              ]}
+              value={view}
+              onChange={(v) => {
+                if (v === 'accounts' || v === 'installments') setView(v)
+              }}
+            />
+          </Box>
 
           <Box sx={{ flex: 1 }} />
 

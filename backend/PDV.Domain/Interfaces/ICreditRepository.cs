@@ -22,6 +22,10 @@ public interface ICreditRepository
     Task<CreditAccount?> GetAccountBySaleIdAsync(Guid saleId);
     Task<Sale?> GetSaleForCreditAsync(Guid saleId);
 
+    // Usado pelo histórico de vendas: resolve o crediário de uma página inteira de vendas
+    // numa query só, indexado por SaleId (a relação Sale↔CreditAccount é 1:1).
+    Task<IReadOnlyDictionary<Guid, CreditAccount>> GetAccountsBySaleIdsAsync(IReadOnlyCollection<Guid> saleIds);
+
     Task<(IEnumerable<CreditInstallment> Data, int TotalCount)> GetInstallmentsAsync(
         CreditFilter filter, int page, int pageSize);
 

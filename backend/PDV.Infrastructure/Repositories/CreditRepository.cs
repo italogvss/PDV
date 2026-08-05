@@ -60,6 +60,20 @@ public class CreditRepository(AppDbContext context, ITenantContext tenantContext
             .Include(a => a.Installments)
             .FirstOrDefaultAsync(a => a.SaleId == saleId);
 
+    public async Task<IReadOnlyDictionary<Guid, CreditAccount>> GetAccountsBySaleIdsAsync(
+        IReadOnlyCollection<Guid> saleIds)
+    {
+        if (saleIds.Count == 0)
+            return new Dictionary<Guid, CreditAccount>();
+
+        var accounts = await context.CreditAccounts
+            .Include(a => a.Installments)
+            .Where(a => saleIds.Contains(a.SaleId))
+            .ToListAsync();
+
+        return accounts.ToDictionary(a => a.SaleId);
+    }
+
     public async Task<Sale?> GetSaleForCreditAsync(Guid saleId) =>
         await context.Sales
             .Include(s => s.Items)

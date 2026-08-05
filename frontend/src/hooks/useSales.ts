@@ -7,6 +7,8 @@ import { useUserPermissions } from './useUserPermissions'
 
 const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
+// Cancelar uma venda também cancela o crediário dela no backend.
+const CREDIT_KEY = ['credit'] as const
 
 export function useSales(startDate?: string, endDate?: string) {
   const { hasPermission, isModuleEnabled } = useUserPermissions()
@@ -55,6 +57,7 @@ export function useCancelSale() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      queryClient.invalidateQueries({ queryKey: CREDIT_KEY })
       showToast('Venda cancelada com sucesso.', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar venda.'),

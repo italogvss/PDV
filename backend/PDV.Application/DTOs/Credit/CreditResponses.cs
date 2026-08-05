@@ -1,5 +1,3 @@
-using PDV.Application.DTOs.Sales;
-
 namespace PDV.Application.DTOs.Credit;
 
 public record CreditAccountResponse(
@@ -51,11 +49,21 @@ public record CreditPaymentResponse(
     string OperatorName,
     string? Note);
 
-// Detalhe da conta: inclui a VENDA que a originou (com itens), as parcelas e o histórico
-// de recebimentos — é o que alimenta o modal de detalhes da tela.
+// Referência da venda que originou a conta. É só um ponteiro para o histórico de vendas —
+// itens, desconto, taxa e cancelamento da venda são responsabilidade de lá, não daqui.
+public record CreditSaleRefResponse(
+    Guid SaleId,
+    DateTime SaleDate,
+    string PaymentMethod,
+    decimal Total,
+    string Status,
+    int ItemCount);
+
+// Detalhe da conta: a referência da venda de origem, as parcelas e o histórico de
+// recebimentos — é o que alimenta o modal de detalhes da tela de crediário.
 public record CreditAccountDetailResponse(
     CreditAccountResponse Account,
-    SaleDetailResponse? Sale,
+    CreditSaleRefResponse? Sale,
     List<CreditInstallmentResponse> Installments,
     List<CreditPaymentResponse> Payments);
 

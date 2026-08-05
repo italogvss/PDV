@@ -9,10 +9,11 @@ import {
 } from '@mui/material'
 import FilterListOffRounded from '@mui/icons-material/FilterListOffRounded'
 import type { FiltersPopoverProps } from './types'
-import type { SaleStatus, SalePaymentMethod } from '../../types'
+import type { SaleStatus, SalePaymentMethod, SaleKind } from '../../types'
 
 const STATUSES: Array<SaleStatus | 'Todos'> = ['Todos', 'Ativo', 'Cancelado']
 const PAYMENTS: Array<SalePaymentMethod | 'Todos'> = ['Todos', 'Pix', 'Dinheiro', 'Crédito', 'Débito']
+const KINDS: Array<SaleKind | 'Todos'> = ['Todos', 'À vista', 'Crediário']
 
 const toggleSx = {
   borderRadius: '20px !important',
@@ -74,6 +75,25 @@ export default function FiltersPopover({
             {STATUSES.map((s) => (
               <ToggleButton key={s} value={s} sx={toggleSx}>
                 {s}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
+
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
+            Tipo de venda
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            value={filters.kind}
+            onChange={(_, v) => v && onChange({ ...filters, kind: v })}
+            size="small"
+            sx={{ flexWrap: 'wrap', gap: 0.5 }}
+          >
+            {KINDS.map((k) => (
+              <ToggleButton key={k} value={k} sx={toggleSx}>
+                {k}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>

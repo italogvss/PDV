@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
 using PDV.Application.DTOs.Sales;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Constants;
 using PDV.Domain.Entities;
@@ -17,6 +18,8 @@ public class SaleService(
     ITenantContext tenantContext,
     IAuditLogger auditLogger,
     IEntitlementService entitlementService,
+    ICreditRepository creditRepository,
+    ICreditService creditService,
     IValidator<CreateSaleRequest> createValidator) : ISaleService
 {
     private Guid TenantId => tenantContext.TenantId;
@@ -40,8 +43,9 @@ public class SaleService(
 
         if (startDate.HasValue)
              query = query.Where(s => s.CreatedAt >= startDate.Value);
-        // if (endDate.HasValue)
-        //     query = query.Where(s => s.CreatedAt < endDate.Value.AddDays(1));
+        // endDate é o último DIA incluído: soma 1 dia e compara com "<" para pegar o dia inteiro.
+        if (endDate.HasValue)
+            query = query.Where(s => s.CreatedAt < endDate.Value.Date.AddDays(1));
         if (operatorId.HasValue)
             query = query.Where(s => s.OperatorId == operatorId.Value);
         if (status.HasValue)
@@ -55,9 +59,14 @@ public class SaleService(
             .Take(pageSize)
             .ToListAsync();
 
+        // Uma query só para o crediário da página inteira — o histórico precisa mostrar
+        // quais vendas são fiado e como estão, sem N+1.
+        var credits = await creditRepository.GetAccountsBySaleIdsAsync([.. data.Select(s => s.Id)]);
+
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
         return new PaginatedResponse<SaleResponse>(
-            data.Select(MapToResponse), page, pageSize, totalCount, totalPages);
+            data.Select(s => MapToResponse(s, credits.GetValueOrDefault(s.Id))),
+            page, pageSize, totalCount, totalPages);
     }
 
     public async Task<SaleDetailResponse> GetByIdAsync(Guid id)
@@ -67,7 +76,9 @@ public class SaleService(
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException("Venda não encontrada.");
 
-        return MapToDetail(sale);
+        var credit = await creditRepository.GetAccountBySaleIdAsync(id);
+
+        return MapToDetail(sale, credit);
     }
 
     public async Task<SaleDetailResponse> CreateAsync(CreateSaleRequest request, Guid operatorId)
@@ -238,7 +249,18 @@ public class SaleService(
         if (sale.Status == SaleStatus.Cancelled)
             throw new BusinessException("Esta venda já está cancelada.");
 
+        // Uma venda em crediário não pode ficar cancelada com a conta viva — as duas telas
+        // mostrariam realidades diferentes. Se já entrou dinheiro, o estorno é decisão do
+        // lojista e precisa ser feito antes, na tela de crediário.
+        var credit = await creditRepository.GetAccountBySaleIdAsync(id);
+        if (credit is { Status: not CreditAccountStatus.Cancelled } && credit.PaidAmount > 0)
+            throw new BusinessException(
+                "Esta venda tem recebimentos de crediário. Estorne os recebimentos antes de cancelar a venda.");
+
         await using var transaction = await context.Database.BeginTransactionAsync();
+
+        if (credit is { Status: not CreditAccountStatus.Cancelled })
+            await creditService.CancelAccountAsync(credit.Id);
 
         var adminUser = await context.Users.FindAsync(adminId);
         sale.Status = SaleStatus.Cancelled;
@@ -273,13 +295,15 @@ public class SaleService(
             .Where(s => s.TenantId == TenantId)
             .ExecuteDeleteAsync();
 
-    private static SaleResponse MapToResponse(Sale s) =>
+    // credit é a conta de crediário da venda, quando houver — null significa venda à vista.
+    private static SaleResponse MapToResponse(Sale s, CreditAccount? credit = null) =>
         new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt);
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt,
+            credit is null ? null : CreditMapper.MapAccount(credit));
 
-    private static SaleDetailResponse MapToDetail(Sale s) =>
+    private static SaleDetailResponse MapToDetail(Sale s, CreditAccount? credit = null) =>
         new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
@@ -291,5 +315,7 @@ public class SaleService(
             s.AmountPaid - s.Total,
             s.FeeRate,
             s.FeeAmount,
-            s.NetAmount);
+            s.NetAmount,
+            credit is null ? null : CreditMapper.MapAccount(credit),
+            credit is null ? [] : CreditMapper.MapInstallments(credit));
 }

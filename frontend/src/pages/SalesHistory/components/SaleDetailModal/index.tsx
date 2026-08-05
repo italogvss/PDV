@@ -1,5 +1,6 @@
 import BlockRounded from '@mui/icons-material/BlockRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
+import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import {
   Box,
   Button,
@@ -20,9 +21,13 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import CreditStatusChip from '../../../../components/CreditStatusChip'
 import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 import { useSaleDetail } from '../../../../hooks/useSales'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 import { formatBRL } from '../../../../utils/currency'
+import { formatDueDate } from '../../../Credit/types'
 import type { SalePaymentMethod } from '../../types'
 import { SALE_STATUS_MAP } from '../../types'
 import PaymentChip from '../PaymentChip'
@@ -52,8 +57,14 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetailModalProps) {
   const { data: sale, isLoading } = useSaleDetail(saleId)
+  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
+  // Eixo de acesso (módulo do tenant), não de plano: quem não tem crediário habilitado
+  // não vê a seção nem o atalho para uma tela que não pode abrir.
+  const { isModuleEnabled } = useUserPermissions()
+  const creditEnabled = isModuleEnabled('credit')
 
   const status = sale ? (SALE_STATUS_MAP[sale.status] ?? 'Ativo') : null
   const payment = sale ? ((PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod) as SalePaymentMethod) : null
@@ -204,6 +215,118 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
                 </>
               )}
             </Box>
+
+            {/* Situação do crediário em LEITURA — receber, estornar e cobrar são da tela
+                de crediário, para onde o botão leva. */}
+            {sale.credit && creditEnabled && (
+              <>
+                <Divider />
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                    pl: 3,
+                    pr: 2,
+                    pt: 1,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  >
+                    Crediário
+                  </Typography>
+                  <CreditStatusChip status={sale.credit.status} isOverdue={sale.credit.isOverdue} />
+                </Box>
+
+                <Box sx={{ px: 3, py: 1 }}>
+                  {sale.credit.downPayment > 0 && (
+                    <InfoRow label="Entrada">
+                      <Typography variant="body2">{formatBRL(sale.credit.downPayment)}</Typography>
+                    </InfoRow>
+                  )}
+                  <InfoRow label="Valor financiado">
+                    <Typography variant="body2">{formatBRL(sale.credit.totalAmount)}</Typography>
+                  </InfoRow>
+                  <InfoRow label="Parcelas quitadas">
+                    <Typography variant="body2">
+                      {sale.credit.paidInstallmentCount}/{sale.credit.installmentCount}
+                    </Typography>
+                  </InfoRow>
+                  <InfoRow label="Já recebido">
+                    <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+                      {formatBRL(sale.credit.paidAmount)}
+                    </Typography>
+                  </InfoRow>
+                  <InfoRow label="Saldo devedor">
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      {formatBRL(sale.credit.balance)}
+                    </Typography>
+                  </InfoRow>
+                  {sale.credit.nextDueDate && (
+                    <InfoRow label="Próximo vencimento">
+                      <Typography
+                        variant="body2"
+                        color={sale.credit.isOverdue ? 'error.main' : 'text.primary'}
+                        sx={{ fontWeight: sale.credit.isOverdue ? 600 : 400 }}
+                      >
+                        {formatDueDate(sale.credit.nextDueDate)}
+                      </Typography>
+                    </InfoRow>
+                  )}
+                </Box>
+
+                <Paper sx={{ backgroundColor: 'surface.sunken', border: 1, borderColor: 'border.strong', m: 2 }}>
+                  <Box sx={{ p: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ pl: 1, color: 'text.tertiary', fontSize: 11 }}>#</TableCell>
+                          <TableCell sx={{ color: 'text.tertiary', fontSize: 11 }}>Vencimento</TableCell>
+                          <TableCell align="right" sx={{ color: 'text.tertiary', fontSize: 11 }}>Valor</TableCell>
+                          <TableCell align="right" sx={{ color: 'text.tertiary', fontSize: 11 }}>Saldo</TableCell>
+                          <TableCell align="center" sx={{ pr: 0, color: 'text.tertiary', fontSize: 11 }}>Status</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {sale.creditInstallments.map((i) => (
+                          <TableRow key={i.id}>
+                            <TableCell sx={{ pl: 1, border: 0 }}>
+                              <Typography variant="body2">{i.number}/{i.ofTotal}</Typography>
+                            </TableCell>
+                            <TableCell sx={{ border: 0 }}>
+                              <Typography variant="body2">{formatDueDate(i.dueDate)}</Typography>
+                            </TableCell>
+                            <TableCell align="right" sx={{ border: 0 }}>
+                              <Typography variant="body2">{formatBRL(i.amount)}</Typography>
+                            </TableCell>
+                            <TableCell align="right" sx={{ border: 0 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatBRL(i.balance)}</Typography>
+                            </TableCell>
+                            <TableCell align="center" sx={{ pr: 0, border: 0 }}>
+                              <CreditStatusChip status={i.status} isOverdue={i.isOverdue} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </Paper>
+
+                <Box sx={{ px: 3, pb: 2 }}>
+                  <Button
+                    size="small"
+                    variant="soft"
+                    endIcon={<OpenInNewRounded fontSize="small" />}
+                    onClick={() => navigate(`/crediario?conta=${sale.credit!.id}`)}
+                  >
+                    Gerenciar no Crediário
+                  </Button>
+                </Box>
+              </>
+            )}
           </>
         )}
       </DialogContent>

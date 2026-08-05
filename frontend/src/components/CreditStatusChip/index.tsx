@@ -1,15 +1,15 @@
 import { Box, Chip } from '@mui/material'
-import { CREDIT_STATUS_COLORS, resolveDisplayStatus } from '../../types'
+import { CREDIT_STATUS_COLORS, resolveDisplayStatus } from './types'
 import type { Props } from './types'
 
-export default function CreditStatusChip({ status, isOverdue }: Props) {
+export default function CreditStatusChip({ status, isOverdue, prefix }: Props) {
   const display = resolveDisplayStatus(status, isOverdue)
 
   return (
     <Chip
       size="small"
       color={CREDIT_STATUS_COLORS[display]}
-      label={display}
+      label={prefix ? `${prefix}: ${display.toLowerCase()}` : display}
       icon={
         <Box
           component="span"

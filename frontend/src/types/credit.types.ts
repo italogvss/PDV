@@ -1,5 +1,3 @@
-import type { SaleDetail } from './sale.types'
-
 // Espelho das chaves do backend (CreditAccountStatus / CreditInstallmentStatus).
 // "Vencida" não é status: vem derivada em `isOverdue`.
 export type CreditAccountStatus = 'Open' | 'Paid' | 'Cancelled'
@@ -56,9 +54,20 @@ export interface CreditPayment {
   note: string | null
 }
 
+// Ponteiro para a venda de origem. Itens, desconto e taxa são do histórico de vendas —
+// aqui só o suficiente para identificar a venda e linkar para lá.
+export interface CreditSaleRef {
+  saleId: string
+  saleDate: string
+  paymentMethod: string
+  total: number
+  status: string
+  itemCount: number
+}
+
 export interface CreditAccountDetail {
   account: CreditAccount
-  sale: SaleDetail | null
+  sale: CreditSaleRef | null
   installments: CreditInstallment[]
   payments: CreditPayment[]
 }
