@@ -4,6 +4,7 @@ import type { CreateProductPayload, UpdateProductPayload } from '../types/produc
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { useUserPermissions } from './useUserPermissions'
+import { invalidateNotifications } from './useNotifications'
 
 const QUERY_KEY = ['products'] as const
 
@@ -29,6 +30,7 @@ export function useCreateProduct() {
     mutationFn: (payload: CreateProductPayload) => productService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Produto cadastrado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao cadastrar produto.'),
@@ -44,6 +46,7 @@ export function useUpdateProduct() {
       productService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Produto atualizado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao atualizar produto.'),
@@ -58,6 +61,7 @@ export function useDeleteProduct() {
     mutationFn: (id: string) => productService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Produto excluído.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao excluir produto.'),
@@ -73,6 +77,7 @@ export function useAdjustStock() {
       productService.adjustStock(id, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Estoque ajustado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao ajustar estoque.'),
@@ -99,6 +104,7 @@ export function useRestoreProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INACTIVE_PRODUCTS_KEY })
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Produto reativado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao reativar produto.'),

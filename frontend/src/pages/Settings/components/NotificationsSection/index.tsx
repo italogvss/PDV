@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Box, Button, CircularProgress, Divider, Paper, Switch, Typography } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import PremiumLock from '../../../../components/PremiumLock'
@@ -11,27 +11,29 @@ import type { NotificationPrefs } from '../../../../types/usersettings.type'
 import type { OperationModule } from '../../../../constants/modules'
 import { useAppSelector } from '../../../../store'
 
+// Cada switch corresponde ao campo `IsPreferenceEnabled` de um grupo de regras do motor
+// (backend: NotificationRules.All). O sublabel precisa descrever o que realmente é gerado.
 const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string; module: OperationModule }[] = [
-  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos abaixo do mínimo', module: 'inventory' },
-  { key: 'invoices', label: 'Alertas de despesas', sublabel: 'Despesas vencidas e a vencer', module: 'expenses' },
-  { key: 'appointments', label: 'Agendamentos', sublabel: 'Lembretes de agendamentos do dia', module: 'appointments' },
+  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos sem estoque, em nível crítico, baixo ou negativo', module: 'inventory' },
+  { key: 'invoices', label: 'Alertas de despesas', sublabel: 'Despesas vencidas e vencendo hoje', module: 'expenses' },
+  { key: 'appointments', label: 'Agendamentos', sublabel: 'Agendamentos marcados para hoje', module: 'appointments' },
 ]
 
 export default function NotificationsSection() {
   const { data, isLoading } = useUserSettings()
   const update = useUpdateNotificationSettings()
-  const [form, setForm] = useState<NotificationPrefs | null>(null)
-  const initialized = useRef(false)
+  const [draft, setDraft] = useState<NotificationPrefs | null>(null)
   const modules = useAppSelector((s) => s.auth.modules)
 
   const visibleEvents = EVENTS.filter((e) => modules.includes(e.module))
 
+  // O servidor manda enquanto não há edição pendente. Antes o form inicializava uma única vez
+  // e nunca mais refletia o servidor (refetch, outra aba, outro dispositivo).
   useEffect(() => {
-    if (data && !initialized.current) {
-      setForm(data.notifications)
-      initialized.current = true
-    }
+    setDraft(null)
   }, [data])
+
+  const form = draft ?? data?.notifications ?? null
 
   if (isLoading || !form) {
     return (
@@ -42,18 +44,18 @@ export default function NotificationsSection() {
   }
 
   const toggle = (key: keyof NotificationPrefs) =>
-    setForm((f) => (f ? { ...f, [key]: !f[key] } : f))
+    setDraft({ ...form, [key]: !form[key] })
 
+  // Compara TODAS as chaves, não só as visíveis: o save envia o objeto inteiro, então uma
+  // divergência num módulo desativado precisa aparecer como alteração pendente.
   const hasChanges =
-    !!data && visibleEvents.some((e) => form[e.key] !== data.notifications[e.key])
+    !!data && (Object.keys(form) as (keyof NotificationPrefs)[]).some(
+      (key) => form[key] !== data.notifications[key],
+    )
 
-  const handleSave = () => {
-    if (form) update.mutate(form)
-  }
+  const handleSave = () => update.mutate(form)
 
-  const handleCancel = () => {
-    if (data) setForm(data.notifications)
-  }
+  const handleCancel = () => setDraft(null)
 
   return (
     <PremiumLock

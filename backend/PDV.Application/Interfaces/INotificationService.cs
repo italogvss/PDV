@@ -4,5 +4,5 @@ namespace PDV.Application.Interfaces;
 
 public interface INotificationService
 {
-    Task<NotificationResponse> GetNotificationsAsync();
+    Task<NotificationsResponse> GetNotificationsAsync();
 }

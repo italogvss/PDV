@@ -1,6 +1,7 @@
 import {
   CheckOutlined,
   CloseOutlined,
+  ErrorOutlineOutlined,
   NotificationsNoneOutlined,
   SettingsOutlined,
 } from '@mui/icons-material'
@@ -10,42 +11,36 @@ import {
   Divider,
   Drawer,
   IconButton,
+  Skeleton,
   Tab,
   Tabs,
   Typography,
 } from '@mui/material'
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { buildNotificationItems, useNotifications } from '../../../../hooks/useNotifications'
 import NotificationItem from './NotificationItem'
+import type { Props, TabValue } from './types'
 
-interface Props {
-  open: boolean
-  onClose: () => void
-  readIds: Set<string>
-  onMarkRead: (id: string) => void
-  onMarkAllRead: () => void
-}
-
-type TabValue = 'todas' | 'nao-lidas'
-
-export default function NotificationPanel({ open, onClose, readIds, onMarkRead, onMarkAllRead }: Props) {
+export default function NotificationPanel({
+  open,
+  onClose,
+  items,
+  isLoading,
+  isError,
+  readKeys,
+  onMarkRead,
+  onMarkAllRead,
+}: Props) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<TabValue>('todas')
 
-  const { data: counts } = useNotifications()
-  const allItems = counts ? buildNotificationItems(counts) : []
-  const unreadItems = allItems.filter((item) => !readIds.has(item.id))
-  const filteredItems = tab === 'todas' ? allItems : unreadItems
+  const unreadItems = items.filter((item) => !readKeys.has(item.key))
+  const filteredItems = tab === 'todas' ? items : unreadItems
   const unreadCount = unreadItems.length
 
-  useEffect(() => {
-    if (!open) setTab('todas')
-  }, [open])
-
   const handleItemClick = useCallback(
-    (id: string, route: string) => {
-      onMarkRead(id)
+    (key: string, route: string) => {
+      onMarkRead(key)
       navigate(route)
       onClose()
     },
@@ -59,9 +54,13 @@ export default function NotificationPanel({ open, onClose, readIds, onMarkRead, 
       onClose={onClose}
       slotProps={{
         backdrop: { sx: { backdropFilter: 'blur(4px)' } },
+        // Volta para "Todas" só depois da animação de fechar — resetar durante a saída
+        // faz a aba selecionada pular na frente do usuário.
+        transition: { onExited: () => setTab('todas') },
         paper: {
           sx: {
             width: 380,
+            maxWidth: '100vw',
             display: 'flex',
             flexDirection: 'column',
             bgcolor: 'background.paper',
@@ -115,7 +114,7 @@ export default function NotificationPanel({ open, onClose, readIds, onMarkRead, 
       {/* Tabs */}
       <Tabs
         value={tab}
-        onChange={(_, v) => setTab(v as TabValue)}
+        onChange={(_, v: TabValue) => setTab(v)}
         variant="scrollable"
         scrollButtons={false}
         sx={{
@@ -128,39 +127,42 @@ export default function NotificationPanel({ open, onClose, readIds, onMarkRead, 
         }}
       >
         <Tab label="Todas" value="todas" />
-        <Tab
-          label={`Não lidas${unreadCount > 0 ? ` ${unreadCount}` : ''}`}
-          value="nao-lidas"
-        />
+        <Tab label={`Não lidas${unreadCount > 0 ? ` ${unreadCount}` : ''}`} value="nao-lidas" />
       </Tabs>
 
       {/* List */}
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        {filteredItems.length === 0 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1.5,
-              height: '100%',
-              minHeight: 200,
-              color: 'text.disabled',
-            }}
-          >
-            <NotificationsNoneOutlined sx={{ fontSize: 40 }} />
-            <Typography variant="body2">Tudo em dia!</Typography>
+        {isLoading ? (
+          <Box sx={{ px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {[0, 1, 2].map((i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Skeleton variant="rounded" width={40} height={40} />
+                <Box sx={{ flex: 1 }}>
+                  <Skeleton variant="text" width="60%" />
+                  <Skeleton variant="text" width="85%" />
+                </Box>
+              </Box>
+            ))}
           </Box>
+        ) : isError ? (
+          <EmptyState
+            icon={<ErrorOutlineOutlined sx={{ fontSize: 40 }} />}
+            message="Não foi possível carregar as notificações."
+          />
+        ) : filteredItems.length === 0 ? (
+          <EmptyState
+            icon={<NotificationsNoneOutlined sx={{ fontSize: 40 }} />}
+            message={tab === 'nao-lidas' && items.length > 0 ? 'Nenhuma não lida.' : 'Tudo em dia!'}
+          />
         ) : (
           filteredItems.map((item) => (
-            <Fragment key={item.id}>
+            <Fragment key={item.key}>
               <NotificationItem
                 item={item}
-                isRead={readIds.has(item.id)}
-                onClick={() => handleItemClick(item.id, item.route)}
+                isRead={readKeys.has(item.key)}
+                onClick={() => handleItemClick(item.key, item.route)}
               />
-              <Divider color="border.subtle" />
+              <Divider sx={{ borderColor: 'border.subtle' }} />
             </Fragment>
           ))
         )}
@@ -191,5 +193,25 @@ export default function NotificationPanel({ open, onClose, readIds, onMarkRead, 
         </Button>
       </Box>
     </Drawer>
+  )
+}
+
+function EmptyState({ icon, message }: { icon: ReactNode; message: string }) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1.5,
+        height: '100%',
+        minHeight: 200,
+        color: 'text.disabled',
+      }}
+    >
+      {icon}
+      <Typography variant="body2">{message}</Typography>
+    </Box>
   )
 }

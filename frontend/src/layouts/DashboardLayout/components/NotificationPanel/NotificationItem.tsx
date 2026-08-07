@@ -49,7 +49,7 @@ export default function NotificationItem({ item, isRead, onClick }: Props) {
       </Box>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="body1" noWrap sx={{ fontWeight: 500 }}>
+        <Typography variant="body1" noWrap sx={{ fontWeight: isRead ? 400 : 500 }}>
           {item.title}
         </Typography>
         <Typography variant="caption" noWrap sx={{ display: 'block', color: "text.tertiary" }}>
