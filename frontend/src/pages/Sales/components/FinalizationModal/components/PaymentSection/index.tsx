@@ -25,6 +25,7 @@ export default function PaymentSection({
   cashReceived,
   onCashReceivedChange,
   payments,
+  variant = 'sale',
 }: PaymentSectionProps) {
   const receivedNumber = Number(cashReceived.replace(',', '.'))
   const validReceived = !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
@@ -76,7 +77,7 @@ export default function PaymentSection({
             {payments.cardDebit.enabled && <ToggleButton value="debit">Débito</ToggleButton>}
           </ToggleButtonGroup>
 
-          {cardType === 'credit' && (
+          {cardType === 'credit' && variant === 'sale' && (
             <FormControl size="small" fullWidth>
               <InputLabel>Parcelas</InputLabel>
               <Select
@@ -95,7 +96,7 @@ export default function PaymentSection({
         </Box>
       )}
 
-      {method === 'cash' && (
+      {method === 'cash' && variant === 'sale' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <TextField
             label="Valor recebido"

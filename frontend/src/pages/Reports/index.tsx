@@ -9,7 +9,7 @@ import PageHeader from '../../components/PageHeader'
 import UpsellCard from '../../components/UpsellCard'
 import { FEATURES } from '../../constants/entitlements'
 import { useEntitlements } from '../../hooks/useSubscription'
-import type { ExpenseBasis, GroupBy, RangePreset } from '../../types/report.types'
+import type { ReportBasis, GroupBy, RangePreset } from '../../types/report.types'
 import ReportsContent from './components/ReportsContent'
 
 // Janelas móveis a partir de hoje (sem snap pro início do mês).
@@ -43,7 +43,7 @@ export default function ReportsPage() {
   const [end, setEnd] = useState<Dayjs>(dayjs())
   const [selectedPreset, setSelectedPreset] = useState<string | null>('30d')
   const [groupBy, setGroupBy] = useState<GroupBy>('day')
-  const [expenseBasis, setExpenseBasis] = useState<ExpenseBasis>('accrual')
+  const [basis, setBasis] = useState<ReportBasis>('accrual')
 
   const startDate = start.format('YYYY-MM-DD')
   const endDate = end.format('YYYY-MM-DD')
@@ -152,8 +152,8 @@ export default function ReportsPage() {
           daysSpan={daysSpan}
           groupBy={groupBy}
           onGroupByChange={setGroupBy}
-          expenseBasis={expenseBasis}
-          onExpenseBasisChange={setExpenseBasis}
+          basis={basis}
+          onBasisChange={setBasis}
         />
       ) : (
         <UpsellCard

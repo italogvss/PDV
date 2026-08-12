@@ -34,7 +34,7 @@ export default function AppointmentStatusDonut({
     <DonutChart
       title="Agendamentos por status"
       subtitle="Distribuição no período"
-      info="Quantidade de agendamentos em cada status no período. Pendentes e confirmados são somados por ainda não terem acontecido."
+      info="Fonte: status dos agendamentos com início no período. Pendentes e confirmados são somados numa fatia só, por ainda não terem acontecido. Diferente dos demais gráficos da seção, aqui os cancelados entram — é justamente o que se quer medir."
       segments={segments}
       loading={loading}
       showTotal

@@ -44,6 +44,9 @@ export const PERMISSIONS = {
   ViewLogs: 'Visualizar logs',
   ViewServices: 'Visualizar serviços',
   ManageServices: 'Gerenciar serviços',
+  ViewCredit: 'Visualizar crediário',
+  ManageCredit: 'Receber e gerenciar crediário',
+  CancelCredit: 'Cancelar crediário e estornar recebimentos',
 } as const satisfies Record<string, string>
 
 export type Permission = keyof typeof PERMISSIONS

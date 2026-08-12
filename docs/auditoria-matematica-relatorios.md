@@ -1,5 +1,12 @@
 # Auditoria de Matemática — Relatórios & Estatísticas
 
+> **Quinta revisão — 2026-08-07 (crediário).** O módulo de crediário quebrou a premissa que
+> sustentava todo este documento: **venda registrada ≠ dinheiro no caixa**. Esta revisão acrescenta
+> o modelo de reconhecimento (§2.5), o regime duplo Competência × Caixa e a seção Crediário do
+> catálogo, e cataloga onze falhas novas (B1–B11 em §5) — **dez corrigidas**, uma reconhecida e
+> fora de escopo. As seções §1–§4 abaixo são a quarta revisão, preservadas: a matemática que elas
+> descrevem continua válida para tudo que não é fiado. Ver também [crediario.md](crediario.md).
+>
 > **Quarta revisão — 2026-07-08.** Substitui a terceira revisão (2026-07-07) como fonte de verdade.
 > A pedido, esta revisão é **enxuta**: contém apenas quatro tópicos — Sumário, Arquitetura do
 > módulo, Catálogo completo de gráficos e Falhas/bugs. Foram propositalmente removidas as seções
@@ -104,6 +111,75 @@ Duas decisões de design válidas em toda a aplicação:
 `GetRevenueByTypeAsync`, `ExportBillingCsvAsync`, `ExportBillingForTenantAsync` e
 `CustomerService.GetCrmStatsAsync`.
 
+### 2.5 Competência × Caixa — o modelo de reconhecimento (5ª revisão)
+
+Com crediário, `Σ Sale.Total` na data da venda deixou de responder "quanto entrou". A página de
+Relatórios ganhou um toggle **Regime** (`basis=accrual|cash`) que governa **vendas e despesas**
+juntas — antes ele trocava só o regime das despesas, o que com fiado produzia um híbrido sem
+significado contábil (Falha **B7**).
+
+**Eventos de caixa de uma venda** (venda `Active`; venda cancelada não gera evento):
+
+| Situação | Quando entra | Quanto | Método |
+|---|---|---|---|
+| Venda sem crediário | `Sale.CreatedAt` | `Sale.Total` | `Sale.PaymentMethod` |
+| Venda fiado — entrada | `Sale.CreatedAt` | `CreditAccount.DownPayment` | `Sale.PaymentMethod` |
+| Venda fiado — parcela | `CreditPayment.ReceivedAt` | `CreditPayment.Amount` | `CreditPayment.Method` |
+
+A **entrada não é um `CreditPayment`** — é paga no ato, com o método da venda. Nenhuma coluna nova
+foi necessária para o modelo de caixa.
+
+**Reconhecimento proporcional** — `SaleFinancials.Recognize(parts, recebido, Sale.Total)`:
+
+```
+ratio = recebido / Sale.Total            (Total == 0 → ratio = 1, evita divisão por zero)
+Revenue, Cost, GrossProfit  ×= ratio     ← rateados
+Fees                        NÃO rateados ← cada taxa na data do seu fato gerador
+```
+
+Somados todos os eventos de uma venda quitada, o caixa fecha **exatamente** com a competência —
+invariante coberta por `Flows/Reports/RevenueRecognitionTests`.
+
+**Taxas.** `Sale.FeeAmount` passa a incidir só sobre a **entrada** (recalculado ao abrir a conta) e
+cada `CreditPayment` carrega a taxa do método usado na **baixa** (`PaymentFees` é a fonte única dos
+dois). Em competência, a taxa de uma venda fiado fica incompleta até as baixas acontecerem — a taxa
+futura depende de uma escolha que o cliente ainda não fez. Ao fim do ciclo os dois regimes somam a
+mesma taxa.
+
+**"É fiado?" é derivado**, nunca persistido na venda: os relatórios fazem o join `Sale ↔
+CreditAccount` (1:1, índice único em `SaleId`). Funciona retroativamente e para contas abertas
+depois da venda, que é o fluxo atual.
+
+### 2.6 Convenção dos tooltips (5ª revisão)
+
+Com dois regimes convivendo na mesma tela, o toggle mudava os números de **alguns** gráficos e não
+de outros — sem explicação, isso lê como bug. Todo card analítico passou a declarar no `info`/
+`tooltip`, nesta ordem: **(1) a fonte** ("Fonte: itens das vendas ativas…"), **(2) o recorte**
+(o que fica de fora e por quê) e **(3) o regime**.
+
+Os textos de regime são centralizados em `pages/Reports/components/chartHelpers.ts` — não escrever
+a explicação à mão em cada card:
+
+| Helper | Usar em |
+|---|---|
+| `basisNote(basis)` | gráfico que **responde** ao toggle — recebe `basis` por prop e descreve o regime **ativo** |
+| `ACCRUAL_ONLY_NOTE` | gráfico que **não** responde ao toggle — avisa que é sempre por competência |
+
+Quem responde ao toggle: composição (barra e donut), receita × lucro, lucro acumulado, receita ao
+longo do tempo, formas de pagamento e a margem média. Quem **não** responde: KPIs Receita/Recebido/
+A receber, rankings de produto, operador e cliente, serviços × produtos e toda a seção Agendamentos
+(eixo próprio — o serviço só vira caixa quando vira venda). O tooltip do próprio toggle lista as
+duas famílias.
+
+Três armadilhas que os textos precisam desfazer, porque nenhuma é óbvia pelo gráfico:
+- **"Recebido" (Vendas) × "Recebido no período" (Crediário)** são perguntas diferentes: o primeiro
+  olha as vendas do período (quanto delas virou dinheiro, mesmo que a baixa tenha sido depois); o
+  segundo olha o caixa do período (o que entrou, mesmo de vendas antigas).
+- **Saldo devedor é posição de hoje**, não do intervalo do calendário — vale para "A receber",
+  "Vencido", inadimplência e aging.
+- **Base mista da margem** (Falha #1): produtos sem custo cadastrado entram na receita mas não no
+  lucro, então a barra de composição é menor que a receita total.
+
 ### 2.3 Igualdades fundamentais da venda (`SaleService.CreateAsync`)
 
 ```
@@ -147,7 +223,9 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 
 | # | Gráfico / KPI | Endpoint | Entidade · propriedades | Cálculo | Veredito |
 |---|---|---|---|---|---|
-| 1 | KPI **Receita total** | `sales` | `Sale.Total, Status, CreatedAt` | `Σ Total WHERE Active` | ✅ pós-desconto |
+| 1 | KPI **Receita total** | `sales` | `Sale.Total, Status, CreatedAt` | `Σ Total WHERE Active` | ✅ pós-desconto; competência (fiado entra inteiro no dia da venda) |
+| 1b | KPI **Recebido** (5ª rev.) | `sales` | + `CreditAccount.{DownPayment,PaidAmount}` | `Σ Total − Σ (Total − entrada − pago)` das vendas do período | ✅ conta baixa feita depois do período (a venda é a mesma) |
+| 1c | KPI **A receber** (5ª rev.) | `sales` | `CreditInstallment` Open | `Σ (Amount − PaidAmount)` das vendas do período | ✅ exclui parcela cancelada (virou perda, não recebível) |
 | 2 | KPI **Total de vendas** | `sales` | `Sale.Status, CreatedAt` | `COUNT WHERE Active` | ✅ |
 | 3 | KPI **Ticket médio** | `sales` | idem | `totalRevenue / totalSales` (0 se 0) | ✅ |
 | 4 | KPI **Margem de lucro média** | `financial-summary` (agregado no frontend) | `revenue, netResult` por bucket | `(Σ netResult / Σ revenue) × 100` | ✅ base mista agora explicada no tooltip do card (Falha #1) |
@@ -156,7 +234,7 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 | 7 | **FinancialBarChart** ("Receita × Lucro líquido") | `financial-summary` | `revenue`, `netResult` | 2 barras por bucket | ⚠️ barras em bases diferentes (uma toda a receita, outra só a margem dos itens com custo) — subtítulo avisa |
 | 8 | **AccumulatedProfitChart** ("Lucro acumulado") | `financial-summary` | `netResult` | soma cumulativa no frontend | ✅ herda a base de `netResult` |
 | 9 | **RevenueLineChart** ("Receita ao longo do tempo") | `financial-summary` (atual + período anterior) | `revenue` | série atual × anterior, alinhada por posição de bucket, `null` no padding | ✅ |
-| 10 | **PaymentMethodPieChart** ("Vendas por forma de pagamento") | `sales/by-payment-method` | `Sale.PaymentMethod, Total` | `Σ Total` por método (Active) | ✅ pós-desconto |
+| 10 | **PaymentMethodPieChart** ("Vendas por forma de pagamento") | `sales/by-payment-method` | `Sale.PaymentMethod, Total`, `CreditAccount.DownPayment`, `CreditPayment.{Method,Amount}` | **Competência:** entrada + vendas à vista por `Sale.PaymentMethod`, parte financiada na fatia `Crediário`. **Caixa:** só o que entrou, cada baixa pelo seu método | ✅ corrigido na 5ª rev. (Falha **B1**) — antes somava o fiado inteiro como Dinheiro/PIX/Cartão |
 | 11 | **RevenueByTypeDonut** ("Serviços vs Produtos") | `revenue-by-type` | `SaleItem.ServiceId, Subtotal`, `Sale.Discount` | `Σ NetItemRevenue` por `ServiceId null/≠null` | ✅ soma fecha com "Receita total" |
 | 12 | **TopProductsChart** ("Top produtos vendidos") | `products/top` | `SaleItem.{ProductId,ProductName,Quantity,Subtotal}` (`ProductId≠null`), `Sale.Discount` | `Σ NetItemRevenue`, `Σ Qty`; **agrupado por `ProductId`**, rótulo = nome mais recente | ✅ desconto rateado + agrupado por Id (Falha #3) |
 
@@ -188,7 +266,23 @@ Todos os endpoints abaixo estão sob `GET /api/reports/...` salvo indicação.
 | # | Gráfico | Origem | Entidade · propriedades | Cálculo | Veredito |
 |---|---|---|---|---|---|
 | 22 | **CustomersListPanel** ("Clientes cadastrados") | `GET /reports/customers` | `Customer.{Id, Name}` | lista simples, ordenada por nome | ✅ servido pelo módulo de Relatórios (Falha #6) |
-| 23 | **TopCustomersRanking** ("Top clientes por receita") | `customers/top` | `Sale.{CustomerId, Total}`, `Customer.Name` | `Σ Total` + `COUNT`, agrupado por **`CustomerId`** (só `CustomerId≠null`, Active) | ✅ por Id; balcão anônimo fica fora (documentado) |
+| 23 | **TopCustomersRanking** ("Top clientes por receita") | `customers/top` | `Sale.{CustomerId, Total}`, `Customer.Name`, `CreditInstallment` Open | `Σ Total` + `COUNT`, agrupado por **`CustomerId`** (só `CustomerId≠null`, Active) + **`outstanding`** (saldo devedor de HOJE) | ✅ por Id; balcão anônimo fica fora; "em aberto" acrescentado na 5ª rev. — sem ele quem só leva fiado lidera o ranking |
+
+### 3.4b Relatórios › seção **Crediário** (5ª revisão)
+
+Servida por `GET /api/reports/credit/*` (gate `advancedReports`), **não** por `/api/credit/*` — a
+seção não pode depender do módulo Crediário estar liberado para o usuário. A matemática de aging é
+compartilhada com a tela de Crediário via `CreditAnalytics`. Visível quando o módulo `credit` está
+ativo no tenant.
+
+| # | Gráfico / KPI | Endpoint | Entidade · propriedades | Cálculo | Veredito |
+|---|---|---|---|---|---|
+| 23a | KPI **Fiado no período** | `credit/summary` | `CreditAccount.TotalAmount` + `Sale.CreatedAt` | `Σ TotalAmount` das contas cujas vendas caem no período | ✅ é o financiado (total − entrada) |
+| 23b | KPI **Recebido no período** | `credit/summary` | `CreditPayment.{Amount,ReceivedAt}`, `CreditAccount.DownPayment` | `Σ Amount` no período + `Σ DownPayment` das vendas do período | ✅ inclui a entrada (Falha **B4**) |
+| 23c | KPI **A receber** / **Vencido** / **Inadimplência** | `credit/summary` | `CreditInstallment` Open | `CreditAnalytics` | ⚠️ posição de **hoje**, não do período — rotulado nos tooltips |
+| 23d | KPI **Perdas no período** | `credit/summary` | `CreditAccount.{Status,CancelledAt,TotalAmount,PaidAmount}` | `Σ (TotalAmount − PaidAmount)` das contas canceladas no período | ✅ datado por `CancelledAt` (Falha **B5**) |
+| 23e | **ReceivableScheduleChart** ("Agenda de recebíveis") | `credit/receivables-schedule` | `CreditInstallment.{DueDate,Amount,PaidAmount}` Open | saldo por bucket de **vencimento**, empilhado a vencer × vencido | ✅ único gráfico com eixo no futuro; é previsão, não receita |
+| 23f | **CreditAgingPanel** (idade da carteira + maiores devedores) | `credit/aging` | idem + `CreditAccount.{CustomerId,CustomerName}` | `CreditAnalytics.BuildAging` — 5 faixas + top 10 devedores | ✅ mesma conta da tela de Crediário |
 
 ### 3.5 **Dashboard**
 
@@ -341,11 +435,90 @@ no mesmo padrão dos outros dois controllers.
 
 ---
 
+## 5. Falhas do crediário (5ª revisão — 2026-08-07)
+
+Todas encontradas na auditoria do módulo novo. **B1–B10 corrigidas**; B11 fica em aberto por
+depender de teste de integração. Contexto completo do módulo em [crediario.md](crediario.md).
+
+### 🔴 Alta
+
+**B1 — Fiado somava como Dinheiro/PIX/Cartão. ✅ corrigido.**
+`GetSalesByPaymentMethodAsync` agrupava `Σ Sale.Total` por `Sale.PaymentMethod`. Uma venda fiado de
+R$ 1.000 aparecia inteira como "Dinheiro" sem R$ 1 ter entrado — o gráfico que o lojista usa para
+conferir o caixa mentia pelo valor cheio. Agora a parte financiada vai para a fatia **`Crediário`**
+(competência) ou some até a baixa (caixa), e cada baixa entra pelo método com que o dinheiro entrou.
+`Credit` **não** virou membro de `PaymentMethod`: fiado é a ausência de pagamento no ato.
+
+**B2 — Taxa de cartão sobre dinheiro que não entrou. ✅ corrigido.**
+`Sale.FeeAmount = Total × FeeRate` era congelado na venda. Virando crediário, a taxa continuava
+incidindo sobre o total, debitando taxa de maquininha de um valor que ninguém passou na maquininha —
+e contaminando `netResult` e `NetAmount`. Agora abrir a conta **recalcula** a taxa da venda sobre a
+**entrada**, e cada `CreditPayment` carrega a taxa do método usado na baixa (`PaymentFees`, fonte
+única com `SaleService`). Ver §2.5.
+
+**B3 — Entrada sumia no cancelamento da venda. ✅ corrigido.**
+`SaleService.CancelAsync` só bloqueava com `credit.PaidAmount > 0`. Como a entrada **não é um
+`CreditPayment`**, uma venda com R$ 500 de entrada e zero parcelas recebidas era cancelável: a
+receita sumia do relatório com o dinheiro no caixa. Passa a bloquear também `DownPayment > 0`.
+
+### 🟡 Média
+
+**B4 — "Recebido" ignorava a entrada. ✅ corrigido.**
+`GetReceivedBetweenAsync` somava só `CreditPayment`. O KPI "Recebido no mês" subestimava toda venda
+fiado com entrada. Agora soma baixas + entradas (estas datadas pela **venda**, onde o dinheiro
+entrou).
+
+**B5 — Calote não virava perda. ✅ corrigido.**
+`CancelAccountAsync` encerrava a cobrança, mas a `Sale` seguia `Active` e a receita contada em
+competência para sempre, sem nenhum lugar mostrando a baixa. Ganhou `CreditAccount.CancelledAt` (a
+data que posiciona a perda no bucket certo — `UpdatedAt` não serve) e o KPI **"Perdas no período"**.
+Em caixa o dinheiro simplesmente nunca entra, que é o correto por construção.
+
+**B6 — CSV de crediário inflava o recebível. ✅ corrigido.**
+Parcela `Cancelled` saía com `Saldo = Amount − PaidAmount` positivo; somar a coluna dava uma carteira
+que não existe. Agora sai **zero**, e o CSV ganhou `Entrada` e `Situação da Conta`.
+
+**B7 — Regime "Caixa" era meia-verdade. ✅ corrigido.**
+O toggle trocava só o regime das **despesas**; a receita seguia em competência. Com fiado, o gráfico
+de composição em modo Caixa virava um híbrido sem significado. O parâmetro virou `basis` e governa
+vendas e despesas — ver §2.5.
+
+**B8 — Exportações sem noção de recebível. ✅ corrigido.**
+`faturamento.csv` ganhou `Recebido no Mês` e `A Receber (vendas do mês)`; `vendas.csv` ganhou
+`Crediário`, `Recebido` e `A Receber`. Vale também para o export do tenant agendado para exclusão —
+é o CSV que sobra depois do cancelamento do plano, e sem essas colunas ele mostrava só o faturado.
+
+### ⚪ Baixa
+
+**B9 — `ReceivedAt` sem piso. ✅ corrigido.**
+Só havia validação de data futura. Dava para datar uma baixa antes da própria conta, mudando um
+período já fechado. Agora exige `ReceivedAt >= CreditAccount.CreatedAt`.
+
+**B10 — Estorno em conta cancelada. ✅ corrigido.**
+`ReverseAsync` aceitava estornar recebimento de conta `Cancelled`, mexendo no saldo de algo já
+baixado como perda sem reabrir parcela nenhuma — "a receber" e "perdas" divergiam. Agora é recusado.
+
+**B11 — "Total gasto" do cliente inclui o que ele deve. ⏸ não corrigido.**
+`CustomerService.GetCrmStatsAsync` (§3.6 #33) soma `Σ Sale.Total`: um cliente com R$ 3.000 de fiado
+aberto aparece como se tivesse gasto R$ 3.000. O ranking de Relatórios (#23) já mostra o saldo em
+aberto; o `CustomerDetail` ainda não. Fica para um PR próprio junto com o resto do CRM.
+
+### Nota de escopo
+
+**`SaleService.CancelAsync` (B3) não tem teste unitário.** O service injeta `AppDbContext` concreto —
+mesma razão pela qual `DataDeletionService` está fora da suíte (ver `PDV.UnitTests/README.md`).
+Testar exige integração com MySQL real; o comportamento foi verificado na stack de dev.
+
+---
+
 ## Apêndice — arquivos-chave
 
 | Camada | Arquivo |
 |---|---|
-| Backend — matemática de lucro | `backend/PDV.Application/Helpers/SaleFinancials.cs` |
+| Backend — matemática de lucro + reconhecimento caixa | `backend/PDV.Application/Helpers/SaleFinancials.cs` (`Compute`, `Recognize`) |
+| Backend — recebível / inadimplência | `backend/PDV.Application/Helpers/CreditAnalytics.cs` |
+| Backend — taxa por forma de pagamento | `backend/PDV.Application/Helpers/PaymentFees.cs` |
+| Backend — crediário (regras) | `backend/PDV.Infrastructure/Services/CreditService.cs` |
 | Backend — relatórios (inclui agendamentos) | `backend/PDV.Infrastructure/Services/ReportService.cs` |
 | Backend — controller de relatórios | `backend/PDV.Api/Controllers/ReportsController.cs` |
 | Backend — CRM cliente | `backend/PDV.Infrastructure/Services/CustomerService.cs` (`GetCrmStatsAsync`) |

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PDV.Application.DTOs.Payments;
 using PDV.Application.Interfaces.Payments;
 using PDV.Domain.Exceptions;
@@ -9,6 +10,8 @@ using Stripe.Checkout;
 // busca de nome dentro deste namespace aninhado. Os aliases removem a ambiguidade.
 using StripeCustomers = Stripe.CustomerService;
 using StripeSubscriptions = Stripe.SubscriptionService;
+// `SessionService` sem alias é o do Checkout (`using Stripe.Checkout` acima). O portal tem o seu.
+using StripePortalSessions = Stripe.BillingPortal.SessionService;
 
 namespace PDV.Infrastructure.Services.Payments.Stripe;
 
@@ -21,13 +24,16 @@ namespace PDV.Infrastructure.Services.Payments.Stripe;
 //   Payment (paga)          → PaymentIntent (pi_...)
 //   Payment (recusada)      → Invoice (in_...)
 //   PendingPlanId           → SubscriptionSchedule (sub_sched_...)
-public class StripeGateway(IStripeClient client, ILogger<StripeGateway> logger) : IPaymentGateway
+public class StripeGateway(IStripeClient client, IOptions<StripeOptions> options, ILogger<StripeGateway> logger) : IPaymentGateway
 {
     public const string ProviderName = "Stripe";
     public string Provider => ProviderName;
 
+    private readonly StripeOptions _options = options.Value;
+
     private readonly StripeCustomers _customers = new(client);
     private readonly SessionService _sessions = new(client);
+    private readonly StripePortalSessions _portalSessions = new(client);
     private readonly StripeSubscriptions _subscriptions = new(client);
     private readonly SubscriptionScheduleService _schedules = new(client);
     private readonly InvoiceService _invoices = new(client);
@@ -276,6 +282,30 @@ public class StripeGateway(IStripeClient client, ILogger<StripeGateway> logger) 
             ct));
 
         return new RefundResult(refund.Id, refund.Status, (int)refund.Amount);
+    }
+
+    // -----------------------------------------------------------------------
+    // Portal do cliente
+    // -----------------------------------------------------------------------
+
+    public async Task<string> CreatePortalSessionAsync(string customerId, string returnUrl, CancellationToken ct = default)
+    {
+        var session = await Guard(() => _portalSessions.CreateAsync(new global::Stripe.BillingPortal.SessionCreateOptions
+        {
+            Customer = customerId,
+            ReturnUrl = returnUrl,
+            // Vazio = configuração default da conta. Fixar o id é o que garante que o portal não
+            // ofereça cancelamento nem troca de plano (ver StripeOptions.PortalConfigurationId).
+            Configuration = string.IsNullOrWhiteSpace(_options.PortalConfigurationId)
+                ? null
+                : _options.PortalConfigurationId,
+            Locale = "pt-BR",
+        }, cancellationToken: ct));
+
+        if (string.IsNullOrEmpty(session.Url))
+            throw new PaymentGatewayException("O gateway não retornou a URL do portal.");
+
+        return session.Url;
     }
 
     // -----------------------------------------------------------------------

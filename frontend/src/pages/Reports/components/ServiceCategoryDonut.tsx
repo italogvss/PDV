@@ -20,7 +20,7 @@ export default function ServiceCategoryDonut({ data, loading = false }: ServiceC
     <DonutChart
       title="Categorias de serviço"
       subtitle="Participação na receita de atendimentos"
-      info="Receita de serviços concluídos no período, somada por categoria do catálogo. Agendamentos futuros, pendentes ou cancelados não entram — só consumo real."
+      info="Fonte: preço dos serviços dos atendimentos CONCLUÍDOS no período, somado pela categoria do serviço no catálogo. Agendamentos futuros, pendentes ou cancelados não entram — só consumo real. Serviço sem categoria cai em “Sem categoria”."
       segments={segments}
       loading={loading}
       showTotal

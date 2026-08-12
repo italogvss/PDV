@@ -1,16 +1,17 @@
 import { useTheme } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { formatBRL } from '../../../utils/currency'
-import { formatCompactBRL } from './chartHelpers'
+import { basisNote, formatCompactBRL } from './chartHelpers'
 import ChartCard from '../../../components/ChartCard'
-import type { FinancialSummaryPoint } from '../../../types/report.types'
+import type { FinancialSummaryPoint, ReportBasis } from '../../../types/report.types'
 
 export interface FinancialBarChartProps {
   data: FinancialSummaryPoint[]
+  basis: ReportBasis
   loading?: boolean
 }
 
-export default function FinancialBarChart({ data, loading = false }: FinancialBarChartProps) {
+export default function FinancialBarChart({ data, basis, loading = false }: FinancialBarChartProps) {
   const theme = useTheme()
 
   const labels = data.map((d) => d.label)
@@ -21,7 +22,7 @@ export default function FinancialBarChart({ data, loading = false }: FinancialBa
     <ChartCard
       title="Receita × Lucro líquido"
       subtitle="Resultado = margem (itens com custo) − taxas − despesas"
-      info="Receita é o total vendido no período. Lucro líquido = margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado não entram na margem."
+      info={`Fonte: vendas ativas do período (Sale.Total) + despesas + custo dos itens. Receita é o total vendido; Lucro líquido = margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado entram na receita mas não na margem, então as duas barras estão em bases diferentes. ${basisNote(basis)}`}
       loading={loading}
       isEmpty={data.length === 0}
     >

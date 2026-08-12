@@ -57,4 +57,11 @@ public record PaymentsSettingsDto(
     PaymentMethodDto Pix,
     PaymentMethodDto CardCredit,
     PaymentMethodDto CardDebit,
-    PaymentMethodDto Cash);
+    PaymentMethodDto Cash,
+    CreditSettingsDto Credit);
+
+// Política de crediário da loja. Não tem taxa: a do fiado é a do método da baixa da parcela.
+public record CreditSettingsDto(
+    int MaxInstallments,
+    int FirstDueDays,
+    decimal MinDownPaymentPercent);

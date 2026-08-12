@@ -1,7 +1,7 @@
 ﻿import { useQuery } from '@tanstack/react-query'
 import { reportService } from '../services/report.service'
 import { FEATURES } from '../constants/entitlements'
-import type { ExpenseBasis, GroupBy } from '../types/report.types'
+import type { GroupBy, ReportBasis } from '../types/report.types'
 import { useEntitlements } from './useSubscription'
 import { useUserPermissions } from './useUserPermissions'
 
@@ -16,14 +16,14 @@ function useReportsEnabled(): boolean {
 
 const METRICS_KEY = (start: string, end: string) =>
   ['reports', 'sales', start, end] as const
-const FINANCIAL_KEY = (start: string, end: string, groupBy: GroupBy, expenseBasis: ExpenseBasis) =>
-  ['reports', 'financial-summary', start, end, groupBy, expenseBasis] as const
+const FINANCIAL_KEY = (start: string, end: string, groupBy: GroupBy, basis: ReportBasis) =>
+  ['reports', 'financial-summary', start, end, groupBy, basis] as const
 const EMPLOYEES_LIST_KEY = ['reports', 'employees-list'] as const
 const CUSTOMERS_LIST_KEY = ['reports', 'customers-list'] as const
 const BY_OPERATOR_KEY = (start: string, end: string) =>
   ['reports', 'by-operator', start, end] as const
-const BY_PAYMENT_KEY = (start: string, end: string) =>
-  ['reports', 'by-payment-method', start, end] as const
+const BY_PAYMENT_KEY = (start: string, end: string, basis: ReportBasis) =>
+  ['reports', 'by-payment-method', start, end, basis] as const
 const TOP_PRODUCTS_KEY = (start: string, end: string, limit: number) =>
   ['reports', 'top-products', start, end, limit] as const
 const TOP_CUSTOMERS_KEY = (start: string, end: string, limit: number) =>
@@ -42,6 +42,11 @@ const SERVICE_CATEGORY_REVENUE_KEY = (start: string, end: string) =>
   ['reports', 'service-category-revenue', start, end] as const
 const PEAK_HOURS_KEY = (start: string, end: string) =>
   ['reports', 'appointment-peak-hours', start, end] as const
+const CREDIT_SUMMARY_KEY = (start: string, end: string) =>
+  ['reports', 'credit-summary', start, end] as const
+const CREDIT_AGING_KEY = ['reports', 'credit-aging'] as const
+const RECEIVABLE_SCHEDULE_KEY = (start: string, end: string, groupBy: GroupBy) =>
+  ['reports', 'receivable-schedule', start, end, groupBy] as const
 
 export function useSalesMetrics(startDate: string, endDate: string) {
   const enabled = useReportsEnabled()
@@ -56,12 +61,12 @@ export function useFinancialSummary(
   startDate: string,
   endDate: string,
   groupBy: GroupBy,
-  expenseBasis: ExpenseBasis = 'accrual',
+  basis: ReportBasis = 'accrual',
 ) {
   const enabled = useReportsEnabled()
   return useQuery({
-    queryKey: FINANCIAL_KEY(startDate, endDate, groupBy, expenseBasis),
-    queryFn: () => reportService.getFinancialSummary(startDate, endDate, groupBy, expenseBasis),
+    queryKey: FINANCIAL_KEY(startDate, endDate, groupBy, basis),
+    queryFn: () => reportService.getFinancialSummary(startDate, endDate, groupBy, basis),
     enabled,
   })
 }
@@ -93,11 +98,15 @@ export function useSalesByOperator(startDate: string, endDate: string) {
   })
 }
 
-export function useSalesByPaymentMethod(startDate: string, endDate: string) {
+export function useSalesByPaymentMethod(
+  startDate: string,
+  endDate: string,
+  basis: ReportBasis = 'accrual',
+) {
   const enabled = useReportsEnabled()
   return useQuery({
-    queryKey: BY_PAYMENT_KEY(startDate, endDate),
-    queryFn: () => reportService.getSalesByPaymentMethod(startDate, endDate),
+    queryKey: BY_PAYMENT_KEY(startDate, endDate, basis),
+    queryFn: () => reportService.getSalesByPaymentMethod(startDate, endDate, basis),
     enabled,
   })
 }
@@ -179,6 +188,35 @@ export function useAppointmentPeakHours(startDate: string, endDate: string) {
   return useQuery({
     queryKey: PEAK_HOURS_KEY(startDate, endDate),
     queryFn: () => reportService.getAppointmentPeakHours(startDate, endDate),
+    enabled,
+  })
+}
+
+// Crediário na página de Relatórios. Vem de /reports/credit/* (gate de Relatórios), não de
+// /credit/* — a seção não pode depender do módulo Crediário estar liberado para o usuário.
+export function useCreditReportSummary(startDate: string, endDate: string) {
+  const enabled = useReportsEnabled()
+  return useQuery({
+    queryKey: CREDIT_SUMMARY_KEY(startDate, endDate),
+    queryFn: () => reportService.getCreditSummary(startDate, endDate),
+    enabled,
+  })
+}
+
+export function useCreditReportAging() {
+  const enabled = useReportsEnabled()
+  return useQuery({
+    queryKey: CREDIT_AGING_KEY,
+    queryFn: () => reportService.getCreditAging(),
+    enabled,
+  })
+}
+
+export function useReceivableSchedule(startDate: string, endDate: string, groupBy: GroupBy) {
+  const enabled = useReportsEnabled()
+  return useQuery({
+    queryKey: RECEIVABLE_SCHEDULE_KEY(startDate, endDate, groupBy),
+    queryFn: () => reportService.getReceivableSchedule(startDate, endDate, groupBy),
     enabled,
   })
 }

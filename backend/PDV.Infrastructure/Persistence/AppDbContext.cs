@@ -33,6 +33,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
 
+    // Crediário (venda fiado). Nasce sempre de uma Sale; parcelas e recebimentos pendurados nela.
+    public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
+    public DbSet<CreditInstallment> CreditInstallments => Set<CreditInstallment>();
+    public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
+
     // Cobrança/assinaturas. Plan e WebhookEvent são GLOBAIS; Subscription/GatewayCustomer/Payment
     // são scoped por UserId (Owner) — nenhuma recebe HasQueryFilter de tenant (ver OnModelCreating).
     public DbSet<Plan> Plans => Set<Plan>();
@@ -112,6 +117,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
         modelBuilder.Entity<ContactMessage>()
             .HasQueryFilter(c => c.TenantId == tenantContext.TenantId && c.IsActive);
+
+        // Crediário usa status próprio (CreditAccountStatus/CreditInstallmentStatus) para o ciclo
+        // de vida e CreditPayment é hard-deleted no estorno; IsActive (herdado de BaseEntity) nunca
+        // é alterado — mesmo tratamento de Sale e Expense.
+        modelBuilder.Entity<CreditAccount>()
+            .HasQueryFilter(a => a.TenantId == tenantContext.TenantId);
+
+        modelBuilder.Entity<CreditInstallment>()
+            .HasQueryFilter(i => i.TenantId == tenantContext.TenantId);
+
+        modelBuilder.Entity<CreditPayment>()
+            .HasQueryFilter(p => p.TenantId == tenantContext.TenantId);
 
         // Entidades de cobrança NÃO recebem query filter de tenant: a cobrança pertence ao Owner
         // (UserId) e cobre todas as lojas dele; o webhook (anônimo) precisa lê-las sem tenant context.

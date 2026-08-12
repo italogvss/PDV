@@ -1,5 +1,6 @@
 import RankingList from '../../../components/RankingList'
 import { formatBRL } from '../../../utils/currency'
+import { ACCRUAL_ONLY_NOTE } from './chartHelpers'
 import type { TopProduct } from '../../../types/report.types'
 
 export interface TopProductsChartProps {
@@ -21,7 +22,7 @@ export default function TopProductsChart({ data, loading = false }: TopProductsC
     <RankingList
       title="Top produtos vendidos"
       subtitle="Maior receita no período"
-      info="Produtos com maior receita no período, já com o desconto rateado. Considera apenas produtos — serviços não entram neste ranking."
+      info={`Fonte: itens de PRODUTO das vendas ativas, com o desconto da venda rateado por item. Serviços não entram. Agrupado pelo produto do catálogo (não pelo nome), com o rótulo do nome mais recente — renomear um produto não fragmenta o histórico. ${ACCRUAL_ONLY_NOTE}`}
       items={items}
       loading={loading}
       emptyText="Sem dados no período selecionado."

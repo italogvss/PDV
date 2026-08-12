@@ -1,17 +1,19 @@
 import { useTheme } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
-import type { FinancialSummaryPoint } from '../../../types/report.types'
+import type { FinancialSummaryPoint, ReportBasis } from '../../../types/report.types'
 import { formatBRL } from '../../../utils/currency'
 import ChartCard from '../../../components/ChartCard'
-import { formatCompactBRL } from './chartHelpers'
+import { basisNote, formatCompactBRL } from './chartHelpers'
 
 export interface AccumulatedProfitChartProps {
   data: FinancialSummaryPoint[]
+  basis: ReportBasis
   loading?: boolean
 }
 
 export default function AccumulatedProfitChart({
   data,
+  basis,
   loading = false,
 }: AccumulatedProfitChartProps) {
   const theme = useTheme()
@@ -29,7 +31,7 @@ export default function AccumulatedProfitChart({
     <ChartCard
       title="Lucro acumulado"
       subtitle="Resultado líquido somado no período"
-      info="Soma corrida do resultado líquido, período a período. A curva subindo indica lucro se acumulando; descendo, prejuízo."
+      info={`Soma corrida do resultado líquido (margem dos itens com custo − taxas − despesas), período a período. Curva subindo = lucro se acumulando; descendo = prejuízo. Só acumula dentro do intervalo escolhido, não vem de antes dele. ${basisNote(basis)}`}
       loading={loading}
       isEmpty={data.length === 0}
     >

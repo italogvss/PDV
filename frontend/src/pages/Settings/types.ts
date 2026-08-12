@@ -2,6 +2,7 @@
 import { MiscellaneousServicesOutlined } from "@mui/icons-material"
 import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined"
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined"
+import CreditScoreOutlined from "@mui/icons-material/CreditScoreOutlined"
 import GroupsOutlined from "@mui/icons-material/GroupsOutlined"
 import Inventory2Outlined from "@mui/icons-material/Inventory2Outlined"
 import PeopleOutlined from "@mui/icons-material/PeopleOutlined"
@@ -69,6 +70,9 @@ export const EXPORT_CATEGORIES = [
   { id: 'services', label: 'Serviços', icon: MiscellaneousServicesOutlined },
   { id: 'expenses', label: 'Despesas', icon: AccountBalanceWalletOutlined },
   { id: 'billing', label: 'Faturamento', icon: BarChartOutlined },
+  // Uma linha por PARCELA. Vale para toda loja que já vendeu fiado, inclusive depois de o módulo
+  // sair do plano — é a carteira a receber que o lojista precisa levar embora ao cancelar.
+  { id: 'credit', label: 'Crediário', icon: CreditScoreOutlined },
   { id: 'team', label: 'Equipe', icon: GroupsOutlined },
 ]
 

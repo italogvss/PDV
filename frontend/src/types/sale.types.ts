@@ -1,7 +1,18 @@
+import type { CreditAccount, CreditInstallment } from './credit.types'
+
 export interface CreateSaleItemPayload {
   productId?: string
   serviceId?: string
   quantity: number
+}
+
+// Presente = venda fiado. O crediário nasce dentro da transação da venda, então `paymentMethod`
+// e `amountPaid` passam a descrever só a ENTRADA (é sobre ela que a taxa da venda incide).
+export interface CreateSaleCreditPayload {
+  installmentCount: number
+  firstDueDate: string
+  downPayment: number
+  note?: string
 }
 
 export interface CreateSalePayload {
@@ -13,6 +24,7 @@ export interface CreateSalePayload {
   amountPaid: number
   discount: number
   items: CreateSaleItemPayload[]
+  credit?: CreateSaleCreditPayload
 }
 
 export interface SaleListItem {
@@ -32,6 +44,9 @@ export interface SaleListItem {
   cancelledByName: string | null
   cancelledAt: string | null
   createdAt: string
+  // Crediário da venda, quando houver — null = venda à vista. Vem do backend dentro do
+  // próprio DTO da venda; o histórico não consulta o módulo de crediário.
+  credit: CreditAccount | null
 }
 
 export interface SaleItemDetail {
@@ -53,4 +68,6 @@ export interface SaleDetail extends SaleListItem {
   feeRate: number
   feeAmount: number
   netAmount: number
+  // Cronograma de parcelas em leitura — receber/estornar é gestão de crediário.
+  creditInstallments: CreditInstallment[]
 }

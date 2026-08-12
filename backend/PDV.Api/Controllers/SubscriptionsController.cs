@@ -23,6 +23,13 @@ public class SubscriptionsController(ISubscriptionService service) : ControllerB
     public async Task<IActionResult> Checkout([FromBody] StartCheckoutRequest request) =>
         Ok(await service.StartCheckoutAsync(request));
 
+    // Portal hospedado do gateway: só troca de cartão e histórico de faturas. Cancelar e trocar de
+    // plano continuam nos endpoints daqui — a configuração do portal os desabilita de propósito.
+    [HttpPost("portal-session")]
+    [Authorize(Roles = "Owner,Admin")]
+    public async Task<IActionResult> CreatePortalSession([FromBody] PortalSessionRequest request) =>
+        Ok(await service.CreatePortalSessionAsync(request));
+
     // Simula a troca (quanto será cobrado agora, quando o plano novo vale) sem executá-la — alimenta
     // o diálogo de confirmação.
     [HttpPost("change-plan/preview")]

@@ -22,9 +22,7 @@ public static class NotificationCatalog
     // Agendamentos
     public const string AppointmentsToday = "appointments.today";
 
-    // TODO (crediário): quando a feature/crediario-portal-stripe entrar na master, adicionar
-    //   public const string CreditOverdue = "credit.overdue";        // parcelas Open com DueDate < hoje
-    //   public const string CreditDueThisMonth = "credit.dueThisMonth"; // Open, hoje <= DueDate < 1º do mês seguinte
-    // e as duas linhas correspondentes em NotificationRules.All (módulo Credit, pref Credit,
-    // permissão ViewCredit). Nenhuma outra parte do motor precisa mudar.
+    // Crediário — parcelas Open com DueDate < hoje / no restante do mês corrente.
+    public const string CreditOverdue = "credit.overdue";
+    public const string CreditDueThisMonth = "credit.dueThisMonth";
 }

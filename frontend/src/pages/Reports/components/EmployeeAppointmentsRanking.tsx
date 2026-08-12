@@ -24,7 +24,7 @@ export default function EmployeeAppointmentsRanking({
     <RankingList
       title="Agendamentos por funcionário"
       subtitle="Receita realizada por profissional"
-      info="Receita de atendimentos concluídos no período por funcionário. A contagem inclui todos os agendamentos não cancelados atribuídos a ele."
+      info="Fonte: agendamentos atribuídos a cada funcionário no período. A RECEITA soma o preço dos serviços dos atendimentos concluídos; a CONTAGEM inclui todos os não cancelados atribuídos a ele. Não tem relação com vendas no caixa — para isso, veja o “Ranking por operador”."
       items={items}
       loading={loading}
       emptyText="Sem dados no período selecionado."

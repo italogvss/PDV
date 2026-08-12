@@ -55,6 +55,9 @@
       "Bash(DB_CONNECTION_STRING=\"Server=127.0.0.1;Port=3307;Database=pdv-ultra;User=root;Password=admin\" dotnet ef migrations add AddExpenseRepeatCount -p PDV.Infrastructure -s PDV.Api)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [],
-  "enableAllProjectMcpServers": true
+  "enabledPlugins": {
+    "stripe@claude-plugins-official": true
+  }
 }

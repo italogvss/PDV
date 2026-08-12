@@ -99,7 +99,7 @@ Nenhum tipo do Stripe vaza para fora de `StripeGateway`/`StripeWebhookProcessor`
 
 | Camada | Arquivo | Papel |
 |---|---|---|
-| Controller | `PDV.Api/Controllers/SubscriptionsController.cs` | `/me`, `/plans`, `checkout`, `change-plan`, `change-plan/preview`, `cancel` |
+| Controller | `PDV.Api/Controllers/SubscriptionsController.cs` | `/me`, `/plans`, `checkout`, `change-plan`, `change-plan/preview`, `cancel`, `portal-session` |
 | Controller | `PDV.Api/Controllers/PaymentHistoryController.cs` | `GET /api/payments/history` |
 | Controller | `PDV.Api/Controllers/WebhooksController.cs` | `POST /api/webhooks/{provider}` (anônimo) |
 | Service | `PDV.Infrastructure/Services/SubscriptionService.cs` | Orquestra checkout / change-plan / preview / cancel / refund |
@@ -112,7 +112,7 @@ Nenhum tipo do Stripe vaza para fora de `StripeGateway`/`StripeWebhookProcessor`
 | Service | `PDV.Infrastructure/Services/PlanSeeder.cs` | Upsert por Slug; injeta `price_...` da configuração |
 | Gateway | `.../Payments/Stripe/StripeGateway.cs` | `IPaymentGateway` — traduz domínio → Stripe |
 | Webhook | `.../Payments/Stripe/StripeWebhookProcessor.cs` | `IPaymentWebhookProcessor` — verifica assinatura + normaliza |
-| Config | `.../Payments/Stripe/StripeOptions.cs` | `ApiKey`, `WebhookSecret`, `WebhookToleranceSeconds`, `Prices[slug]` |
+| Config | `.../Payments/Stripe/StripeOptions.cs` | `ApiKey`, `WebhookSecret`, `WebhookToleranceSeconds`, `Prices[slug]`, `PortalConfigurationId` |
 | Helper | `PDV.Application/Helpers/PlanChange.cs` | `IsScheduled` / `RemovesCapabilities` — classifica a troca |
 | Helper | `PDV.Application/Helpers/PlanJson.cs` | Lê/serializa entitlements e limites |
 | Contratos | `PDV.Application/{Interfaces/Payments, DTOs/Payments}` | `IPaymentGateway`, `IPaymentWebhookProcessor`, modelos neutros |
@@ -265,13 +265,44 @@ decisão imediato-vs-agendado vem do **preview do backend**, não do frontend).
 | POST | `/api/subscriptions/change-plan/preview` | Owner,Admin |
 | POST | `/api/subscriptions/change-plan` | Owner,Admin |
 | POST | `/api/subscriptions/cancel` | Owner,Admin |
+| POST | `/api/subscriptions/portal-session` | Owner,Admin |
 | GET | `/api/payments/history?page=&pageSize=` | Owner,Admin |
 | POST | `/api/webhooks/{provider}` | Anônimo (autenticado por `Stripe-Signature`) |
 
 **`/me` é a fonte única do estado de billing para a UI.** Devolve, além do estado:
 `refundEligibleUntil` (= `StartedAt + 7d`), `pendingPlanId/Name/StartsAt` (troca agendada),
-`lastPaymentFailedAt`/`paymentRetryNumber` (cobrança recusada). O frontend **deriva mensagens da
-resposta**, sem reimplementar regra.
+`lastPaymentFailedAt`/`paymentRetryNumber` (cobrança recusada), `canManageBilling` (§7.1). O
+frontend **deriva mensagens da resposta**, sem reimplementar regra.
+
+### 7.1 Portal do cliente — por que ele é restrito
+
+`POST /subscriptions/portal-session` devolve a URL de uma sessão do **Customer Portal hospedado do
+Stripe**. É a única forma de o assinante **trocar o cartão** (antes disso, um cartão vencido só
+tinha saída via checkout novo) e de ver o **histórico de faturas** do gateway.
+
+O portal habilita **apenas** `payment_method_update` e `invoice_history`. `subscription_cancel` e
+`subscription_update` ficam **desabilitados**, e isso não é preferência de UX:
+
+> A janela de arrependimento de 7 dias (§1, invariante 3) mora só no `CancelAsync`/`IssueRefundsAsync`
+> — o handler de `customer.subscription.deleted` marca `Canceled`/`Expired` e **nunca estorna**.
+> Um usuário que cancelasse pelo portal dentro da janela **não receberia o estorno**. Pela mesma
+> lógica, trocar de plano por lá pularia o agendamento de downgrade (§8.6).
+
+O que o portal oferece é decidido por uma **Billing Portal Configuration** na conta Stripe, não pelo
+código: `Stripe:PortalConfigurationId` (`Stripe__PortalConfigurationId=bpc_...`). Ela é fixada
+explicitamente na sessão porque, sem id, o Stripe usa a configuração *default* da conta — que alguém
+pode ligar cancelamento pelo painel sem querer. **Ao provisionar produção, criar a configuração
+também na conta live**: o `bpc_` de teste não vale lá.
+
+`canManageBilling` no `/me` é o que decide se o botão aparece: `true` só quando a assinatura tem
+`GatewayCustomerId` **e** é do usuário logado. As duas condições importam — o trial é PDV-side e não
+tem `cus_` (nem um `Expired` vindo dele), e `/me` resolve a assinatura pelo **Owner do tenant**, então
+sem a checagem de titularidade um `Employee` veria um botão que responde 403.
+
+Trocar o cartão pelo portal emite `setup_intent.*`, `payment_method.attached`, `customer.updated` e
+`billing_portal.session.created` — nenhum deles assinado, todos no-op de 200. Emite **também**
+`customer.subscription.updated`, que passa pelo reconciliador: como a reconciliação aplica o objeto
+inteiro e nada mudou (plano, status e período iguais), o efeito é só avançar `GatewaySyncedAt`.
 
 **`change-plan` e `change-plan/preview`** devolvem `{ planName, scheduled, effectiveAt, nextChargeAt,
 amountDueNowCents }` — o mesmo shape, para o diálogo simular antes e confirmar depois:

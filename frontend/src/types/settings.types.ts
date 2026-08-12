@@ -81,12 +81,21 @@ export interface PaymentMethodConfig {
   fee: number
 }
 
+// Crediário não tem taxa aqui de propósito: a taxa do fiado é a do método escolhido na BAIXA
+// de cada parcela (docs/crediario.md §3). Aqui só a política de parcelamento da loja.
+export interface CreditSettings {
+  maxInstallments: number
+  firstDueDays: number
+  minDownPaymentPercent: number
+}
+
 export interface PaymentsSettings {
   feesEnabled: boolean
   pix: PaymentMethodConfig
   cardCredit: PaymentMethodConfig
   cardDebit: PaymentMethodConfig
   cash: PaymentMethodConfig
+  credit: CreditSettings
 }
 
 export type TaxRegime = 'simples' | 'presumido' | 'real' | 'mei'

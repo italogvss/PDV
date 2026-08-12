@@ -1,18 +1,20 @@
 import { useTheme } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
 import { formatBRL } from '../../../utils/currency'
-import { formatCompactBRL } from './chartHelpers'
+import { basisNote, formatCompactBRL } from './chartHelpers'
 import ChartCard from '../../../components/ChartCard'
-import type { FinancialSummaryPoint } from '../../../types/report.types'
+import type { FinancialSummaryPoint, ReportBasis } from '../../../types/report.types'
 
 export interface RevenueLineChartProps {
   data: FinancialSummaryPoint[]
+  basis: ReportBasis
   prevData?: FinancialSummaryPoint[]
   loading?: boolean
 }
 
 export default function RevenueLineChart({
   data,
+  basis,
   prevData,
   loading = false,
 }: RevenueLineChartProps) {
@@ -58,7 +60,7 @@ export default function RevenueLineChart({
     <ChartCard
       title="Receita ao longo do tempo"
       subtitle={hasPrev ? 'vs período anterior' : undefined}
-      info="Receita bruta — soma do total das vendas (já com os descontos aplicados) em cada período. Quando há comparação, a linha tracejada mostra o mesmo intervalo do período anterior."
+      info={`Receita por período — soma do total das vendas, já com os descontos aplicados. Quando há comparação, a linha tracejada mostra o mesmo intervalo do período anterior, alinhado pela posição do bucket. ${basisNote(basis)}`}
       loading={loading}
       isEmpty={data.length === 0}
     >

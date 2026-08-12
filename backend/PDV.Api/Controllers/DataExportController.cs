@@ -62,6 +62,13 @@ public class DataExportController(IReportService service) : ControllerBase
         return File(csv, "text/csv", "despesas.csv");
     }
 
+    [HttpGet("credit/export")]
+    public async Task<IActionResult> ExportCreditCSV()
+    {
+        var csv = await service.ExportCreditCsvAsync();
+        return File(csv, "text/csv", "crediario.csv");
+    }
+
     [HttpGet("billing/export")]
     public async Task<IActionResult> ExportBillingCSV()
     {

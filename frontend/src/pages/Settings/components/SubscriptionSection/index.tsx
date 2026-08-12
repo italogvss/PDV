@@ -26,6 +26,7 @@ import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
 import CheckRounded from '@mui/icons-material/CheckRounded'
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded'
 import CancelOutlined from '@mui/icons-material/CancelOutlined'
+import CreditCardRounded from '@mui/icons-material/CreditCardRounded'
 import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
@@ -40,6 +41,7 @@ import {
   useCancelSubscription,
   useChangePlan,
   useChangePlanPreview,
+  useOpenBillingPortal,
 } from '../../../../hooks/useSubscription'
 import { formatCents } from '../../../../utils/currency'
 import { FEATURE_LABELS, UNLIMITED, type PlanLimitKey } from '../../../../constants/entitlements'
@@ -225,6 +227,7 @@ export default function SubscriptionSection() {
   const { data: plans, isLoading: loadingPlans } = usePlans()
   const changePlan = useChangePlan()
   const cancel = useCancelSubscription()
+  const billingPortal = useOpenBillingPortal()
   const { data: paymentHistory, isLoading: loadingPayments } = usePaymentHistory()
   const payments = paymentHistory?.data ?? []
 
@@ -663,9 +666,24 @@ export default function SubscriptionSection() {
           variant="outlined"
           sx={{ borderRadius: 3, alignItems: 'center', backgroundColor: "error.soft",}}
           action={
-            <Button sx={{mr: 3}} color="error" variant="contained" size="small" onClick={() => setPlansDialogMode('checkout')}>
-              Assinar novamente
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1, mr: 3 }}>
+              {/* Caminho curto pra causa mais comum: o cartão venceu/foi recusado. Trocar o cartão
+                  pelo portal deixa o gateway cobrar de novo na próxima tentativa do dunning. */}
+              {subscription.canManageBilling && (
+                <Button
+                  color="error"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => billingPortal.mutate()}
+                  disabled={billingPortal.isPending}
+                >
+                  {billingPortal.isPending ? 'Abrindo...' : 'Atualizar cartão'}
+                </Button>
+              )}
+              <Button color="error" variant="contained" size="small" onClick={() => setPlansDialogMode('checkout')}>
+                Assinar novamente
+              </Button>
+            </Box>
           }
         >
           <AlertTitle sx={{ fontWeight: 700 }}>Não conseguimos cobrar seu cartão</AlertTitle>
@@ -849,39 +867,63 @@ export default function SubscriptionSection() {
                 </Typography>
               </Box>
             )}
-            {canCancel && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                {/* Único caminho para descer de plano (ou trocar a periodicidade) — o upsell só sobe. */}
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<SwapHorizRounded />}
-                  onClick={() => setPlansDialogMode('change')}
-                  disabled={changePlan.isPending}
-                  sx={{
-                    backgroundColor: tier.pillBg,
-                    color: tier.ink,
-                    borderColor: alpha(tier.ink, 0.4),
-                    '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
-                  }}
-                >
-                  Trocar de plano
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<CancelOutlined />}
-                  onClick={() => setConfirmCancelOpen(true)}
-                  disabled={cancel.isPending}
-                  sx={{
-                    backgroundColor: tier.pillBg,
-                    color: tier.ink,
-                    borderColor: alpha(tier.ink, 0.4),
-                    '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
-                  }}
-                >
-                  Cancelar plano
-                </Button>
+            {(canCancel || subscription.canManageBilling) && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { sm: 'flex-end' } }}>
+                {/* Portal hospedado do Stripe: trocar o cartão e ver as faturas. Não oferece
+                    cancelamento nem troca de plano — essas continuam sendo as ações ao lado, que
+                    aplicam as regras de estorno e agendamento do PDV. */}
+                {subscription.canManageBilling && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<CreditCardRounded />}
+                    onClick={() => billingPortal.mutate()}
+                    disabled={billingPortal.isPending}
+                    sx={{
+                      backgroundColor: tier.pillBg,
+                      color: tier.ink,
+                      borderColor: alpha(tier.ink, 0.4),
+                      '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
+                    }}
+                  >
+                    {billingPortal.isPending ? 'Abrindo...' : 'Gerenciar forma de pagamento'}
+                  </Button>
+                )}
+                {canCancel && (
+                  <>
+                    {/* Único caminho para descer de plano (ou trocar a periodicidade) — o upsell só sobe. */}
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<SwapHorizRounded />}
+                      onClick={() => setPlansDialogMode('change')}
+                      disabled={changePlan.isPending}
+                      sx={{
+                        backgroundColor: tier.pillBg,
+                        color: tier.ink,
+                        borderColor: alpha(tier.ink, 0.4),
+                        '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
+                      }}
+                    >
+                      Trocar de plano
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CancelOutlined />}
+                      onClick={() => setConfirmCancelOpen(true)}
+                      disabled={cancel.isPending}
+                      sx={{
+                        backgroundColor: tier.pillBg,
+                        color: tier.ink,
+                        borderColor: alpha(tier.ink, 0.4),
+                        '&:hover': { borderColor: tier.ink, backgroundColor: alpha(tier.ink, 0.08) },
+                      }}
+                    >
+                      Cancelar plano
+                    </Button>
+                  </>
+                )}
               </Box>
             )}
           </Box>

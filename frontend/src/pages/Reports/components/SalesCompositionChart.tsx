@@ -1,16 +1,17 @@
 import { useTheme } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { formatBRL } from '../../../utils/currency'
-import { formatCompactBRL } from './chartHelpers'
+import { basisNote, formatCompactBRL } from './chartHelpers'
 import ChartCard from '../../../components/ChartCard'
-import type { FinancialSummaryPoint } from '../../../types/report.types'
+import type { FinancialSummaryPoint, ReportBasis } from '../../../types/report.types'
 
 export interface SalesCompositionChartProps {
   data: FinancialSummaryPoint[]
+  basis: ReportBasis
   loading?: boolean
 }
 
-export default function SalesCompositionChart({ data, loading = false }: SalesCompositionChartProps) {
+export default function SalesCompositionChart({ data, basis, loading = false }: SalesCompositionChartProps) {
   const theme = useTheme()
 
   const labels = data.map((d) => d.label)
@@ -23,7 +24,7 @@ export default function SalesCompositionChart({ data, loading = false }: SalesCo
     <ChartCard
       title="Composição do resultado"
       subtitle="Para onde foi a receita em cada período"
-      info="Divide a receita dos itens com custo cadastrado em custo, taxas das formas de pagamento, despesas e resultado líquido. Produtos sem custo cadastrado não entram na composição — nesses casos a barra fica menor que a receita total do período."
+      info={`Fonte: itens das vendas com custo cadastrado (custo), Sale.FeeAmount + taxa das baixas de crediário (taxas) e Expense.Amount (despesas). A barra divide a receita desses itens em custo, taxas, despesas e resultado líquido. Produtos SEM custo cadastrado não entram — por isso a barra fica menor que a receita total do período. ${basisNote(basis)}`}
       loading={loading}
       isEmpty={data.length === 0}
     >

@@ -13,10 +13,14 @@ import { useAppSelector } from '../../../../store'
 
 // Cada switch corresponde ao campo `IsPreferenceEnabled` de um grupo de regras do motor
 // (backend: NotificationRules.All). O sublabel precisa descrever o que realmente é gerado.
-const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string; module: OperationModule }[] = [
-  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos sem estoque, em nível crítico, baixo ou negativo', module: 'inventory' },
-  { key: 'invoices', label: 'Alertas de despesas', sublabel: 'Despesas vencidas e vencendo hoje', module: 'expenses' },
-  { key: 'appointments', label: 'Agendamentos', sublabel: 'Agendamentos marcados para hoje', module: 'appointments' },
+//
+// `modules` lista TODOS os módulos cujas regras usam aquela preferência — a linha aparece se
+// pelo menos um estiver ativo, senão o lojista perderia o controle das notificações de
+// crediário numa loja que desligou despesas.
+const EVENTS: { key: keyof NotificationPrefs; label: string; sublabel: string; modules: OperationModule[] }[] = [
+  { key: 'stockAlerts', label: 'Alertas de estoque', sublabel: 'Produtos sem estoque, em nível crítico, baixo ou negativo', modules: ['inventory'] },
+  { key: 'invoices', label: 'Alertas financeiros', sublabel: 'Despesas vencidas ou vencendo hoje e parcelas de crediário vencidas ou a vencer no mês', modules: ['expenses', 'credit'] },
+  { key: 'appointments', label: 'Agendamentos', sublabel: 'Agendamentos marcados para hoje', modules: ['appointments'] },
 ]
 
 export default function NotificationsSection() {
@@ -25,7 +29,7 @@ export default function NotificationsSection() {
   const [draft, setDraft] = useState<NotificationPrefs | null>(null)
   const modules = useAppSelector((s) => s.auth.modules)
 
-  const visibleEvents = EVENTS.filter((e) => modules.includes(e.module))
+  const visibleEvents = EVENTS.filter((e) => e.modules.some((m) => modules.includes(m)))
 
   // O servidor manda enquanto não há edição pendente. Antes o form inicializava uma única vez
   // e nunca mais refletia o servidor (refetch, outra aba, outro dispositivo).

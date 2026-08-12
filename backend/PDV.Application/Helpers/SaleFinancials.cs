@@ -12,6 +12,12 @@ namespace PDV.Application.Helpers;
 ///   com custo zero (a receita deles continua em <c>Sale.Total</c>).
 /// - <b>Desconto</b> da venda é rateado proporcionalmente entre os itens contáveis, na mesma
 ///   proporção usada no ranking de produtos (peso do item no total da venda).
+///
+/// <para><b>Competência × caixa (crediário).</b> <see cref="Compute"/> é a visão de
+/// <i>competência</i>: a venda inteira reconhecida na data da venda. Com fiado o dinheiro entra
+/// depois, então a visão de <i>caixa</i> se obtém aplicando <see cref="Recognize"/> a cada evento
+/// de entrada de dinheiro (entrada do crediário na data da venda, cada baixa na data do
+/// recebimento). Venda à vista tem um evento só, de 100% — os dois regimes coincidem.</para>
 /// </summary>
 public static class SaleFinancials
 {
@@ -46,6 +52,30 @@ public static class SaleFinancials
 
         var grossProfit = countedRevenue - countedCost;
         return new SaleProfitParts(total, countedCost, fees, grossProfit);
+    }
+
+    /// <summary>
+    /// Reconhece a fatia de uma venda correspondente ao valor efetivamente <b>recebido</b> — é a
+    /// ponte entre o regime de competência e o de caixa, e o único lugar do sistema que faz esse
+    /// rateio. Uma venda em crediário entra no caixa em pedaços (entrada + cada baixa de parcela);
+    /// cada pedaço reconhece a mesma proporção de receita, custo e lucro bruto, de modo que a soma
+    /// de todos os pedaços de uma venda quitada fecha <b>exatamente</b> com a competência.
+    ///
+    /// <para><b>Taxas não são rateadas</b> — cada taxa entra na data do seu próprio fato gerador
+    /// (<c>Sale.FeeAmount</c> na venda, <c>CreditPayment.FeeAmount</c> na baixa), então
+    /// <c>Fees</c> volta zerado aqui e é somado à parte pelo chamador.</para>
+    /// </summary>
+    /// <param name="parts">Parcelas da venda inteira, vindas de <see cref="Compute"/>.</param>
+    /// <param name="received">Valor recebido neste evento de caixa.</param>
+    /// <param name="saleTotal">Total da venda — <c>Sale.Total</c>. Zero reconhece 100%.</param>
+    public static SaleProfitParts Recognize(SaleProfitParts parts, decimal received, decimal saleTotal)
+    {
+        var ratio = saleTotal > 0 ? received / saleTotal : 1m;
+        return new SaleProfitParts(
+            parts.Revenue * ratio,
+            parts.Cost * ratio,
+            Fees: 0m,
+            parts.GrossProfit * ratio);
     }
 
     /// <summary>

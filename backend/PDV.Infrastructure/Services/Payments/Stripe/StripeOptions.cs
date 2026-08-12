@@ -19,4 +19,12 @@ public class StripeOptions
     //
     //   Stripe__Prices__essencial-mensal=price_...
     public Dictionary<string, string> Prices { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // Configuração do portal do cliente (`bpc_...`) — a que só habilita trocar cartão e ver faturas.
+    // Fixá-la aqui torna o comportamento determinístico: sem isso o Stripe usaria a configuração
+    // default da conta, que alguém pode ligar cancelamento/troca de plano pelo painel sem querer.
+    // O id difere entre as chaves de teste e as de produção, então não pode morar no código.
+    //
+    //   Stripe__PortalConfigurationId=bpc_...
+    public string PortalConfigurationId { get; set; } = string.Empty;
 }

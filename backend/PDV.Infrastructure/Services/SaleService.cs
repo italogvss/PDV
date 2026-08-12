@@ -1,7 +1,9 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Common;
+using PDV.Application.DTOs.Credit;
 using PDV.Application.DTOs.Sales;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Constants;
 using PDV.Domain.Entities;
@@ -17,6 +19,9 @@ public class SaleService(
     ITenantContext tenantContext,
     IAuditLogger auditLogger,
     IEntitlementService entitlementService,
+    IPermissionService permissionService,
+    ICreditRepository creditRepository,
+    ICreditService creditService,
     IValidator<CreateSaleRequest> createValidator) : ISaleService
 {
     private Guid TenantId => tenantContext.TenantId;
@@ -40,8 +45,9 @@ public class SaleService(
 
         if (startDate.HasValue)
              query = query.Where(s => s.CreatedAt >= startDate.Value);
-        // if (endDate.HasValue)
-        //     query = query.Where(s => s.CreatedAt < endDate.Value.AddDays(1));
+        // endDate é o último DIA incluído: soma 1 dia e compara com "<" para pegar o dia inteiro.
+        if (endDate.HasValue)
+            query = query.Where(s => s.CreatedAt < endDate.Value.Date.AddDays(1));
         if (operatorId.HasValue)
             query = query.Where(s => s.OperatorId == operatorId.Value);
         if (status.HasValue)
@@ -55,9 +61,14 @@ public class SaleService(
             .Take(pageSize)
             .ToListAsync();
 
+        // Uma query só para o crediário da página inteira — o histórico precisa mostrar
+        // quais vendas são fiado e como estão, sem N+1.
+        var credits = await creditRepository.GetAccountsBySaleIdsAsync([.. data.Select(s => s.Id)]);
+
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
         return new PaginatedResponse<SaleResponse>(
-            data.Select(MapToResponse), page, pageSize, totalCount, totalPages);
+            data.Select(s => MapToResponse(s, credits.GetValueOrDefault(s.Id))),
+            page, pageSize, totalCount, totalPages);
     }
 
     public async Task<SaleDetailResponse> GetByIdAsync(Guid id)
@@ -67,12 +78,22 @@ public class SaleService(
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException("Venda não encontrada.");
 
-        return MapToDetail(sale);
+        var credit = await creditRepository.GetAccountBySaleIdAsync(id);
+
+        return MapToDetail(sale, credit);
     }
 
     public async Task<SaleDetailResponse> CreateAsync(CreateSaleRequest request, Guid operatorId)
     {
         await createValidator.ValidateAndThrowAsync(request);
+
+        // Venda fiado abre um crediário: os gates do CreditController ([RequireModule] +
+        // [RequirePermission]) não valem nesta rota, então são aplicados aqui à mão.
+        if (request.Credit is not null)
+        {
+            await entitlementService.RequireModuleAsync(OperationModule.Credit);
+            await permissionService.RequireAsync(Permission.ManageCredit);
+        }
 
         var tenantId = TenantId;
 
@@ -170,20 +191,13 @@ public class SaleService(
         if (request.IsInstallment && request.InstallmentCount.HasValue)
             installmentValue = total / request.InstallmentCount.Value;
 
+        var paymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod);
+
+        // Mesma tabela de taxa usada na baixa de parcela do crediário (PaymentFees) — a taxa por
+        // método tem que ser uma só, senão o relatório de taxas mistura dois critérios.
         var settings = await context.TenantSettings.FirstOrDefaultAsync();
-        var feeRate = 0m;
-        if (settings is { PaymentFeesEnabled: true })
-        {
-            feeRate = request.PaymentMethod switch
-            {
-                "CreditCard" => settings.PaymentCardCreditFee,
-                "DebitCard"  => settings.PaymentCardDebitFee,
-                "PIX"        => settings.PaymentPixFee,
-                "Cash"       => settings.PaymentCashFee,
-                _            => 0m
-            };
-        }
-        var feeAmount = Math.Round(total * (feeRate / 100m), 2);
+        var feeRate = PaymentFees.RateFor(settings, paymentMethod);
+        var feeAmount = PaymentFees.AmountFor(total, feeRate);
         var netAmount = total - feeAmount;
 
         var operatorUser = await context.Users.FindAsync(operatorId)
@@ -206,7 +220,7 @@ public class SaleService(
             CustomerId = request.CustomerId,
             CustomerName = customerName,
             CustomerDocument = customerDocument,
-            PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),
+            PaymentMethod = paymentMethod,
             IsInstallment = request.IsInstallment,
             InstallmentCount = request.InstallmentCount,
             InstallmentValue = installmentValue,
@@ -223,9 +237,26 @@ public class SaleService(
 
         await context.Sales.AddAsync(sale);
         await context.SaveChangesAsync();
+
+        // Crediário na MESMA transação: CreateForSaleAsync recalcula sale.FeeAmount sobre a
+        // entrada e monta o carnê. Se ele lançar, o rollback leva junto a venda e a baixa de
+        // estoque — nunca sobra uma venda "à vista" com a taxa cobrada sobre o total errado.
+        CreditAccount? creditAccount = null;
+        if (request.Credit is not null)
+        {
+            await creditService.CreateForSaleAsync(new CreateCreditAccountRequest(
+                sale.Id,
+                request.Credit.InstallmentCount,
+                request.Credit.FirstDueDate,
+                request.Credit.DownPayment,
+                request.Credit.Note));
+
+            creditAccount = await creditRepository.GetAccountBySaleIdAsync(sale.Id);
+        }
+
         await transaction.CommitAsync();
 
-        return MapToDetail(sale);
+        return MapToDetail(sale, creditAccount);
     }
 
     public async Task CancelAsync(Guid id, Guid adminId)
@@ -238,7 +269,33 @@ public class SaleService(
         if (sale.Status == SaleStatus.Cancelled)
             throw new BusinessException("Esta venda já está cancelada.");
 
+        // Uma venda em crediário não pode ficar cancelada com a conta viva — as duas telas
+        // mostrariam realidades diferentes. Se já entrou dinheiro, o estorno é decisão do
+        // lojista e precisa ser feito antes, na tela de crediário.
+        //
+        // A ENTRADA conta como dinheiro recebido tanto quanto uma baixa de parcela: ela é paga no
+        // ato da venda e NÃO é um CreditPayment, então não aparece em PaidAmount. Sem checá-la, uma
+        // venda com entrada some da receita com o dinheiro dela no caixa.
+        //
+        // A checagem NÃO olha o status da conta: cancelar o crediário preserva os recebimentos (é
+        // baixa de perda, não devolução), então uma conta cancelada com dinheiro recebido é
+        // exatamente o caso que não pode virar venda cancelada. Enquanto isso era condicionado a
+        // "conta ainda viva", dava para cancelar a conta e em seguida a venda, tirando a receita do
+        // relatório e deixando o dinheiro recebido sem venda de origem — cada superfície de
+        // relatório resolvia esse órfão de um jeito.
+        var credit = await creditRepository.GetAccountBySaleIdAsync(id);
+        if (credit is not null && credit.PaidAmount > 0)
+            throw new BusinessException(
+                "Esta venda tem recebimentos de crediário. Estorne os recebimentos antes de cancelar a venda.");
+
+        if (credit is not null && credit.DownPayment > 0)
+            throw new BusinessException(
+                "Esta venda tem entrada paga no crediário e não pode ser cancelada — o dinheiro da entrada já entrou no caixa.");
+
         await using var transaction = await context.Database.BeginTransactionAsync();
+
+        if (credit is { Status: not CreditAccountStatus.Cancelled })
+            await creditService.CancelAccountAsync(credit.Id);
 
         var adminUser = await context.Users.FindAsync(adminId);
         sale.Status = SaleStatus.Cancelled;
@@ -273,13 +330,15 @@ public class SaleService(
             .Where(s => s.TenantId == TenantId)
             .ExecuteDeleteAsync();
 
-    private static SaleResponse MapToResponse(Sale s) =>
+    // credit é a conta de crediário da venda, quando houver — null significa venda à vista.
+    private static SaleResponse MapToResponse(Sale s, CreditAccount? credit = null) =>
         new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
-            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt);
+            s.Total, s.Discount, s.Status.ToString(), s.CancelledById, s.CancelledByName, s.CancelledAt, s.CreatedAt,
+            credit is null ? null : CreditMapper.MapAccount(credit));
 
-    private static SaleDetailResponse MapToDetail(Sale s) =>
+    private static SaleDetailResponse MapToDetail(Sale s, CreditAccount? credit = null) =>
         new(s.Id, s.OperatorId, s.OperatorName,
             s.CustomerName, s.CustomerDocument, s.PaymentMethod.ToString(), s.IsInstallment,
             s.InstallmentCount, s.InstallmentValue,
@@ -288,8 +347,11 @@ public class SaleService(
                 i.Id, i.SaleId, i.ProductId, i.ServiceId,
                 i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),
             s.AmountPaid,
-            s.AmountPaid - s.Total,
+            // Numa venda fiado AmountPaid é a ENTRADA, menor que o total: troco negativo não existe.
+            Math.Max(0, s.AmountPaid - s.Total),
             s.FeeRate,
             s.FeeAmount,
-            s.NetAmount);
+            s.NetAmount,
+            credit is null ? null : CreditMapper.MapAccount(credit),
+            credit is null ? [] : CreditMapper.MapInstallments(credit));
 }

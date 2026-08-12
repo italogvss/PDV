@@ -77,12 +77,26 @@ internal static class NotificationRules
                 a.Start >= ctx.Today && a.Start < ctx.Tomorrow
                 && a.Status != AppointmentStatus.Cancelado)),
 
-        // TODO (crediário): ver NotificationCatalog. Quando feature/crediario-portal-stripe
-        // entrar na master, acrescentar aqui as duas regras — módulo OperationModule.Credit,
-        // pref s => s.NotifyCredit (coluna nova em UserSettings), permissão Permission.ViewCredit
-        // — e um NextMonthStart em NotificationContext (1º dia do mês seguinte, limite exclusivo):
-        //
-        //   CreditOverdue:      i.Status == Open && i.DueDate < ctx.Today
-        //   CreditDueThisMonth: i.Status == Open && i.DueDate >= ctx.Today && i.DueDate < ctx.NextMonthStart
+        // ---------- Crediário ----------
+
+        // Ainda sem preferência própria: crediário é contas a receber, então segue a mesma
+        // chave de "financeiro" das despesas (NotifyInvoices). Um NotifyCredit dedicado exige
+        // coluna nova em UserSettings + migration.
+        new(NotificationCatalog.CreditOverdue,
+            OperationModule.Credit,
+            s => s.NotifyInvoices,
+            [Permission.ViewCredit],
+            ctx => ctx.Db.CreditInstallments.CountAsync(i =>
+                i.Status == CreditInstallmentStatus.Open && i.DueDate < ctx.Today)),
+
+        // Janela é o resto do mês corrente (não 7 dias): o lojista cobra por mês, e uma
+        // parcela que vence dia 30 já precisa aparecer no dia 10.
+        new(NotificationCatalog.CreditDueThisMonth,
+            OperationModule.Credit,
+            s => s.NotifyInvoices,
+            [Permission.ViewCredit],
+            ctx => ctx.Db.CreditInstallments.CountAsync(i =>
+                i.Status == CreditInstallmentStatus.Open
+                && i.DueDate >= ctx.Today && i.DueDate < ctx.NextMonthStart)),
     ];
 }

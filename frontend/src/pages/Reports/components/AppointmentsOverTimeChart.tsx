@@ -23,7 +23,7 @@ export default function AppointmentsOverTimeChart({
     <ChartCard
       title="Agendamentos ao longo do tempo"
       subtitle="Total, concluídos e cancelados por período"
-      info="Quantidade de agendamentos por período. “Total” conta apenas os não cancelados (demanda real); a linha de cancelados é exibida à parte para acompanhar a tendência de cancelamento."
+      info="Fonte: agendamentos pela data de início. “Total” conta apenas os não cancelados (demanda real); a linha de cancelados é exibida à parte para acompanhar a tendência. É contagem de agendamentos, não valor — a receita deles está no gráfico “Receita de agendamentos”."
       loading={loading}
       isEmpty={data.length === 0}
     >

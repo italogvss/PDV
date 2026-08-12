@@ -24,7 +24,7 @@ export default function RevenueAreaChart({ data, days, loading = false }: Revenu
     <ChartCard
       title="Faturamento"
       subtitle={`Últimos ${days} dias • ${formatBRL(total)}`}
-      info="Vendas é a receita bruta por dia. Lucro bruto é a margem dos itens com custo cadastrado (receita − custo) — não desconta taxas nem despesas (para o lucro líquido, veja o KPI “Lucro estimado”)."
+      info="Vendas é a receita por dia (Σ do total das vendas ativas, já com desconto). Lucro bruto é a margem dos itens com custo cadastrado (receita − custo) — não desconta taxas nem despesas; para o lucro líquido, veja o KPI “Lucro estimado”. Ambas em competência: uma venda no crediário aparece integral no dia da venda, mesmo sem ter sido recebida."
       loading={loading}
       isEmpty={data.length === 0}
     >

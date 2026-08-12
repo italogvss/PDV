@@ -71,6 +71,20 @@ export const NOTIFICATION_DEFS: Record<string, NotificationDef> = {
     describe: (n) => `${plural(n, 'despesa vence', 'despesas vencem')} hoje`,
     route: '/despesas',
   },
+  'credit.overdue': {
+    severity: 'error',
+    icon: AccountBalanceWalletOutlined,
+    title: 'Crediário vencido',
+    describe: (n) => `${plural(n, 'parcela vencida', 'parcelas vencidas')} de clientes`,
+    route: '/crediario',
+  },
+  'credit.dueThisMonth': {
+    severity: 'warning',
+    icon: ScheduleOutlined,
+    title: 'Crediário a vencer',
+    describe: (n) => `${plural(n, 'parcela vence', 'parcelas vencem')} ainda neste mês`,
+    route: '/crediario',
+  },
   'appointments.today': {
     severity: 'info',
     icon: CalendarTodayOutlined,

@@ -42,7 +42,11 @@ public record SubscriptionResponse(
     // módulos do tenant (/auth/me).
     IReadOnlyList<string> Entitlements,
     IReadOnlyDictionary<string, int> Limits,
-    bool HasUsedTrial);
+    bool HasUsedTrial,
+    // O usuário pode abrir o portal do gateway (trocar cartão / ver faturas)? Só quem já passou
+    // pelo checkout tem cliente lá — trial é PDV-side e não tem nada a gerenciar. É a fonte de
+    // verdade do frontend: o status sozinho não serve (um Expired vindo de trial também não tem).
+    bool CanManageBilling);
 
 // Assinatura recorrente por cartão. ReturnUrl/CompletionUrl vêm do frontend — o backend não os
 // conhece, apenas repassa ao gateway.
@@ -55,6 +59,12 @@ public record StartCheckoutRequest(
 // CheckoutUrl = URL hospedada do gateway para onde o frontend redireciona.
 public record StartCheckoutResponse(
     string? CheckoutUrl);
+
+// Portal hospedado do gateway (trocar cartão / histórico de faturas). Assim como no checkout, a
+// ReturnUrl vem do frontend — o backend não a conhece, apenas repassa.
+public record PortalSessionRequest(string? ReturnUrl);
+
+public record PortalSessionResponse(string Url);
 
 public record ChangePlanRequest(Guid PlanId);
 

@@ -1,5 +1,6 @@
 import { useTheme } from '@mui/material'
 import DonutChart from '../../../components/DonutChart'
+import { ACCRUAL_ONLY_NOTE } from './chartHelpers'
 import type { RevenueByType } from '../../../types/report.types'
 
 export interface RevenueByTypeDonutProps {
@@ -27,7 +28,7 @@ export default function RevenueByTypeDonut({ data, loading = false }: RevenueByT
     <DonutChart
       title="Serviços vs Produtos"
       subtitle="Participação na receita do período"
-      info="Divisão da receita entre serviços e produtos, com o desconto de cada venda rateado entre os itens. A soma equivale à receita total do período."
+      info={`Fonte: itens das vendas ativas (SaleItem.Subtotal), separados por serviço × produto, com o desconto da venda rateado entre os itens. A soma das duas fatias fecha com o KPI "Receita total". ${ACCRUAL_ONLY_NOTE}`}
       segments={segments}
       loading={loading}
     />

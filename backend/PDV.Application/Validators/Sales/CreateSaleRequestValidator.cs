@@ -43,5 +43,34 @@ public class CreateSaleRequestValidator : AbstractValidator<CreateSaleRequest>
                 .Equal(nameof(PaymentMethod.CreditCard))
                 .WithMessage("Parcelamento disponível apenas no cartão de crédito.");
         });
+
+        When(x => x.Credit is not null, () =>
+        {
+            // Fiado exige cliente identificado — um CPF solto não basta (docs/crediario.md §1).
+            RuleFor(x => x.CustomerId)
+                .NotNull()
+                .WithMessage("Venda no crediário exige um cliente cadastrado.");
+
+            // Parcelamento de cartão e carnê de crediário são coisas diferentes: o primeiro é
+            // informativo (a loja recebe tudo), o segundo é o cronograma real de recebimento.
+            RuleFor(x => x.IsInstallment)
+                .Equal(false)
+                .WithMessage("Venda no crediário não usa parcelamento de cartão.");
+
+            RuleFor(x => x.Credit!.InstallmentCount)
+                .InclusiveBetween(1, 60)
+                .WithMessage("O crediário deve ter entre 1 e 60 parcelas.");
+
+            RuleFor(x => x.Credit!.FirstDueDate)
+                .NotEmpty()
+                .WithMessage("Informe a data do primeiro vencimento.");
+
+            RuleFor(x => x.Credit!.DownPayment)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("A entrada não pode ser negativa.");
+
+            RuleFor(x => x.Credit!.Note)
+                .MaximumLength(500);
+        });
     }
 }

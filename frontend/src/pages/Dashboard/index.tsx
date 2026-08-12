@@ -135,6 +135,7 @@ export default function DashboardPage() {
             icon={ShoppingCartRounded}
             label="Faturamento"
             value={formatBRL(metrics?.totalRevenue ?? 0)}
+            tooltip={`Σ do total das vendas ativas dos últimos ${selectedDays} dias, já com desconto. É o que foi VENDIDO, não o que entrou no caixa: uma venda no crediário conta integral no dia da venda, mesmo sem ter sido recebida. Para separar recebido de a receber, veja Relatórios.`}
             badge={{ label: `${metrics?.totalSales ?? 0} vendas`, color: 'success', icon: TrendingUpRounded }}
           />
           {advancedExpenses && (
@@ -153,12 +154,14 @@ export default function DashboardPage() {
             icon={ReceiptLongRounded}
             label="Despesas"
             value={formatBRL(totalExpenses)}
+            tooltip={`Σ das despesas com vencimento nos últimos ${selectedDays} dias (regime de competência), pagas ou não. Na página de Relatórios dá para alternar para o regime de caixa, que conta só as despesas já pagas.`}
             badge={{ label: `${selectedDays} dias`, color: 'warning', icon: TrendingDownRounded }}
           />
           <PageKpiCard
             icon={LocalFireDepartmentRounded}
             label="Lucro estimado"
             value={formatBRL(estimatedProfit)}
+            tooltip="Resultado líquido: margem dos itens com custo cadastrado − taxas das formas de pagamento − despesas. Produtos sem custo cadastrado entram no faturamento mas não na margem, então o número tende a ficar subestimado. Em competência, como o faturamento: venda no crediário entra antes de o dinheiro chegar."
             badge={
               estimatedProfit >= 0
                 ? { label: 'positivo', color: 'success', icon: TrendingUpRounded }

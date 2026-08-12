@@ -10,6 +10,9 @@ internal sealed record NotificationContext(AppDbContext Db, DateTime Today, Tena
 {
     public DateTime Tomorrow => Today.AddDays(1);
 
+    // 1º dia do mês seguinte — limite EXCLUSIVO de "vence ainda neste mês".
+    public DateTime NextMonthStart => new DateTime(Today.Year, Today.Month, 1).AddMonths(1);
+
     public bool InventoryControlEnabled => Settings?.InventoryControlEnabled ?? false;
 }
 
