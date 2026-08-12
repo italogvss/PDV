@@ -35,23 +35,26 @@ public class ReportsController(IReportService service) : ControllerBase
         return Ok(result);
     }
 
+    // basis: "accrual" (competência) ou "cash" (caixa). Governa vendas E despesas — com crediário,
+    // trocar o regime só das despesas produzia um resultado sem significado contábil.
     [HttpGet("financial-summary")]
     public async Task<IActionResult> GetFinancialSummary(
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate,
         [FromQuery] string groupBy = "month",
-        [FromQuery] string expenseBasis = "accrual")
+        [FromQuery] string basis = "accrual")
     {
-        var result = await service.GetFinancialSummaryAsync(startDate, endDate, groupBy, expenseBasis);
+        var result = await service.GetFinancialSummaryAsync(startDate, endDate, groupBy, basis);
         return Ok(result);
     }
 
     [HttpGet("sales/by-payment-method")]
     public async Task<IActionResult> GetSalesByPaymentMethod(
         [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate)
+        [FromQuery] DateTime endDate,
+        [FromQuery] string basis = "accrual")
     {
-        var result = await service.GetSalesByPaymentMethodAsync(startDate, endDate);
+        var result = await service.GetSalesByPaymentMethodAsync(startDate, endDate, basis);
         return Ok(result);
     }
 
@@ -151,6 +154,31 @@ public class ReportsController(IReportService service) : ControllerBase
         [FromQuery] DateTime endDate)
     {
         var result = await service.GetAppointmentPeakHoursAsync(startDate, endDate);
+        return Ok(result);
+    }
+
+    // Crediário servido pelo módulo de Relatórios: a seção da página não pode depender do módulo
+    // Crediário estar no plano/permissão do usuário — mesmo padrão de /reports/employees.
+    [HttpGet("credit/summary")]
+    public async Task<IActionResult> GetCreditSummary(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
+    {
+        var result = await service.GetCreditSummaryAsync(startDate, endDate);
+        return Ok(result);
+    }
+
+    [HttpGet("credit/aging")]
+    public async Task<IActionResult> GetCreditAging() =>
+        Ok(await service.GetCreditAgingAsync());
+
+    [HttpGet("credit/receivables-schedule")]
+    public async Task<IActionResult> GetReceivableSchedule(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate,
+        [FromQuery] string groupBy = "month")
+    {
+        var result = await service.GetReceivableScheduleAsync(startDate, endDate, groupBy);
         return Ok(result);
     }
 }

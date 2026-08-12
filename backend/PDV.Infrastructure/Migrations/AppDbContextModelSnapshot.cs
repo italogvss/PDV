@@ -430,6 +430,9 @@ namespace PDV.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -559,6 +562,12 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<Guid>("CreditInstallmentId")
                         .HasColumnType("char(36)");
+
+                    b.Property<decimal>("FeeAmount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("FeeRate")
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -1846,6 +1855,19 @@ namespace PDV.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreditFirstDueDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(30);
+
+                    b.Property<int>("CreditMaxInstallments")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(12);
+
+                    b.Property<decimal>("CreditMinDownPaymentPercent")
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<string>("CustomSegmentName")
                         .HasMaxLength(50)

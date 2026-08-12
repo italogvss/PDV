@@ -20,7 +20,7 @@ export default function PeakHoursChart({ data, loading = false }: PeakHoursChart
     <ChartCard
       title="Horário de pico"
       subtitle="Agendamentos por hora do dia"
-      info="Quantidade de agendamentos não cancelados por hora de início, no período. Ajuda a identificar os horários de maior demanda para dimensionar a equipe."
+      info="Fonte: hora de início dos agendamentos não cancelados do período, contados de 0h a 23h. Ajuda a dimensionar a equipe nos horários de pico. Atenção: as horas são gravadas em UTC e exibidas sem conversão de fuso, então perto da virada do dia o horário pode aparecer deslocado."
       loading={loading}
       isEmpty={!hasData}
       height={280}

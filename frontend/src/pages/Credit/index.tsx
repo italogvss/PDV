@@ -7,6 +7,7 @@ import SavingsOutlined from '@mui/icons-material/SavingsOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -69,6 +70,15 @@ export default function CreditPage() {
   const { has } = useEntitlements()
   const showToast = useToast()
 
+  // A busca por cliente é do SERVIDOR, como o status: filtrar em memória só encontraria quem
+  // coubesse na página carregada, e a carteira de uma loja passa desse teto com facilidade
+  // (uma conta de 12 parcelas já são 12 linhas). Debounce para não disparar a cada tecla.
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(id)
+  }, [search])
+
   // O filtro de status vira parâmetro de servidor: "vencidas" depende da data de hoje
   // comparada com o vencimento, algo que só o backend consegue resolver corretamente.
   const filters = useMemo(
@@ -81,12 +91,17 @@ export default function CreditPage() {
             ? ('Open' as const)
             : undefined,
       overdue: statusFilter === 'Vencidas' ? true : undefined,
+      search: debouncedSearch || undefined,
     }),
-    [customer, statusFilter],
+    [customer, statusFilter, debouncedSearch],
   )
 
-  const { data: accounts = [], isLoading: loadingAccounts } = useCreditAccounts(filters)
-  const { data: installments = [], isLoading: loadingInstallments } = useCreditInstallments(filters)
+  const { data: accountPage, isLoading: loadingAccounts } = useCreditAccounts(filters)
+  const { data: installmentPage, isLoading: loadingInstallments } = useCreditInstallments(filters)
+
+  const accounts = accountPage?.rows ?? []
+  const installments = installmentPage?.rows ?? []
+  const currentPage = view === 'accounts' ? accountPage : installmentPage
   const { data: summary } = useCreditSummary()
   const reversePayment = useReverseCreditPayment()
   const cancelAccount = useCancelCreditAccount()
@@ -105,34 +120,31 @@ export default function CreditPage() {
     setSearchParams(searchParams, { replace: true })
   }, [searchParams, setSearchParams])
 
-  const accountRows = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    const filtered = term
-      ? accounts.filter((a) => a.customerName.toLowerCase().includes(term))
-      : accounts
-    return [...filtered].sort((a, b) => {
-      if (sortValue === 'balanceDesc') return b.balance - a.balance
-      if (sortValue === 'customer') return a.customerName.localeCompare(b.customerName)
-      if (sortValue === 'dueDate') {
-        const aDue = a.nextDueDate ? new Date(a.nextDueDate).getTime() : Infinity
-        const bDue = b.nextDueDate ? new Date(b.nextDueDate).getTime() : Infinity
-        return aDue - bDue
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
-  }, [accounts, search, sortValue])
+  // Só a ORDENAÇÃO fica no cliente — ela reordena o que já veio, sem esconder nada.
+  const accountRows = useMemo(
+    () =>
+      [...accounts].sort((a, b) => {
+        if (sortValue === 'balanceDesc') return b.balance - a.balance
+        if (sortValue === 'customer') return a.customerName.localeCompare(b.customerName)
+        if (sortValue === 'dueDate') {
+          const aDue = a.nextDueDate ? new Date(a.nextDueDate).getTime() : Infinity
+          const bDue = b.nextDueDate ? new Date(b.nextDueDate).getTime() : Infinity
+          return aDue - bDue
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }),
+    [accounts, sortValue],
+  )
 
-  const installmentRows = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    const filtered = term
-      ? installments.filter((i) => i.customerName.toLowerCase().includes(term))
-      : installments
-    return [...filtered].sort((a, b) => {
-      if (sortValue === 'balanceDesc') return b.balance - a.balance
-      if (sortValue === 'customer') return a.customerName.localeCompare(b.customerName)
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-    })
-  }, [installments, search, sortValue])
+  const installmentRows = useMemo(
+    () =>
+      [...installments].sort((a, b) => {
+        if (sortValue === 'balanceDesc') return b.balance - a.balance
+        if (sortValue === 'customer') return a.customerName.localeCompare(b.customerName)
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      }),
+    [installments, sortValue],
+  )
 
   const handleReminder = (installmentId: string) => {
     reminder.mutate(installmentId, {
@@ -314,6 +326,7 @@ export default function CreditPage() {
           icon={AccountBalanceWalletOutlined}
           label="Total a receber"
           value={formatBRL(summary?.totalReceivable ?? 0)}
+          tooltip="Σ do saldo das parcelas EM ABERTO (valor da parcela − o que já foi pago nela). Posição de hoje, não de um período. Parcela quitada e parcela de crediário cancelado ficam de fora — cancelado virou perda e não é mais cobrável."
           badge={{
             label: `${summary?.openAccounts ?? 0} conta(s) em aberto`,
             color: 'default',
@@ -324,6 +337,7 @@ export default function CreditPage() {
           label="Vencido"
           value={formatBRL(summary?.overdueAmount ?? 0)}
           valueColor="error"
+          tooltip="Parte do Total a receber cujas parcelas já passaram do vencimento. 'Vencida' é sempre calculado na hora (vencimento anterior a hoje), nunca um status gravado — uma parcela vira vencida sozinha, sem ninguém marcar."
           badge={{
             label: `${summary?.overdueInstallments ?? 0} parcela(s)`,
             color: 'error',
@@ -334,11 +348,13 @@ export default function CreditPage() {
           icon={SavingsOutlined}
           label="Recebido no mês"
           value={formatBRL(summary?.receivedThisMonth ?? 0)}
+          tooltip="Dinheiro de crediário que entrou no mês corrente: baixas de parcela feitas no mês (de vendas de qualquer época) + entradas pagas em vendas fiado fechadas no mês."
         />
         <PageKpiCard
           icon={GroupOutlined}
           label="Clientes com saldo"
           value={String(summary?.customersWithBalance ?? 0)}
+          tooltip="Quantos clientes distintos têm ao menos uma parcela em aberto hoje. Um cliente com várias contas conta uma vez só."
         />
       </PageKpiGrid>
 
@@ -424,6 +440,15 @@ export default function CreditPage() {
             </Button>
           )}
         </Box>
+
+        {/* Carteira maior que a página carregada: avisar em vez de cortar em silêncio — quem
+            confere fiado precisa saber que a grade não é a carteira inteira. */}
+        {currentPage?.truncated && (
+          <Alert severity="info" square sx={{ borderRadius: 0 }}>
+            Mostrando {currentPage.rows.length} de {currentPage.totalCount} registros. Use a busca
+            ou os filtros para chegar ao que procura.
+          </Alert>
+        )}
 
         {view === 'accounts' ? (
           <DataGrid

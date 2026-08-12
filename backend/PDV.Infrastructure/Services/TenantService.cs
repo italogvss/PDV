@@ -248,6 +248,10 @@ public class TenantService(
         settings.PaymentCashEnabled       = request.Cash.Enabled;
         settings.PaymentCashFee           = request.Cash.Fee;
 
+        settings.CreditMaxInstallments       = request.Credit.MaxInstallments;
+        settings.CreditFirstDueDays          = request.Credit.FirstDueDays;
+        settings.CreditMinDownPaymentPercent = request.Credit.MinDownPaymentPercent;
+
         settings.UpdatedAt = DateTime.UtcNow;
         await tenantRepository.UpdateSettingsAsync(settings);
 
@@ -305,7 +309,9 @@ public class TenantService(
                 new PaymentMethodDto(s.PaymentPixEnabled, s.PaymentPixFee),
                 new PaymentMethodDto(s.PaymentCardCreditEnabled, s.PaymentCardCreditFee),
                 new PaymentMethodDto(s.PaymentCardDebitEnabled, s.PaymentCardDebitFee),
-                new PaymentMethodDto(s.PaymentCashEnabled, s.PaymentCashFee)),
+                new PaymentMethodDto(s.PaymentCashEnabled, s.PaymentCashFee),
+                new CreditSettingsDto(
+                    s.CreditMaxInstallments, s.CreditFirstDueDays, s.CreditMinDownPaymentPercent)),
             new ModulesSettingsDto(OperationModuleHelper.ReadEnabled(s.EnabledModulesJson)));
     }
 

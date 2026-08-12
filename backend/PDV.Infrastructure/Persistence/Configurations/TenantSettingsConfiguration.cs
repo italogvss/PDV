@@ -49,6 +49,10 @@ public class TenantSettingsConfiguration : IEntityTypeConfiguration<TenantSettin
         builder.Property(ts => ts.PaymentCardDebitFee).HasColumnType("decimal(5,2)");
         builder.Property(ts => ts.PaymentCashFee).HasColumnType("decimal(5,2)");
 
+        builder.Property(ts => ts.CreditMaxInstallments).HasDefaultValue(12);
+        builder.Property(ts => ts.CreditFirstDueDays).HasDefaultValue(30);
+        builder.Property(ts => ts.CreditMinDownPaymentPercent).HasColumnType("decimal(5,2)");
+
         builder.HasOne(ts => ts.Tenant)
             .WithOne(t => t.Settings)
             .HasForeignKey<TenantSettings>(ts => ts.TenantId)

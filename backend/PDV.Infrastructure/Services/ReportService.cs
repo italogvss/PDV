@@ -1,8 +1,10 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using PDV.Application.DTOs.Credit;
 using PDV.Application.DTOs.Reports;
 using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
+using PDV.Domain.Entities;
 using PDV.Domain.Enums;
 using PDV.Domain.Exceptions;
 using PDV.Infrastructure.Persistence;
@@ -12,15 +14,13 @@ namespace PDV.Infrastructure.Services;
 public class ReportService(AppDbContext context, IStorageService storage) : IReportService
 {
     public async Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
-        DateTime startDate, DateTime endDate, string groupBy, string expenseBasis)
+        DateTime startDate, DateTime endDate, string groupBy, string basis)
     {
         var gb = groupBy.ToLower();
         if (gb is not ("day" or "week" or "month" or "year"))
             throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
 
-        var basis = expenseBasis.ToLower();
-        if (basis is not ("accrual" or "cash"))
-            throw new BusinessException("Parâmetro expenseBasis inválido. Use: accrual ou cash.");
+        var cash = ParseBasis(basis);
 
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
@@ -28,28 +28,12 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
         // NOTA (fuso): CreatedAt é gravado em UTC e aqui é filtrado/agrupado sem conversão de fuso,
         // igual ao resto da aplicação (ExpenseService.GetChartAsync). Vendas perto da meia-noite podem
         // cair no dia/bucket vizinho. Corrigir exige normalizar o fuso do tenant em toda a aplicação.
-        var sales = await context.Sales
-            .Where(s => s.Status == SaleStatus.Active
-                     && s.CreatedAt >= start
-                     && s.CreatedAt <= end)
-            .Select(s => new SaleFinancialProjection(
-                s.CreatedAt,
-                s.Total,
-                s.Discount,
-                s.FeeAmount,
-                s.Items.Sum(i => i.Subtotal),
-                s.Items
-                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
-                    .Sum(i => i.Subtotal),
-                s.Items
-                    .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
-                    .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
-            .ToListAsync();
+        var events = await BuildSaleEventsAsync(start, end, cash);
 
-        // Despesas por regime:
+        // Despesas seguem o MESMO regime das vendas:
         // - accrual (competência): pela data de vencimento (DueDate), todas as despesas do período.
         // - cash (caixa): pela data de pagamento (PaidAt), só as despesas efetivamente pagas.
-        var expenses = basis == "cash"
+        var expenses = cash
             ? await context.Expenses
                 .Where(e => e.IsPaid && e.PaidAt != null && e.PaidAt >= start && e.PaidAt <= end)
                 .Select(e => new { Date = e.PaidAt!.Value, e.Amount })
@@ -59,17 +43,13 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
                 .Select(e => new { Date = e.DueDate, e.Amount })
                 .ToListAsync();
 
-        var salesByBucket = sales
-            .GroupBy(s => BucketKey(s.CreatedAt, gb))
-            .ToDictionary(g => g.Key, g =>
-            {
-                var parts = g.Select(ToProfitParts).ToList();
-                return (
-                    Revenue: parts.Sum(p => p.Revenue),
-                    Cost: parts.Sum(p => p.Cost),
-                    Fees: parts.Sum(p => p.Fees),
-                    GrossProfit: parts.Sum(p => p.GrossProfit));
-            });
+        var salesByBucket = events
+            .GroupBy(e => BucketKey(e.Date, gb))
+            .ToDictionary(g => g.Key, g => (
+                Revenue: g.Sum(e => e.Parts.Revenue),
+                Cost: g.Sum(e => e.Parts.Cost),
+                Fees: g.Sum(e => e.Parts.Fees),
+                GrossProfit: g.Sum(e => e.Parts.GrossProfit)));
 
         var expensesByBucket = expenses
             .GroupBy(e => BucketKey(e.Date, gb))
@@ -104,7 +84,33 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
         var totalRevenue = rows.Sum(s => s.Total);
         var averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0m;
 
-        return new SalesMetricsResponse(totalSales, totalRevenue, averageTicket, label);
+        // Recebido/a receber DAS VENDAS DO PERÍODO (não "dinheiro que entrou no período"): a
+        // pergunta aqui é quanto do que foi vendido já virou caixa. Uma parcela baixada depois do
+        // período conta como recebida — a venda é a mesma.
+        var creditSales = await context.CreditAccounts
+            .Where(a => a.Sale!.Status == SaleStatus.Active
+                     && a.Sale.CreatedAt >= start
+                     && a.Sale.CreatedAt <= end)
+            .Select(a => new
+            {
+                SaleTotal = a.Sale!.Total,
+                a.DownPayment,
+                a.PaidAmount,
+                // Saldo cobrável: parcela cancelada virou perda, não é mais "a receber".
+                Outstanding = a.Installments
+                    .Where(i => i.Status == CreditInstallmentStatus.Open)
+                    .Sum(i => i.Amount - i.PaidAmount),
+            })
+            .ToListAsync();
+
+        // O que ainda não entrou inclui o que nunca vai entrar (saldo de conta cancelada) — por isso
+        // não é simplesmente o Outstanding.
+        var notReceived = creditSales.Sum(c => c.SaleTotal - c.DownPayment - c.PaidAmount);
+
+        return new SalesMetricsResponse(
+            totalSales, totalRevenue, averageTicket, label,
+            ReceivedRevenue: totalRevenue - notReceived,
+            OutstandingRevenue: creditSales.Sum(c => c.Outstanding));
     }
 
     public async Task<List<SalesByOperatorResponse>> GetSalesByOperatorAsync(
@@ -130,27 +136,83 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             .ToList();
     }
 
+    // Rótulo da fatia de crediário. Não é um PaymentMethod do enum de propósito: o fiado não é uma
+    // forma de pagamento, é a AUSÊNCIA de pagamento no ato — quem paga escolhe o método na baixa.
+    private const string CreditSliceKey = "Credit";
+
     public async Task<List<SalesByPaymentMethodResponse>> GetSalesByPaymentMethodAsync(
-        DateTime startDate, DateTime endDate)
+        DateTime startDate, DateTime endDate, string basis)
     {
+        var cash = ParseBasis(basis);
+
         var start = startDate.Date;
         var end = endDate.Date.AddDays(1).AddTicks(-1);
 
-        var rows = await context.Sales
+        // Sale.PaymentMethod é o método escolhido no PDV. Numa venda fiado ele descreve só a
+        // ENTRADA — o restante não passou por método nenhum ainda. Somar Sale.Total inteiro nele
+        // (comportamento antigo) fazia uma venda a prazo aparecer como dinheiro em caixa.
+        var sales = await context.Sales
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .Select(s => new { s.PaymentMethod, s.Total })
+            .Select(s => new
+            {
+                s.PaymentMethod,
+                s.Total,
+                DownPayment = context.CreditAccounts
+                    .Where(a => a.SaleId == s.Id)
+                    .Select(a => (decimal?)a.DownPayment)
+                    .FirstOrDefault(),
+            })
             .ToListAsync();
 
-        return rows
-            .GroupBy(s => s.PaymentMethod)
+        // (chave, valor, conta como venda?) — só a linha principal da venda conta no COUNT, para o
+        // total do gráfico bater com o KPI "Total de vendas".
+        //
+        // A igualdade vale em COMPETÊNCIA, onde toda venda do período gera exatamente uma linha
+        // contável (o método da entrada, ou a fatia Crediário quando não houve entrada). Em CAIXA
+        // ela não vale nem deveria: uma venda fiado sem entrada não movimentou caixa nenhum no
+        // período e por isso não aparece, e as baixas de parcela entram como dinheiro sem serem
+        // vendas novas.
+        var slices = new List<(string Key, decimal Amount, bool CountsAsSale)>();
+
+        foreach (var sale in sales)
+        {
+            if (sale.DownPayment is null)
+            {
+                slices.Add((sale.PaymentMethod.ToString(), sale.Total, true));
+                continue;
+            }
+
+            if (sale.DownPayment.Value > 0)
+                slices.Add((sale.PaymentMethod.ToString(), sale.DownPayment.Value, true));
+
+            // Em competência a parte financiada aparece como "Crediário" (foi faturada, ainda não
+            // capturada). Em caixa ela simplesmente não existe até a baixa acontecer.
+            var financed = sale.Total - sale.DownPayment.Value;
+            if (!cash && financed > 0)
+                slices.Add((CreditSliceKey, financed, sale.DownPayment.Value == 0));
+        }
+
+        // Baixas de parcela: cada uma pelo método com que o dinheiro entrou de fato. Só existem no
+        // regime de caixa — em competência a receita delas já foi contada na data da venda.
+        if (cash)
+        {
+            var receipts = await ActiveSaleCreditPayments()
+                .Where(p => p.ReceivedAt >= start && p.ReceivedAt <= end)
+                .Select(p => new { p.Method, p.Amount })
+                .ToListAsync();
+
+            slices.AddRange(receipts.Select(r => (r.Method.ToString(), r.Amount, false)));
+        }
+
+        return [.. slices
+            .GroupBy(s => s.Key)
             .Select(g => new SalesByPaymentMethodResponse(
-                g.Key.ToString(),
-                g.Sum(s => s.Total),
-                g.Count()))
-            .OrderByDescending(r => r.Total)
-            .ToList();
+                g.Key,
+                g.Sum(s => s.Amount),
+                g.Count(s => s.CountsAsSale)))
+            .OrderByDescending(r => r.Total)];
     }
 
     public async Task<List<TopProductResponse>> GetTopProductsAsync(
@@ -217,6 +279,14 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             .Select(s => new { s.CustomerId, CustomerName = s.Customer!.Name, s.Total })
             .ToListAsync();
 
+        // Saldo devedor vivo por cliente. É a posição de HOJE, não do período: dívida não é um fato
+        // do intervalo consultado, e sem ela o ranking premia quem só levou fiado.
+        var outstandingByCustomer = await context.CreditInstallments
+            .Where(i => i.Status == CreditInstallmentStatus.Open)
+            .GroupBy(i => i.Account!.CustomerId)
+            .Select(g => new { CustomerId = g.Key, Balance = g.Sum(i => i.Amount - i.PaidAmount) })
+            .ToDictionaryAsync(x => x.CustomerId, x => x.Balance);
+
         // Agrupa por CustomerId (não por nome) — nome vem do Customer vivo, não do snapshot
         // Sale.CustomerName, então clientes homônimos com Ids diferentes não se fundem.
         return rows
@@ -225,10 +295,117 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
                 g.Key.CustomerId!.Value,
                 g.Key.CustomerName,
                 g.Count(),
-                g.Sum(s => s.Total)))
+                g.Sum(s => s.Total),
+                outstandingByCustomer.GetValueOrDefault(g.Key.CustomerId!.Value)))
             .OrderByDescending(r => r.TotalRevenue)
             .Take(limit)
             .ToList();
+    }
+
+    // ─── Crediário na página de Relatórios ──────────────────────────────────
+    // Mesmos números do painel da tela de Crediário (CreditAnalytics é a fonte única), servidos sob
+    // o gate de Relatórios para a página não depender do módulo Crediário — mesmo padrão de
+    // GetEmployeesListAsync/GetCustomersListAsync.
+
+    public async Task<CreditReportSummaryResponse> GetCreditSummaryAsync(DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+        var today = DateTime.UtcNow.Date;
+
+        var openInstallments = await context.CreditInstallments
+            .Include(i => i.Account)
+            .Where(i => i.Status == CreditInstallmentStatus.Open)
+            .ToListAsync();
+
+        // Faturado a prazo no período = parte financiada das vendas fiado do período (a entrada é
+        // pagamento à vista, não crediário).
+        var invoiced = await context.CreditAccounts
+            .Where(a => a.Sale!.Status == SaleStatus.Active
+                     && a.Sale.CreatedAt >= start
+                     && a.Sale.CreatedAt <= end)
+            .SumAsync(a => (decimal?)a.TotalAmount) ?? 0m;
+
+        var received = await ActiveSaleCreditPayments()
+            .Where(p => p.ReceivedAt >= start && p.ReceivedAt <= end)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        var downPayments = await context.CreditAccounts
+            .Where(a => a.Sale!.Status == SaleStatus.Active
+                     && a.Sale.CreatedAt >= start
+                     && a.Sale.CreatedAt <= end)
+            .SumAsync(a => (decimal?)a.DownPayment) ?? 0m;
+
+        // Perda: o que ficou de pé quando a cobrança foi encerrada. Datada por CancelledAt.
+        var writtenOff = await context.CreditAccounts
+            .Where(a => a.Status == CreditAccountStatus.Cancelled
+                     && a.CancelledAt != null
+                     && a.CancelledAt >= start
+                     && a.CancelledAt <= end)
+            .SumAsync(a => (decimal?)(a.TotalAmount - a.PaidAmount)) ?? 0m;
+
+        var totalReceivable = CreditAnalytics.TotalReceivable(openInstallments);
+        var overdue = CreditAnalytics.OverdueAmount(openInstallments, today);
+
+        return new CreditReportSummaryResponse(
+            Invoiced: invoiced,
+            Received: received + downPayments,
+            Outstanding: totalReceivable,
+            Overdue: overdue,
+            WrittenOff: writtenOff,
+            DefaultRate: CreditAnalytics.DefaultRate(totalReceivable, overdue),
+            OpenAccounts: openInstallments.Select(i => i.CreditAccountId).Distinct().Count(),
+            OverdueInstallments: openInstallments.Count(i => i.DueDate.Date < today));
+    }
+
+    public async Task<CreditAgingResponse> GetCreditAgingAsync()
+    {
+        var openInstallments = await context.CreditInstallments
+            .Include(i => i.Account)
+            .Where(i => i.Status == CreditInstallmentStatus.Open)
+            .ToListAsync();
+
+        return CreditAnalytics.BuildAging(openInstallments, DateTime.UtcNow.Date);
+    }
+
+    public async Task<List<ReceivableSchedulePoint>> GetReceivableScheduleAsync(
+        DateTime startDate, DateTime endDate, string groupBy)
+    {
+        var gb = groupBy.ToLower();
+        if (gb is not ("day" or "week" or "month" or "year"))
+            throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.");
+
+        var start = startDate.Date;
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
+        var today = DateTime.UtcNow.Date;
+
+        // Único gráfico do módulo que olha para o FUTURO: a data é o VENCIMENTO da parcela, não a
+        // da venda nem a do recebimento.
+        var installments = await context.CreditInstallments
+            .Where(i => i.Status == CreditInstallmentStatus.Open
+                     && i.DueDate >= start
+                     && i.DueDate <= end)
+            .Select(i => new { i.DueDate, Balance = i.Amount - i.PaidAmount })
+            .ToListAsync();
+
+        var byBucket = installments
+            .GroupBy(i => BucketKey(i.DueDate, gb))
+            .ToDictionary(g => g.Key, g => new
+            {
+                Due = g.Sum(i => i.Balance),
+                Overdue = g.Where(i => i.DueDate.Date < today).Sum(i => i.Balance),
+                Count = g.Count(),
+            });
+
+        var result = new List<ReceivableSchedulePoint>();
+        foreach (var (key, label) in EnumerateBuckets(startDate, endDate, gb))
+        {
+            var bucket = byBucket.GetValueOrDefault(key);
+            result.Add(new ReceivableSchedulePoint(
+                label, bucket?.Due ?? 0m, bucket?.Overdue ?? 0m, bucket?.Count ?? 0));
+        }
+
+        return result;
     }
 
     public async Task<List<ExpensesByCategoryResponse>> GetExpensesByCategoryAsync(
@@ -294,73 +471,17 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
     {
         var (start, end) = ResolveDateRange(period, startDate, endDate);
 
-        var sales = await context.Sales
-            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
-            .OrderByDescending(s => s.CreatedAt)
-            .Select(s => new
-            {
-                s.Id,
-                s.CreatedAt,
-                s.OperatorName,
-                s.CustomerName,
-                s.PaymentMethod,
-                s.Status,
-                s.Total,
-            })
+        var sales = await ProjectSalesForCsv(
+                context.Sales.Where(s => s.CreatedAt >= start && s.CreatedAt <= end))
             .ToListAsync();
 
-        var sb = new StringBuilder();
-        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Status,Total");
-
-        foreach (var s in sales)
-        {
-            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
-            sb.AppendLine(
-                $"{s.Id}," +
-                $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
-                $"{CsvField(s.OperatorName)}," +
-                $"{CsvField(s.CustomerName)}," +
-                $"{s.PaymentMethod}," +
-                $"{status}," +
-                $"{s.Total:F2}");
-        }
-
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return BuildSalesCsv(sales);
     }
 
     public async Task<byte[]> ExportAllSalesCsvAsync()
     {
-        var sales = await context.Sales
-            .OrderByDescending(s => s.CreatedAt)
-            .Select(s => new
-            {
-                s.Id,
-                s.CreatedAt,
-                s.OperatorName,
-                s.CustomerName,
-                s.PaymentMethod,
-                s.Status,
-                s.Total,
-            })
-            .ToListAsync();
-
-        var sb = new StringBuilder();
-        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Status,Total");
-
-        foreach (var s in sales)
-        {
-            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
-            sb.AppendLine(
-                $"{s.Id}," +
-                $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
-                $"{CsvField(s.OperatorName)}," +
-                $"{CsvField(s.CustomerName)}," +
-                $"{s.PaymentMethod}," +
-                $"{status}," +
-                $"{s.Total:F2}");
-        }
-
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        var sales = await ProjectSalesForCsv(context.Sales).ToListAsync();
+        return BuildSalesCsv(sales);
     }
 
     public async Task<byte[]> ExportStockCsvAsync()
@@ -509,10 +630,31 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             .ThenBy(i => i.Number)
             .ToListAsync();
 
+        return BuildCreditCsv(installments);
+    }
+
+    // IgnoreQueryFilters: o tenant está com IsActive = false e os registros ficam ocultos. Sem
+    // esta categoria o lojista que cancela sai sem a carteira de fiado — justamente o dado que a
+    // retenção transacional de 5 anos existe para preservar (ver DataDeletionService).
+    private async Task<byte[]> ExportCreditForTenantAsync(Guid tenantId)
+    {
+        var installments = await context.CreditInstallments
+            .IgnoreQueryFilters()
+            .Where(i => i.TenantId == tenantId)
+            .Include(i => i.Account)
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.Number)
+            .ToListAsync();
+
+        return BuildCreditCsv(installments);
+    }
+
+    private static byte[] BuildCreditCsv(List<CreditInstallment> installments)
+    {
         var today = DateTime.UtcNow.Date;
 
         var sb = new StringBuilder();
-        sb.AppendLine("Cliente,Venda,Parcela,Vencimento,Valor,Pago,Saldo,Status,Dias em Atraso");
+        sb.AppendLine("Cliente,Venda,Entrada,Situação da Conta,Parcela,Vencimento,Valor,Pago,Saldo,Status,Dias em Atraso");
 
         foreach (var i in installments)
         {
@@ -525,14 +667,28 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
                 _ => "Em aberto",
             };
 
+            // Parcela cancelada não é cobrável: sai com saldo ZERO para que somar a coluna "Saldo"
+            // dê o recebível de verdade. Com o saldo bruto, a planilha inflava a carteira.
+            var balance = i.Status == CreditInstallmentStatus.Cancelled ? 0m : i.Amount - i.PaidAmount;
+
+            var accountStatus = i.Account?.Status switch
+            {
+                CreditAccountStatus.Paid => "Quitada",
+                CreditAccountStatus.Cancelled => "Cancelada",
+                CreditAccountStatus.Open => "Em aberto",
+                _ => "",
+            };
+
             sb.AppendLine(
                 $"{CsvField(i.Account?.CustomerName ?? "")}," +
                 $"{i.Account?.SaleId}," +
+                $"{i.Account?.DownPayment ?? 0m:F2}," +
+                $"{accountStatus}," +
                 $"{i.Number}/{i.Account?.InstallmentCount ?? 0}," +
                 $"{i.DueDate:dd/MM/yyyy}," +
                 $"{i.Amount:F2}," +
                 $"{i.PaidAmount:F2}," +
-                $"{i.Amount - i.PaidAmount:F2}," +
+                $"{balance:F2}," +
                 $"{status}," +
                 $"{daysOverdue}");
         }
@@ -544,42 +700,53 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
     {
         // Serviços + produtos com custo entram no lucro; produtos sem custo ficam de fora e o desconto
         // é rateado — tudo centralizado em SaleFinancials (mesma matemática do GetFinancialSummaryAsync).
-        var sales = await context.Sales
-            .Where(s => s.Status == SaleStatus.Active)
-            .Select(s => new SaleFinancialProjection(
-                s.CreatedAt,
-                s.Total,
-                s.Discount,
-                s.FeeAmount,
-                s.Items.Sum(i => i.Subtotal),
-                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
-                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
-            .ToListAsync();
+        var accrualEvents = await BuildSaleEventsAsync(null, null, cash: false);
+
+        // Em caixa, Revenue reconhecida == dinheiro que entrou (ratio × Total = valor recebido),
+        // então a coluna "Recebido no mês" sai direto dos eventos de caixa.
+        var cashEvents = await BuildSaleEventsAsync(null, null, cash: true);
 
         var expenses = await context.Expenses
             .Select(e => new { e.DueDate, e.Amount })
             .ToListAsync();
 
-        var salesByMonth = sales
-            .GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-            .ToDictionary(g => g.Key, g =>
-            {
-                var parts = g.Select(ToProfitParts).ToList();
-                return (
-                    Revenue: parts.Sum(p => p.Revenue),
-                    Cost: parts.Sum(p => p.Cost),
-                    Fees: parts.Sum(p => p.Fees),
-                    GrossProfit: parts.Sum(p => p.GrossProfit));
-            });
+        // Saldo em aberto atribuído ao mês da VENDA — responde "quanto do que vendi naquele mês
+        // ainda não recebi", que é outra pergunta (e outro eixo) do "recebido no mês".
+        var openBalances = await context.CreditInstallments
+            .Where(i => i.Status == CreditInstallmentStatus.Open
+                     && i.Account!.Sale!.Status == SaleStatus.Active)
+            .Select(i => new { SaleDate = i.Account!.Sale!.CreatedAt, Balance = i.Amount - i.PaidAmount })
+            .ToListAsync();
+
+        var salesByMonth = accrualEvents
+            .GroupBy(e => FirstOfMonth(e.Date))
+            .ToDictionary(g => g.Key, g => (
+                Revenue: g.Sum(e => e.Parts.Revenue),
+                Cost: g.Sum(e => e.Parts.Cost),
+                Fees: g.Sum(e => e.Parts.Fees),
+                GrossProfit: g.Sum(e => e.Parts.GrossProfit)));
+
+        var receivedByMonth = cashEvents
+            .GroupBy(e => FirstOfMonth(e.Date))
+            .ToDictionary(g => g.Key, g => g.Sum(e => e.Parts.Revenue));
+
+        var receivableByMonth = openBalances
+            .GroupBy(b => FirstOfMonth(b.SaleDate))
+            .ToDictionary(g => g.Key, g => g.Sum(b => b.Balance));
 
         var expensesByMonth = expenses
-            .GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
+            .GroupBy(e => FirstOfMonth(e.DueDate))
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 
-        var allMonths = salesByMonth.Keys.Union(expensesByMonth.Keys).OrderBy(d => d).ToList();
+        var allMonths = salesByMonth.Keys
+            .Union(expensesByMonth.Keys)
+            .Union(receivedByMonth.Keys)
+            .Union(receivableByMonth.Keys)
+            .OrderBy(d => d)
+            .ToList();
 
         var sb = new StringBuilder();
-        sb.AppendLine("Mês,Receita,Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
+        sb.AppendLine("Mês,Receita,Recebido no Mês,A Receber (vendas do mês),Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
 
         foreach (var month in allMonths)
         {
@@ -589,6 +756,8 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             sb.AppendLine(
                 $"{month:MM/yyyy}," +
                 $"{revenue:F2}," +
+                $"{receivedByMonth.GetValueOrDefault(month):F2}," +
+                $"{receivableByMonth.GetValueOrDefault(month):F2}," +
                 $"{cost:F2}," +
                 $"{fees:F2}," +
                 $"{expTotal:F2}," +
@@ -645,6 +814,7 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             "services"  => await ExportServicesForTenantAsync(tenantId),
             "expenses"  => await ExportExpensesForTenantAsync(tenantId),
             "billing"   => await ExportBillingForTenantAsync(tenantId),
+            "credit"    => await ExportCreditForTenantAsync(tenantId),
             "team"      => await ExportTeamForTenantAsync(tenantId),
             _           => throw new BusinessException("Categoria de exportação inválida."),
         };
@@ -652,22 +822,25 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
 
     private async Task<byte[]> ExportAllSalesForTenantAsync(Guid tenantId)
     {
+        // Mesmas colunas do export do tenant vivo (BuildSalesCsv), mas com IgnoreQueryFilters em
+        // cada fonte — inclusive nas contas de crediário, que também estão ocultas.
         var sales = await context.Sales
             .IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantId)
             .OrderByDescending(s => s.CreatedAt)
-            .Select(s => new { s.Id, s.CreatedAt, s.OperatorName, s.CustomerName, s.PaymentMethod, s.Status, s.Total })
+            .Select(s => new SaleCsvRow(
+                s.Id, s.CreatedAt, s.OperatorName, s.CustomerName, s.PaymentMethod, s.Status, s.Total,
+                context.CreditAccounts.IgnoreQueryFilters().Where(a => a.SaleId == s.Id)
+                    .Select(a => (decimal?)a.DownPayment).FirstOrDefault(),
+                context.CreditAccounts.IgnoreQueryFilters().Where(a => a.SaleId == s.Id)
+                    .Select(a => a.PaidAmount).FirstOrDefault(),
+                context.CreditAccounts.IgnoreQueryFilters().Where(a => a.SaleId == s.Id)
+                    .SelectMany(a => a.Installments)
+                    .Where(i => i.Status == CreditInstallmentStatus.Open)
+                    .Sum(i => i.Amount - i.PaidAmount)))
             .ToListAsync();
 
-        var sb = new StringBuilder();
-        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Status,Total");
-        foreach (var s in sales)
-        {
-            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
-            sb.AppendLine($"{s.Id},{s.CreatedAt:dd/MM/yyyy HH:mm},{CsvField(s.OperatorName)},{CsvField(s.CustomerName)}," +
-                          $"{s.PaymentMethod},{status},{s.Total:F2}");
-        }
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return BuildSalesCsv(sales);
     }
 
     private async Task<byte[]> ExportStockForTenantAsync(Guid tenantId)
@@ -740,17 +913,25 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
 
     private async Task<byte[]> ExportBillingForTenantAsync(Guid tenantId)
     {
+        // Competência, como o irmão de tenant vivo. Não reconstrói o regime de caixa aqui: este
+        // export existe para o tenant levar os dados embora, e o que falta receber vai na coluna
+        // "A Receber" — mais útil, num CSV, do que uma segunda visão da mesma receita.
         var sales = await context.Sales
             .IgnoreQueryFilters()
             .Where(s => s.TenantId == tenantId && s.Status == SaleStatus.Active)
             .Select(s => new SaleFinancialProjection(
+                s.Id,
                 s.CreatedAt,
                 s.Total,
                 s.Discount,
                 s.FeeAmount,
                 s.Items.Sum(i => i.Subtotal),
                 s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => i.Subtotal),
-                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity)))
+                s.Items.Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue).Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
+                context.CreditAccounts.IgnoreQueryFilters()
+                    .Where(a => a.SaleId == s.Id)
+                    .Select(a => (decimal?)a.DownPayment)
+                    .FirstOrDefault()))
             .ToListAsync();
 
         var expenses = await context.Expenses
@@ -759,24 +940,40 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
             .Select(e => new { e.DueDate, e.Amount })
             .ToListAsync();
 
-        var salesByMonth = sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
+        // IgnoreQueryFilters: o tenant está com IsActive = false, os registros ficam ocultos.
+        var openBalances = await context.CreditInstallments
+            .IgnoreQueryFilters()
+            .Where(i => i.TenantId == tenantId
+                     && i.Status == CreditInstallmentStatus.Open
+                     && i.Account!.Sale!.Status == SaleStatus.Active)
+            .Select(i => new { SaleDate = i.Account!.Sale!.CreatedAt, Balance = i.Amount - i.PaidAmount })
+            .ToListAsync();
+
+        var salesByMonth = sales.GroupBy(s => FirstOfMonth(s.CreatedAt))
             .ToDictionary(g => g.Key, g =>
             {
                 var parts = g.Select(ToProfitParts).ToList();
                 return (Revenue: parts.Sum(p => p.Revenue), Cost: parts.Sum(p => p.Cost), Fees: parts.Sum(p => p.Fees), GrossProfit: parts.Sum(p => p.GrossProfit));
             });
-        var expensesByMonth = expenses.GroupBy(e => new DateTime(e.DueDate.Year, e.DueDate.Month, 1))
+        var expensesByMonth = expenses.GroupBy(e => FirstOfMonth(e.DueDate))
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+        var receivableByMonth = openBalances.GroupBy(b => FirstOfMonth(b.SaleDate))
+            .ToDictionary(g => g.Key, g => g.Sum(b => b.Balance));
 
-        var allMonths = salesByMonth.Keys.Union(expensesByMonth.Keys).OrderBy(d => d).ToList();
+        var allMonths = salesByMonth.Keys
+            .Union(expensesByMonth.Keys)
+            .Union(receivableByMonth.Keys)
+            .OrderBy(d => d)
+            .ToList();
 
         var sb = new StringBuilder();
-        sb.AppendLine("Mês,Receita,Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
+        sb.AppendLine("Mês,Receita,A Receber (vendas do mês),Custo,Taxas,Despesas,Lucro Bruto,Resultado Líquido");
         foreach (var month in allMonths)
         {
             var (revenue, cost, fees, grossProfit) = salesByMonth.GetValueOrDefault(month);
             var expTotal = expensesByMonth.GetValueOrDefault(month);
-            sb.AppendLine($"{month:MM/yyyy},{revenue:F2},{cost:F2},{fees:F2},{expTotal:F2},{grossProfit:F2},{grossProfit - fees - expTotal:F2}");
+            sb.AppendLine($"{month:MM/yyyy},{revenue:F2},{receivableByMonth.GetValueOrDefault(month):F2}," +
+                          $"{cost:F2},{fees:F2},{expTotal:F2},{grossProfit:F2},{grossProfit - fees - expTotal:F2}");
         }
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
@@ -999,17 +1196,223 @@ public class ReportService(AppDbContext context, IStorageService storage) : IRep
 
     // Projeção mínima por venda para alimentar o cálculo financeiro centralizado (SaleFinancials).
     // ItemsTotal soma TODOS os itens (pré-desconto); CountedSubtotal/CountedCost só os itens contáveis.
+    // CreditDownPayment é null quando a venda NÃO é fiado — é assim que todo relatório distingue
+    // uma coisa da outra (não existe flag na Sale; a fonte é a relação 1:1 com CreditAccount).
     private record SaleFinancialProjection(
+        Guid SaleId,
         DateTime CreatedAt,
         decimal Total,
         decimal Discount,
         decimal FeeAmount,
         decimal ItemsTotal,
         decimal CountedSubtotal,
-        decimal CountedCost);
+        decimal CountedCost,
+        decimal? CreditDownPayment);
 
     private static SaleFinancials.SaleProfitParts ToProfitParts(SaleFinancialProjection s) =>
         SaleFinancials.Compute(s.Total, s.Discount, s.ItemsTotal, s.CountedSubtotal, s.CountedCost, s.FeeAmount);
+
+    // Um reconhecimento de venda num instante: a venda inteira (competência) ou o pedaço
+    // correspondente a uma entrada de dinheiro (caixa).
+    private readonly record struct SaleEvent(DateTime Date, SaleFinancials.SaleProfitParts Parts);
+
+    private static bool ParseBasis(string basis) => basis.ToLower() switch
+    {
+        "cash"    => true,
+        "accrual" => false,
+        _ => throw new BusinessException("Parâmetro basis inválido. Use: accrual ou cash."),
+    };
+
+    // Recebimentos de crediário cuja venda de origem continua ATIVA. CreditPayment não tem
+    // navegação para a venda — o vínculo é CreditPayment → CreditAccount → Sale.
+    //
+    // Todo lugar que soma recebimento precisa passar por aqui: enquanto cada superfície decidia
+    // sozinha se olhava o status da venda, o mesmo recebimento entrava no KPI de crediário e
+    // sumia do resumo financeiro em Caixa. SaleService.CancelAsync já impede que uma venda com
+    // dinheiro recebido seja cancelada, então na prática este filtro não descarta nada — é a
+    // rede que garante que as superfícies não voltem a divergir.
+    private IQueryable<CreditPayment> ActiveSaleCreditPayments() =>
+        context.CreditPayments.Where(p => context.CreditAccounts
+            .Any(a => a.Id == p.CreditAccountId && a.Sale!.Status == SaleStatus.Active));
+
+    // Subquery correlacionada em CreditAccounts (respeita o filtro global de tenant) para saber, em
+    // uma query só, se a venda virou crediário e qual foi a entrada.
+    private IQueryable<SaleFinancialProjection> ProjectSales(IQueryable<Sale> sales) =>
+        sales.Select(s => new SaleFinancialProjection(
+            s.Id,
+            s.CreatedAt,
+            s.Total,
+            s.Discount,
+            s.FeeAmount,
+            s.Items.Sum(i => i.Subtotal),
+            s.Items
+                .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                .Sum(i => i.Subtotal),
+            s.Items
+                .Where(i => i.ServiceId != null || i.PurchasePriceSnapshot.HasValue)
+                .Sum(i => (i.PurchasePriceSnapshot ?? 0m) * i.Quantity),
+            context.CreditAccounts
+                .Where(a => a.SaleId == s.Id)
+                .Select(a => (decimal?)a.DownPayment)
+                .FirstOrDefault()));
+
+    /// <summary>
+    /// Traduz o período em eventos de reconhecimento, que é o que os buckets somam.
+    ///
+    /// <para><b>Competência</b> — um evento por venda ativa do período, valendo a venda inteira.
+    /// É o comportamento histórico do módulo.</para>
+    ///
+    /// <para><b>Caixa</b> — um evento por entrada de dinheiro: venda à vista reconhece 100% na data
+    /// da venda; venda fiado reconhece a ENTRADA na data da venda e cada baixa de parcela na data do
+    /// recebimento (inclusive de vendas de períodos anteriores — é aí que o crediário aparece).
+    /// A proporção sai de <c>SaleFinancials.Recognize</c>; taxa nunca é rateada, cada uma entra na
+    /// data do seu fato gerador.</para>
+    /// </summary>
+    /// <param name="start">Início do período; null = sem piso (usado pela exportação de faturamento).</param>
+    /// <param name="end">Fim do período; null = sem teto.</param>
+    private async Task<List<SaleEvent>> BuildSaleEventsAsync(DateTime? start, DateTime? end, bool cash)
+    {
+        var activeSales = context.Sales.Where(s => s.Status == SaleStatus.Active);
+
+        var salesInPeriod = activeSales;
+        if (start.HasValue) salesInPeriod = salesInPeriod.Where(s => s.CreatedAt >= start.Value);
+        if (end.HasValue) salesInPeriod = salesInPeriod.Where(s => s.CreatedAt <= end.Value);
+
+        var inPeriod = await ProjectSales(salesInPeriod).ToListAsync();
+
+        var events = new List<SaleEvent>(inPeriod.Count);
+
+        foreach (var sale in inPeriod)
+        {
+            var parts = ToProfitParts(sale);
+
+            if (!cash || sale.CreditDownPayment is null)
+            {
+                // Competência (qualquer venda) ou caixa de venda à vista: reconhece tudo na data da venda.
+                events.Add(new SaleEvent(sale.CreatedAt, parts));
+                continue;
+            }
+
+            // Caixa de venda fiado: só a entrada entrou no ato. A taxa da venda também incide só
+            // sobre a entrada (recalculada em CreditService.CreateForSaleAsync), então entra inteira.
+            var recognized = SaleFinancials.Recognize(parts, sale.CreditDownPayment.Value, sale.Total);
+            events.Add(new SaleEvent(sale.CreatedAt, recognized with { Fees = sale.FeeAmount }));
+        }
+
+        // Baixas de parcela recebidas no período. A venda de origem pode ser de qualquer época,
+        // mas precisa estar ATIVA: o join com activeSales descarta recebimento de venda cancelada
+        // nos DOIS regimes. Antes o descarte só existia no ramo de caixa, e em competência a taxa
+        // de um recebimento órfão continuava entrando no resultado.
+        var paymentsInPeriod = ActiveSaleCreditPayments();
+        if (start.HasValue) paymentsInPeriod = paymentsInPeriod.Where(p => p.ReceivedAt >= start.Value);
+        if (end.HasValue) paymentsInPeriod = paymentsInPeriod.Where(p => p.ReceivedAt <= end.Value);
+
+        var receipts = await (
+            from payment in paymentsInPeriod
+            join account in context.CreditAccounts on payment.CreditAccountId equals account.Id
+            join sale in activeSales on account.SaleId equals sale.Id
+            select new { payment.Amount, payment.FeeAmount, payment.ReceivedAt, account.SaleId })
+            .ToListAsync();
+
+        if (receipts.Count == 0)
+            return events;
+
+        if (!cash)
+        {
+            // Em competência a receita da venda já foi reconhecida lá atrás — o que a baixa
+            // acrescenta é só a TAXA do método usado no recebimento, que nasce aqui.
+            events.AddRange(receipts
+                .Where(r => r.FeeAmount != 0)
+                .Select(r => new SaleEvent(
+                    r.ReceivedAt,
+                    new SaleFinancials.SaleProfitParts(0m, 0m, r.FeeAmount, 0m))));
+            return events;
+        }
+
+        var saleIds = receipts.Select(r => r.SaleId).Distinct().ToList();
+        var receiptSales = await ProjectSales(activeSales.Where(s => saleIds.Contains(s.Id)))
+            .ToDictionaryAsync(s => s.SaleId);
+
+        foreach (var receipt in receipts)
+        {
+            // O join já garantiu venda ativa; a guarda cobre só a corrida de a venda ser cancelada
+            // entre as duas queries.
+            if (!receiptSales.TryGetValue(receipt.SaleId, out var sale))
+                continue;
+
+            var recognized = SaleFinancials.Recognize(ToProfitParts(sale), receipt.Amount, sale.Total);
+            events.Add(new SaleEvent(receipt.ReceivedAt, recognized with { Fees = receipt.FeeAmount }));
+        }
+
+        return events;
+    }
+
+    private static DateTime FirstOfMonth(DateTime date) => new(date.Year, date.Month, 1);
+
+    // Linha do CSV de vendas. Recebido/saldo saem da conta de crediário quando houver — sem isso a
+    // planilha não distingue uma venda paga de um fiado em aberto.
+    private record SaleCsvRow(
+        Guid Id,
+        DateTime CreatedAt,
+        string OperatorName,
+        string? CustomerName,
+        PaymentMethod PaymentMethod,
+        SaleStatus Status,
+        decimal Total,
+        decimal? DownPayment,
+        decimal CreditPaid,
+        decimal CreditOutstanding);
+
+    private IQueryable<SaleCsvRow> ProjectSalesForCsv(IQueryable<Sale> sales) =>
+        sales
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new SaleCsvRow(
+                s.Id,
+                s.CreatedAt,
+                s.OperatorName,
+                s.CustomerName,
+                s.PaymentMethod,
+                s.Status,
+                s.Total,
+                context.CreditAccounts.Where(a => a.SaleId == s.Id)
+                    .Select(a => (decimal?)a.DownPayment).FirstOrDefault(),
+                context.CreditAccounts.Where(a => a.SaleId == s.Id)
+                    .Select(a => a.PaidAmount).FirstOrDefault(),
+                context.CreditAccounts.Where(a => a.SaleId == s.Id)
+                    .SelectMany(a => a.Installments)
+                    .Where(i => i.Status == CreditInstallmentStatus.Open)
+                    .Sum(i => i.Amount - i.PaidAmount)));
+
+    private static byte[] BuildSalesCsv(List<SaleCsvRow> sales)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Crediário,Status,Total,Recebido,A Receber");
+
+        foreach (var s in sales)
+        {
+            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
+            var isCredit = s.DownPayment.HasValue;
+            // Venda à vista: recebido = total. Fiado: entrada + baixas de parcela.
+            // Venda cancelada não reteve dinheiro (o cancelamento exige estorno antes).
+            var received = s.Status == SaleStatus.Cancelled
+                ? 0m
+                : isCredit ? s.DownPayment!.Value + s.CreditPaid : s.Total;
+
+            sb.AppendLine(
+                $"{s.Id}," +
+                $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
+                $"{CsvField(s.OperatorName)}," +
+                $"{CsvField(s.CustomerName)}," +
+                $"{s.PaymentMethod}," +
+                $"{(isCredit ? "Sim" : "Não")}," +
+                $"{status}," +
+                $"{s.Total:F2}," +
+                $"{received:F2}," +
+                $"{s.CreditOutstanding:F2}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
 
     // Escapa um campo de texto para CSV: duplica aspas, envolve em aspas quando há vírgula/aspas/quebra
     // de linha, e neutraliza injeção de fórmula (=, +, -, @) prefixando uma aspa simples.

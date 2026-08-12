@@ -17,6 +17,7 @@ public sealed class CreditHarness
 {
     public Mock<ICreditRepository> Repository { get; } = new();
     public Mock<ICustomerRepository> Customers { get; } = new();
+    public Mock<ITenantRepository> Tenants { get; } = new();
     public Mock<IAuditLogger> Audit { get; } = new();
     public Mock<IEntitlementService> Entitlements { get; } = new();
 
@@ -31,6 +32,8 @@ public sealed class CreditHarness
     public CreditInstallment? SavedInstallment { get; private set; }
     public CreditAccount? SavedAccount { get; private set; }
     public CreditAccount? AddedAccount { get; private set; }
+    // A venda salva junto com a conta — é nela que a taxa recalculada (só sobre a entrada) aparece.
+    public Sale? AddedAccountSale { get; private set; }
     public bool ReversalSaved { get; private set; }
 
     public CreditHarness()
@@ -61,17 +64,63 @@ public sealed class CreditHarness
             .Returns(Task.CompletedTask);
 
         Repository
-            .Setup(r => r.AddAccountAsync(It.IsAny<CreditAccount>()))
-            .Callback<CreditAccount>(a => AddedAccount = a)
+            .Setup(r => r.AddAccountAsync(It.IsAny<CreditAccount>(), It.IsAny<Sale>()))
+            .Callback<CreditAccount, Sale>((a, s) =>
+            {
+                AddedAccount = a;
+                AddedAccountSale = s;
+            })
             .Returns(Task.CompletedTask);
 
         Repository.Setup(r => r.GetPaymentsByAccountAsync(It.IsAny<Guid>()))
             .ReturnsAsync([]);
+
+        // Sem taxa e sem política própria por padrão — os testes que exercitam uma das duas
+        // chamam GivenPaymentFees / GivenCreditPolicy, que compartilham o MESMO TenantSettings
+        // (chamar as duas não pode fazer uma apagar a outra).
+        Tenants.Setup(t => t.GetSettingsAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((TenantSettings?)null);
+    }
+
+    private TenantSettings? _settings;
+
+    private TenantSettings Settings()
+    {
+        if (_settings is null)
+        {
+            _settings = new TenantSettings { TenantId = TenantId };
+            Tenants.Setup(t => t.GetSettingsAsync(It.IsAny<Guid>())).ReturnsAsync(_settings);
+        }
+        return _settings;
+    }
+
+    // Liga a cobrança de taxa no tenant. Percentuais em %, como em TenantSettings.
+    public void GivenPaymentFees(decimal cash = 0, decimal pix = 0, decimal credit = 0, decimal debit = 0)
+    {
+        var settings = Settings();
+        settings.PaymentFeesEnabled = true;
+        settings.PaymentCashFee = cash;
+        settings.PaymentPixFee = pix;
+        settings.PaymentCardCreditFee = credit;
+        settings.PaymentCardDebitFee = debit;
+    }
+
+    // Política de crediário da loja (máximo de parcelas e entrada mínima).
+    public void GivenCreditPolicy(int maxInstallments = 12, decimal minDownPaymentPercent = 0)
+    {
+        var settings = Settings();
+        settings.CreditMaxInstallments = maxInstallments;
+        settings.CreditMinDownPaymentPercent = minDownPaymentPercent;
     }
 
     // Venda ativa, com cliente — o caminho feliz de origem de um crediário.
-    public Sale GivenSale(decimal total, Guid? customerId = null, SaleStatus status = SaleStatus.Active)
+    // feeRate simula uma venda já fechada com taxa do método (a taxa incidiu sobre o total inteiro,
+    // que é justamente o que abrir crediário tem que corrigir).
+    public Sale GivenSale(
+        decimal total, Guid? customerId = null, SaleStatus status = SaleStatus.Active, decimal feeRate = 0m)
     {
+        var feeAmount = Math.Round(total * (feeRate / 100m), 2);
+
         var sale = new Sale
         {
             Id = Guid.NewGuid(),
@@ -79,6 +128,9 @@ public sealed class CreditHarness
             CustomerId = customerId ?? Guid.NewGuid(),
             CustomerName = "Cliente Teste",
             Total = total,
+            FeeRate = feeRate,
+            FeeAmount = feeAmount,
+            NetAmount = total - feeAmount,
             Status = status,
             OperatorName = "Operador de Teste",
         };
@@ -153,6 +205,7 @@ public sealed class CreditHarness
     public CreditService Build() =>
         new(Repository.Object,
             Customers.Object,
+            Tenants.Object,
             _tenantContext.Object,
             _userContext.Object,
             Audit.Object,

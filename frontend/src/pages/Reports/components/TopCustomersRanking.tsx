@@ -1,5 +1,6 @@
 import RankingList from '../../../components/RankingList'
 import { formatBRL } from '../../../utils/currency'
+import { ACCRUAL_ONLY_NOTE } from './chartHelpers'
 import type { TopCustomer } from '../../../types/report.types'
 
 export interface TopCustomersRankingProps {
@@ -14,14 +15,18 @@ export default function TopCustomersRanking({ data, loading = false }: TopCustom
     label: c.name,
     value: c.totalRevenue,
     primaryText: formatBRL(c.totalRevenue),
-    secondaryText: `${c.purchaseCount} compra${c.purchaseCount === 1 ? '' : 's'}`,
+    // Devendo fiado é informação de risco: sem ela, quem só leva a prazo lidera o ranking de receita.
+    secondaryText:
+      c.outstanding > 0
+        ? `${c.purchaseCount} compra${c.purchaseCount === 1 ? '' : 's'} · ${formatBRL(c.outstanding)} em aberto`
+        : `${c.purchaseCount} compra${c.purchaseCount === 1 ? '' : 's'}`,
   }))
 
   return (
     <RankingList
       title="Top clientes por receita"
       subtitle="Maior receita no período"
-      info="Clientes que mais geraram receita no período (soma do total das vendas, já com desconto aplicado). Considera apenas vendas com cliente vinculado — vendas de balcão sem cliente ficam fora."
+      info={`Fonte: total das vendas ativas COM cliente vinculado (balcão anônimo fica fora), agrupado pelo cadastro do cliente. Ordena por quanto o cliente COMPROU, não por quanto pagou — por isso o "em aberto" ao lado: é o saldo de crediário que ele deve HOJE (posição atual, não do período). Cliente no topo com muito em aberto comprou bastante mas ainda não pagou. ${ACCRUAL_ONLY_NOTE}`}
       items={items}
       loading={loading}
       emptyText="Sem dados no período selecionado."

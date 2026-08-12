@@ -34,11 +34,18 @@ public class CreditRepository(AppDbContext context, ITenantContext tenantContext
             query = query.Where(a => !a.Installments.Any(
                 i => i.Status == CreditInstallmentStatus.Open && i.DueDate < today));
 
-        if (filter.DueFrom.HasValue)
-            query = query.Where(a => a.Installments.Any(i => i.DueDate >= filter.DueFrom.Value));
-
-        if (filter.DueTo.HasValue)
-            query = query.Where(a => a.Installments.Any(i => i.DueDate <= filter.DueTo.Value));
+        // Um Any() SÓ com as duas pontas: a conta precisa ter uma parcela DENTRO do intervalo.
+        // Com dois Any() independentes, uma conta com parcela em janeiro e outra em dezembro
+        // satisfazia "alguma >= mar" e "alguma <= mai" e aparecia num filtro de março a maio onde
+        // não tem parcela nenhuma.
+        if (filter.DueFrom.HasValue || filter.DueTo.HasValue)
+        {
+            var from = filter.DueFrom;
+            var to = filter.DueTo;
+            query = query.Where(a => a.Installments.Any(i =>
+                (from == null || i.DueDate >= from.Value) &&
+                (to == null || i.DueDate <= to.Value)));
+        }
 
         var total = await query.CountAsync();
         var data = await query
@@ -139,9 +146,10 @@ public class CreditRepository(AppDbContext context, ITenantContext tenantContext
             .OrderByDescending(p => p.ReceivedAt)
             .ToListAsync();
 
-    public async Task AddAccountAsync(CreditAccount account)
+    public async Task AddAccountAsync(CreditAccount account, Sale sale)
     {
         await context.CreditAccounts.AddAsync(account);
+        context.Sales.Update(sale);
         await context.SaveChangesAsync();
     }
 
@@ -175,10 +183,31 @@ public class CreditRepository(AppDbContext context, ITenantContext tenantContext
             .Where(i => i.Status == CreditInstallmentStatus.Open)
             .ToListAsync();
 
-    public async Task<decimal> GetReceivedBetweenAsync(DateTime start, DateTime end) =>
-        await context.CreditPayments
-            .Where(p => p.ReceivedAt >= start && p.ReceivedAt <= end)
+    // Recebido no período = baixas de parcela + entradas. A entrada não é um CreditPayment (é paga
+    // no ato da venda, com o método da venda), então precisa entrar aqui explicitamente — sem isso
+    // o "recebido" subestima toda venda fiado com entrada.
+    public async Task<decimal> GetReceivedBetweenAsync(DateTime start, DateTime end)
+    {
+        // Venda cancelada não conta — mesmo critério das entradas logo abaixo e das superfícies
+        // equivalentes no ReportService. A assimetria entre os dois trechos deste método fazia o
+        // KPI "Recebido no mês" divergir do resumo financeiro em Caixa.
+        var installmentReceipts = await context.CreditPayments
+            .Where(p => p.ReceivedAt >= start && p.ReceivedAt <= end
+                     && context.CreditAccounts.Any(a => a.Id == p.CreditAccountId
+                                                     && a.Sale!.Status == SaleStatus.Active))
             .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        // Datada pela VENDA (não pela conta): é nela que o dinheiro entrou no caixa.
+        // Venda cancelada não conta como recebimento.
+        var downPayments = await context.CreditAccounts
+            .Where(a => a.DownPayment > 0
+                     && a.Sale!.Status == SaleStatus.Active
+                     && a.Sale.CreatedAt >= start
+                     && a.Sale.CreatedAt <= end)
+            .SumAsync(a => (decimal?)a.DownPayment) ?? 0m;
+
+        return installmentReceipts + downPayments;
+    }
 
     public async Task<IEnumerable<CreditAccount>> GetOpenAccountsAsync() =>
         await context.CreditAccounts

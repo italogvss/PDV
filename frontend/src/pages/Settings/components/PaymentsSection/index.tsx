@@ -16,13 +16,15 @@ import {
   useTenantSettings,
   useUpdatePaymentsSettings,
 } from '../../../../hooks/useTenantSettings'
-import type { PaymentMethodConfig, PaymentsSettings } from '../../../../types/settings.types'
+import { useUserPermissions } from '../../../../hooks/useUserPermissions'
+import type { CreditSettings, PaymentMethodConfig, PaymentsSettings } from '../../../../types/settings.types'
 import FieldLabel from '../../../../components/FieldLabel'
 
-const PAYMENT_METHODS: Array<{
-  key: keyof Omit<PaymentsSettings, 'feesEnabled'>
-  label: string
-}> = [
+// Só os métodos com taxa. Crediário fica fora: quem existe ou não é o módulo, e a taxa do
+// fiado é a do método da BAIXA de cada parcela (docs/crediario.md §3).
+type PaymentMethodKey = 'cardCredit' | 'cardDebit' | 'pix' | 'cash'
+
+const PAYMENT_METHODS: Array<{ key: PaymentMethodKey; label: string }> = [
   { key: 'cardCredit', label: 'Cartão de Crédito' },
   { key: 'cardDebit', label: 'Cartão de Débito' },
   { key: 'pix', label: 'Pix' },
@@ -32,6 +34,8 @@ const PAYMENT_METHODS: Array<{
 export default function PaymentsSection() {
   const { data, isLoading } = useTenantSettings()
   const update = useUpdatePaymentsSettings()
+  const { isModuleEnabled } = useUserPermissions()
+  const creditModuleActive = isModuleEnabled('credit')
   const [form, setForm] = useState<PaymentsSettings | null>(null)
   const initialized = useRef(false)
 
@@ -53,10 +57,11 @@ export default function PaymentsSection() {
   const set = (patch: Partial<PaymentsSettings>) =>
     setForm((f) => (f ? { ...f, ...patch } : f))
 
-  const setMethod = (
-    key: keyof Omit<PaymentsSettings, 'feesEnabled'>,
-    patch: Partial<PaymentMethodConfig>,
-  ) => setForm((f) => (f ? { ...f, [key]: { ...f[key], ...patch } } : f))
+  const setMethod = (key: PaymentMethodKey, patch: Partial<PaymentMethodConfig>) =>
+    setForm((f) => (f ? { ...f, [key]: { ...f[key], ...patch } } : f))
+
+  const setCredit = (patch: Partial<CreditSettings>) =>
+    setForm((f) => (f ? { ...f, credit: { ...f.credit, ...patch } } : f))
 
   const original = data?.payments
   const hasChanges =
@@ -65,7 +70,10 @@ export default function PaymentsSection() {
       ({ key }) =>
         original?.[key].enabled !== form[key].enabled ||
         original?.[key].fee !== form[key].fee,
-    )
+    ) ||
+    original?.credit.maxInstallments !== form.credit.maxInstallments ||
+    original?.credit.firstDueDays !== form.credit.firstDueDays ||
+    original?.credit.minDownPaymentPercent !== form.credit.minDownPaymentPercent
 
   const handleSave = () => update.mutate(form)
   const handleCancel = () =>
@@ -76,6 +84,7 @@ export default function PaymentsSection() {
       cardCredit: { ...original.cardCredit },
       cardDebit: { ...original.cardDebit },
       cash: { ...original.cash },
+      credit: { ...original.credit },
     })
 
   return (
@@ -146,6 +155,63 @@ export default function PaymentsSection() {
           ))}
         </Box>
       </Box>
+
+      {/* Crediário aparece só se o módulo estiver ativo — a taxa dele não vive aqui: cada
+          baixa de parcela congela a taxa do método escolhido na hora do recebimento. */}
+      {creditModuleActive && (
+        <Box sx={{ px: 4, py: 2.5, borderTop: 1, borderColor: 'border.subtle' }}>
+          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+            Crediário
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, mb: 2 }}>
+            Política de venda fiado aplicada na finalização de venda
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ minWidth: 160, flex: '1 1 160px' }}>
+              <FieldLabel label="Máximo de parcelas" />
+              <TextField
+                size="small"
+                type="number"
+                fullWidth
+                value={form.credit.maxInstallments}
+                onChange={(e) => setCredit({ maxInstallments: Number(e.target.value) || 1 })}
+                disabled={update.isPending}
+                slotProps={{ htmlInput: { min: 1, max: 60, step: 1 } }}
+              />
+            </Box>
+            <Box sx={{ minWidth: 160, flex: '1 1 160px' }}>
+              <FieldLabel label="Prazo do 1º vencimento" />
+              <TextField
+                size="small"
+                type="number"
+                fullWidth
+                value={form.credit.firstDueDays}
+                onChange={(e) => setCredit({ firstDueDays: Number(e.target.value) || 0 })}
+                disabled={update.isPending}
+                slotProps={{
+                  htmlInput: { min: 0, max: 180, step: 1 },
+                  input: { endAdornment: <InputAdornment position="end">dias</InputAdornment> },
+                }}
+              />
+            </Box>
+            <Box sx={{ minWidth: 160, flex: '1 1 160px' }}>
+              <FieldLabel label="Entrada mínima" />
+              <TextField
+                size="small"
+                type="number"
+                fullWidth
+                value={form.credit.minDownPaymentPercent}
+                onChange={(e) => setCredit({ minDownPaymentPercent: Number(e.target.value) || 0 })}
+                disabled={update.isPending}
+                slotProps={{
+                  htmlInput: { min: 0, max: 100, step: 1 },
+                  input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      )}
     </SettingCard>
   )
 }

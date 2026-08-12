@@ -122,8 +122,16 @@ public class CreditController(ICreditService service) : ControllerBase
             search);
     }
 
-    private static DateTime? ParseDate(string? value) =>
-        string.IsNullOrWhiteSpace(value)
-            ? null
-            : DateTime.Parse(value, CultureInfo.InvariantCulture).Date;
+    // TryParse, não Parse: FormatException não herda de AppException, então uma data malformada
+    // no querystring virava 500 em vez do 400 que o resto do filtro já devolve.
+    private static DateTime? ParseDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        if (!DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            throw new BusinessException($"Data inválida: '{value}'. Use o formato aaaa-mm-dd.");
+
+        return parsed.Date;
+    }
 }

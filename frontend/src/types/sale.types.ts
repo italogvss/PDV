@@ -6,6 +6,15 @@ export interface CreateSaleItemPayload {
   quantity: number
 }
 
+// Presente = venda fiado. O crediário nasce dentro da transação da venda, então `paymentMethod`
+// e `amountPaid` passam a descrever só a ENTRADA (é sobre ela que a taxa da venda incide).
+export interface CreateSaleCreditPayload {
+  installmentCount: number
+  firstDueDate: string
+  downPayment: number
+  note?: string
+}
+
 export interface CreateSalePayload {
   customerId?: string
   customerDocument?: string
@@ -15,6 +24,7 @@ export interface CreateSalePayload {
   amountPaid: number
   discount: number
   items: CreateSaleItemPayload[]
+  credit?: CreateSaleCreditPayload
 }
 
 export interface SaleListItem {

@@ -33,12 +33,24 @@ function toParams(filters: CreditFilters) {
   }
 }
 
+// Teto da página carregada de uma vez (mesma convenção das outras listas do app). O `totalCount`
+// volta junto porque a lista PRECISA saber quando foi cortada: crediário é dinheiro a receber, e
+// uma carteira truncada em silêncio não bate com o KPI "Total a receber", que não tem limite.
+// Por isso a busca também é do SERVIDOR — filtrar em memória só acharia quem coubesse no teto.
+const PAGE_SIZE = 500
+
+export interface CreditPage<T> {
+  rows: T[]
+  totalCount: number
+  truncated: boolean
+}
+
 export const creditService = {
-  getAccounts: async (filters: CreditFilters = {}): Promise<CreditAccount[]> => {
+  getAccounts: async (filters: CreditFilters = {}): Promise<CreditPage<CreditAccount>> => {
     const { data } = await api.get<PaginatedResponse<CreditAccount>>('/credit/accounts', {
-      params: { page: 1, pageSize: 200, ...toParams(filters) },
+      params: { page: 1, pageSize: PAGE_SIZE, ...toParams(filters) },
     })
-    return data.data
+    return { rows: data.data, totalCount: data.totalCount, truncated: data.totalCount > data.data.length }
   },
 
   getAccount: async (id: string): Promise<CreditAccountDetail> => {
@@ -46,11 +58,11 @@ export const creditService = {
     return data
   },
 
-  getInstallments: async (filters: CreditFilters = {}): Promise<CreditInstallment[]> => {
+  getInstallments: async (filters: CreditFilters = {}): Promise<CreditPage<CreditInstallment>> => {
     const { data } = await api.get<PaginatedResponse<CreditInstallment>>('/credit/installments', {
-      params: { page: 1, pageSize: 200, ...toParams(filters) },
+      params: { page: 1, pageSize: PAGE_SIZE, ...toParams(filters) },
     })
-    return data.data
+    return { rows: data.data, totalCount: data.totalCount, truncated: data.totalCount > data.data.length }
   },
 
   getSummary: async (): Promise<CreditSummary> => {

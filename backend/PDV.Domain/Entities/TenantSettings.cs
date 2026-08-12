@@ -69,4 +69,12 @@ public class TenantSettings : BaseEntity
     public decimal PaymentCardCreditFee { get; set; }
     public decimal PaymentCardDebitFee { get; set; }
     public decimal PaymentCashFee { get; set; }
+
+    // Crediário — política da loja para venda fiado. Não há taxa aqui de propósito: a taxa do
+    // crediário é a do método escolhido na BAIXA de cada parcela (ver docs/crediario.md §3).
+    // O teto absoluto de parcelas (1..60) fica no validator; isto é o limite que a LOJA escolhe
+    // dentro dele. O crediário aparecer ou não no PDV é decidido pelo módulo, não por um flag aqui.
+    public int CreditMaxInstallments { get; set; } = 12;
+    public int CreditFirstDueDays { get; set; } = 30;
+    public decimal CreditMinDownPaymentPercent { get; set; }
 }

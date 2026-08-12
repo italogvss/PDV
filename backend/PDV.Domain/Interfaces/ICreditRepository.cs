@@ -33,7 +33,9 @@ public interface ICreditRepository
     Task<CreditPayment?> GetPaymentByIdAsync(Guid id);
     Task<IEnumerable<CreditPayment>> GetPaymentsByAccountAsync(Guid accountId);
 
-    Task AddAccountAsync(CreditAccount account);
+    // A venda vai junto porque abrir crediário REESCREVE a taxa dela (passa a incidir só sobre a
+    // entrada) — conta e venda precisam cair no mesmo SaveChanges.
+    Task AddAccountAsync(CreditAccount account, Sale sale);
 
     // Baixa e estorno mexem em 3 entidades ao mesmo tempo (payment + parcela + conta) e
     // precisam de um único SaveChanges para não deixar saldo inconsistente.
@@ -44,6 +46,9 @@ public interface ICreditRepository
 
     // Agregados para KPIs / aging — sempre sobre parcelas não canceladas.
     Task<IEnumerable<CreditInstallment>> GetOpenInstallmentsAsync();
+
+    // Dinheiro que ENTROU no período: baixas de parcela + entradas (a entrada é paga no ato da
+    // venda, por isso é datada pela venda, não pela conta).
     Task<decimal> GetReceivedBetweenAsync(DateTime start, DateTime end);
     Task<IEnumerable<CreditAccount>> GetOpenAccountsAsync();
 

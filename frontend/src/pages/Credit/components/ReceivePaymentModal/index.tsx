@@ -130,7 +130,11 @@ export default function ReceivePaymentModal({ installment, onClose }: Props) {
               render={({ field }) => (
                 <CurrencyField
                   value={Number(field.value) || 0}
-                  onChange={field.onChange}
+                  // Trava no saldo da parcela: o backend recusa acima disso, e deixar digitar só
+                  // para levar erro depois de submeter é ruído. Mesmo clamp da entrada no PDV.
+                  onChange={(value) =>
+                    field.onChange(installment ? Math.min(value, installment.balance) : value)
+                  }
                   onBlur={field.onBlur}
                   fullWidth
                   size="small"

@@ -9,14 +9,24 @@ export interface RangePreset {
 
 export type GroupBy = 'day' | 'week' | 'month'
 
-// Regime das despesas nos relatórios: competência (por vencimento) × caixa (por pagamento).
-export type ExpenseBasis = 'accrual' | 'cash'
+/**
+ * Regime contábil dos relatórios. Governa vendas E despesas:
+ * - `accrual` (competência): a venda inteira conta na data da venda; despesa, no vencimento.
+ * - `cash` (caixa): a venda conta na medida em que o dinheiro entra (entrada do crediário na data
+ *   da venda, cada parcela na data da baixa); despesa, na data do pagamento.
+ * Sem crediário os dois regimes coincidem — a diferença é o fiado.
+ */
+export type ReportBasis = 'accrual' | 'cash'
 
 export interface SalesMetrics {
   totalSales: number
   totalRevenue: number
   averageTicket: number
   period: string
+  /** Quanto das vendas do período já virou dinheiro. */
+  receivedRevenue: number
+  /** Saldo de crediário ainda em aberto das vendas do período. */
+  outstandingRevenue: number
 }
 
 export interface FinancialSummaryPoint {
@@ -53,6 +63,8 @@ export interface TopCustomer {
   name: string
   purchaseCount: number
   totalRevenue: number
+  /** Saldo devedor de crediário — posição de hoje, não do período consultado. */
+  outstanding: number
 }
 
 export interface ExpensesByCategory {
@@ -113,4 +125,30 @@ export interface ReportEmployee {
 export interface ReportCustomer {
   id: string
   name: string
+}
+
+/** Seção Crediário dos Relatórios. Mistura fatos do período com a posição de hoje — ver os rótulos. */
+export interface CreditReportSummary {
+  /** Faturado a prazo no período (parte financiada das vendas fiado). */
+  invoiced: number
+  /** Recebido no período: entradas das vendas do período + baixas de parcela. */
+  received: number
+  /** Saldo em aberto hoje. */
+  outstanding: number
+  /** Parte do saldo em aberto já vencida. */
+  overdue: number
+  /** Perdas: saldo que ficou de pé nas contas canceladas no período. */
+  writtenOff: number
+  /** Vencido ÷ a receber, em %. */
+  defaultRate: number
+  openAccounts: number
+  overdueInstallments: number
+}
+
+/** Previsão de entrada: o único gráfico do módulo que olha para o futuro (eixo = vencimento). */
+export interface ReceivableSchedulePoint {
+  label: string
+  dueAmount: number
+  overdueAmount: number
+  installmentCount: number
 }

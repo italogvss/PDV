@@ -12,4 +12,10 @@ export interface PaymentSectionProps {
   cashReceived: string
   onCashReceivedChange: (value: string) => void
   payments: PaymentsSettings
+  /**
+   * `sale` = método de toda a venda (parcelamento de cartão e troco fazem sentido).
+   * `downPayment` = método só da ENTRADA de um crediário: o valor é exato e o resto vem nas
+   * baixas das parcelas, então não há parcelamento de cartão nem troco a calcular.
+   */
+  variant?: 'sale' | 'downPayment'
 }

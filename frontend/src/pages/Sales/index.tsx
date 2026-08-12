@@ -13,23 +13,22 @@ import { useUserPermissions } from '../../hooks/useUserPermissions'
 import { useAppSelector } from '../../store'
 import type { AppointmentServiceRef } from '../../types/appointment.types'
 import type { Product } from '../../types/product.types'
+import type { SaleDetail } from '../../types/sale.types'
 import type { Service } from '../../types/service.types'
 import { maskCPF } from '../../utils/masks'
 import CartPanel from './components/CartPanel'
 import { EnrichedCartLine } from './components/CartPanel/types'
 import FinalizationModal from './components/FinalizationModal'
+import type { FinalizationResult } from './components/FinalizationModal/types'
 import ProductCatalog from './components/ProductCatalog'
 import { CatalogMode, CategoryValue } from './components/ProductCatalog/types'
 import SelectCustomerModal from './components/SelectCustomerModal'
-import { CardType, CartLine, CustomerSelection, PaymentMethod } from './types'
+import { CartLine, CustomerSelection } from './types'
 
-function buildPaymentMethod(method: PaymentMethod, cardType: CardType): string {
-  if (method === 'cash') return 'Cash'
-  if (method === 'pix') return 'PIX'
-  if (cardType === 'credit') return 'CreditCard'
-  return 'DebitCard'
-}
-
+/**
+ * A página monta a venda (catálogo + carrinho + cliente). Tudo que é DECISÃO sobre a venda —
+ * desconto, forma de pagamento, parcelamento e crediário — vive na modal de finalização.
+ */
 export default function SalesPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -38,12 +37,7 @@ export default function SalesPage() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customer, setCustomer] = useState<CustomerSelection>({ type: 'none' })
   const [customerModalOpen, setCustomerModalOpen] = useState(false)
-  const [method, setMethod] = useState<PaymentMethod>('card')
-  const [cardType, setCardType] = useState<CardType>('credit')
-  const [installments, setInstallments] = useState(1)
-  const [cashReceived, setCashReceived] = useState('')
   const [finalizationOpen, setFinalizationOpen] = useState(false)
-  const [discountAmount, setDiscountAmount] = useState(0)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
@@ -56,24 +50,8 @@ export default function SalesPage() {
   const createSale = useCreateSale()
   const { isModuleEnabled } = useUserPermissions()
   const { data: tenantSettings } = usePdvSettings()
-  const allowDiscounts = tenantSettings?.operation.allowDiscounts ?? false
-  const discountLimitPercent = tenantSettings?.operation.discountLimitPercent ?? 0
   const requireCustomerOnSale = tenantSettings?.operation.requireCustomerOnSale ?? false
   const customersModuleActive = isModuleEnabled('customers')
-
-  // Enquanto as configurações carregam, libera todos os métodos para não travar a venda.
-  const payments = tenantSettings?.payments ?? {
-    feesEnabled: false,
-    pix: { enabled: true, fee: 0 },
-    cardCredit: { enabled: true, fee: 0 },
-    cardDebit: { enabled: true, fee: 0 },
-    cash: { enabled: true, fee: 0 },
-  }
-
-  const customerProvided = requireCustomerOnSale
-    ? customer.type === 'entity'
-    : customer.type === 'entity' || (customer.type === 'cpf' && customer.document.trim().length > 0)
-  const customerMissing = customersModuleActive && requireCustomerOnSale && !customerProvided
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -112,23 +90,6 @@ export default function SalesPage() {
     navigate('/vendas', { replace: true, state: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Garante que o método/tipo de cartão selecionado esteja habilitado nas configurações.
-  useEffect(() => {
-    const cardEnabled = payments.cardCredit.enabled || payments.cardDebit.enabled
-    const isEnabled = (m: PaymentMethod) =>
-      m === 'pix' ? payments.pix.enabled : m === 'cash' ? payments.cash.enabled : cardEnabled
-
-    if (!isEnabled(method)) {
-      const next = (['card', 'pix', 'cash'] as PaymentMethod[]).find(isEnabled)
-      if (next) setMethod(next)
-    }
-    if (cardType === 'credit' && !payments.cardCredit.enabled && payments.cardDebit.enabled) {
-      setCardType('debit')
-    } else if (cardType === 'debit' && !payments.cardDebit.enabled && payments.cardCredit.enabled) {
-      setCardType('credit')
-    }
-  }, [payments, method, cardType])
 
   const filteredProducts = useMemo(() => {
     const term = debouncedSearch.trim().toLowerCase()
@@ -222,52 +183,23 @@ export default function SalesPage() {
     )
   }
 
-  const handleFinalize = async () => {
-    if (cart.length === 0) return
+  // A venda criada é devolvida à modal: é ela que alimenta o comprovante imprimível.
+  const handleFinalize = async (result: FinalizationResult): Promise<SaleDetail | undefined> => {
+    if (cart.length === 0) return undefined
 
-    const clampedDiscount = Math.min(discountAmount, subtotal)
-    const paymentMethod = buildPaymentMethod(method, cardType)
-    const isInstallment = method === 'card' && cardType === 'credit' && installments > 1
-    const total = Math.max(0, subtotal - clampedDiscount)
-    const receivedNumber = Number(cashReceived.replace(',', '.'))
-    const amountPaid =
-      method === 'cash' && !Number.isNaN(receivedNumber) && cashReceived.trim() !== ''
-        ? receivedNumber
-        : total
-
-    await createSale.mutateAsync({
-      customerId: customer.type === 'entity' ? customer.id : undefined,
-      customerDocument: customer.type === 'cpf' ? customer.document : undefined,
-      paymentMethod,
-      isInstallment,
-      installmentCount: isInstallment ? installments : undefined,
-      amountPaid,
-      discount: clampedDiscount,
+    return createSale.mutateAsync({
+      ...result,
       items: cart.map((l) => ({
         productId: l.type === 'product' ? l.productId : undefined,
         serviceId: l.type === 'service' ? l.serviceId : undefined,
         quantity: l.quantity,
       })),
     })
-
-    setFinalizationOpen(false)
-    setCart([])
-    setCustomer({ type: 'none' })
-    setCashReceived('')
-    setMethod('card')
-    setCardType('credit')
-    setInstallments(1)
-    setDiscountAmount(0)
   }
 
   const handleRestart = () => {
     setCart([])
     setCustomer({ type: 'none' })
-    setCashReceived('')
-    setMethod('card')
-    setCardType('credit')
-    setInstallments(1)
-    setDiscountAmount(0)
     setFinalizationOpen(false)
   }
 
@@ -328,7 +260,7 @@ export default function SalesPage() {
                 sx={{ width: 160 }}
                 slotProps={{ htmlInput: { maxLength: 14 } }}
               />
-              
+
             </>
           )
         )}
@@ -372,20 +304,6 @@ export default function SalesPage() {
           onDecrement={handleDecrement}
           onRemove={handleRemoveFromCart}
           onFinalize={() => setFinalizationOpen(true)}
-          customerMissing={customerMissing}
-          discountAmount={discountAmount}
-          onDiscountChange={setDiscountAmount}
-          allowDiscounts={allowDiscounts}
-          discountLimitPercent={discountLimitPercent}
-          method={method}
-          onMethodChange={setMethod}
-          cardType={cardType}
-          onCardTypeChange={setCardType}
-          installments={installments}
-          onInstallmentsChange={setInstallments}
-          cashReceived={cashReceived}
-          onCashReceivedChange={setCashReceived}
-          payments={payments}
         />
       </Box>
 
@@ -394,13 +312,12 @@ export default function SalesPage() {
         onClose={() => setFinalizationOpen(false)}
         lines={cartLines}
         subtotal={subtotal}
-        discountAmount={discountAmount}
         customer={customer}
-        method={method}
-        cardType={cardType}
-        installments={installments}
+        onCustomerChange={setCustomer}
+        onOpenCustomerModal={() => setCustomerModalOpen(true)}
         onFinalize={handleFinalize}
         isSubmitting={createSale.isPending}
+        onNewSale={handleRestart}
       />
 
       <SelectCustomerModal

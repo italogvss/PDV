@@ -21,7 +21,7 @@ export default function TopServicesRanking({ data, loading = false }: TopService
     <RankingList
       title="Top serviços"
       subtitle="Maior receita realizada no período"
-      info="Serviços com maior receita no período (só atendimentos concluídos). A contagem inclui todos os agendamentos não cancelados do serviço. Agrupado pelo serviço do catálogo, não pelo nome — não fragmenta se o serviço for renomeado."
+      info="Fonte: serviços dos agendamentos do período. A RECEITA soma só os atendimentos concluídos; a CONTAGEM ao lado inclui todos os não cancelados — por isso um serviço pode ter muitos agendamentos e pouca receita (ainda não foram atendidos). Agrupado pelo serviço do catálogo, não pelo nome — renomear não fragmenta o histórico."
       items={items}
       loading={loading}
       emptyText="Sem dados no período selecionado."

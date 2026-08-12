@@ -155,6 +155,7 @@ JWT em **cookie HttpOnly** (`access_token`); refresh token em cookie separado, g
 | **Manutenção em produção (runbook)** — deploy, rollback, logs, backup, migrations | [manutencao-producao.md](docs/manutencao-producao.md) |
 | Montagem da infra de produção (decisões, checklists) | [deploy-producao.md](docs/deploy-producao.md) |
 | Assinaturas / cobrança (Stripe) | [subscriptions.md](docs/subscriptions.md) |
+| Crediário (venda fiado) e o impacto nos relatórios | [crediario.md](docs/crediario.md) |
 | Controle de acesso e entitlements | [access-control-e-entitlements.md](docs/access-control-e-entitlements.md), [entitlements-e-limits.md](docs/entitlements-e-limits.md) |
 | Autenticação | [auth.md](docs/auth.md) |
 | Exclusão de conta (LGPD) | [account-deletion.md](docs/account-deletion.md) |

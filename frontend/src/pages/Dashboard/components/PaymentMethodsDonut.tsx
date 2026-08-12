@@ -18,6 +18,11 @@ const METHOD_ENABLED: Record<string, (p: PaymentsSettings) => boolean> = {
   DebitCard: (p) => p.cardDebit.enabled,
 }
 
+// Fatia da parte financiada das vendas fiado. Não tem flag de habilitado — não é um método de
+// pagamento configurável, é o valor que ainda não passou por método nenhum. Sem ela, o total do
+// donut ficaria menor que o faturamento sem explicação.
+const CREDIT_KEY = 'Credit'
+
 export default function PaymentMethodsDonut({ data, payments, loading = false }: PaymentMethodsDonutProps) {
   const theme = useTheme()
 
@@ -32,10 +37,19 @@ export default function PaymentMethodsDonut({ data, payments, loading = false }:
       color: PAYMENT_METHOD_COLORS[key](theme),
     }))
 
+  const creditTotal = totalsByKey.get(CREDIT_KEY) ?? 0
+  if (creditTotal > 0) {
+    segments.push({
+      label: PAYMENT_METHOD_LABELS[CREDIT_KEY],
+      value: creditTotal,
+      color: PAYMENT_METHOD_COLORS[CREDIT_KEY](theme),
+    })
+  }
+
   return (
     <DonutChart
       title="Formas de pagamento"
-      info="Distribuição do valor recebido entre as formas de pagamento habilitadas na loja. O centro mostra o total do período."
+      info="Distribuição do faturamento entre as formas de pagamento habilitadas na loja. A fatia 'Crediário' é o valor vendido a prazo que ainda não foi recebido — quando o cliente pagar, entra pela forma usada na baixa. O centro mostra o total do período."
       segments={segments}
       loading={loading}
       showTotal

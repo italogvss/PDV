@@ -1,13 +1,15 @@
 import { useTheme } from '@mui/material'
 import DonutChart from '../../../components/DonutChart'
-import type { FinancialSummaryPoint } from '../../../types/report.types'
+import { basisNote } from './chartHelpers'
+import type { FinancialSummaryPoint, ReportBasis } from '../../../types/report.types'
 
 export interface SalesCompositionDonutProps {
   data: FinancialSummaryPoint[]
+  basis: ReportBasis
   loading?: boolean
 }
 
-export default function SalesCompositionDonut({ data, loading = false }: SalesCompositionDonutProps) {
+export default function SalesCompositionDonut({ data, basis, loading = false }: SalesCompositionDonutProps) {
   const theme = useTheme()
 
   const totals = data.reduce(
@@ -31,7 +33,7 @@ export default function SalesCompositionDonut({ data, loading = false }: SalesCo
     <DonutChart
       title="Composição do período"
       subtitle="Participação de cada componente na receita total"
-      info="Mesma composição do gráfico ao lado (custo, taxas, despesas e lucro líquido), somada para todo o período selecionado e exibida em percentual — não muda com a granularidade das séries temporais, só com o período do calendário."
+      info={`Mesma composição do gráfico ao lado (custo, taxas, despesas e lucro líquido), somada para todo o período e exibida em percentual — não muda com a granularidade das séries, só com o período do calendário. O total do centro é a receita dos itens COM custo cadastrado, não a receita total. ${basisNote(basis)}`}
       segments={segments}
       loading={loading}
       size={180}

@@ -15,6 +15,9 @@ const QUERY_KEY = ['credit'] as const
 // O histórico de vendas mostra a situação do crediário dentro do DTO da venda — qualquer
 // movimento aqui deixa aquela lista defasada.
 const SALES_KEY = ['sales'] as const
+// A seção Crediário dos Relatórios e o Dashboard leem os MESMOS fatos por outros endpoints
+// (/reports/credit/*): receber ou estornar muda recebido, a receber, aging e inadimplência lá.
+const REPORTS_KEY = ['reports'] as const
 const ACCOUNTS_KEY = (filters: CreditFilters) => ['credit', 'accounts', filters] as const
 const ACCOUNT_KEY = (id: string | null) => ['credit', 'account', id] as const
 const INSTALLMENTS_KEY = (filters: CreditFilters) => ['credit', 'installments', filters] as const
@@ -84,6 +87,7 @@ export function useCreateCreditAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
+      queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
       showToast('Crediário aberto com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao abrir o crediário.'),
@@ -103,6 +107,7 @@ export function useReceiveInstallment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
+      queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
       showToast('Recebimento registrado!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao registrar o recebimento.'),
@@ -118,6 +123,7 @@ export function useReverseCreditPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
+      queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
       showToast('Recebimento estornado.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao estornar o recebimento.'),
@@ -133,6 +139,7 @@ export function useCancelCreditAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
+      queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
       showToast('Crediário cancelado.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar o crediário.'),

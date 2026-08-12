@@ -1,4 +1,5 @@
 import { api } from './api'
+import type { CreditAging } from '../types/credit.types'
 import type {
   SalesMetrics,
   FinancialSummaryPoint,
@@ -9,7 +10,7 @@ import type {
   ExpensesByCategory,
   RevenueByType,
   GroupBy,
-  ExpenseBasis,
+  ReportBasis,
   AppointmentSummaryPoint,
   TopService,
   AppointmentsByEmployee,
@@ -17,14 +18,9 @@ import type {
   AppointmentPeakHour,
   ReportEmployee,
   ReportCustomer,
+  CreditReportSummary,
+  ReceivableSchedulePoint,
 } from '../types/report.types'
-
-interface BackendSalesMetrics {
-  totalSales: number
-  totalRevenue: number
-  averageTicket: number
-  period: string
-}
 
 export interface ImportResult {
   importedCount: number
@@ -35,7 +31,7 @@ export type ImportType = 'products' | 'customers' | 'services'
 
 export const reportService = {
   getSalesMetrics: async (startDate: string, endDate: string): Promise<SalesMetrics> => {
-    const { data } = await api.get<BackendSalesMetrics>('/reports/sales', {
+    const { data } = await api.get<SalesMetrics>('/reports/sales', {
       params: { startDate, endDate },
     })
     return data
@@ -45,10 +41,10 @@ export const reportService = {
     startDate: string,
     endDate: string,
     groupBy: GroupBy,
-    expenseBasis: ExpenseBasis = 'accrual',
+    basis: ReportBasis = 'accrual',
   ): Promise<FinancialSummaryPoint[]> => {
     const { data } = await api.get<FinancialSummaryPoint[]>('/reports/financial-summary', {
-      params: { startDate, endDate, groupBy, expenseBasis },
+      params: { startDate, endDate, groupBy, basis },
     })
     return data
   },
@@ -66,9 +62,10 @@ export const reportService = {
   getSalesByPaymentMethod: async (
     startDate: string,
     endDate: string,
+    basis: ReportBasis = 'accrual',
   ): Promise<SalesByPaymentMethod[]> => {
     const { data } = await api.get<SalesByPaymentMethod[]>('/reports/sales/by-payment-method', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, basis },
     })
     return data
   },
@@ -174,6 +171,31 @@ export const reportService = {
     return data
   },
 
+  // Crediário servido pelo módulo de Relatórios (mesmo gate da página) — não usa credit.service,
+  // que fala com /api/credit e depende do módulo Crediário estar liberado para o usuário.
+  getCreditSummary: async (startDate: string, endDate: string): Promise<CreditReportSummary> => {
+    const { data } = await api.get<CreditReportSummary>('/reports/credit/summary', {
+      params: { startDate, endDate },
+    })
+    return data
+  },
+
+  getCreditAging: async (): Promise<CreditAging> => {
+    const { data } = await api.get<CreditAging>('/reports/credit/aging')
+    return data
+  },
+
+  getReceivableSchedule: async (
+    startDate: string,
+    endDate: string,
+    groupBy: GroupBy,
+  ): Promise<ReceivableSchedulePoint[]> => {
+    const { data } = await api.get<ReceivableSchedulePoint[]>('/reports/credit/receivables-schedule', {
+      params: { startDate, endDate, groupBy },
+    })
+    return data
+  },
+
   exportCsv: async (category: string): Promise<void> => {
     const endpointMap: Record<string, { url: string; filename: string }> = {
       sales:     { url: '/reports/sales/export/all',  filename: 'vendas.csv'       },
@@ -182,6 +204,7 @@ export const reportService = {
       services:  { url: '/reports/services/export',    filename: 'servicos.csv'     },
       expenses:  { url: '/reports/expenses/export',    filename: 'despesas.csv'     },
       billing:   { url: '/reports/billing/export',     filename: 'faturamento.csv'  },
+      credit:    { url: '/reports/credit/export',      filename: 'crediario.csv'    },
       team:      { url: '/reports/team/export',        filename: 'equipe.csv'       },
     }
 
@@ -217,6 +240,7 @@ export const reportService = {
       services:  'servicos.csv',
       expenses:  'despesas.csv',
       billing:   'faturamento.csv',
+      credit:    'crediario.csv',
       team:      'equipe.csv',
     }
 

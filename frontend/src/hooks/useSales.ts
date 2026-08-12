@@ -7,7 +7,7 @@ import { useUserPermissions } from './useUserPermissions'
 
 const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
-// Cancelar uma venda também cancela o crediário dela no backend.
+// Uma venda pode abrir (venda fiado) ou cancelar o crediário dela no backend.
 const CREDIT_KEY = ['credit'] as const
 
 export function useSales(startDate?: string, endDate?: string) {
@@ -39,9 +39,11 @@ export function useCreateSale() {
   const handleError = useApiError()
   return useMutation({
     mutationFn: (payload: CreateSalePayload) => saleService.create(payload),
-    onSuccess: () => {
+    onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      // Venda fiado abre uma conta de crediário na mesma transação.
+      if (sale.credit) queryClient.invalidateQueries({ queryKey: CREDIT_KEY })
       showToast('Venda registrada com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao registrar venda.'),

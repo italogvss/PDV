@@ -29,7 +29,7 @@ export default function AppointmentRevenueChart({
     <ChartCard
       title="Receita de agendamentos"
       subtitle="Realizada (concluídos) × total agendado"
-      info="Soma dos preços dos serviços do agendamento. Barras: só atendimentos concluídos (receita realizada). Linha: todos os agendamentos não cancelados do período (receita agendada). É o valor dos serviços do catálogo — pode diferir do que é de fato cobrado na venda no caixa."
+      info="Fonte: Σ dos preços dos serviços de cada agendamento (preço do catálogo, não o valor digitado na agenda). Barras: só atendimentos CONCLUÍDOS (receita realizada). Linha: todos os não cancelados (receita agendada). Este eixo é independente das vendas — o dinheiro do serviço só entra no caixa quando vira venda. Não some com a receita de Vendas nem com o toggle Regime, para não contar o mesmo serviço duas vezes."
       loading={loading}
       isEmpty={data.length === 0}
     >

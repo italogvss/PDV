@@ -31,6 +31,46 @@ public class OpenAndCloseAccountTests
         });
     }
 
+    // A venda foi fechada como se fosse à vista, com taxa do método sobre o total. Virando fiado,
+    // só a ENTRADA passou pela maquininha — o resto será capturado nas baixas, com o método que o
+    // cliente escolher lá. Sem este recálculo, o relatório debita taxa de cartão sobre dinheiro que
+    // ninguém passou no cartão, e o lucro líquido sai menor do que é.
+    [Test]
+    public async Task OpeningRecalculatesTheSaleFeeOverTheDownPaymentOnly()
+    {
+        var harness = new CreditHarness();
+        var sale = harness.GivenSale(500m, feeRate: 3m); // fechada com taxa de 3% → R$ 15,00
+
+        await harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 4, DateTime.UtcNow.Date, 100m));
+
+        Assert.Multiple(() =>
+        {
+            // 3% de 100 (entrada), não 3% de 500.
+            Assert.That(harness.AddedAccountSale!.FeeAmount, Is.EqualTo(3m));
+            Assert.That(harness.AddedAccountSale.NetAmount, Is.EqualTo(497m));
+            // A alíquota da venda continua sendo a do método escolhido — muda a base, não a taxa.
+            Assert.That(harness.AddedAccountSale.FeeRate, Is.EqualTo(3m));
+        });
+    }
+
+    // Sem entrada, a venda não capturou nada: taxa zero.
+    [Test]
+    public async Task OpeningWithoutDownPaymentZeroesTheSaleFee()
+    {
+        var harness = new CreditHarness();
+        var sale = harness.GivenSale(500m, feeRate: 3m);
+
+        await harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 4, DateTime.UtcNow.Date));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(harness.AddedAccountSale!.FeeAmount, Is.Zero);
+            Assert.That(harness.AddedAccountSale.NetAmount, Is.EqualTo(500m));
+        });
+    }
+
     // Fiado exige cliente identificado: sem saber de quem cobrar, a conta não pode existir.
     [Test]
     public void SaleWithoutACustomerCannotBecomeCredit()
@@ -75,6 +115,70 @@ public class OpenAndCloseAccountTests
 
         Assert.ThrowsAsync<BusinessException>(() => harness.Build().CreateForSaleAsync(
             new CreateCreditAccountRequest(sale.Id, 3, DateTime.UtcNow.Date, 500m)));
+    }
+
+    // Vencimento anterior à venda faria o carnê nascer vencido, indo direto para o aging, a
+    // inadimplência e os lembretes. O DatePicker do PDV barra; POST /credit/accounts não passa
+    // por ele. Um mês atrás está fora da folga de um dia dada ao fuso.
+    [Test]
+    public void FirstDueDateBeforeTheSaleIsRejected()
+    {
+        var harness = new CreditHarness();
+        var sale = harness.GivenSale(500m);
+
+        Assert.ThrowsAsync<BusinessException>(() => harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 3, DateTime.UtcNow.Date.AddMonths(-1))));
+    }
+
+    // A política da loja (TenantSettings) vale aqui, e não só no PDV: quem chamar a API direto
+    // com 24 parcelas numa loja que aceita 6 tem que ser barrado igual.
+    [Test]
+    public void InstallmentCountAboveTheStorePolicyIsRejected()
+    {
+        var harness = new CreditHarness();
+        harness.GivenCreditPolicy(maxInstallments: 6);
+        var sale = harness.GivenSale(500m);
+
+        Assert.ThrowsAsync<BusinessException>(() => harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 12, DateTime.UtcNow.Date)));
+    }
+
+    [Test]
+    public async Task InstallmentCountAtTheStorePolicyLimitIsAccepted()
+    {
+        var harness = new CreditHarness();
+        harness.GivenCreditPolicy(maxInstallments: 6);
+        var sale = harness.GivenSale(500m);
+
+        await harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 6, DateTime.UtcNow.Date));
+
+        Assert.That(harness.AddedAccount!.Installments, Has.Count.EqualTo(6));
+    }
+
+    // Entrada mínima é sobre o TOTAL da venda, não sobre o financiado.
+    [Test]
+    public void DownPaymentBelowTheStoreMinimumIsRejected()
+    {
+        var harness = new CreditHarness();
+        harness.GivenCreditPolicy(minDownPaymentPercent: 20m);
+        var sale = harness.GivenSale(500m); // mínimo = R$ 100,00
+
+        Assert.ThrowsAsync<BusinessException>(() => harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 3, DateTime.UtcNow.Date, 99m)));
+    }
+
+    [Test]
+    public async Task DownPaymentAtTheStoreMinimumIsAccepted()
+    {
+        var harness = new CreditHarness();
+        harness.GivenCreditPolicy(minDownPaymentPercent: 20m);
+        var sale = harness.GivenSale(500m);
+
+        await harness.Build().CreateForSaleAsync(
+            new CreateCreditAccountRequest(sale.Id, 3, DateTime.UtcNow.Date, 100m));
+
+        Assert.That(harness.AddedAccount!.TotalAmount, Is.EqualTo(400m));
     }
 
     // Estorno devolve o valor ao saldo devedor e REABRE a parcela/conta que tinham quitado.
@@ -131,6 +235,33 @@ public class OpenAndCloseAccountTests
             // A parcela já quitada permanece quitada — cancelar não apaga histórico de dinheiro.
             Assert.That(first.Status, Is.EqualTo(CreditInstallmentStatus.Paid));
         });
+    }
+
+    // Cancelar precisa CARIMBAR a data: é ela que joga a perda no mês certo do relatório.
+    // UpdatedAt não serve — muda a cada alteração da conta.
+    [Test]
+    public async Task CancellingStampsTheCancellationDate()
+    {
+        var harness = new CreditHarness();
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+
+        await harness.Build().CancelAccountAsync(account.Id);
+
+        Assert.That(account.CancelledAt, Is.EqualTo(DateTime.UtcNow).Within(TimeSpan.FromMinutes(1)));
+    }
+
+    // Conta cancelada não tem cobrança viva: estornar ali mexeria no saldo de algo já baixado como
+    // perda, sem reabrir parcela nenhuma — o "a receber" e as "perdas" divergiriam.
+    [Test]
+    public void ReversalOnACancelledAccountIsRejected()
+    {
+        var harness = new CreditHarness();
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+        var first = account.Installments.First();
+        var payment = harness.GivenPayment(account, first, 50m);
+        account.Status = CreditAccountStatus.Cancelled;
+
+        Assert.ThrowsAsync<BusinessException>(() => harness.Build().ReverseAsync(payment.Id));
     }
 
     [Test]

@@ -1,5 +1,6 @@
 import RankingList from '../../../components/RankingList'
 import { formatBRL } from '../../../utils/currency'
+import { ACCRUAL_ONLY_NOTE } from './chartHelpers'
 import type { SalesByOperator } from '../../../types/report.types'
 
 export interface OperatorRankingChartProps {
@@ -24,7 +25,7 @@ export default function OperatorRankingChart({
     <RankingList
       title="Ranking por operador"
       subtitle="Receita por operador no período"
-      info="Receita total das vendas registradas por cada operador no caixa durante o período."
+      info={`Fonte: total das vendas ativas registradas por cada operador no caixa. Mede quem VENDEU, não quem recebeu: uma venda fiado conta integral para o operador no dia da venda, e as baixas de parcela depois não são atribuídas a ninguém. ${ACCRUAL_ONLY_NOTE}`}
       items={items}
       loading={loading}
       emptyText="Sem dados no período selecionado."

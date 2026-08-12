@@ -1,6 +1,7 @@
 import BlockRounded from '@mui/icons-material/BlockRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
+import PrintRounded from '@mui/icons-material/PrintRounded'
 import {
   Box,
   Button,
@@ -23,10 +24,13 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import CreditStatusChip from '../../../../components/CreditStatusChip'
+import SaleReceipt from '../../../../components/SaleReceipt'
 import { PAYMENT_METHOD_LABELS } from '../../../../constants/payment'
 import { useSaleDetail } from '../../../../hooks/useSales'
+import { usePdvSettings } from '../../../../hooks/useTenantSettings'
 import { useUserPermissions } from '../../../../hooks/useUserPermissions'
 import { formatBRL } from '../../../../utils/currency'
+import { printDocument } from '../../../../utils/print'
 import { formatDueDate } from '../../../Credit/types'
 import type { SalePaymentMethod } from '../../types'
 import { SALE_STATUS_MAP } from '../../types'
@@ -57,6 +61,8 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetailModalProps) {
   const { data: sale, isLoading } = useSaleDetail(saleId)
+  // Dados da loja para o cabeçalho do comprovante (mesma query já cacheada do PDV).
+  const { data: settings } = usePdvSettings()
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -344,10 +350,18 @@ export default function SaleDetailModal({ saleId, onClose, onCancel }: SaleDetai
           </Button>
         )}
         <Box sx={{ flex: 1 }} />
+        {sale && (
+          <Button variant="ghost" size="small" startIcon={<PrintRounded />} onClick={printDocument}>
+            Imprimir
+          </Button>
+        )}
         <Button variant="contained" size="small" onClick={onClose}>
           Fechar
         </Button>
       </DialogActions>
+
+      {/* Mesmo comprovante da finalização da venda — só existe dentro do @media print. */}
+      {sale && <SaleReceipt sale={sale} business={settings?.business} />}
     </Dialog>
   )
 }

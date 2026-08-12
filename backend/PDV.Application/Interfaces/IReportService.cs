@@ -1,11 +1,14 @@
+using PDV.Application.DTOs.Credit;
 using PDV.Application.DTOs.Reports;
 
 namespace PDV.Application.Interfaces;
 
 public interface IReportService
 {
+    // basis: "accrual" (competência — a venda inteira na data da venda) ou "cash" (caixa — cada
+    // venda reconhecida na medida em que o dinheiro entra). Governa vendas E despesas.
     Task<List<FinancialSummaryPoint>> GetFinancialSummaryAsync(
-        DateTime startDate, DateTime endDate, string groupBy, string expenseBasis);
+        DateTime startDate, DateTime endDate, string groupBy, string basis);
 
     Task<SalesMetricsResponse> GetSalesMetricsAsync(
         string? period, DateTime? startDate, DateTime? endDate);
@@ -14,7 +17,7 @@ public interface IReportService
         string? period, DateTime? startDate, DateTime? endDate);
 
     Task<List<SalesByPaymentMethodResponse>> GetSalesByPaymentMethodAsync(
-        DateTime startDate, DateTime endDate);
+        DateTime startDate, DateTime endDate, string basis);
 
     Task<List<TopProductResponse>> GetTopProductsAsync(
         DateTime startDate, DateTime endDate, int limit);
@@ -65,4 +68,14 @@ public interface IReportService
 
     Task<List<AppointmentPeakHourResponse>> GetAppointmentPeakHoursAsync(
         DateTime startDate, DateTime endDate);
+
+    // ── Crediário na página de Relatórios ────────────────────────────────────────────────
+    // Servidos pelo módulo de Relatórios (mesmo gate da página), não pelo de Crediário — mesmo
+    // motivo de GetEmployeesListAsync/GetCustomersListAsync. A matemática é a de CreditAnalytics.
+    Task<CreditReportSummaryResponse> GetCreditSummaryAsync(DateTime startDate, DateTime endDate);
+
+    Task<CreditAgingResponse> GetCreditAgingAsync();
+
+    Task<List<ReceivableSchedulePoint>> GetReceivableScheduleAsync(
+        DateTime startDate, DateTime endDate, string groupBy);
 }

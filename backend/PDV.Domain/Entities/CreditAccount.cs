@@ -33,6 +33,11 @@ public class CreditAccount : BaseEntity
 
     public CreditAccountStatus Status { get; set; } = CreditAccountStatus.Open;
     public DateTime? SettledAt { get; set; }
+
+    // Data da baixa da cobrança (calote/acordo). É o que permite datar a PERDA no bucket certo dos
+    // relatórios — UpdatedAt não serve, muda a cada alteração da conta.
+    public DateTime? CancelledAt { get; set; }
+
     public string? Note { get; set; }
 
     public ICollection<CreditInstallment> Installments { get; set; } = [];

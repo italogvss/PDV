@@ -112,7 +112,8 @@ public class ReceivePaymentTests
     }
 
     // Data futura é recusada: um recebimento lançado "amanhã" sumiria do fechamento de hoje
-    // e reapareceria depois, bagunçando a conferência de caixa.
+    // e reapareceria depois, bagunçando a conferência de caixa. O limite tem um dia de folga
+    // para o desencontro UTC × data local (ver TimezoneSkewDays em CreditService).
     [Test]
     public void FutureDatedPaymentIsRejected()
     {
@@ -120,10 +121,82 @@ public class ReceivePaymentTests
         var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
 
         var request = new ReceiveInstallmentRequest(
-            50m, nameof(PaymentMethod.Cash), DateTime.UtcNow.Date.AddDays(1), null);
+            50m, nameof(PaymentMethod.Cash), DateTime.UtcNow.Date.AddDays(2), null);
 
         Assert.ThrowsAsync<BusinessException>(
             () => harness.Build().ReceiveAsync(account.Installments.First().Id, request));
+    }
+
+    // A taxa do crediário só é conhecida na BAIXA: quem paga a parcela escolhe o método na hora.
+    // Sem congelar aqui, o relatório de taxas ignoraria tudo que entra pelo fiado.
+    [Test]
+    public async Task ReceiptFreezesTheFeeOfTheMethodUsedInTheReceipt()
+    {
+        var harness = new CreditHarness();
+        harness.GivenPaymentFees(cash: 0m, credit: 4m);
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+        var first = account.Installments.First();
+
+        var request = new ReceiveInstallmentRequest(
+            50m, nameof(PaymentMethod.CreditCard), DateTime.UtcNow.Date, null);
+
+        await harness.Build().ReceiveAsync(first.Id, request);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(harness.SavedPayment!.FeeRate, Is.EqualTo(4m));
+            Assert.That(harness.SavedPayment.FeeAmount, Is.EqualTo(2m)); // 4% de 50
+        });
+    }
+
+    // Tenant sem cobrança de taxa não pode ganhar taxa fantasma no crediário.
+    [Test]
+    public async Task ReceiptHasNoFeeWhenTheTenantDoesNotChargeFees()
+    {
+        var harness = new CreditHarness();
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+
+        await harness.Build().ReceiveAsync(account.Installments.First().Id, Receipt(50m));
+
+        Assert.That(harness.SavedPayment!.FeeAmount, Is.Zero);
+    }
+
+    // Data anterior à abertura do crediário é recusada: uma baixa datada antes da venda jogaria
+    // caixa para um período já fechado — o relatório do mês passado mudaria depois de fechado.
+    [Test]
+    public void PaymentDatedBeforeTheAccountWasOpenedIsRejected()
+    {
+        var harness = new CreditHarness();
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+        account.CreatedAt = DateTime.UtcNow.Date;
+
+        var request = new ReceiveInstallmentRequest(
+            50m, nameof(PaymentMethod.Cash), DateTime.UtcNow.Date.AddDays(-2), null);
+
+        Assert.ThrowsAsync<BusinessException>(
+            () => harness.Build().ReceiveAsync(account.Installments.First().Id, request));
+    }
+
+    // Venda da noite, baixa na mesma noite. Em BRT (UTC−3) uma venda das 21h nasce com CreatedAt
+    // já no dia seguinte em UTC, enquanto o operador manda a data LOCAL de hoje. Sem a folga de um
+    // dia, a loja que fecha à noite não conseguia receber — e a mensagem de erro citava uma data
+    // futura como "abertura do crediário".
+    [Test]
+    public async Task PaymentDatedOnTheLocalDayOfANightSaleIsAccepted()
+    {
+        var harness = new CreditHarness();
+        var account = harness.GivenAccount(300m, 3, DateTime.UtcNow.Date);
+
+        // CreatedAt em UTC já virou o dia; o operador informa a data local, ainda "ontem" em UTC.
+        var localToday = DateTime.UtcNow.Date;
+        account.CreatedAt = localToday.AddDays(1).AddMinutes(30);
+
+        var request = new ReceiveInstallmentRequest(
+            50m, nameof(PaymentMethod.Cash), localToday, null);
+
+        await harness.Build().ReceiveAsync(account.Installments.First().Id, request);
+
+        Assert.That(harness.SavedPayment!.Amount, Is.EqualTo(50m));
     }
 
     [Test]

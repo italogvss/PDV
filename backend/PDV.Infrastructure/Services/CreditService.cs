@@ -14,6 +14,7 @@ namespace PDV.Infrastructure.Services;
 public class CreditService(
     ICreditRepository repository,
     ICustomerRepository customerRepository,
+    ITenantRepository tenantRepository,
     ITenantContext tenantContext,
     IUserContext userContext,
     IAuditLogger auditLogger,
@@ -39,6 +40,30 @@ public class CreditService(
 
         if (request.DownPayment >= sale.Total)
             throw new BusinessException("A entrada não pode ser igual ou maior que o total da venda.");
+
+        // Vencimento anterior à venda não existe: o carnê nasceria vencido, indo direto para o
+        // aging, a inadimplência e os lembretes de cobrança. O DatePicker do PDV já barra, mas
+        // POST /credit/accounts não passa por ele. A folga de um dia é o mesmo desencontro
+        // UTC × data local do recebimento — a data vem do cliente como data pura.
+        if (request.FirstDueDate.Date < sale.CreatedAt.Date.AddDays(-1))
+            throw new BusinessException(
+                $"O primeiro vencimento não pode ser anterior à data da venda ({sale.CreatedAt:dd/MM/yyyy}).");
+
+        // Política da loja (TenantSettings). Fica aqui, e não no SaleService, para valer nos DOIS
+        // pontos de entrada: a venda fiado do PDV e a abertura avulsa por POST /credit/accounts.
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId);
+        if (settings is not null)
+        {
+            if (request.InstallmentCount > settings.CreditMaxInstallments)
+                throw new BusinessException(
+                    $"O crediário desta loja aceita no máximo {settings.CreditMaxInstallments} parcelas.");
+
+            var minDownPayment = PaymentFees.AmountFor(sale.Total, settings.CreditMinDownPaymentPercent);
+            if (request.DownPayment < minDownPayment)
+                throw new BusinessException(
+                    $"A entrada mínima é de {settings.CreditMinDownPaymentPercent:0.##}% " +
+                    $"(R$ {minDownPayment:0.00}) para esta venda.");
+        }
 
         var customer = await customerRepository.GetByIdAsync(sale.CustomerId.Value)
             ?? throw new NotFoundException("Cliente não encontrado.");
@@ -74,10 +99,18 @@ public class CreditService(
                 })],
         };
 
+        // A venda foi fechada como se tivesse sido paga à vista, então a taxa do método incidiu
+        // sobre o total. Virando fiado, só a ENTRADA é capturada por aquele método — o resto vem nas
+        // baixas das parcelas, cada uma com a taxa do método escolhido na hora. Sem este recálculo,
+        // uma venda no crédito lança taxa de cartão sobre dinheiro que ninguém passou na maquininha.
+        sale.FeeAmount = PaymentFees.AmountFor(request.DownPayment, sale.FeeRate);
+        sale.NetAmount = sale.Total - sale.FeeAmount;
+        sale.UpdatedAt = DateTime.UtcNow;
+
         await auditLogger.LogCreditAccountCreatedAsync(
             account.Id, account.CustomerName, financed, request.InstallmentCount, account.FirstDueDate);
 
-        await repository.AddAccountAsync(account);
+        await repository.AddAccountAsync(account, sale);
 
         // Monta a resposta do que acabou de ser criado em vez de reler do banco: quando o
         // SaleService chamar este método dentro da transação da venda, uma releitura veria
@@ -143,10 +176,32 @@ public class CreditService(
             throw new BusinessException($"O valor recebido não pode ultrapassar o saldo da parcela ({balance:C}).");
 
         var receivedAt = request.ReceivedAt;
-        if (receivedAt.Date > DateTime.UtcNow.Date)
+
+        // As duas guardas comparam uma data LOCAL (escolhida pelo operador, vem do cliente como
+        // data pura) com uma data UTC (CreatedAt/UtcNow). Não há fuso do tenant no sistema para
+        // reconciliar as duas, e a diferença é de no máximo um dia de calendário — daí a folga.
+        //
+        // Sem ela, a loja que fecha à noite não conseguia receber: em BRT (UTC−3) uma venda das
+        // 21h nasce com CreatedAt já no dia seguinte em UTC, e a baixa feita na mesma noite batia
+        // em "data anterior à abertura do crediário" citando uma data FUTURA na mensagem.
+        const int TimezoneSkewDays = 1;
+
+        if (receivedAt.Date > DateTime.UtcNow.Date.AddDays(TimezoneSkewDays))
             throw new BusinessException("A data do recebimento não pode estar no futuro.");
 
+        // Piso: sem ele dá para datar uma baixa antes da própria venda e jogar caixa para um
+        // período já fechado — o relatório do mês passado mudaria depois de fechado.
+        var openedOn = account.CreatedAt.Date.AddDays(-TimezoneSkewDays);
+        if (receivedAt.Date < openedOn)
+            throw new BusinessException(
+                $"A data do recebimento não pode ser anterior à abertura do crediário ({openedOn:dd/MM/yyyy}).");
+
         var method = Enum.Parse<PaymentMethod>(request.Method);
+
+        // Taxa congelada por baixa: quem paga a parcela escolhe o método na hora, então a taxa real
+        // do crediário só é conhecida aqui (a da venda cobre apenas a entrada).
+        var settings = await tenantRepository.GetSettingsAsync(tenantContext.TenantId);
+        var feeRate = PaymentFees.RateFor(settings, method);
 
         var payment = new CreditPayment
         {
@@ -155,6 +210,8 @@ public class CreditService(
             CreditInstallmentId = installment.Id,
             Amount = request.Amount,
             Method = method,
+            FeeRate = feeRate,
+            FeeAmount = PaymentFees.AmountFor(request.Amount, feeRate),
             ReceivedAt = receivedAt,
             OperatorId = userContext.UserId,
             OperatorName = userContext.UserName,
@@ -196,6 +253,12 @@ public class CreditService(
         var account = await repository.GetAccountByIdAsync(payment.CreditAccountId)
             ?? throw new NotFoundException("Crediário não encontrado.");
 
+        // Conta cancelada não tem cobrança viva: estornar aqui mexeria no saldo de algo que já foi
+        // baixado como perda, sem reabrir parcela nenhuma.
+        if (account.Status == CreditAccountStatus.Cancelled)
+            throw new BusinessException(
+                "Este crediário está cancelado. Não é possível estornar recebimentos de uma conta cancelada.");
+
         installment.PaidAmount -= payment.Amount;
         installment.UpdatedAt = DateTime.UtcNow;
         if (installment.Status == CreditInstallmentStatus.Paid)
@@ -227,6 +290,9 @@ public class CreditService(
             throw new BusinessException("Este crediário já está cancelado.");
 
         account.Status = CreditAccountStatus.Cancelled;
+        // Data da baixa: é ela que posiciona a PERDA no bucket certo do relatório (UpdatedAt não
+        // serve — muda a cada alteração da conta).
+        account.CancelledAt = DateTime.UtcNow;
         account.UpdatedAt = DateTime.UtcNow;
 
         // Recebimentos já feitos são preservados — cancelar não devolve dinheiro,
@@ -256,8 +322,8 @@ public class CreditService(
         var overdue = openInstallments.Where(i => i.DueDate < today).ToList();
 
         return new CreditSummaryResponse(
-            TotalReceivable: openInstallments.Sum(i => i.Amount - i.PaidAmount),
-            OverdueAmount: overdue.Sum(i => i.Amount - i.PaidAmount),
+            TotalReceivable: CreditAnalytics.TotalReceivable(openInstallments),
+            OverdueAmount: overdue.Sum(CreditAnalytics.Balance),
             ReceivedThisMonth: receivedThisMonth,
             CustomersWithBalance: openInstallments
                 .Where(i => i.Account is not null)
@@ -273,48 +339,10 @@ public class CreditService(
         await entitlementService.RequireEntitlementAsync(EntitlementCatalog.CreditDashboard);
 
         var openInstallments = (await repository.GetOpenInstallmentsAsync()).ToList();
-        var today = DateTime.UtcNow.Date;
 
-        decimal BucketAmount(Func<int, bool> daysPredicate) =>
-            openInstallments
-                .Where(i => daysPredicate((today - i.DueDate.Date).Days))
-                .Sum(i => i.Amount - i.PaidAmount);
-
-        int BucketCount(Func<int, bool> daysPredicate) =>
-            openInstallments.Count(i => daysPredicate((today - i.DueDate.Date).Days));
-
-        var buckets = new List<CreditAgingBucket>
-        {
-            new("A vencer", BucketAmount(d => d <= 0), BucketCount(d => d <= 0)),
-            new("1 a 30 dias", BucketAmount(d => d is >= 1 and <= 30), BucketCount(d => d is >= 1 and <= 30)),
-            new("31 a 60 dias", BucketAmount(d => d is >= 31 and <= 60), BucketCount(d => d is >= 31 and <= 60)),
-            new("61 a 90 dias", BucketAmount(d => d is >= 61 and <= 90), BucketCount(d => d is >= 61 and <= 90)),
-            new("Mais de 90 dias", BucketAmount(d => d > 90), BucketCount(d => d > 90)),
-        };
-
-        var topDebtors = openInstallments
-            .Where(i => i.Account is not null)
-            .GroupBy(i => new { i.Account!.CustomerId, i.Account!.CustomerName })
-            .Select(g => new CreditTopDebtor(
-                g.Key.CustomerId,
-                g.Key.CustomerName,
-                g.Sum(i => i.Amount - i.PaidAmount),
-                g.Where(i => i.DueDate < today).Sum(i => i.Amount - i.PaidAmount),
-                g.Select(i => i.CreditAccountId).Distinct().Count()))
-            .OrderByDescending(d => d.Balance)
-            .Take(10)
-            .ToList();
-
-        var totalReceivable = openInstallments.Sum(i => i.Amount - i.PaidAmount);
-        var overdueAmount = openInstallments
-            .Where(i => i.DueDate < today)
-            .Sum(i => i.Amount - i.PaidAmount);
-
-        var defaultRate = totalReceivable > 0
-            ? Math.Round(overdueAmount / totalReceivable * 100m, 2)
-            : 0m;
-
-        return new CreditAgingResponse(buckets, topDebtors, totalReceivable, overdueAmount, defaultRate);
+        // Buckets, top devedores e inadimplência vivem em CreditAnalytics — a seção Crediário dos
+        // Relatórios serve exatamente os mesmos números, com outro gate de plano.
+        return CreditAnalytics.BuildAging(openInstallments, DateTime.UtcNow.Date);
     }
 
     public async Task<CreditReminderResponse> GetReminderAsync(Guid installmentId)

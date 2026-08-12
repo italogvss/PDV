@@ -12,6 +12,8 @@ public class CreditPaymentConfiguration : IEntityTypeConfiguration<CreditPayment
 
         builder.Property(p => p.Amount).HasColumnType("decimal(10,2)").IsRequired();
         builder.Property(p => p.Method).HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(p => p.FeeRate).HasColumnType("decimal(5,2)");
+        builder.Property(p => p.FeeAmount).HasColumnType("decimal(10,2)");
         builder.Property(p => p.ReceivedAt).IsRequired();
         builder.Property(p => p.OperatorName).IsRequired().HasMaxLength(200);
         builder.Property(p => p.Note).HasMaxLength(500);
