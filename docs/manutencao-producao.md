@@ -34,7 +34,7 @@
   lugar seguro** (gerenciador de senhas).
 - **Sempre teste o deploy logo depois.** O `deploy.sh` já faz um health check no final, mas abra o site
   e faça um login real após cada deploy.
-- **Stripe está em modo TESTE de propósito.** Nenhuma cobrança real acontece hoje. Ver [seção 10](#10-stripe-modo-teste--live).
+- **Stripe está em modo LIVE desde 2026-10-08.** Checkouts cobram cartão de verdade. Ver [seção 10](#10-stripe-modo-teste--live).
 
 ---
 
@@ -371,42 +371,53 @@ certbot renew --dry-run
 
 ## 10. Stripe: modo teste → live
 
-**Hoje o Stripe está em modo TESTE** (`sk_test_...` no `.env.prod`). Isso é intencional: seus testers
-usam o sistema sem risco de cobrança real, porque:
+**O Stripe está em modo LIVE desde 2026-10-08.** Estado da conta live (ids no Dashboard e no `.env.prod`):
 
-1. A chave é de teste — o checkout não aceita cartão real, só cartões de teste.
-2. Você vai **estender o trial** deles ([seção 11](#11-estender-o-trial-dos-testers)), então nem chegam
-   na tela de pagamento.
+| Item | Valor |
+|---|---|
+| Titular | **Pessoa física (CPF)** — decisão consciente, ver o aviso abaixo |
+| Preços (`lookup_key` = slug, BRL) | `essencial-mensal` R$ 29,99 · `essencial-anual` R$ 299,99 · `profissional-mensal` R$ 49,99 · `profissional-anual` R$ 499,99 |
+| Portal do cliente | configuração dedicada — só trocar cartão + faturas (cancelar/trocar plano **desligados**) |
+| Webhook | endpoint "Kashing producao (8 eventos...)" → `https://app.kashing.com.br/api/webhooks/stripe` |
 
-### Quando for para live (com CNPJ)
+> **Aviso CPF vs CNPJ:** uma conta Stripe verificada como pessoa física **não pode** ser convertida
+> para CNPJ depois — e clientes/assinaturas **não migram** entre contas Stripe. Ao abrir CNPJ será
+> preciso uma conta nova, e os assinantes reassinam nela (o código já tolera a troca de conta — ver
+> "IDs de outra conta" abaixo).
 
-> **Aviso crítico sobre CPF vs CNPJ:** uma conta Stripe verificada como pessoa física **não pode** ser
-> convertida para CNPJ depois — e clientes/assinaturas **não migram** entre contas Stripe diferentes.
-> Só vá para modo **live** de verdade depois de ter a conta certa (CNPJ), senão você paga o preço de
-> migrar tudo na mão depois. Em modo teste isso não importa.
+### Como virar live (ou trocar de conta)
 
-Passos para virar live, **editando `/opt/kashing/.env.prod`** na VPS:
+Tudo é configuração em `/opt/kashing/.env.prod` — nada está compilado no código:
 
-1. Troque `Stripe__ApiKey` para a chave `sk_live_...`.
-2. Troque os 4 `Stripe__Prices__*` pelos IDs `price_...` **do modo live** (criados via "copiar para live"
-   no Dashboard ou rodando o bootstrap com a chave live — os IDs de teste não existem em live).
-3. Crie o endpoint de webhook no Dashboard (modo live) apontando para
-   `https://app.kashing.com.br/api/webhooks/stripe`, com estes eventos: `invoice.paid`,
-   `invoice.payment_failed`, `charge.succeeded`, `charge.refunded`, `charge.dispute.created`,
+1. `Stripe__ApiKey` → a `sk_live_...` da conta.
+2. `Stripe__Prices__*` → os `price_...` **da conta**: `.claude/stripe-bootstrap/bootstrap.ps1 -SecretKey sk_live_...`
+   (idempotente por `lookup_key`; reusa os que já existem).
+3. `Stripe__PortalConfigurationId` → crie a configuração do portal **na conta** (o `bpc_` é por conta)
+   habilitando só `payment_method_update` + `invoice_history`. Sem isso o Stripe usa a configuração
+   default, que pode ter cancelamento ligado — e cancelar pelo portal **não estorna** (subscriptions.md §7.1).
+4. `Stripe__WebhookSecret` → crie o endpoint `https://app.kashing.com.br/api/webhooks/stripe` com os eventos
+   `invoice.paid`, `invoice.payment_failed`, `charge.succeeded`, `charge.refunded`, `charge.dispute.created`,
    `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
-   Copie o `whsec_...` gerado para `Stripe__WebhookSecret`.
-4. Recrie só a API (ver [seção 3.4](#34-alterar-variáveis-de-ambiente-envprod) — são variáveis de
-   backend, sem `--build`):
+   O `whsec_...` **só aparece na criação** — guarde no gerenciador de senhas na hora.
+5. Recrie só a API (ver [seção 3.4](#34-alterar-variáveis-de-ambiente-envprod) — sem `--build`):
    `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate api`.
+6. Confira: startup sem `Plano ... sem preço configurado`; reenvie um evento pelo Dashboard e veja
+   **200** no log da API.
 
-> Editar o `.env.prod` e recriar o container basta — a chave/preços são lidos do ambiente, não estão
-> compilados no código.
+### IDs de outra conta (resquícios do modo teste)
+
+Quem abriu checkout em modo teste ficou com um `cus_` de teste em `GatewayCustomers` /
+`Subscriptions.GatewayCustomerId` — id que não existe na conta live. O código trata sozinho:
+`SubscriptionService.EnsureCustomerAsync` só reusa o `cus_` salvo se `CustomerExistsAsync` confirmar
+que ele existe na conta atual; senão obtém o cliente certo e **reaponta a mesma linha** (log
+`Cliente ... não existe no gateway; substituído`). O portal responde "Não há forma de pagamento para
+gerenciar" em vez de 502. Nenhuma limpeza manual no banco.
 
 ---
 
 ## 11. Estender o trial dos testers
 
-Enquanto o Stripe está em teste, os testers não devem cair na tela de "assinatura expirada". O trial dura
+Para dar mais tempo a um tester (ex.: piloto gratuito) sem que ele caia na tela de "assinatura expirada". O trial dura
 30 dias (`Subscription.TrialEndsAt`). Para dar mais tempo, atualize a data direto no banco.
 
 Ache a assinatura do tester (pelo email do dono):

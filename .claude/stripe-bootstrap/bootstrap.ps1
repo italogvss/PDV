@@ -8,8 +8,8 @@
     Idempotente por `lookup_key` do preço (o slug do plano): rodar de novo não duplica — reusa o
     preço existente com o mesmo lookup_key. Os valores (nome, preço, ciclo) espelham PlanSeedData.cs.
 
-    Precisa apenas de uma chave secreta de teste (sk_test_...). Usa a API HTTP direto (curl), então
-    não depende do Stripe CLI.
+    Precisa apenas de uma chave secreta (sk_test_... em dev, sk_live_... em produção — os ids diferem
+    por conta/modo). Usa a API HTTP direto (curl), então não depende do Stripe CLI.
 
 .PARAMETER SecretKey
     Chave secreta do Stripe (sk_test_... em teste). Default: $env:STRIPE_SECRET_KEY.

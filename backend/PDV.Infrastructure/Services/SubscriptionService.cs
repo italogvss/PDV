@@ -160,7 +160,8 @@ public class SubscriptionService(
 
         // O trial é PDV-side: não existe cliente no gateway, logo não há forma de pagamento nem
         // fatura para gerenciar. Mesma coisa para quem expirou sem nunca ter pago.
-        if (string.IsNullOrWhiteSpace(sub.GatewayCustomerId))
+        // Um cus_ que não existe nesta conta (resquício do modo teste) também não tem o que gerenciar.
+        if (string.IsNullOrWhiteSpace(sub.GatewayCustomerId) || !await gateway.CustomerExistsAsync(sub.GatewayCustomerId))
             throw new BusinessException("Não há forma de pagamento para gerenciar.");
 
         var url = await gateway.CreatePortalSessionAsync(sub.GatewayCustomerId, request.ReturnUrl);
@@ -501,11 +502,23 @@ public class SubscriptionService(
     private async Task<GatewayCustomer> EnsureCustomerAsync(Guid userId, User user)
     {
         var existing = await gatewayCustomerRepository.GetByUserIdAsync(userId, gateway.Provider);
-        if (existing is not null) return existing;
+        if (existing is not null && await gateway.CustomerExistsAsync(existing.GatewayCustomerId)) return existing;
 
         var metadata = new Dictionary<string, string> { ["userId"] = userId.ToString() };
         var result = await gateway.EnsureCustomerAsync(
             new CustomerInfo(user.Email, user.Name, user.Document, user.Phone, metadata));
+
+        // O cus_ salvo não existe nesta conta do gateway (criado com a chave de teste antes da
+        // virada para live, ou apagado no painel): reaponta a mesma linha para o cliente válido.
+        if (existing is not null)
+        {
+            logger.LogWarning("Cliente {Old} não existe no gateway; substituído por {New} (usuário {UserId}).",
+                existing.GatewayCustomerId, result.CustomerId, userId);
+            existing.GatewayCustomerId = result.CustomerId;
+            existing.Email = result.Email;
+            await gatewayCustomerRepository.UpdateAsync(existing);
+            return existing;
+        }
 
         var customer = new GatewayCustomer
         {

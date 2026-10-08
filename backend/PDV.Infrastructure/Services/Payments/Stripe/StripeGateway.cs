@@ -332,6 +332,26 @@ public class StripeGateway(IStripeClient client, IOptions<StripeOptions> options
         }
     }
 
+    public async Task<bool> CustomerExistsAsync(string customerId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(customerId)) return false;
+
+        try
+        {
+            var customer = await _customers.GetAsync(customerId, cancellationToken: ct);
+            // Um cliente apagado no painel ainda responde ao GET, mas com `deleted: true`.
+            return customer is { Deleted: not true };
+        }
+        catch (StripeException ex) when (IsMissing(ex))
+        {
+            return false;
+        }
+        catch (StripeException ex)
+        {
+            throw Wrap(ex, nameof(CustomerExistsAsync));
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Cupons
     // -----------------------------------------------------------------------
