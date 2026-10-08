@@ -4,6 +4,7 @@ import type { CreateSalePayload } from '../types/sale.types'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { useUserPermissions } from './useUserPermissions'
+import { invalidateNotifications } from './useNotifications'
 
 const SALES_KEY = ['sales'] as const
 const PRODUCTS_KEY = ['products'] as const
@@ -44,6 +45,7 @@ export function useCreateSale() {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
       // Venda fiado abre uma conta de crediário na mesma transação.
       if (sale.credit) queryClient.invalidateQueries({ queryKey: CREDIT_KEY })
+      invalidateNotifications(queryClient)
       showToast('Venda registrada com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao registrar venda.'),
@@ -60,6 +62,7 @@ export function useCancelSale() {
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY })
       queryClient.invalidateQueries({ queryKey: CREDIT_KEY })
+      invalidateNotifications(queryClient)
       showToast('Venda cancelada com sucesso.', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar venda.'),

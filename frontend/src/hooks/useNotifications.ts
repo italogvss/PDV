@@ -1,149 +1,30 @@
-import { useQuery } from '@tanstack/react-query'
-import {
-  AccountBalanceWalletOutlined,
-  CalendarTodayOutlined,
-  ErrorOutlined,
-  RemoveShoppingCartOutlined,
-  ScheduleOutlined,
-  TrendingDownOutlined,
-  WarningAmberOutlined,
-} from '@mui/icons-material'
+import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { notificationService } from '../services/notification.service'
-import type { NotificationCounts, NotificationItem } from '../types/notification.types'
+import { FEATURES } from '../constants/entitlements'
+import { useAppSelector } from '../store'
+import { useEntitlements } from './useSubscription'
 
 const QUERY_KEY = ['notifications'] as const
 
 export function useNotifications() {
+  const { has } = useEntitlements()
+  const tenantId = useAppSelector((s) => s.auth.tenantId)
+
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => notificationService.get(),
+    // Sem o plano o endpoint responde 402 — não adianta insistir a cada 60s.
+    enabled: !!tenantId && has(FEATURES.notifications),
     refetchInterval: 60_000,
+    // O poll pausa com a aba oculta; sem isto, voltar a uma aba aberta desde ontem
+    // mostraria as contagens de ontem até o próximo tick.
+    refetchOnWindowFocus: true,
     staleTime: 30_000,
   })
 }
 
-export function buildNotificationItems(counts: NotificationCounts): NotificationItem[] {
-  const items: NotificationItem[] = []
-  // `credit` só existe depois do módulo de crediário; o fallback evita quebrar num payload antigo.
-  const { stock, financial, appointments } = counts
-  const credit = counts.credit ?? { overdueInstallments: 0, upcomingInstallments: 0 }
-
-  if (stock.outOfStock > 0) {
-    const n = stock.outOfStock
-    items.push({
-      id: 'out-of-stock',
-      category: 'estoque',
-      severity: 'error',
-      icon: RemoveShoppingCartOutlined,
-      title: 'Produtos sem estoque',
-      description: `${n} ${n === 1 ? 'produto' : 'produtos'} sem estoque`,
-      route: '/estoque',
-    })
-  }
-
-  if (stock.criticalStock > 0) {
-    const n = stock.criticalStock
-    items.push({
-      id: 'critical-stock',
-      category: 'estoque',
-      severity: 'error',
-      icon: ErrorOutlined,
-      title: 'Estoque crítico',
-      description: `${n} ${n === 1 ? 'produto' : 'produtos'} em nível crítico`,
-      route: '/estoque',
-    })
-  }
-
-  if (stock.lowStock > 0) {
-    const n = stock.lowStock
-    items.push({
-      id: 'low-stock',
-      category: 'estoque',
-      severity: 'warning',
-      icon: WarningAmberOutlined,
-      title: 'Estoque baixo',
-      description: `${n} ${n === 1 ? 'produto' : 'produtos'} com estoque baixo`,
-      route: '/estoque',
-    })
-  }
-
-  if (stock.negativeStock > 0) {
-    const n = stock.negativeStock
-    items.push({
-      id: 'negative-stock',
-      category: 'estoque',
-      severity: 'error',
-      icon: TrendingDownOutlined,
-      title: 'Estoque negativo',
-      description: `${n} ${n === 1 ? 'produto' : 'produtos'} com estoque negativo`,
-      route: '/estoque',
-    })
-  }
-
-  if (financial.overdueExpenses > 0) {
-    const n = financial.overdueExpenses
-    items.push({
-      id: 'overdue-expenses',
-      category: 'financeiro',
-      severity: 'error',
-      icon: AccountBalanceWalletOutlined,
-      title: 'Despesas vencidas',
-      description: `${n} ${n === 1 ? 'despesa vencida' : 'despesas vencidas'}`,
-      route: '/despesas',
-    })
-  }
-
-  if (financial.upcomingExpenses > 0) {
-    const n = financial.upcomingExpenses
-    items.push({
-      id: 'upcoming-expenses',
-      category: 'financeiro',
-      severity: 'warning',
-      icon: ScheduleOutlined,
-      title: 'Despesas a vencer',
-      description: `${n} ${n === 1 ? 'despesa vence' : 'despesas vencem'} nos próximos 7 dias`,
-      route: '/despesas',
-    })
-  }
-
-  if (credit.overdueInstallments > 0) {
-    const n = credit.overdueInstallments
-    items.push({
-      id: 'overdue-credit',
-      category: 'financeiro',
-      severity: 'error',
-      icon: AccountBalanceWalletOutlined,
-      title: 'Crediário vencido',
-      description: `${n} ${n === 1 ? 'parcela vencida' : 'parcelas vencidas'} de clientes`,
-      route: '/crediario',
-    })
-  }
-
-  if (credit.upcomingInstallments > 0) {
-    const n = credit.upcomingInstallments
-    items.push({
-      id: 'upcoming-credit',
-      category: 'financeiro',
-      severity: 'warning',
-      icon: ScheduleOutlined,
-      title: 'Crediário a vencer',
-      description: `${n} ${n === 1 ? 'parcela vence' : 'parcelas vencem'} nos próximos 7 dias`,
-      route: '/crediario',
-    })
-  }
-
-  if (appointments.todayAppointments > 0) {
-    const n = appointments.todayAppointments
-    items.push({
-      id: 'today-appointments',
-      category: 'agendamentos',
-      severity: 'info',
-      icon: CalendarTodayOutlined,
-      title: 'Agendamentos hoje',
-      description: `${n} ${n === 1 ? 'agendamento' : 'agendamentos'} para hoje`,
-      route: '/agendamentos',
-    })
-  }
-
-  return items
+// As contagens mudam quando o usuário mexe em estoque, despesa ou agendamento. Chamar isto
+// no onSuccess dessas mutations mantém o sino certo sem esperar o poll de 60s.
+export function invalidateNotifications(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: QUERY_KEY })
 }

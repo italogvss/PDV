@@ -42,6 +42,7 @@ public sealed class SubscriptionHarness
 
         Gateway.SetupGet(g => g.Provider).Returns("Stripe");
         Gateway.Setup(g => g.PriceExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        Gateway.Setup(g => g.CustomerExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         Gateway.Setup(g => g.CreateSubscriptionCheckoutAsync(
                 It.IsAny<SubscriptionCheckoutRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HostedCheckoutResult("cs_test_123", CheckoutUrl))
@@ -110,6 +111,13 @@ public sealed class SubscriptionHarness
     public SubscriptionHarness WithPriceMissingAtGateway(string externalProductId)
     {
         Gateway.Setup(g => g.PriceExistsAsync(externalProductId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        return this;
+    }
+
+    // O cus_ salvo localmente não existe na conta atual do gateway (ex.: criado em modo teste).
+    public SubscriptionHarness WithCustomerMissingAtGateway()
+    {
+        Gateway.Setup(g => g.CustomerExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
         return this;
     }
 

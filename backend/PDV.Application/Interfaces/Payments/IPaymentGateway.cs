@@ -47,6 +47,10 @@ public interface IPaymentGateway
     // O preço existe, está ativo e é recorrente? Guarda o checkout contra um catálogo dessincronizado.
     Task<bool> PriceExistsAsync(string priceExternalId, CancellationToken ct = default);
 
+    // O cliente (cus_...) existe e não foi apagado nesta conta do gateway? Um id salvo localmente
+    // pode ser de outra conta/modo (ex.: criado com a chave de teste antes da virada para live).
+    Task<bool> CustomerExistsAsync(string customerId, CancellationToken ct = default);
+
     // -----------------------------------------------------------------------
     // Cupons — gerenciados só pelo admin (AdminController). O Stripe é a única fonte da
     // verdade: nada é espelhado em banco local.

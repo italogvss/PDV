@@ -717,7 +717,12 @@ Uma implementação está completa quando **todos** passam. Referência cruzada 
    `charge.dispute.created`, `customer.subscription.created`, `customer.subscription.updated`,
    `customer.subscription.deleted`. Em dev: `stripe listen --forward-to localhost:5000/api/webhooks/stripe`
    (ele imprime um `whsec_` efêmero — cole no `.env` e reinicie a API).
-4. **Config avançada:** a política de retentativa (Smart Retries) é a **default da conta** — o PDV não
+4. **Portal do cliente:** crie uma Billing Portal Configuration só com `payment_method_update` +
+   `invoice_history` e ponha o `bpc_` em `Stripe__PortalConfigurationId` (§7.1). É **por conta**.
+5. **Trocar de conta/modo** (teste → live, CPF → CNPJ): ids `cus_` salvos de outra conta são
+   detectados por `CustomerExistsAsync` e substituídos no próximo checkout. Passo a passo de produção:
+   [manutencao-producao.md §10](manutencao-producao.md#10-stripe-modo-teste--live).
+6. **Config avançada:** a política de retentativa (Smart Retries) é a **default da conta** — o PDV não
    a envia. Ajuste no Dashboard se precisar; `RF-27..29` não mudam, só quantas tentativas antes do `Expired`.
 
 ---

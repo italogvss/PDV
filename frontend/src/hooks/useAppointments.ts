@@ -8,6 +8,7 @@ import type {
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { useUserPermissions } from './useUserPermissions'
+import { invalidateNotifications } from './useNotifications'
 
 const QUERY_KEY = ['appointments'] as const
 
@@ -33,6 +34,7 @@ export function useCreateAppointment() {
     mutationFn: (payload: CreateAppointmentPayload) => appointmentService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Agendamento criado com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao criar agendamento.'),
@@ -48,6 +50,7 @@ export function useUpdateAppointment() {
       appointmentService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
     },
     onError: (error) => handleError(error, 'Erro ao atualizar agendamento.'),
   })
@@ -71,6 +74,7 @@ export function useChangeAppointmentStatus() {
       appointmentService.changeStatus(id, status),
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast(STATUS_TOAST[status], status === 'cancelado' ? 'info' : 'success')
     },
     onError: (error) => handleError(error, 'Erro ao atualizar status do agendamento.'),
@@ -86,6 +90,7 @@ export function useDeleteAppointment() {
     mutationFn: (id: string) => appointmentService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      invalidateNotifications(queryClient)
       showToast('Agendamento removido.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao remover agendamento.'),

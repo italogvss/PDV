@@ -58,6 +58,10 @@ Decisões já tomadas (2026-07-17) para o primeiro deploy:
 
 ## 3. Lacunas encontradas
 
+> **Histórico.** Este documento registra a montagem inicial; a produção está no ar desde então e o
+> Stripe virou **live** em 2026-10-08. Para o estado atual e a operação do dia a dia, use o
+> [runbook](manutencao-producao.md) (Stripe: §10).
+
 | # | Lacuna | Impacto | Status |
 |---|---|---|---|
 | 1 | `nginx.prod.conf` só escuta na porta 80, sem certificado | **Bloqueante** — cookies `Secure=true` não são aceitos sem HTTPS, login não funciona | ✅ Blocos 443 + redirect adicionados (§7). Falta só emitir o certificado real na VPS. |

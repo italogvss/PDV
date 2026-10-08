@@ -10,6 +10,7 @@ import { useToast } from './useToast'
 import { useApiError } from './useApiError'
 import { useUserPermissions } from './useUserPermissions'
 import { useEntitlements } from './useSubscription'
+import { invalidateNotifications } from './useNotifications'
 
 const QUERY_KEY = ['credit'] as const
 // O histórico de vendas mostra a situação do crediário dentro do DTO da venda — qualquer
@@ -88,6 +89,7 @@ export function useCreateCreditAccount() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
+      invalidateNotifications(queryClient)
       showToast('Crediário aberto com sucesso!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao abrir o crediário.'),
@@ -108,6 +110,7 @@ export function useReceiveInstallment() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
+      invalidateNotifications(queryClient)
       showToast('Recebimento registrado!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao registrar o recebimento.'),
@@ -124,6 +127,7 @@ export function useReverseCreditPayment() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
+      invalidateNotifications(queryClient)
       showToast('Recebimento estornado.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao estornar o recebimento.'),
@@ -140,6 +144,7 @@ export function useCancelCreditAccount() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: SALES_KEY })
       queryClient.invalidateQueries({ queryKey: REPORTS_KEY })
+      invalidateNotifications(queryClient)
       showToast('Crediário cancelado.', 'info')
     },
     onError: (error) => handleError(error, 'Erro ao cancelar o crediário.'),

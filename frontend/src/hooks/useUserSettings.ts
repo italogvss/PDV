@@ -5,6 +5,7 @@ import { useAppDispatch } from '../store'
 import { setAppearance } from '../store/slices/auth.slice'
 import { useToast } from './useToast'
 import { useApiError } from './useApiError'
+import { invalidateNotifications } from './useNotifications'
 
 const QUERY_KEY = ['user-settings'] as const
 
@@ -40,6 +41,9 @@ export function useUpdateNotificationSettings() {
     mutationFn: (payload: NotificationPrefs) => userSettingsService.updateNotifications(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      // As preferências filtram as notificações no backend — sem isto o sino continuaria
+      // aceso com o que acabou de ser desligado até o próximo poll.
+      invalidateNotifications(queryClient)
       showToast('Preferências salvas!', 'success')
     },
     onError: (error) => handleError(error, 'Erro ao salvar preferências.'),

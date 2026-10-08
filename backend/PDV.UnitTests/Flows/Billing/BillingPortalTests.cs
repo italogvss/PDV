@@ -70,6 +70,22 @@ public class BillingPortalTests
             harness.Build().CreatePortalSessionAsync(new PortalSessionRequest(ReturnUrl)));
     }
 
+    // Resquício do modo teste: o cus_ salvo não existe na conta live. Sem a checagem, o portal
+    // estouraria 502 em vez de uma mensagem de negócio.
+    [Test]
+    public void StaleGatewayCustomer_HasNothingToManageAndNeverOpensThePortal()
+    {
+        var harness = WithPortal(new SubscriptionHarness()
+            .WithSubscription(SubscriptionBuilder.Active().Build())
+            .WithCustomerMissingAtGateway());
+
+        Assert.ThrowsAsync<BusinessException>(() =>
+            harness.Build().CreatePortalSessionAsync(new PortalSessionRequest(ReturnUrl)));
+
+        harness.Gateway.Verify(g => g.CreatePortalSessionAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Test]
     public void NoSubscription_IsNotFound()
     {

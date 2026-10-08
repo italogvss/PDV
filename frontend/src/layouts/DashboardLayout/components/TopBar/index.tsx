@@ -8,14 +8,12 @@ import { TopBarProps } from './types'
 import { useNavigate } from 'react-router-dom'
 import { useThemeMode } from '../../../../context/ThemeModeContext'
 import { useUpdateAppearanceSettings, useUserSettings } from '../../../../hooks/useUserSettings'
-import { useAppSelector } from '../../../../store'
 import { useEntitlements } from '../../../../hooks/useSubscription'
 import { FEATURES } from '../../../../constants/entitlements'
 
 export default function TopBar({ isMobile, onMenuClick }: TopBarProps) {
   const navigate = useNavigate()
   const { mode } = useThemeMode()
-  const isOwner = useAppSelector(store => store.auth.role === "Owner")
   const { data: settings } = useUserSettings()
   const updateAppearance = useUpdateAppearanceSettings()
   const { has } = useEntitlements()
@@ -86,7 +84,7 @@ export default function TopBar({ isMobile, onMenuClick }: TopBarProps) {
             : <DarkModeOutlined sx={{ fontSize: 18 }} />
           }
         </IconButton>
-        {isOwner && has(FEATURES.notifications) && <NotificationButton />}       
+        {has(FEATURES.notifications) && <NotificationButton />}
         <IconButton
           onClick={() => navigate('/configuracoes?tab=perfil')}
           size="small"

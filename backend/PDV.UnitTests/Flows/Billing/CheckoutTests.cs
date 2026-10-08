@@ -331,6 +331,27 @@ public class CheckoutTests
             c => c.GatewayCustomerId == SubscriptionHarness.GatewayCustomerId)), Times.Once);
     }
 
+    // Virada teste → live: o cus_ salvo é da conta de teste e não existe na live. Reusá-lo faria o
+    // checkout falhar ("No such customer") — a mesma linha passa a apontar para um cliente válido.
+    [Test]
+    public async Task Checkout_StaleLocalCustomer_IsReplacedInPlaceByAValidOne()
+    {
+        var plan = PlanBuilder.Essential().Build();
+        var harness = new SubscriptionHarness().WithSubscription(null).WithPlan(plan).WithCustomerMissingAtGateway();
+        harness.Gateway.Setup(g => g.EnsureCustomerAsync(It.IsAny<CustomerInfo>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new GatewayCustomerResult("cus_live_novo", "dono@exemplo.com", "Fulano", null, null));
+
+        await harness.Build().StartCheckoutAsync(RequestFor(plan));
+
+        Assert.Multiple(() =>
+        {
+            harness.Customers.Verify(r => r.UpdateAsync(It.Is<GatewayCustomer>(c => c.GatewayCustomerId == "cus_live_novo")), Times.Once);
+            harness.Customers.Verify(r => r.AddAsync(It.IsAny<GatewayCustomer>()), Times.Never);
+            Assert.That(harness.CheckoutRequest!.CustomerId, Is.EqualTo("cus_live_novo"));
+            Assert.That(harness.Subscription!.GatewayCustomerId, Is.EqualTo("cus_live_novo"));
+        });
+    }
+
     // RF-18: o gateway conhece CPF/telefone que o cadastro não tem — sincroniza de volta, sem
     // sobrescrever o que o usuário já preencheu.
     [Test]

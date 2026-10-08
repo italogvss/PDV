@@ -1,42 +1,68 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Notifications;
+using PDV.Application.Helpers;
 using PDV.Application.Interfaces;
 using PDV.Domain.Entities;
 using PDV.Domain.Enums;
+using PDV.Domain.Exceptions;
 using PDV.Infrastructure.Persistence;
+using PDV.Infrastructure.Services.Notifications;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace PDV.Infrastructure.Services;
 
+// Motor de notificações. Não conhece nenhuma notificação em particular: percorre
+// NotificationRules.All aplicando o mesmo gating a todas (módulo do tenant × permissão do
+// usuário × preferência pessoal) e executa a contagem das que sobraram.
 public class NotificationService(
     AppDbContext context,
     ITenantContext tenantContext,
+    IPermissionService permissionService,
     IHttpContextAccessor httpContextAccessor) : INotificationService
 {
-    public async Task<NotificationResponse> GetNotificationsAsync()
+    public async Task<NotificationsResponse> GetNotificationsAsync()
     {
-        var today = DateTime.UtcNow.Date;
-        var userSettings = await GetUserSettingsAsync();
+        // Usuário sem linha de UserSettings (conta antiga) usa os defaults da entidade,
+        // que são todos "notificar".
+        var userSettings = await GetUserSettingsAsync() ?? new UserSettings();
+        var tenantSettings = await GetTenantSettingsAsync();
+        var enabledModules = OperationModuleHelper.ReadEnabled(tenantSettings?.EnabledModulesJson);
 
-        var stock = userSettings?.NotifyStockAlerts == false || !await IsModuleEnabledAsync(OperationModule.Inventory)
-            ? new StockNotifications(0, 0, 0, 0)
-            : await GetStockNotificationsAsync();
+        var ctx = new NotificationContext(context, BusinessClock.Today, tenantSettings);
+        var items = new List<NotificationItemResponse>();
 
-        var financial = userSettings?.NotifyInvoices == false || !await IsModuleEnabledAsync(OperationModule.Expenses)
-            ? new FinancialNotifications(0, 0)
-            : await GetFinancialNotificationsAsync(today);
+        foreach (var rule in NotificationRules.All)
+        {
+            if (!enabledModules.Contains(rule.Module.ToString(), StringComparer.OrdinalIgnoreCase))
+                continue;
 
-        var appointments = userSettings?.NotifyAppointments == false
-            ? new AppointmentNotifications(0)
-            : await GetAppointmentNotificationsAsync(today);
+            if (!rule.IsPreferenceEnabled(userSettings))
+                continue;
 
-        var credit = userSettings?.NotifyInvoices == false || !await IsModuleEnabledAsync(OperationModule.Credit)
-            ? new CreditNotifications(0, 0)
-            : await GetCreditNotificationsAsync(today);
+            if (!await HasPermissionAsync(rule.Permissions))
+                continue;
 
-        return new NotificationResponse(stock, financial, appointments, credit);
+            var count = await rule.CountAsync(ctx);
+            if (count > 0)
+                items.Add(new NotificationItemResponse(rule.Key, count));
+        }
+
+        return new NotificationsResponse(items);
+    }
+
+    // Este endpoint roda em loop (poll de 60s). Um 401 aqui derrubaria a sessão inteira no
+    // interceptor do frontend, então falha de permissão vira "não mostra a linha".
+    private async Task<bool> HasPermissionAsync(Permission[] permissions)
+    {
+        try
+        {
+            return await permissionService.HasAnyAsync(permissions);
+        }
+        catch (UnauthorizedException)
+        {
+            return false;
+        }
     }
 
     private async Task<UserSettings?> GetUserSettingsAsync()
@@ -51,69 +77,10 @@ public class NotificationService(
             .FirstOrDefaultAsync(s => s.UserId == userId);
     }
 
-    private async Task<StockNotifications> GetStockNotificationsAsync()
-    {
-        var outOfStock = await context.Products
-            .CountAsync(p => p.Stock == 0);
-
-        var criticalStock = await context.Products
-            .CountAsync(p => p.MinCriticalStock != null && p.Stock > 0 && p.Stock <= p.MinCriticalStock);
-
-        var lowStock = await context.Products
-            .CountAsync(p => p.MinStock != null && p.Stock > 0 && p.Stock <= p.MinStock
-                && (p.MinCriticalStock == null || p.Stock > p.MinCriticalStock));
-
-        var negativeStock = await context.Products
-            .CountAsync(p => p.Stock < 0);
-
-        return new StockNotifications(outOfStock, criticalStock, lowStock, negativeStock);
-    }
-
-    private async Task<FinancialNotifications> GetFinancialNotificationsAsync(DateTime today)
-    {
-        var overdueExpenses = await context.Expenses
-            .CountAsync(e => !e.IsPaid && e.DueDate < today);
-
-        var upcomingExpenses = await context.Expenses
-            .CountAsync(e => !e.IsPaid && e.DueDate >= today && e.DueDate < today.AddDays(8));
-
-        return new FinancialNotifications(overdueExpenses, upcomingExpenses);
-    }
-
-    private async Task<CreditNotifications> GetCreditNotificationsAsync(DateTime today)
-    {
-        var overdue = await context.CreditInstallments
-            .CountAsync(i => i.Status == CreditInstallmentStatus.Open && i.DueDate < today);
-
-        var upcoming = await context.CreditInstallments
-            .CountAsync(i => i.Status == CreditInstallmentStatus.Open
-                          && i.DueDate >= today && i.DueDate < today.AddDays(8));
-
-        return new CreditNotifications(overdue, upcoming);
-    }
-
-    private async Task<AppointmentNotifications> GetAppointmentNotificationsAsync(DateTime today)
-    {
-        if (!await IsModuleEnabledAsync(OperationModule.Appointments))
-            return new AppointmentNotifications(0);
-
-        var todayAppointments = await context.Appointments
-            .CountAsync(a => a.Start >= today && a.Start < today.AddDays(1));
-
-        return new AppointmentNotifications(todayAppointments);
-    }
-
-    private async Task<bool> IsModuleEnabledAsync(OperationModule module)
-    {
-        // TenantSettings não tem HasQueryFilter — filtrar manualmente
-        var settings = await context.TenantSettings
+    // TenantSettings não tem HasQueryFilter — filtrar manualmente. Carregado uma única vez por
+    // request e repassado às regras (antes era um SELECT novo para cada módulo checado).
+    private Task<TenantSettings?> GetTenantSettingsAsync() =>
+        context.TenantSettings
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.TenantId == tenantContext.TenantId);
-
-        if (settings?.EnabledModulesJson is not { Length: > 0 } json)
-            return true; // null/vazio = todos os módulos ativos (retrocompatível)
-
-        var modules = JsonSerializer.Deserialize<List<string>>(json) ?? [];
-        return modules.Contains(module.ToString(), StringComparer.OrdinalIgnoreCase);
-    }
 }
