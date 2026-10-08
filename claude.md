@@ -12,7 +12,7 @@ SaaS de gestão para pequenos comércios (repo: `PDV-Ultra`). Foco em simplicida
 | Backend | ASP.NET Core (.NET 8+) + EF Core + MySQL — arquitetura em camadas (Api / Application / Domain / Infrastructure) |
 | Testes | `backend/PDV.UnitTests` (NUnit 4 + Moq) — fluxos críticos, ver `backend/PDV.UnitTests/README.md` |
 | Storage | S3-compatível: **MinIO** (dev, Docker) / **Cloudflare R2** (produção) — upload direto frontend↔storage via presigned URL |
-| Pagamentos | **Stripe** (Billing + Checkout hospedado) — produção ainda em modo **teste** |
+| Pagamentos | **Stripe** (Billing + Checkout hospedado) — produção em modo **live** desde 2026-10-08 (conta PF/CPF, ver runbook §10) |
 | Mobile (futuro) | Capacitor (wrapper do frontend) |
 
 Cada camada tem seu próprio guia detalhado (`frontend/CLAUDE.md`, `backend/CLAUDE.md`) — **leia-o antes de mexer nela**.
